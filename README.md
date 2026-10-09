@@ -71,23 +71,6 @@ Necesitas [Python 3](https://www.python.org/downloads/) (o cualquier servidor es
 
 También puedes abrir `index.html` directamente, aunque el modo sin conexión (service worker) solo funciona sobre `http://` o `https://`.
 
-## Publicar en GitHub Pages
-
-1. Crea un repositorio **público** en GitHub (sin README ni .gitignore, ya los incluye el proyecto).
-2. En la carpeta del proyecto:
-   ```bash
-   git init
-   git add .
-   git commit -m "Versión inicial"
-   git branch -M main
-   git remote add origin https://github.com/TU_USUARIO/personal-ranked-progress.git
-   git push -u origin main
-   ```
-3. En GitHub: **Settings → Pages → Build and deployment → Source: Deploy from a branch**, rama `main`, carpeta `/ (root)` y **Save**.
-4. En uno o dos minutos la página estará en `https://TU_USUARIO.github.io/personal-ranked-progress/`.
-
-Todas las rutas del proyecto son relativas, así que funciona dentro de la subcarpeta del repositorio.
-
 ## Datos y privacidad
 
 - **No hay backend ni cuentas.** Los perfiles se guardan en el `localStorage` del navegador de cada persona. Nada se envía a ningún servidor propio.
