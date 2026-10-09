@@ -6,7 +6,7 @@
 function meter(v, lab = '') {
     const hd = b => `<div class=mh>${lab ? `<span>${lab}</span>` : ''}${b}</div>`;
     if (v == null)
-        return hd('<b>-</b>');
+        return hd('<b>-</b>') + '<div class="meter"></div>';
     const p = Math.abs(v) * 5, c = v >= 0 ? `hsl(${160 - v * 11} 100% 55%)` : `hsl(0 ${40 - v * 6}% ${52 + v * 2}%)`;
     return hd(`<b style="color:${c}">${v > 0 ? '+' : ''}${v}</b>`) + `<div class="meter ${v >= 8 ? 'g' : ''}" style="color:${c}"><i style="background:${c};left:${v >= 0 ? 50 : 50 - p}%;width:${p}%"></i></div>`;
 }
@@ -123,7 +123,9 @@ function selectLevel(id) {
 
 /** Comprueba nombre e ID del formulario contra la lista de la AREDL y avisa si no coinciden. */
 function validateAgainstAredl(f) {
-    const q = k => f.elements[k], w = qs('#wn'), n = q('name').value.trim().toLowerCase(), id = q('lid').value.trim(), k = q('kind').value == 'platform' ? 'p' : 'd', m = aredlCache.find(x => id ? String(x.i) == id : x.k == k && x.n.toLowerCase() == n);
+    const q = k => f.elements[k], w = qs('#wn');
+    const name = q('name').value.trim(), id = q('lid').value.trim(), kind = q('kind').value == 'platform' ? 'p' : 'd';
+    const m = id ? aredlCache.find(x => String(x.i) == id) : findAredlByName(name, kind);
     if (m) {
         if (!id)
             q('lid').value = m.i;
@@ -131,10 +133,12 @@ function validateAgainstAredl(f) {
         q('ap').value = m.p;
         if (m.u && !q('creator').value)
             q('creator').value = m.u;
-        w.textContent = `${t('found')} · #${m.p}`;
+        w.textContent = `${t('found')} · #${m.p}${normalizeName(m.n) == normalizeName(name) ? '' : ' · ' + m.n}`;
     }
-    else
-        w.textContent = !aredlCache.length ? t('nocache') : id ? t('nolist') : n ? t('nf') : '';
+    else {
+        const similar = !id && name ? similarAredlNames(name, kind) : [];
+        w.textContent = !aredlCache.length ? t('nocache') : id ? t('nolist') : name ? t('nf') + (similar.length ? ` ${t('didYouMean')} ${similar.join(', ')}` : '') : '';
+    }
     if (id) {
         const im = new Image();
         im.onerror = () => w.textContent += ' · ' + t('nothumb');

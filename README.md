@@ -2,6 +2,8 @@
 
 Aplicación web para llevar el seguimiento de los niveles más difíciles de **Geometry Dash** que has completado: tu top personal, intentos, tiempo de juego, muertes por porcentaje, valoraciones y una línea de tiempo de tus completions. Pensada para reemplazar una hoja de Excel por algo más visual e interactivo.
 
+**Ver la aplicación:** <https://wal-014.github.io/Personal-Progress-List/>
+
 > Proyecto personal. No está afiliado a RobTop Games, a Geometry Dash ni a la AREDL.
 
 ## Capturas
@@ -10,7 +12,6 @@ Aplicación web para llevar el seguimiento de los niveles más difíciles de **G
 |---|---|---|
 | ![Inicio](docs/screenshots/inicio-oscuro.png) | ![Lista](docs/screenshots/lista-oscuro.png) | ![Estadísticas](docs/screenshots/estadisticas-claro.png) |
 
-*Las capturas usan el perfil de demostración (datos ficticios) y sin conexión, por eso no se ven las miniaturas de los niveles.*
 
 ## Características
 
@@ -63,21 +64,13 @@ Los scripts son clásicos (no módulos ES) para que la página también funcione
 
 ## Ejecutar en local
 
-Necesitas [Python 3](https://www.python.org/downloads/) (o cualquier servidor estático).
-
-- **Windows**: doble clic en `iniciar.bat`.
-- **Mac / Linux**: `./iniciar.command`.
-- O manualmente: `python -m http.server 8000` y abre <http://localhost:8000>.
-
-También puedes abrir `index.html` directamente, aunque el modo sin conexión (service worker) solo funciona sobre `http://` o `https://`.
+Sirve la carpeta con cualquier servidor estático, por ejemplo `python -m http.server 8000`, y abre <http://localhost:8000>. En Windows también puedes usar `iniciar.bat`.
 
 ## Datos y privacidad
 
-- **No hay backend ni cuentas.** Los perfiles se guardan en el `localStorage` del navegador de cada persona. Nada se envía a ningún servidor propio.
-- Los datos viajan solo si **exportas** un perfil (botón ⬇ de su tarjeta). Guarda esos archivos fuera del repositorio o en la carpeta `private/`, que está en `.gitignore`.
-- El repositorio solo incluye un perfil de **demostración con datos ficticios** (`data/demo-data.js`).
-- Los datos de cada dispositivo y de cada dirección (`localhost`, `github.io`…) son independientes. Para llevar tu perfil a otro lugar: **Exportar** y luego **Importar perfil**.
-- No subas exportaciones reales con el cargador web de GitHub: este **no respeta** `.gitignore`. Usa `git` o GitHub Desktop.
+- **No hay backend ni cuentas.** Los perfiles se guardan en el `localStorage` del navegador de cada persona y no se envían a ningún servidor propio.
+- Los datos solo salen del navegador si **exportas** un perfil (botón ⬇ de su tarjeta en Inicio). Para llevarlo a otro dispositivo: exportar y luego **Importar perfil**.
+- El perfil de demostración (`data/demo-data.js`) contiene datos ficticios.
 
 ## Créditos
 

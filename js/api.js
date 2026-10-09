@@ -5,9 +5,34 @@
 /** Obtiene el nombre visible de un usuario de la API. */
 const nm = x => typeof x == 'string' ? x : x && (x.global_name || x.username || x.name || x.display_name || x.discord_username || Object.values(x).find(v => typeof v == 'string' && v.length < 32 && !/^[0-9a-f-]{20,}$/i.test(v))) || null;
 
-/** Descarga la lista de la AREDL y de la AREPL si todavía no está en caché. */
-async function loadAredlList() {
-    if (aredlCache.length)
+/** Normaliza un nombre para compararlo: sin mayúsculas, tildes, espacios ni símbolos. */
+const normalizeName = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+
+/**
+ * Busca un nivel por nombre en la caché de la AREDL (kind: 'd' clásicos, 'p' plataforma).
+ * Primero igualdad exacta normalizada; si no hay, acepta una única coincidencia parcial.
+ */
+function findAredlByName(name, kind) {
+    const n = normalizeName(name);
+    if (!n)
+        return null;
+    const pool = aredlCache.filter(x => x.k == kind);
+    const exact = pool.find(x => normalizeName(x.n) == n);
+    if (exact)
+        return exact;
+    const partial = n.length < 4 ? [] : pool.filter(x => normalizeName(x.n).includes(n) || n.includes(normalizeName(x.n)));
+    return partial.length == 1 ? partial[0] : null;
+}
+
+/** Hasta tres nombres de la AREDL que se parecen al escrito (para sugerir). */
+function similarAredlNames(name, kind) {
+    const n = normalizeName(name).slice(0, 4);
+    return aredlCache.filter(x => x.k == kind && normalizeName(x.n).includes(n)).slice(0, 3).map(x => x.n);
+}
+
+/** Descarga la lista de la AREDL y de la AREPL si todavía no está en caché (o siempre, con force). */
+async function loadAredlList(force) {
+    if (aredlCache.length && !force)
         return;
     const get = async (q) => {
         try {
@@ -18,7 +43,9 @@ async function loadAredlList() {
             return [];
         }
     }, [d, q] = await Promise.all([get('aredl/levels'), get('arepl/levels')]);
-    aredlCache = [...d.map(x => ({ k: 'd', i: x.level_id, n: String(x.name), p: x.position, u: nm(x.publisher) })), ...q.map(x => ({ k: 'p', i: x.level_id, n: String(x.name), p: x.position, u: nm(x.publisher) }))];
+    const fresh = [...d.map(x => ({ k: 'd', i: x.level_id, n: String(x.name), p: x.position, u: nm(x.publisher) })), ...q.map(x => ({ k: 'p', i: x.level_id, n: String(x.name), p: x.position, u: nm(x.publisher) }))];
+    if (fresh.length)
+        aredlCache = fresh;
     if (aredlCache.length)
         localStorage.gar = JSON.stringify(aredlCache);
 }
@@ -27,7 +54,12 @@ async function loadAredlList() {
 async function enrichWishlistItem(it) {
     try {
         await loadAredlList();
-        const m = aredlCache.find(x => it.levelId ? String(x.i) == String(it.levelId) : x.n.toLowerCase() == it.name.toLowerCase());
+        const find = () => it.levelId ? aredlCache.find(x => String(x.i) == String(it.levelId)) : findAredlByName(it.name, 'd') || findAredlByName(it.name, 'p');
+        let m = find();
+        if (!m) {
+            await loadAredlList(true);
+            m = find();
+        }
         if (m) {
             it.levelId = it.levelId || String(m.i);
             if (!it.creator) {
@@ -86,7 +118,7 @@ async function syncWithAredl() {
         let n = 0;
         const hit = [];
         profile.levels.forEach(l => {
-            const k = l.kind == 'platform' ? 'p' : 'd', x = (l.levelId && by.get(k + l.levelId)) || by.get(k + l.name.toLowerCase());
+            const k = l.kind == 'platform' ? 'p' : 'd', x = (l.levelId && by.get(k + l.levelId)) || by.get(k + l.name.toLowerCase()) || findAredlByName(l.name, k);
             if (x) {
                 l.levelId = l.levelId || String(x.i);
                 l.creator = l.creator || x.u;
