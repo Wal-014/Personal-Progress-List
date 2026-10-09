@@ -1,0 +1,10 @@
+# Datos personales: nunca se suben
+private/
+*.profile.json
+*-backup*.json
+
+# Sistema y herramientas
+.DS_Store
+Thumbs.db
+node_modules/
+.vscode/
