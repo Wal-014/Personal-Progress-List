@@ -1223,3 +1223,110 @@ textarea {
   }
 
 }
+
+/* ===== Pie de página fijo en la parte inferior de la ventana ===== */
+
+.ft {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 6;
+  max-width: none;
+  margin: 0;
+  padding: 7px 18px;
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+main {
+  padding-bottom: 56px;
+}
+
+.lcol,
+.rcol {
+  height: calc(100vh - 170px);
+}
+
+@media (max-width: 900px) {
+  .lcol {
+    height: 70vh;
+  }
+  .rcol {
+    height: auto;
+  }
+}
+
+/* ===== Tarjetas de la lista con tamaño fijo ===== */
+
+.lcol .card {
+  height: 92px;
+  min-height: 92px;
+}
+
+.lcol .nm {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.lcol .mt {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 156px;
+  min-width: 156px;
+  padding: 6px 10px 11px;
+}
+
+/* ===== Ajustes del tema claro ===== */
+
+[data-t=light] {
+  --bd: #8791b8;
+}
+
+[data-t=light] .card:not(.sel):not(.top1):not(.top2):not(.top3):not(.act):not(:hover),
+[data-t=light] .st,
+[data-t=light] fieldset,
+[data-t=light] .box,
+[data-t=light] .ph,
+[data-t=light] .dr aside,
+[data-t=light] .pb,
+[data-t=light] .ft,
+[data-t=light] header,
+[data-t=light] button:not(.pri):not(.dg):not(.on):not(:hover),
+[data-t=light] select,
+[data-t=light] input,
+[data-t=light] textarea {
+  border-color: var(--bd);
+}
+
+[data-t=light] .s-todo {
+  color: #cf2a3e;
+}
+
+[data-t=light] .s-prog {
+  color: #a56a00;
+}
+
+[data-t=light] .s-done {
+  color: #14804a;
+}
+
+[data-t=light] .chip {
+  filter: brightness(0.72);
+}
+
+[data-t=light] .mt {
+  background: #ffffffe0;
+  color: var(--fg);
+  border: 1px solid var(--bd);
+  text-shadow: none;
+}
+
+[data-t=light] .mt .meter {
+  background: #d3d9ec;
+}
+
+[data-t=light] .mh b {
+  filter: brightness(0.62) saturate(1.4);
+}
