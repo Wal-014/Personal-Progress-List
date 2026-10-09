@@ -70,7 +70,7 @@ Necesitas [Python 3](https://www.python.org/downloads/) (o cualquier servidor es
 - O manualmente: `python -m http.server 8000` y abre <http://localhost:8000>.
 
 También puedes abrir `index.html` directamente, aunque el modo sin conexión (service worker) solo funciona sobre `http://` o `https://`.
-s
+
 ## Datos y privacidad
 
 - **No hay backend ni cuentas.** Los perfiles se guardan en el `localStorage` del navegador de cada persona. Nada se envía a ningún servidor propio.
