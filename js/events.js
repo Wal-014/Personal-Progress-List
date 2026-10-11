@@ -126,6 +126,8 @@ document.body.onclick = e => {
                     return;
                 const n = profile.tags.splice(ix, 1)[0].name;
                 profile.levels.forEach(l => l.tags = (l.tags || []).filter(x => x != n));
+                if (ui.tag == n)
+                    ui.tag = '';
                 save();
                 render();
                 openModal(tagsUI());
@@ -135,7 +137,7 @@ document.body.onclick = e => {
         else if (k == 'tadd') {
             const n = qs('#nn').value.trim();
             if (!n || profile.tags.some(g => g.name == n))
-                return;
+                return showAlert(t(n ? 'tagExists' : 'tagEmpty'));
             profile.tags.push({ name: n, color: qs('#nc').value });
             save();
             render();
@@ -365,9 +367,11 @@ document.body.onchange = e => {
         const g = profile.tags[ds.tn], v = e.target.value.trim();
         if (!v || profile.tags.some(x => x != g && x.name == v)) {
             e.target.value = g.name;
-            return;
+            return showAlert(t(v ? 'tagExists' : 'tagEmpty'));
         }
         profile.levels.forEach(l => l.tags = (l.tags || []).map(x => x == g.name ? v : x));
+        if (ui.tag == g.name)
+            ui.tag = v;
         g.name = v;
         save();
         render();

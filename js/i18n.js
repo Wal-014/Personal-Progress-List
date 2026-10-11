@@ -24,3 +24,5 @@ Object.assign(TRANSLATIONS.en, { badFile: 'The file is not a valid exported prof
 const t = k => TRANSLATIONS[ui.lang][k] ?? k;
 Object.assign(TRANSLATIONS.es, { dataUnreadable: 'No se pudieron leer los datos guardados, así que se cargó el perfil de demostración. Se guardó una copia de los datos anteriores para poder recuperarlos.' });
 Object.assign(TRANSLATIONS.en, { dataUnreadable: 'Your saved data could not be read, so the demo profile was loaded. A copy of the previous data was kept so it can be recovered.' });
+Object.assign(TRANSLATIONS.es, { tagExists: 'Ya existe un tag con ese nombre', tagEmpty: 'Escribe un nombre para el tag' });
+Object.assign(TRANSLATIONS.en, { tagExists: 'A tag with that name already exists', tagEmpty: 'Enter a name for the tag' });
