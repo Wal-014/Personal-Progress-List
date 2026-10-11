@@ -16,3 +16,5 @@ Object.assign(TRANSLATIONS.en, { rights: 'All rights reserved', terms: 'Terms of
 
 /** Traduce una clave al idioma activo. */
 const t = k => TRANSLATIONS[ui.lang][k] ?? k;
+Object.assign(TRANSLATIONS.es, { dataUnreadable: 'No se pudieron leer los datos guardados, así que se cargó el perfil de demostración. Se guardó una copia de los datos anteriores para poder recuperarlos.' });
+Object.assign(TRANSLATIONS.en, { dataUnreadable: 'Your saved data could not be read, so the demo profile was loaded. A copy of the previous data was kept so it can be recovered.' });

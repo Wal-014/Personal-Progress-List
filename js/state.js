@@ -2,8 +2,31 @@
  * Estado de la aplicación: perfiles guardados en localStorage, estado de la interfaz y utilidades de acceso.
  */
 
+/** True when the saved data could not be read at startup and was moved to localStorage.gdpBroken. */
+let storeWasUnreadable = false;
+
+/** Reads the saved profiles. If they cannot be read, keeps a copy aside so the app can still start. */
+function loadStore() {
+    const raw = localStorage.gdp;
+    if (!raw)
+        return null;
+    try {
+        const s = JSON.parse(raw), ids = Object.keys(s.profs || {}).filter(id => s.profs[id]?.data);
+        if (ids.length) {
+            if (!ids.includes(s.cur))
+                s.cur = ids[0];
+            return s;
+        }
+    }
+    catch {
+    }
+    localStorage.gdpBroken = raw;
+    storeWasUnreadable = true;
+    return null;
+}
+
 /** Contenedor de perfiles: { cur: id del perfil activo, profs: { id: { name, data } } }. */
-let store = JSON.parse(localStorage.gdp || 'null');
+let store = loadStore();
 
 /** Datos del perfil activo (niveles, orden, wishlists y tags). */
 let profile = store && store.profs[store.cur].data;
