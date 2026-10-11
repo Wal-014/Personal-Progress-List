@@ -37,7 +37,7 @@ function stats() {
         if (l.date)
             yy[l.date.slice(0, 4)] = (yy[l.date.slice(0, 4)] || 0) + 1;
     });
-    const tl = profile.levels.filter(l => l.date && totalAttempts(l) != null).sort((a, b) => a.date < b.date ? -1 : 1), W = ui.z, M = Math.max(1, ...tl.map(totalAttempts)), st = (k, v) => `<div class=st><small>${k}</small><b>${escapeHtml(v)}</b></div>`;
+    const st = (k, v) => `<div class=st><small>${k}</small><b>${escapeHtml(v)}</b></div>`;
     return `<div class=grid>${st(t('lv'), profile.levels.length)}${st(t('attT'), A.toLocaleString(ui.lang))}${st(t('hrs'), Math.round(H / 3600))}${st(t('avg'), L.length ? Math.round(A / L.length) : '-')}${mx ? st(t('most'), `${mx.name} · ${totalAttempts(mx)}`) : ''}</div>
 ${timelineHtml()}
 <h3>${t('byD')}</h3>${bars(Object.fromEntries([...DIFFICULTIES, '-'].filter(k => dd[k]).map(k => [k, dd[k]])))}<h3>${t('byY')}</h3>${bars(yy)}`;
