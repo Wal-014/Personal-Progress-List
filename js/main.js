@@ -12,10 +12,11 @@
     ensureProfileDefaults();
     render();
     if ('serviceWorker' in navigator) {
-        let rl;
+        // Reload only when a new version replaces the one serving this page, not when the first install takes control
+        let reloadOnUpdate = !!navigator.serviceWorker.controller;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (!rl) {
-                rl = 1;
+            if (reloadOnUpdate) {
+                reloadOnUpdate = false;
                 location.reload();
             }
         });
