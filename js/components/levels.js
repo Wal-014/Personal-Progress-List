@@ -17,9 +17,15 @@ function card(l, i, n) {
     return `<div class="card ${i === 0 ? 'top1' : i === 1 ? 'top2' : i === 2 ? 'top3' : ''}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0 style="${u ? `background-image:url('${u}');` : ''}animation-delay:${Math.min(+i || 0, 14) * 30}ms"><div class=rk>${i == 'pre' ? `<b style="font-size:15px">${t('first')}</b>` : i != null ? `<b>#${i + 1}</b> / ${n}` : '<b>—</b>'}<small>${aredlLabel(l)}</small></div><div class=nm>${escapeHtml(l.name)}${l.creator || l.date ? ` <small class=by>${[l.creator ? t('by') + ' ' + escapeHtml(l.creator) : '', l.date ? escapeHtml(l.date.split('-').reverse().join('/')) : ''].filter(Boolean).join(' · ')}</small>` : ''}<div>${(l.tags || []).map(x => `<span class=chip data-tag="${escapeHtml(x)}" style="color:${tagColor(x)};border-color:${tagColor(x)}">${escapeHtml(x)}</span>`).join('')}</div></div><div class=mt>${meter(l.enj, t('enj'))}<div style="height:8px"></div>${meter(l.lik, t('lik'))}</div></div>`;
 }
 
+/** Ids of the ranked levels of a list, in order: Pre-Extremes levels and ids of deleted levels have no rank. */
+const rankedIds = kind => profile.order[kind].filter(id => {
+    const l = findLevel(id);
+    return l && !isPre(l);
+});
+
 /** Cuerpo de la lista: niveles colocados, sin colocar y primeros pasos. */
 function list() {
-    const ids = profile.order[ui.tab], ok = l => (!ui.q || l.name.toLowerCase().includes(ui.q)) && (!ui.tag || (l.tags || []).includes(ui.tag)), all = profile.levels.filter(l => l.kind == ui.tab), pl = ids.map(findLevel).filter(l => l && !isPre(l)), un = all.filter(l => !ids.includes(l.id) && !isPre(l) && ok(l)), pre = all.filter(l => isPre(l) && ok(l));
+    const ids = profile.order[ui.tab], ok = l => (!ui.q || l.name.toLowerCase().includes(ui.q)) && (!ui.tag || (l.tags || []).includes(ui.tag)), all = profile.levels.filter(l => l.kind == ui.tab), pl = rankedIds(ui.tab).map(findLevel), un = all.filter(l => !ids.includes(l.id) && !isPre(l) && ok(l)), pre = all.filter(l => isPre(l) && ok(l));
     return `<div id=lst>${pl.map((l, i) => ok(l) ? card(l, i, pl.length) : '').join('')}</div>${un.length ? `<h3>${t('unplaced')}</h3>` + un.map(l => card(l)).join('') : ''}${pre.length ? `<h3>${t('first')}</h3>` + pre.map(l => card(l, 'pre')).join('') : ''}${all.length ? '' : `<p>${t('empty')}</p>`}`;
 }
 
@@ -61,7 +67,7 @@ function renderTagSuggestions() {
 
 /** Formulario para añadir o editar un nivel. */
 function form(l) {
-    const f = (k, v, ty = 'text', x = '') => `<div><label for=fm-${k}>${t(k)}</label>${ty == 'number' && !x.includes('readonly') ? `<div class=num><button type=button data-act=step data-d=-1>−</button><input id=fm-${k} name=${k} type=number ${x} value="${escapeHtml(v)}"><button type=button data-act=step data-d=1>+</button></div>` : `<input id=fm-${k} name=${k} type=${ty} ${x} value="${escapeHtml(v)}"${x.includes('readonly') ? ' class=ro' : ''}>`}</div>`, kind = l?.kind || (['classic', 'platform'].includes(ui.tab) ? ui.tab : 'classic'), o = l || { tags: [], ar: { s: 'n' } }, pos = profile.order[kind].indexOf(l?.id) + 1 || '', sec = (k, b) => `<fieldset><legend>${t(k)}</legend><div class=grid>${b}</div></fieldset>`, sel = (lab, nm, opts) => `<div><label for=fm-${nm}>${lab}</label><select id=fm-${nm} name=${nm}>${opts}</select></div>`;
+    const f = (k, v, ty = 'text', x = '') => `<div><label for=fm-${k}>${t(k)}</label>${ty == 'number' && !x.includes('readonly') ? `<div class=num><button type=button data-act=step data-d=-1>−</button><input id=fm-${k} name=${k} type=number ${x} value="${escapeHtml(v)}"><button type=button data-act=step data-d=1>+</button></div>` : `<input id=fm-${k} name=${k} type=${ty} ${x} value="${escapeHtml(v)}"${x.includes('readonly') ? ' class=ro' : ''}>`}</div>`, kind = l?.kind || (['classic', 'platform'].includes(ui.tab) ? ui.tab : 'classic'), o = l || { tags: [], ar: { s: 'n' } }, pos = rankedIds(kind).indexOf(l?.id) + 1 || '', sec = (k, b) => `<fieldset><legend>${t(k)}</legend><div class=grid>${b}</div></fieldset>`, sel = (lab, nm, opts) => `<div><label for=fm-${nm}>${lab}</label><select id=fm-${nm} name=${nm}>${opts}</select></div>`;
     return `<div class=box><div><form id=fm data-id="${escapeHtml(l?.id)}"><div class=warn id=wn></div>
 ${sec('s1', f('name', o.name, 'text', 'required') + f('lid', o.levelId, 'text', 'inputmode=numeric') + f('creator', o.creator) + sel(t('diff'), 'diff', '<option value="">-</option>' + DIFFICULTIES.map(d => `<option ${o.diff == d ? 'selected' : ''}>${d}</option>`).join('')) + sel(t('kind'), 'kind', ['classic', 'platform'].map(k => `<option value=${k} ${k == kind ? 'selected' : ''}>${t(k)}</option>`).join('')))}
 ${sec('s2', f('pos', pos, 'number', 'min=1 step=1') + sel('AREDL', 'as', [['r', t('onl')], ['n', t('notin')], ['p', t('pending')]].map(([k, v]) => `<option value=${k} ${o.ar?.s == k ? 'selected' : ''}>${v}</option>`).join('')) + f('ap', o.ar?.p, 'number', 'readonly tabindex=-1'))}
