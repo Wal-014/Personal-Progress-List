@@ -566,11 +566,19 @@ textarea {
 }
 
 .sub {
+  font-size: 1em;
   margin: 16px 0 6px;
   color: var(--mut);
 }
 
-h3 button {
+/* .sec keeps the size of the h3 these section titles used to be */
+.sec {
+  font-size: 1.17em;
+  margin-block: 1em;
+}
+
+h3 button,
+.sec button {
   margin-left: 10px;
   font-size: 13px;
 }
@@ -922,6 +930,43 @@ input[type=number] {
 
 .modal .box {
   width: 100%;
+}
+
+dialog.modal {
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  color: inherit;
+}
+
+dialog.modal:not([open]) {
+  display: none;
+}
+
+dialog.modal::backdrop {
+  background: transparent;
+}
+
+/* Touch screens: 44px targets for small buttons. Footer links are inline text (WCAG exception), 24px is enough */
+@media (pointer: coarse) {
+  header button,
+  .pact button,
+  .sec button,
+  .wa .r2 button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .ft .lk {
+    display: inline-block;
+    padding-block: 4px;
+  }
+  /* The taller footer links make the fixed footer 63px tall; #app beats the later main rule */
+  #app main {
+    padding-bottom: 64px;
+  }
 }
 
 .box.sm {
