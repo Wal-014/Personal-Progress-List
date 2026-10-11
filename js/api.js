@@ -8,26 +8,30 @@ const nm = x => typeof x == 'string' ? x : x && (x.global_name || x.username || 
 /** Normaliza un nombre para compararlo: sin mayúsculas, tildes, espacios ni símbolos. */
 const normalizeName = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
 
+/** Cached levels of one list, skipping entries whose name has no letters or digits (they would match any name). */
+const namedAredlLevels = kind => aredlCache.filter(x => x.k == kind && normalizeName(x.n));
+
 /**
  * Busca un nivel por nombre en la caché de la AREDL (kind: 'd' clásicos, 'p' plataforma).
- * Primero igualdad exacta normalizada; si no hay, acepta una única coincidencia parcial.
+ * First an exact normalized match; otherwise the single official name that contains what was typed.
+ * The reverse (typed text containing an official name) is not accepted: "Kenos Remake" is not "Kenos".
  */
 function findAredlByName(name, kind) {
     const n = normalizeName(name);
     if (!n)
         return null;
-    const pool = aredlCache.filter(x => x.k == kind);
+    const pool = namedAredlLevels(kind);
     const exact = pool.find(x => normalizeName(x.n) == n);
     if (exact)
         return exact;
-    const partial = n.length < 4 ? [] : pool.filter(x => normalizeName(x.n).includes(n) || n.includes(normalizeName(x.n)));
+    const partial = n.length < 4 ? [] : pool.filter(x => normalizeName(x.n).includes(n));
     return partial.length == 1 ? partial[0] : null;
 }
 
 /** Hasta tres nombres de la AREDL que se parecen al escrito (para sugerir). */
 function similarAredlNames(name, kind) {
     const n = normalizeName(name).slice(0, 4);
-    return aredlCache.filter(x => x.k == kind && normalizeName(x.n).includes(n)).slice(0, 3).map(x => x.n);
+    return n ? namedAredlLevels(kind).filter(x => normalizeName(x.n).includes(n)).slice(0, 3).map(x => x.n) : [];
 }
 
 /** Descarga la lista de la AREDL y de la AREPL si todavía no está en caché (o siempre, con force). */
