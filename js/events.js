@@ -259,7 +259,7 @@ document.body.onclick = e => {
                 showAlert(t('exists'));
                 return;
             }
-            profile.levels.push({ id: newId('n'), name: i.name, kind: kd, levelId: i.levelId || null, creator: i.creator || null, diff: i.diff || null, ar: { s: 'n' }, deaths: {}, tags: [], notes: '', date: new Date().toISOString().slice(0, 10) });
+            profile.levels.push({ id: newId('n'), name: i.name, kind: kd, levelId: i.levelId || null, creator: i.creator || null, diff: i.diff || null, ar: { s: 'n' }, deaths: {}, tags: [], notes: '', date: todayLocal() });
             i.added = true;
             save();
             showAlert(t('addedOk'));
