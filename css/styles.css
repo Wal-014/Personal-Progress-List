@@ -13,18 +13,6 @@
   --ln: #232a45;
 }
 
-/* ===== Tema claro ===== */
-
-[data-t=light] {
-  --bg: #eceff7;
-  --card: #f9faff;
-  --fg: #232845;
-  --mut: #666d8e;
-  --a: #4c6fff;
-  --b: #d9528f;
-  --ln: #d3d9ec;
-}
-
 /* ===== Tema synth ===== */
 
 [data-t=synth] {
@@ -102,12 +90,6 @@ button:hover,
 .on {
   border-color: var(--a);
   box-shadow: 0 0 10px var(--a);
-}
-
-main {
-  max-width: 980px;
-  margin: auto;
-  padding: 14px;
 }
 
 #q {
@@ -195,16 +177,6 @@ main {
   cursor: pointer;
 }
 
-.mt {
-  min-width: 120px;
-  font-size: 12px;
-  color: #fff;
-  background: #000a;
-  border-radius: 10px;
-  padding: 6px 10px;
-  text-shadow: 0 1px 3px #000,0 0 8px #000;
-}
-
 .meter {
   height: 10px;
   border-radius: 6px;
@@ -232,15 +204,6 @@ main {
 }
 
 /* ===== Ventanas modales ===== */
-
-.modal {
-  position: fixed;
-  inset: 0;
-  background: #000b;
-  overflow: auto;
-  z-index: 9;
-  padding: 20px;
-}
 
 .box {
   margin: auto;
@@ -370,6 +333,12 @@ main {
 }
 
 .mt {
+  font-size: 12px;
+  color: #fff;
+  background: #000a;
+  border-radius: 10px;
+  padding: 6px 10px;
+  text-shadow: 0 1px 3px #000,0 0 8px #000;
   min-width: 160px;
 }
 
@@ -583,25 +552,11 @@ h3 button,
   font-size: 13px;
 }
 
-.mt.wa {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  text-align: center;
-  padding: 10px 14px;
-}
-
 .mt.wa>div {
   display: flex;
   gap: 10px;
   justify-content: center;
   flex-wrap: wrap;
-}
-
-.mt.wa select,
-.mt.wa button {
-  min-width: 130px;
 }
 
 .ic {
@@ -650,14 +605,6 @@ main.wide {
   max-width: 1600px;
 }
 
-.bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-}
-
 .bar h2 {
   margin: 0;
 }
@@ -674,13 +621,6 @@ main.wide {
 
 /* ===== Layout de lista + panel ===== */
 
-.split {
-  display: grid;
-  grid-template-columns: minmax(340px,470px) 1fr;
-  gap: 16px;
-  align-items: start;
-}
-
 .lcol {
   display: flex;
   flex-direction: column;
@@ -696,12 +636,6 @@ main.wide {
 
 .lh input {
   flex: 1;
-}
-
-#lw {
-  flex: 1;
-  overflow: auto;
-  padding-right: 6px;
 }
 
 .rcol {
@@ -729,26 +663,8 @@ main.wide {
   border-radius: 14px;
   text-align: center;
   padding: 20px;
-}
-
-.rcol .hero {
-  height: 130px;
-}
-
-.dgrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit,minmax(300px,1fr));
-  gap: 0 14px;
-}
-
-.dgrid>fieldset:has(.hist) {
+}.dgrid>fieldset:has(.hist) {
   grid-column: 1/-1;
-}
-
-.lcol .card {
-  min-height: 62px;
-  padding: 8px 12px;
-  margin: 6px 0;
 }
 
 .lcol .rk {
@@ -757,18 +673,7 @@ main.wide {
 
 .lcol .rk b {
   font-size: 22px;
-}
-
-.lcol .nm {
-  font-size: 16px;
-}
-
-.lcol .mt {
-  min-width: 118px;
-  padding: 4px 8px;
-}
-
-.lcol .meter {
+}.lcol .meter {
   height: 6px;
 }
 
@@ -824,6 +729,11 @@ main.wide {
 }
 
 .mt.wa {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: center;
+  padding: 10px 14px;
   min-width: 320px;
   align-items: stretch;
 }
@@ -925,6 +835,12 @@ input[type=number] {
 }
 
 .modal {
+  position: fixed;
+  inset: 0;
+  background: #000b;
+  overflow: auto;
+  z-index: 9;
+  padding: 20px;
   display: flex;
 }
 
@@ -985,15 +901,16 @@ dialog.modal::backdrop {
 }
 
 .split {
+  display: grid;
+  gap: 16px;
+  align-items: start;
   grid-template-columns: minmax(400px,560px) 1fr;
 }
 
-.lcol,
-.rcol {
-  height: calc(100vh - 124px);
-}
-
 #lw {
+  flex: 1;
+  overflow: auto;
+  padding-right: 6px;
   padding: 12px 16px 12px 12px;
 }
 
@@ -1041,11 +958,9 @@ dialog.modal::backdrop {
 }
 
 .dgrid {
+  display: grid;
+  gap: 0 14px;
   grid-template-columns: repeat(auto-fit,minmax(270px,1fr));
-}
-
-.rcol .hist {
-  height: 100px;
 }
 
 .rcol .yt {
@@ -1173,22 +1088,6 @@ dialog.modal::backdrop {
   background: #1b224066;
 }
 
-/* ===== Pie de página ===== */
-
-.ft {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  max-width: 1600px;
-  margin: 12px auto 0;
-  padding: 14px;
-  border-top: 1px solid var(--ln);
-  color: var(--mut);
-  font-size: 12px;
-}
-
 /* ===== Tooltip ===== */
 
 #tip {
@@ -1212,6 +1111,8 @@ dialog.modal::backdrop {
 }
 
 .bar {
+  flex-wrap: wrap;
+  margin-bottom: 12px;
   display: flex;
   gap: 8px;
   align-items: center;
@@ -1278,6 +1179,14 @@ textarea {
 /* ===== Pie de página fijo en la parte inferior de la ventana ===== */
 
 .ft {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-top: 1px solid var(--ln);
+  color: var(--mut);
+  font-size: 12px;
   position: fixed;
   left: 0;
   right: 0;
@@ -1291,6 +1200,9 @@ textarea {
 }
 
 main {
+  max-width: 980px;
+  margin: auto;
+  padding: 14px;
   padding-bottom: 56px;
 }
 
@@ -1314,11 +1226,14 @@ main {
 /* ===== Tarjetas de la lista con tamaño fijo ===== */
 
 .lcol .card {
+  padding: 8px 12px;
+  margin: 6px 0;
   height: 92px;
   min-height: 92px;
 }
 
 .lcol .nm {
+  font-size: 16px;
   min-width: 0;
   overflow: hidden;
 }
@@ -1368,6 +1283,13 @@ main {
 /* ===== Ajustes del tema claro ===== */
 
 [data-t=light] {
+  --bg: #eceff7;
+  --card: #f9faff;
+  --fg: #232845;
+  --mut: #666d8e;
+  --a: #4c6fff;
+  --b: #d9528f;
+  --ln: #d3d9ec;
   --bd: #8791b8;
 }
 
