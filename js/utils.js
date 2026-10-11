@@ -6,7 +6,10 @@
 const qs = s => document.querySelector(s);
 
 /** Escapa texto antes de insertarlo en HTML. */
-const escapeHtml = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/** Returns the link only if it is http(s), so schemes like javascript: never reach an href. */
+const safeUrl = u => /^https?:\/\//i.test(u || '') ? u : '';
 
 /** Muestra «-» cuando no hay dato. */
 const orDash = v => v == null || v === '' ? '-' : v;
@@ -38,16 +41,19 @@ const totalSeconds = l => {
 };
 
 /** URL de la miniatura del nivel en Level Thumbnails. */
-const thumbUrl = l => l.levelId ? `https://levelthumbs.prevter.me/thumbnail/${l.levelId}` : '';
+const thumbUrl = l => /^\d+$/.test(l.levelId) ? `https://levelthumbs.prevter.me/thumbnail/${l.levelId}` : '';
 
 /** Texto del puesto en la AREDL / AREPL. */
 const aredlLabel = l => {
     const L = l.kind == 'platform' ? 'AREPL' : 'AREDL';
-    return l.ar?.s == 'r' ? `${L} #${l.ar.p}` : l.ar?.s == 'p' ? t('pending') : l.ar?.s == 'n' ? t('notin') : L + ' -';
+    return l.ar?.s == 'r' ? `${L} #${escapeHtml(l.ar.p)}` : l.ar?.s == 'p' ? t('pending') : l.ar?.s == 'n' ? t('notin') : L + ' -';
 };
 
 /** Color asignado a un tag. */
-const tagColor = n => profile.tags?.find(g => g.name == n)?.color || 'var(--b)';
+const tagColor = n => {
+    const c = profile.tags?.find(g => g.name == n)?.color;
+    return /^#[0-9a-f]{6}$/i.test(c) ? c : 'var(--b)';
+};
 
 /** Los niveles con el tag «Pre-Extremes» se muestran aparte, en «Primeros pasos». */
 const isPre = l => (l.tags || []).includes('Pre-Extremes');

@@ -12,7 +12,7 @@ function home() {
         const L = profile.wishlists.filter(x => wishlistProgress(x).s == s);
         return L.length ? `<h4 class="sub s-${s}">${t('st_' + s)}</h4><div class=hg>` + L.map(x => {
             const p = wishlistProgress(x);
-            return `<div class=card data-act=wopen data-id="${x.id}"><div class=nm style="width:100%">${escapeHtml(x.name)} <small class=by>${p.d} / ${p.n}</small>${progressBar(x)}</div></div>`;
+            return `<div class=card data-act=wopen data-id="${escapeHtml(x.id)}"><div class=nm style="width:100%">${escapeHtml(x.name)} <small class=by>${p.d} / ${p.n}</small>${progressBar(x)}</div></div>`;
         }).join('') + '</div>' : '';
     }).join('');
     return `<h3>${t('profs')}</h3><div class=hg>${Object.entries(store.profs).map(([k, v]) => pcard(k, v)).join('')}<div class="card pn" data-act=pnew>＋ ${t('pnew')}</div><div class="card pn" data-act=imp>⬆ ${t('impP')}</div></div><h3>${t('lists')} · ${escapeHtml(store.profs[store.cur].name)}</h3><div class=hg>${hc('classic', top('classic'), `${n('classic')} ${t('lv')}`)}${hc('platform', top('platform'), `${n('platform')} ${t('lv')}`)}${hc('stats', `background-image:url('${STATS_BACKGROUND}')`, t('statsSub'))}</div><h3>${t('wish')} <button data-act=wnew>${t('wnew')}</button></h3>${WL || `<p>${t('noWL')}</p>`}`;
