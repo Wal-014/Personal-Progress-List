@@ -44,7 +44,14 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET' || !sameOrigin) return;
   e.respondWith(
     fetch(e.request, { cache: 'no-cache' })
-      .then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); return res; })
+      .then(res => {
+        // An error page must never replace the good copy that offline mode falls back to
+        if (res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, copy));
+        }
+        return res;
+      })
       .catch(() => caches.match(e.request))
   );
 });
