@@ -293,7 +293,7 @@ document.body.onsubmit = e => {
             i = { id: newId('i'), status: 'todo' };
             w.items.push(i);
         }
-        Object.assign(i, { name: g.name || '?', levelId: g.lid || null, creator: g.creator || null, diff: g.diff || null });
+        Object.assign(i, { name: g.name.trim(), levelId: g.lid || null, creator: g.creator || null, diff: g.diff || null });
         i.chk = 0;
         save();
         closeModal();
@@ -305,7 +305,7 @@ document.body.onsubmit = e => {
         const v = N(k);
         return v == null ? v : Math.max(-10, Math.min(10, v));
     }, old = findLevel(e.target.dataset.id), o = old || { id: newId('n') };
-    Object.assign(o, { name: g.name || '?', kind: g.kind, levelId: g.lid || null, creator: g.creator || null, diff: g.diff || null, attC: N('attC'), attN: N('attN'), date: g.date || null, link: g.link || null, enj: C('enj'), lik: C('lik'), tN: parseDuration(g.tN), tP: parseDuration(g.tP), tPC: parseDuration(g.tPC), notes: g.notes, tags: new FormData(e.target).getAll('tg'), deaths: parseDeaths(g.deaths), ar: { s: g.as, p: g.as == 'r' ? N('ap') : null } });
+    Object.assign(o, { name: g.name.trim(), kind: g.kind, levelId: g.lid || null, creator: g.creator || null, diff: g.diff || null, attC: N('attC'), attN: N('attN'), date: g.date || null, link: g.link || null, enj: C('enj'), lik: C('lik'), tN: parseDuration(g.tN), tP: parseDuration(g.tP), tPC: parseDuration(g.tPC), notes: g.notes, tags: new FormData(e.target).getAll('tg'), deaths: parseDeaths(g.deaths), ar: { s: g.as, p: g.as == 'r' ? N('ap') : null } });
     if (!old)
         profile.levels.push(o);
     for (const k in profile.order)
@@ -321,6 +321,8 @@ document.body.onsubmit = e => {
     scrollSel();
 };
 document.body.oninput = e => {
+    if (['fm', 'wf'].includes(e.target.form?.id))
+        e.target.setCustomValidity(fieldError(e.target.name, e.target.value));
     if (e.target.form?.id == 'fm' && ['attC', 'attN', 'tN', 'tP', 'tPC'].includes(e.target.name))
         updateTotals(e.target.form);
     if (e.target.id == 'tgq')
