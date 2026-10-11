@@ -8,6 +8,9 @@ const qs = s => document.querySelector(s);
 /** Escapa texto antes de insertarlo en HTML. */
 const escapeHtml = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+/** Generates an id that stays unique even when several are created in the same millisecond. */
+const newId = prefix => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+
 /** Muestra «-» cuando no hay dato. */
 const orDash = v => v == null || v === '' ? '-' : v;
 
