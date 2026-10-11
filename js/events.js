@@ -438,3 +438,21 @@ document.body.onmousemove = e => {
     tp.style.left = Math.max(4, Math.min(e.clientX + 14, innerWidth - 250)) + 'px';
     tp.style.top = Math.max(4, Math.min(e.clientY + 14, innerHeight - tp.offsetHeight - 10)) + 'px';
 };
+/** Another tab saved: load its data so this tab's next save does not overwrite it. Open forms are left alone. */
+window.addEventListener('storage', e => {
+    if (e.key != 'gdp' || !e.newValue)
+        return;
+    const cur = store.cur;
+    try {
+        store = JSON.parse(e.newValue);
+    }
+    catch {
+        return;
+    }
+    if (store.profs[cur])
+        store.cur = cur;
+    profile = store.profs[store.cur].data;
+    ensureProfileDefaults();
+    if (!qs('form, .modal'))
+        render();
+});
