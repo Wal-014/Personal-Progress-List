@@ -10,7 +10,7 @@ function alerts() {
         if (u.length)
             A.push(`${escapeHtml(t('aUnp'))} (${escapeHtml(t(k))}): ${u.map(lk).join(', ')}`);
     });
-    profile.wishlists.forEach(w => w.items.filter(i => i.status == 'done' && !i.added).forEach(i => A.push(`${escapeHtml(t('aWish'))}: ${escapeHtml(i.name)} (${escapeHtml(w.name)})`)));
+    profile.wishlists.forEach(w => w.items.filter(i => i.status == 'done' && !i.added && !isInList(i, 'classic') && !isInList(i, 'platform')).forEach(i => A.push(`${escapeHtml(t('aWish'))}: ${escapeHtml(i.name)} (${escapeHtml(w.name)})`)));
     const ni = profile.levels.filter(l => !l.levelId);
     if (ni.length)
         A.push(`${escapeHtml(t('aNoId'))} (${ni.length}): ${ni.map(lk).join(', ')}`);

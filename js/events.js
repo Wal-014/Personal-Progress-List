@@ -255,7 +255,7 @@ document.body.onclick = e => {
         }
         else if (k == 'wto') {
             const i = currentWishlist().items.find(x => x.id == id), kd = a.dataset.v;
-            if (profile.levels.some(l => l.kind == kd && (i.levelId && String(l.levelId) == String(i.levelId) || l.name.toLowerCase() == i.name.toLowerCase()))) {
+            if (isInList(i, kd)) {
                 showAlert(t('exists'));
                 return;
             }

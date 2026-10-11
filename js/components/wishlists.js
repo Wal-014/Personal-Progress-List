@@ -8,6 +8,9 @@ const wishlistProgress = w => {
     return { n, d, s: n && d == n ? 'done' : w.items.some(i => i.status != 'todo') ? 'prog' : 'todo' };
 };
 
+/** True when a wishlist item is already in one of the profile's lists (same level ID or same name). */
+const isInList = (i, k) => profile.levels.some(l => l.kind == k && (i.levelId && String(l.levelId) == String(i.levelId) || l.name.toLowerCase() == i.name.toLowerCase()));
+
 /** Wishlist abierta actualmente. */
 const currentWishlist = () => profile.wishlists.find(w => w.id == ui.wl);
 
@@ -19,10 +22,10 @@ const progressBar = w => {
 
 /** Pantalla de una wishlist. */
 function wishView() {
-    const w = currentWishlist(), p = wishlistProgress(w), inL = (i, k) => profile.levels.some(l => l.kind == k && (i.levelId && String(l.levelId) == String(i.levelId) || l.name.toLowerCase() == i.name.toLowerCase()));
+    const w = currentWishlist(), p = wishlistProgress(w);
     return `<div class=bar><button data-act=home class=ic>${ICONS.back} ${t('back2')}</button><h2>${escapeHtml(w.name)} <small class=by>${p.d} / ${p.n} · <span class="s-${p.s}">${t('st_' + p.s)}</span></small></h2><span style="flex:1"></span><button class=pri data-act=wadd>${t('witem')}</button><button data-act=wren>${t('wren')}</button><button class=dg data-act=wdelL>${t('wdelL')}</button></div>${progressBar(w)}` + w.items.map(i => {
         const u = thumbUrl(i), id = escapeHtml(i.id);
-        return `<div class=card data-id="${id}" style="${u ? `background-image:url('${u}')` : ''}"><div class=nm>${escapeHtml(i.name)}${i.creator ? ` <small class=by>${t('by')} ${escapeHtml(i.creator)}</small>` : ''}</div><div class="mt wa"><div class=r1><select data-wi="${id}" aria-label="${t('status')}">${['todo', 'prog', 'done'].map(s => `<option value=${s} ${i.status == s ? 'selected' : ''}>${t('st_' + s)}</option>`).join('')}</select><select data-wd="${id}" aria-label="${t('diff')}"><option value="">${t('diff')}</option>${DIFFICULTIES.map(d => `<option ${i.diff == d ? 'selected' : ''}>${d}</option>`).join('')}</select></div><div class=r2>${i.status == 'done' ? `<button data-act=wto data-v=classic data-id="${id}">${inL(i, 'classic') ? '✓ ' : ''}${t('toC')}</button><button data-act=wto data-v=platform data-id="${id}">${inL(i, 'platform') ? '✓ ' : ''}${t('toP')}</button>` : ''}<button data-act=wedit data-id="${id}" aria-label="${t('edit')}">✎</button><button data-act=wdel data-id="${id}" aria-label="${t('del')}">✕</button></div></div></div>`;
+        return `<div class=card data-id="${id}" style="${u ? `background-image:url('${u}')` : ''}"><div class=nm>${escapeHtml(i.name)}${i.creator ? ` <small class=by>${t('by')} ${escapeHtml(i.creator)}</small>` : ''}</div><div class="mt wa"><div class=r1><select data-wi="${id}" aria-label="${t('status')}">${['todo', 'prog', 'done'].map(s => `<option value=${s} ${i.status == s ? 'selected' : ''}>${t('st_' + s)}</option>`).join('')}</select><select data-wd="${id}" aria-label="${t('diff')}"><option value="">${t('diff')}</option>${DIFFICULTIES.map(d => `<option ${i.diff == d ? 'selected' : ''}>${d}</option>`).join('')}</select></div><div class=r2>${i.status == 'done' ? `<button data-act=wto data-v=classic data-id="${id}">${isInList(i, 'classic') ? '✓ ' : ''}${t('toC')}</button><button data-act=wto data-v=platform data-id="${id}">${isInList(i, 'platform') ? '✓ ' : ''}${t('toP')}</button>` : ''}<button data-act=wedit data-id="${id}" aria-label="${t('edit')}">✎</button><button data-act=wdel data-id="${id}" aria-label="${t('del')}">✕</button></div></div></div>`;
     }).join('');
 }
 
