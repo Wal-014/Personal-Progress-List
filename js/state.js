@@ -17,6 +17,16 @@ const save = () => localStorage.gdp = JSON.stringify(store);
 /** Busca un nivel por id en el perfil activo. */
 const findLevel = id => profile.levels.find(l => l.id == id);
 
+/** Checks that imported data has the structure the app needs to render it. */
+function isValidProfileData(d) {
+    const isObj = v => v != null && typeof v == 'object', isList = (a, check = isObj) => Array.isArray(a) && a.every(check);
+    return isObj(d)
+        && isList(d.levels)
+        && isObj(d.order) && Array.isArray(d.order.classic) && Array.isArray(d.order.platform)
+        && (d.wishlists == null || isList(d.wishlists, w => isObj(w) && isList(w.items)))
+        && (d.tags == null || isList(d.tags));
+}
+
 /** Completa campos que puedan faltar en perfiles antiguos o importados. */
 function ensureProfileDefaults() {
     profile.wishlists = profile.wishlists || [];
