@@ -14,6 +14,9 @@ const safeUrl = u => /^https?:\/\//i.test(u || '') ? u : '';
 /** Generates an id that stays unique even when several are created in the same millisecond. */
 const newId = prefix => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
 
+/** Shows a stored YYYY-MM-DD date as DD/MM/YYYY, the format used across the app. */
+const formatDate = d => d ? d.split('-').reverse().join('/') : '';
+
 /** Muestra «-» cuando no hay dato. */
 const orDash = v => v == null || v === '' ? '-' : v;
 

@@ -24,8 +24,8 @@ function timelineHtml() {
             pts.push([l, c, y]);
         });
     });
-    return `<h3>${t('tl')} <button data-act=zo>−</button> <span>${Math.round(W / 28 * 100)}%</span> <button data-act=zi>+</button></h3><div style="display:flex"><svg width=58 height=370 style="flex:none">${gl.map(v => `<text x=54 y=${Y(v) + 4} font-size=10 text-anchor=end fill="var(--mut)">${v.toLocaleString()}</text>`).join('')}</svg><div id=tlw style="overflow-x:auto;flex:1"><svg width="${w}" height=370>${gl.map(v => `<line x1=0 x2=${w} y1=${Y(v)} y2=${Y(v)} stroke="var(--ln)" stroke-dasharray="${v == M ? '' : '4'}"/>`).join('')}<line x1=0 x2=${w} y1=290 y2=290 stroke="var(--mut)"/>
-${W >= 24 ? ds.map((d, c) => `<text transform="rotate(-60 ${X(c)} 302)" x=${X(c)} y=302 font-size=10 text-anchor=end fill="var(--mut)" pointer-events="none">${escapeHtml(d.split('-').reverse().join('/'))}</text>`).join('') : ''}
+    return `<h3>${t('tl')} <button data-act=zo>−</button> <span>${Math.round(W / 28 * 100)}%</span> <button data-act=zi>+</button></h3><div style="display:flex"><svg width=58 height=370 style="flex:none">${gl.map(v => `<text x=54 y=${Y(v) + 4} font-size=10 text-anchor=end fill="var(--mut)">${v.toLocaleString(ui.lang)}</text>`).join('')}</svg><div id=tlw style="overflow-x:auto;flex:1"><svg width="${w}" height=370>${gl.map(v => `<line x1=0 x2=${w} y1=${Y(v)} y2=${Y(v)} stroke="var(--ln)" stroke-dasharray="${v == M ? '' : '4'}"/>`).join('')}<line x1=0 x2=${w} y1=290 y2=290 stroke="var(--mut)"/>
+${W >= 24 ? ds.map((d, c) => `<text transform="rotate(-60 ${X(c)} 302)" x=${X(c)} y=302 font-size=10 text-anchor=end fill="var(--mut)" pointer-events="none">${escapeHtml(formatDate(d))}</text>`).join('') : ''}
 ${pts.map(([l, c, y]) => `<line x1=${X(c)} x2=${X(c)} y1=${y} y2=290 stroke="var(--a)" stroke-opacity=".35" stroke-dasharray="3 3" pointer-events="none"/>`).join('')}${pts.map(([l, c, y]) => `<circle class=pt data-id="${escapeHtml(l.id)}" cx=${X(c)} cy=${y} r=5 fill="var(--a)"/>${W >= 60 ? `<text x=${X(c) + 9} y=${y + 4} font-size=10 fill="var(--fg)" pointer-events="none">${escapeHtml(totalAttempts(l))}</text>` : ''}`).join('')}</svg></div></div>`;
 }
 
@@ -38,7 +38,7 @@ function stats() {
             yy[l.date.slice(0, 4)] = (yy[l.date.slice(0, 4)] || 0) + 1;
     });
     const tl = profile.levels.filter(l => l.date && totalAttempts(l) != null).sort((a, b) => a.date < b.date ? -1 : 1), W = ui.z, M = Math.max(1, ...tl.map(totalAttempts)), st = (k, v) => `<div class=st><small>${k}</small><b>${escapeHtml(v)}</b></div>`;
-    return `<div class=grid>${st(t('lv'), profile.levels.length)}${st(t('attT'), A.toLocaleString())}${st(t('hrs'), Math.round(H / 3600))}${st(t('avg'), L.length ? Math.round(A / L.length) : '-')}${mx ? st(t('most'), `${mx.name} · ${totalAttempts(mx)}`) : ''}</div>
+    return `<div class=grid>${st(t('lv'), profile.levels.length)}${st(t('attT'), A.toLocaleString(ui.lang))}${st(t('hrs'), Math.round(H / 3600))}${st(t('avg'), L.length ? Math.round(A / L.length) : '-')}${mx ? st(t('most'), `${mx.name} · ${totalAttempts(mx)}`) : ''}</div>
 ${timelineHtml()}
 <h3>${t('byD')}</h3>${bars(Object.fromEntries([...DIFFICULTIES, '-'].filter(k => dd[k]).map(k => [k, dd[k]])))}<h3>${t('byY')}</h3>${bars(yy)}`;
 }
