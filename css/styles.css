@@ -453,3 +453,253 @@ dialog.modal::backdrop {
     transform: none;
   }
 }
+
+/* ===== Top bar ===== */
+.top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 14px 20px 8px;
+}
+
+.top .logo {
+  display: block;
+  cursor: pointer;
+}
+
+.top .logo .i {
+  width: 40px;
+  height: 40px;
+}
+
+.top .sp {
+  flex: 1;
+}
+
+.bdg {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  min-width: 22px;
+  padding: 0 5px;
+  font-size: 13px;
+  line-height: 18px;
+  background: var(--rd);
+  border: 2px solid #000;
+  border-radius: 10px;
+}
+
+/* ===== Editor toolbar (wide screens) ===== */
+.toolbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 10px;
+  padding: 10px max(12px, calc((100vw - 1400px) / 2 + 20px)) calc(10px + env(safe-area-inset-bottom));
+  background: var(--tool);
+  border-top: 3px solid #000;
+  box-shadow: 0 -3px 0 rgba(255, 255, 255, .6);
+}
+
+.modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.mode {
+  min-height: 38px;
+  font-size: 15px;
+  padding: 4px 8px;
+}
+
+.palette {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 6px;
+}
+
+.pal {
+  flex-direction: column;
+  gap: 4px;
+  min-height: 82px;
+  padding: 8px 4px;
+  font: bold 12px Arial, Helvetica, sans-serif;
+  color: #e4e7f2;
+  -webkit-text-stroke: 0;
+  background: var(--pal);
+  border-width: 2px;
+  border-radius: 8px;
+  box-shadow: none;
+  text-align: center;
+}
+
+.pal .i {
+  width: 26px;
+  height: 26px;
+}
+
+.tabbar, .fab, .pause .mob {
+  display: none;
+}
+
+/* ===== Pause menu ===== */
+.pause h3 {
+  font-size: 16px;
+  margin: 14px 0 8px;
+}
+
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.swatch {
+  flex-direction: column;
+  min-height: 84px;
+  font-size: 14px;
+  background: rgba(0, 0, 0, .3);
+}
+
+.swatch i {
+  width: 100%;
+  height: 34px;
+  border: 2px solid #000;
+  border-radius: 6px;
+}
+
+.sw-blue i {
+  background: linear-gradient(rgba(0, 0, 0, .28) 1px, transparent 1px) 0 0 / 10px 10px, linear-gradient(#3a4cb0, #26337e);
+}
+
+.sw-night i {
+  background: linear-gradient(rgba(255, 255, 255, .06) 1px, transparent 1px) 0 0 / 10px 10px, linear-gradient(#1a1d33, #0c0e1c);
+}
+
+.sw-synth i {
+  background: linear-gradient(rgba(0, 0, 0, .3) 1px, transparent 1px) 0 0 / 10px 10px, linear-gradient(#5a1e7a, #2a0b45);
+}
+
+.swatch[aria-pressed=true] {
+  box-shadow: 0 0 0 3px var(--go);
+}
+
+.lang {
+  display: flex;
+  gap: 8px;
+}
+
+.lang button {
+  flex: 1;
+}
+
+.fl {
+  width: 22px;
+  height: 15px;
+  border: 1px solid #000;
+}
+
+.legal {
+  margin-top: 10px;
+  font: bold 13px Arial, Helvetica, sans-serif;
+}
+
+.lk {
+  color: #fff;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ===== Phones: tab bar + floating add button ===== */
+@media (max-width: 560px) {
+  :root {
+    --tb-h: 70px;
+  }
+
+  main {
+    padding: 4px 12px calc(var(--tb-h) + 28px + env(safe-area-inset-bottom));
+  }
+
+  .top {
+    padding: 10px 12px 6px;
+  }
+
+  .top h1 {
+    font-size: 19px;
+  }
+
+  .toolbar {
+    display: none;
+  }
+
+  .tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+    padding: 6px 6px calc(8px + env(safe-area-inset-bottom));
+    background: var(--tool);
+    border-top: 3px solid #000;
+    box-shadow: 0 -3px 0 rgba(255, 255, 255, .6);
+  }
+
+  .tab {
+    flex-direction: column;
+    gap: 2px;
+    min-height: 52px;
+    padding: 4px 0;
+    font: bold 10px Arial, Helvetica, sans-serif;
+    -webkit-text-stroke: 0;
+    background: none;
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  .tab.pri {
+    background: linear-gradient(var(--go1), var(--go2));
+    border-color: #000;
+  }
+
+  .fab {
+    position: fixed;
+    right: 14px;
+    bottom: calc(var(--tb-h) + 16px + env(safe-area-inset-bottom));
+    z-index: 31;
+    display: grid;
+    place-items: center;
+    width: 58px;
+    height: 58px;
+    padding: 0;
+    border-radius: 0;
+    background: #000;
+    box-shadow: inset 0 0 0 2px #fff, 0 6px 0 rgba(0, 0, 0, .4);
+  }
+
+  .fab .i {
+    width: 28px;
+    height: 28px;
+  }
+
+  .pause .mob {
+    display: block;
+  }
+
+  .pause .palette {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pause .pal[data-act=add] {
+    display: none;
+  }
+}

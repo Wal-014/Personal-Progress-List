@@ -23,9 +23,6 @@ const bellUI = () => {
     return `<div class=box><div><h2 class=ic>${ICONS.bell} ${t('bell')}</h2>${A.length ? A.map(a => `<p>• ${a}</p>`).join('') : `<p>${t('nonot')}</p>`}<p><button data-act=close>${t('close')}</button></p></div></div>`;
 };
 
-/** Pie de página con derechos de autor y enlaces legales. */
-const footer = () => `<footer class=ft><span>© ${new Date().getFullYear()} Retlaw · ${t('rights')}</span><nav>${['terms', 'privacy', 'credits'].map(k => `<a class=lk data-act=legal data-v=${k} role=button tabindex=0>${t(k)}</a>`).join(' · ')}</nav></footer>`;
-
 /** Ventana con términos, privacidad o créditos. */
 const legalUI = k => `<div class="box sm"><div><h3>${t(k)}</h3><p style="white-space:pre-wrap">${escapeHtml(t(k + 'Txt'))}</p><p class=dgb><button data-act=close>${t('close')}</button></p></div></div>`;
 

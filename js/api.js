@@ -109,7 +109,7 @@ async function syncWithAredl() {
         ui.sync = s;
         const b = qs('[data-act=sync]');
         if (b) {
-            b.textContent = '⟳ ' + s;
+            b.querySelector('.pl').textContent = s;
             b.disabled = true;
         }
     };

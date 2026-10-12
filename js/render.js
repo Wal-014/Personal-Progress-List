@@ -1,5 +1,5 @@
 /**
- * Dibuja la aplicación completa (cabecera, menú lateral, pantalla activa y pie de página).
+ * Draws the whole app (top bar, active screen and navigation).
  */
 
 /** Selector that finds the same control again after the page is rebuilt, or null when there is none. */
@@ -15,10 +15,10 @@ function controlSelector(el) {
 /** Dibuja toda la interfaz. Conserva el scroll de la lista cuando se redibuja la misma pantalla. */
 function render() {
     const focused = controlSelector(document.activeElement);
-    const A = alerts().length, sy = ui._t == ui.tab ? qs('#lw')?.scrollTop : 0, isL = ['classic', 'platform'].includes(ui.tab), optionList = (a, v) => a.map(x => `<option value="${x}" ${x == v ? 'selected' : ''}>${t(x)}</option>`).join(''), back = ti => `<div class=bar><button data-act=home class=ic>${ICONS.back} ${t('back2')}</button><h2>${ti}</h2></div>`;
+    const sy = ui._t == ui.tab ? qs('#lw')?.scrollTop : 0, isL = ['classic', 'platform'].includes(ui.tab);
     ui._t = ui.tab;
-    qs('#app').innerHTML = `<header><button data-act=menu aria-label="${t('opt')}" aria-expanded="${!!ui.menu}">☰</button><h1><span data-act=home role=button tabindex=0 style="cursor:pointer">◆ Personal Ranked Progress <small class=by>· ${escapeHtml(store.profs[store.cur].name)}</small></span></h1><button data-act=bell class=ic title="${t('bell')}" aria-label="${t('bell')}${A ? ` (${A})` : ''}">${ICONS.bell}${A ? `<b class=bdg>${A}</b>` : ''}</button></header>
-<div class="dr ${ui.menu ? 'open' : ''}" ${ui.menu ? '' : 'inert'}><div class=bk data-act=menu></div><aside><h2 class=sec>${t('opt')}</h2><select id=th aria-label="${t('theme')}">${optionList(['dark', 'light', 'synth'], ui.theme)}</select><div class=lang>${[['es', 'Español'], ['en', 'English']].map(([k, n]) => `<button data-act=lang data-v=${k} class="${ui.lang == k ? 'on' : ''}">${FLAGS[k]}${n}</button>`).join('')}</div><button data-act=tags>🏷 Tags</button><button data-act=sync ${ui.sync ? 'disabled' : ''}>⟳ ${ui.sync || t('syncL')}</button><small class=by style="margin-top:auto">Personal Ranked Progress · v1.0.0</small></aside></div><main class="${isL ? 'wide' : ''}">${ui.tab == 'wish' && currentWishlist() ? wishView() : isL ? back(t(ui.tab)) + `<div class=split><div class=lcol>${lcol()}</div><div class="rcol ${ui.sel ? 'has' : ''}">${panel()}</div></div>` : ui.tab == 'stats' ? back(t('stats')) + stats() : home()}</main>${footer()}`;
+    const screen = ui.tab == 'wish' && currentWishlist() ? wishView() : isL ? `<div class=split><div class=lcol>${lcol()}</div><div class="rcol ${ui.sel ? 'has' : ''}">${panel()}</div></div>` : ui.tab == 'stats' ? stats() : home();
+    qs('#app').innerHTML = `${topBar()}<main class="${isL ? 'wide' : ''}">${screen}</main>${navBars(isL)}`;
     document.documentElement.dataset.t = ui.theme;
     document.documentElement.lang = ui.lang;
     if (sy && qs('#lw'))
