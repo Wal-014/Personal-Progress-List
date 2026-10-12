@@ -2,10 +2,10 @@
  * Pantalla de Estadísticas: totales, cronograma de intentos y distribución por dificultad y año.
  */
 
-/** Barras horizontales simples (dificultad y año). */
+/** Horizontal bars (difficulty and year). */
 const bars = o => {
     const m = Math.max(1, ...Object.values(o));
-    return Object.entries(o).map(([k, v]) => `<div class=bar><span>${escapeHtml(k)}</span><i style="width:${v / m * 60}%;min-width:3px"></i>${v}</div>`).join('');
+    return Object.entries(o).map(([k, v]) => `<div class=hb><span>${escapeHtml(k)}</span><span class=tr><i style="width:${v / m * 100}%"></i></span><b>${v}</b></div>`).join('');
 };
 
 /** Cronograma SVG: intentos por nivel, ordenado por fecha, con zoom. */
@@ -24,9 +24,10 @@ function timelineHtml() {
             pts.push([l, c, y]);
         });
     });
-    return `<h3>${t('tl')} <button data-act=zo>−</button> <span>${Math.round(W / 28 * 100)}%</span> <button data-act=zi>+</button></h3><div style="display:flex"><svg width=58 height=370 style="flex:none">${gl.map(v => `<text x=54 y=${Y(v) + 4} font-size=10 text-anchor=end fill="var(--mut)">${v.toLocaleString(ui.lang)}</text>`).join('')}</svg><div id=tlw style="overflow-x:auto;flex:1"><svg width="${w}" height=370>${gl.map(v => `<line x1=0 x2=${w} y1=${Y(v)} y2=${Y(v)} stroke="var(--ln)" stroke-dasharray="${v == M ? '' : '4'}"/>`).join('')}<line x1=0 x2=${w} y1=290 y2=290 stroke="var(--mut)"/>
+    const line = [...pts].sort((a, b) => a[1] - b[1]).map(([, c, y]) => `${X(c)},${y}`).join(' ');
+    return `<h2 class=tlh>${t('tl')} <span class=zoom><button class=xs data-act=zo aria-label="${t('tl')} −">−</button><span class=by>${Math.round(W / 28 * 100)}%</span><button class=xs data-act=zi aria-label="${t('tl')} +">+</button></span></h2><div style="display:flex"><svg width=58 height=370 style="flex:none">${gl.map(v => `<text x=54 y=${Y(v) + 4} font-size=10 text-anchor=end fill="var(--mut)">${v.toLocaleString(ui.lang)}</text>`).join('')}</svg><div id=tlw style="overflow-x:auto;flex:1"><svg width="${w}" height=370>${gl.map(v => `<line x1=0 x2=${w} y1=${Y(v)} y2=${Y(v)} stroke="var(--ln)" stroke-dasharray="${v == M ? '' : '4'}"/>`).join('')}<line x1=0 x2=${w} y1=290 y2=290 stroke="#fff" stroke-width=2 />
 ${W >= 24 ? ds.map((d, c) => `<text transform="rotate(-60 ${X(c)} 302)" x=${X(c)} y=302 font-size=10 text-anchor=end fill="var(--mut)" pointer-events="none">${escapeHtml(formatDate(d))}</text>`).join('') : ''}
-${pts.map(([l, c, y]) => `<line x1=${X(c)} x2=${X(c)} y1=${y} y2=290 stroke="var(--a)" stroke-opacity=".35" stroke-dasharray="3 3" pointer-events="none"/>`).join('')}${pts.map(([l, c, y]) => `<circle class=pt data-id="${escapeHtml(l.id)}" cx=${X(c)} cy=${y} r=5 fill="var(--a)"/>${W >= 60 ? `<text x=${X(c) + 9} y=${y + 4} font-size=10 fill="var(--fg)" pointer-events="none">${escapeHtml(totalAttempts(l))}</text>` : ''}`).join('')}</svg></div></div>`;
+<polyline points="${line}" fill=none stroke="#000" stroke-width=7 stroke-linejoin=round pointer-events=none /><polyline points="${line}" fill=none stroke="var(--a)" stroke-width=3 stroke-linejoin=round pointer-events=none />${pts.map(([l, c, y]) => `<rect class=pt data-id="${escapeHtml(l.id)}" x=${X(c) - 6} y=${y - 6} width=12 height=12 fill="#fff" stroke="#000" stroke-width=2.5 />${W >= 60 ? `<text x=${X(c) + 10} y=${y + 4} font-size=11 font-weight=bold fill="#fff" pointer-events="none">${escapeHtml(totalAttempts(l))}</text>` : ''}`).join('')}</svg></div></div>`;
 }
 
 /** Pantalla de Estadísticas. */
@@ -37,8 +38,7 @@ function stats() {
         if (l.date)
             yy[l.date.slice(0, 4)] = (yy[l.date.slice(0, 4)] || 0) + 1;
     });
-    const st = (k, v) => `<div class=st><small>${k}</small><b>${escapeHtml(v)}</b></div>`;
-    return `<div class=grid>${st(t('lv'), profile.levels.length)}${st(t('attT'), A.toLocaleString(ui.lang))}${st(t('hrs'), Math.round(H / 3600))}${st(t('avg'), L.length ? Math.round(A / L.length) : '-')}${mx ? st(t('most'), `${mx.name} · ${totalAttempts(mx)}`) : ''}</div>
-${timelineHtml()}
-<h3>${t('byD')}</h3>${bars(Object.fromEntries([...DIFFICULTIES, '-'].filter(k => dd[k]).map(k => [k, dd[k]])))}<h3>${t('byY')}</h3>${bars(yy)}`;
+    const st = (k, v, c = '') => `<div class="kpi ${c}"><small>${k}</small><b>${escapeHtml(v)}</b></div>`;
+    return `<div class=kpis>${st(t('lv'), profile.levels.length)}${st(t('attT'), A.toLocaleString(ui.lang), 'y')}${st(t('hrs'), Math.round(H / 3600))}${st(t('avg'), L.length ? Math.round(A / L.length).toLocaleString(ui.lang) : '-')}${mx ? st(t('most'), `${mx.name} · ${totalAttempts(mx).toLocaleString(ui.lang)}`, 'sm') : ''}</div>
+<div class=stats2><div class=well>${timelineHtml()}</div><div class=side><div class="well d"><h2>${t('byD')}</h2>${bars(Object.fromEntries([...DIFFICULTIES, '-'].filter(k => dd[k]).map(k => [k, dd[k]])))}</div><div class="well y"><h2>${t('byY')}</h2>${bars(yy)}</div></div></div>`;
 }
