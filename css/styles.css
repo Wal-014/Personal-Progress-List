@@ -1161,3 +1161,51 @@ dialog.modal::backdrop {
     gap: 8px;
   }
 }
+
+/* ===== Level form ===== */
+.num {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  gap: 4px;
+}
+
+.num button {
+  min-height: 40px;
+  padding: 0;
+  font-size: 22px;
+}
+
+.num input {
+  text-align: center;
+}
+
+input.ro {
+  opacity: .75;
+}
+
+.box textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.warn {
+  margin-bottom: 8px;
+  font: bold 13px Arial, Helvetica, sans-serif;
+  color: var(--ye);
+}
+
+.warn:empty {
+  display: none;
+}
+
+.tgr, #tgs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.box input::placeholder, .box textarea::placeholder {
+  color: var(--plab);
+  opacity: .55;
+}
