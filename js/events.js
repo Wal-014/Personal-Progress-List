@@ -22,7 +22,7 @@ document.body.onclick = e => {
     }
     if (a) {
         const k = a.dataset.act, id = a.dataset.id;
-        if (a.closest('.pause') && ['wnew', 'tags', 'sync', 'exp', 'imp', 'legal'].includes(k))
+        if (a.closest('.pause') && ['wnew', 'tags', 'exp', 'imp', 'legal'].includes(k))
             closeModal();
         if (k == 'tab') {
             ui.tab = a.dataset.v;
@@ -154,7 +154,7 @@ document.body.onclick = e => {
             return openModal(tagsUI());
         }
         else if (k == 'sync')
-            return syncWithAredl();
+            return syncWithAredl(true);
         else if (k == 'pnew') {
             askText(t('pname'), '').then(n => {
                 if (!n)
@@ -173,6 +173,7 @@ document.body.onclick = e => {
             store.cur = id;
             profile = store.profs[id].data;
             ensureProfileDefaults();
+            matchWithAredl(profile.levels);
             ui.wl = null;
             save();
         }
@@ -327,6 +328,7 @@ document.body.onsubmit = e => {
     Object.assign(o, { name: g.name.trim(), kind: g.kind, levelId: g.lid || null, creator: g.creator || null, diff: g.diff || null, attC: N('attC'), attN: N('attN'), date: g.date || null, link: g.link || null, enj: C('enj'), lik: C('lik'), tN: parseDuration(g.tN), tP: parseDuration(g.tP), tPC: parseDuration(g.tPC), notes: g.notes, tags: new FormData(e.target).getAll('tg'), deaths: parseDeaths(g.deaths), ar: { s: g.as, p: g.as == 'r' ? N('ap') : null } });
     if (!old)
         profile.levels.push(o);
+    matchWithAredl([o]);
     for (const k in profile.order)
         profile.order[k] = profile.order[k].filter(x => x != o.id);
     if (g.pos && !isPre(o)) {
@@ -431,6 +433,7 @@ document.body.onchange = e => {
                     store.cur = id;
                     profile = d;
                     ensureProfileDefaults();
+                    matchWithAredl(profile.levels);
                     save();
                     render();
                 });

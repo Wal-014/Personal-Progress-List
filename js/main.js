@@ -13,6 +13,11 @@
     render();
     if (storeWasUnreadable)
         showAlert(t('dataUnreadable'));
+    autoSyncIfStale();
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState == 'visible')
+            autoSyncIfStale();
+    });
     if ('serviceWorker' in navigator) {
         // Reload only when a new version replaces the one serving this page, not when the first install takes control
         let reloadOnUpdate = !!navigator.serviceWorker.controller;
