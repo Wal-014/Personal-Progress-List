@@ -121,7 +121,7 @@ document.body.onclick = e => {
             return openModal(tagsUI());
         else if (k == 'tdel') {
             const ix = +a.dataset.i;
-            askConfirm(t('confirmTag')).then(ok => {
+            askConfirm(t(profile.tags[ix].name == PRE_TAG ? 'preTagConfirm' : 'confirmTag')).then(ok => {
                 if (!ok)
                     return;
                 const n = profile.tags.splice(ix, 1)[0].name;
@@ -371,12 +371,25 @@ document.body.onchange = e => {
             e.target.value = g.name;
             return showAlert(t(v ? 'tagExists' : 'tagEmpty'));
         }
-        profile.levels.forEach(l => l.tags = (l.tags || []).map(x => x == g.name ? v : x));
-        if (ui.tag == g.name)
-            ui.tag = v;
-        g.name = v;
-        save();
-        render();
+        const rename = () => {
+            const wasPre = g.name == PRE_TAG;
+            profile.levels.forEach(l => l.tags = (l.tags || []).map(x => x == g.name ? v : x));
+            if (ui.tag == g.name)
+                ui.tag = v;
+            g.name = v;
+            save();
+            render();
+            if (wasPre || v == PRE_TAG)
+                openModal(tagsUI());
+        };
+        if (g.name != PRE_TAG || v == g.name)
+            return rename();
+        askConfirm(t('preTagConfirm')).then(ok => {
+            if (ok)
+                rename();
+            else
+                e.target.value = g.name;
+        });
         return;
     }
     if (e.target.form?.id == 'fm') {
