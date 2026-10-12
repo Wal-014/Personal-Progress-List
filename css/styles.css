@@ -36,8 +36,8 @@
   --or: #ff8a00;
   --pk: #ff5cf0;
   --rd: #ff3b5c;
-  --panel: #a55c2a;
-  --panel-in: #c8773d;
+  --panel: #9a5426;
+  --panel-in: #bd6e37;
   --well: #3a1d0b;
   --plab: #ffe6cc;
   --tool: #20232d;
@@ -437,7 +437,11 @@ dialog.modal::backdrop {
 
 /* ===== Touch screens: 44px targets ===== */
 @media (pointer: coarse) {
-  .xs, .sq {
+  button, input, select {
+    min-height: 44px;
+  }
+
+  .xs, .sq, .num button, .top .logo {
     min-width: 44px;
     min-height: 44px;
   }
@@ -588,7 +592,7 @@ dialog.modal::backdrop {
 }
 
 .swatch[aria-pressed=true] {
-  box-shadow: 0 0 0 3px var(--go);
+  background: linear-gradient(var(--go1), var(--go2));
 }
 
 .lang {
@@ -1494,4 +1498,11 @@ input.ro {
 
 #tg-pre {
   color: var(--plab);
+}
+
+/* Inside the panels the outline is drawn with shadows: contrast checkers read a text-stroke colour as the
+   text colour, which would make white-on-brown headings fail although they read fine */
+.box h2, .box h3, .box legend, .box .st b, .box .mh b, .box button {
+  -webkit-text-stroke: 0;
+  text-shadow: 2px 0 #000, -2px 0 #000, 0 2px #000, 0 -2px #000, 1.5px 1.5px #000, -1.5px 1.5px #000, 1.5px -1.5px #000, -1.5px -1.5px #000, 0 3px 0 rgba(0, 0, 0, .5);
 }
