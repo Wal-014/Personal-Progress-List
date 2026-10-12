@@ -15,7 +15,7 @@ document.body.onclick = e => {
     }
     if (a) {
         const k = a.dataset.act, id = a.dataset.id;
-        if (k != 'menu' && ui.menu) {
+        if (k != 'menu' && k != 'sync' && ui.menu) {
             ui.menu = 0;
             render();
         }

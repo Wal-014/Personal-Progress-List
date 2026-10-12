@@ -34,10 +34,10 @@ function similarAredlNames(name, kind) {
     return n ? namedAredlLevels(kind).filter(x => normalizeName(x.n).includes(n)).slice(0, 3).map(x => x.n) : [];
 }
 
-/** Descarga la lista de la AREDL y de la AREPL si todavía no está en caché (o siempre, con force). */
+/** Descarga la lista de la AREDL y de la AREPL si todavía no está en caché (o siempre, con force). Returns true when fresh lists arrived. */
 async function loadAredlList(force) {
     if (aredlCache.length && !force)
-        return;
+        return false;
     const get = async (q) => {
         try {
             const r = await (await fetch(AREDL_API + q)).json();
@@ -52,6 +52,7 @@ async function loadAredlList(force) {
         aredlCache = fresh;
     if (aredlCache.length)
         localStorage.gar = JSON.stringify(aredlCache);
+    return fresh.length > 0;
 }
 
 /** The lists are downloaded again at most once per visit to look for levels missing from the cache. */
@@ -101,23 +102,21 @@ let aredlCache = JSON.parse(localStorage.gar || '[]');
 
 /** Actualiza ID, puesto y publisher de todos los niveles del perfil desde la AREDL. */
 async function syncWithAredl() {
-    const b = qs('[data-act=sync]');
+    if (ui.sync)
+        return;
+    // Progress lives in ui.sync so it survives re-renders; the button is looked up again every time.
+    const progress = s => {
+        ui.sync = s;
+        const b = qs('[data-act=sync]');
+        if (b) {
+            b.textContent = '⟳ ' + s;
+            b.disabled = true;
+        }
+    };
     try {
-        b.textContent = '⟳ …';
-        const get = async (p) => {
-            try {
-                const r = await (await fetch(AREDL_API + p)).json();
-                return Array.isArray(r) ? r : r.data || [];
-            }
-            catch (e) {
-                return [];
-            }
-        };
-        const [d, p] = await Promise.all([get('aredl/levels'), get('arepl/levels')]);
-        if (!d.length && !p.length)
+        progress('…');
+        if (!await loadAredlList(true))
             throw Error('no response');
-        aredlCache = [...d.map(x => ({ k: 'd', i: x.level_id, n: String(x.name), p: x.position, u: nm(x.publisher) })), ...p.map(x => ({ k: 'p', i: x.level_id, n: String(x.name), p: x.position, u: nm(x.publisher) }))];
-        localStorage.gar = JSON.stringify(aredlCache);
         const by = new Map();
         aredlCache.forEach(x => {
             by.set(x.k + x.i, x);
@@ -136,11 +135,8 @@ async function syncWithAredl() {
             }
         });
         const todo = hit.filter(l => !l.creator);
-        let j = 0, pc = 0, smp = '';
-        const dg = s => {
-            if (smp.length < 500)
-                smp += ' ' + s;
-        }, sleep = ms => new Promise(s => setTimeout(s, ms));
+        let j = 0, pc = 0;
+        const sleep = ms => new Promise(s => setTimeout(s, ms));
         const fetchJson = async (u) => {
             for (let i = 0; i < 4; i++) {
                 const r = await fetch(u);
@@ -155,27 +151,27 @@ async function syncWithAredl() {
         await Promise.all(Array.from({ length: 4 }, async () => {
             while (j < todo.length) {
                 const l = todo[j++];
-                b.textContent = `⟳ ${j}/${todo.length}`;
+                progress(`${j}/${todo.length}`);
                 try {
                     const x = await fetchJson(AREDL_API + (l.kind == 'platform' ? 'arepl' : 'aredl') + '/levels/' + l.levelId), u = x && nm(x.publisher);
                     if (u) {
                         l.creator = u;
                         pc++;
                     }
-                    else
-                        dg(x ? 'publisher=' + JSON.stringify(x.publisher) : 'detail=null');
                 }
                 catch (e) {
-                    dg('err:' + e.message);
                 }
                 await sleep(250);
             }
         }));
         save();
+        ui.sync = '';
         render();
-        showAlert(`${t('ok')}: ${n}/${profile.levels.length}\nAREDL ${d.length} · AREPL ${p.length}\n${t('creator')}: ${pc}/${todo.length}${pc == todo.length ? '' : '\n' + smp}`);
+        const count = k => aredlCache.filter(x => x.k == k).length;
+        showAlert(`${t('ok')}: ${n}/${profile.levels.length}\nAREDL ${count('d')} · AREPL ${count('p')}\n${t('creator')}: ${pc}/${todo.length}`);
     }
     catch (e) {
+        ui.sync = '';
         render();
         showAlert('AREDL: ' + e.message);
     }
