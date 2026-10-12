@@ -11,6 +11,8 @@
     }
     ensureProfileDefaults();
     render();
+    if (storeWasUnreadable)
+        showAlert(t('dataUnreadable'));
     if ('serviceWorker' in navigator) {
         let rl;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
