@@ -262,8 +262,10 @@ document.body.onclick = e => {
         else if (k == 'exp') {
             const pr = store.profs[id || store.cur], u = URL.createObjectURL(new Blob([JSON.stringify({ ...pr.data, profileName: pr.name })], { type: 'application/json' })), x = document.createElement('a');
             x.href = u;
-            x.download = pr.name.replace(/\W+/g, '-') + '.json';
+            // Only characters that file systems reject are replaced, so accents and non-Latin names survive
+            x.download = (pr.name.trim().replace(/[\/:*?"<>|\s]+/g, '-') || 'profile') + '.json';
             x.click();
+            setTimeout(() => URL.revokeObjectURL(u), 1000);
             return;
         }
         return render();
