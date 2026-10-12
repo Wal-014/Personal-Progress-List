@@ -76,7 +76,7 @@ const thumbUrl = l => /^\d+$/.test(l.levelId) ? `https://levelthumbs.prevter.me/
 /** Texto del puesto en la AREDL / AREPL. */
 const aredlLabel = l => {
     const L = l.kind == 'platform' ? 'AREPL' : 'AREDL';
-    return l.ar?.s == 'r' ? `${L} #${escapeHtml(l.ar.p)}` : l.ar?.s == 'p' ? t('pending') : l.ar?.s == 'n' ? t('notin') : L + ' -';
+    return l.ar?.s == 'r' ? (l.ar.p != null ? `${L} #${escapeHtml(l.ar.p)}` : `${L} · ${t('onl')}`) : l.ar?.s == 'p' ? t('pending') : l.ar?.s == 'n' ? t('notin') : L + ' -';
 };
 
 /** Color asignado a un tag. */

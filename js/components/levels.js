@@ -125,7 +125,7 @@ function selectLevel(id) {
 function validateAgainstAredl(f) {
     const q = k => f.elements[k], w = qs('#wn');
     const name = q('name').value.trim(), id = q('lid').value.trim(), kind = q('kind').value == 'platform' ? 'p' : 'd';
-    const m = id ? aredlCache.find(x => String(x.i) == id) : findAredlByName(name, kind);
+    const m = id ? aredlCache.find(x => x.k == kind && String(x.i) == id) : findAredlByName(name, kind);
     if (m) {
         if (!id)
             q('lid').value = m.i;
