@@ -54,13 +54,17 @@ async function loadAredlList(force) {
         localStorage.gar = JSON.stringify(aredlCache);
 }
 
+/** The lists are downloaded again at most once per visit to look for levels missing from the cache. */
+let aredlReloadedForMissing = false;
+
 /** Completa ID y publisher de un nivel de wishlist consultando la AREDL. */
 async function enrichWishlistItem(it) {
     try {
         await loadAredlList();
         const find = () => it.levelId ? aredlCache.find(x => String(x.i) == String(it.levelId)) : findAredlByName(it.name, 'd') || findAredlByName(it.name, 'p');
         let m = find();
-        if (!m) {
+        if (!m && !aredlReloadedForMissing) {
+            aredlReloadedForMissing = true;
             await loadAredlList(true);
             m = find();
         }
