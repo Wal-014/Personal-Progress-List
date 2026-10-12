@@ -387,9 +387,15 @@ document.body.onchange = e => {
         const f = e.target.files[0];
         if (f)
             f.text().then(x => {
-                const d = JSON.parse(x);
-                if (!d.levels)
-                    return showAlert('JSON?');
+                let d;
+                try {
+                    d = JSON.parse(x);
+                }
+                catch {
+                    return showAlert(t('badFile'));
+                }
+                if (!isValidProfileData(d))
+                    return showAlert(t('badFile'));
                 askText(t('pname'), d.profileName || f.name.replace(/\.json$/, '')).then(n => {
                     if (!n)
                         return;
