@@ -87,6 +87,12 @@ textarea {
   font: inherit;
 }
 
+/* Invalid fields are marked once the user has interacted with them */
+form input:user-invalid,
+form textarea:user-invalid {
+  border-color: #ff4d5e;
+}
+
 button {
   cursor: pointer;
   transition: .2s;

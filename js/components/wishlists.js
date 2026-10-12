@@ -28,6 +28,6 @@ function wishView() {
 
 /** Formulario para añadir o editar un nivel de wishlist. */
 function wform(i) {
-    const f = (k, l, v) => `<div><label>${t(l)}</label><input name=${k} value="${escapeHtml(v)}"></div>`;
-    return `<div class="box sm"><div><form id=wf data-id="${escapeHtml(i?.id)}"><div class=grid>${f('name', 'name', i?.name)}${f('lid', 'lid', i?.levelId)}${f('creator', 'creator', i?.creator)}<div><label>${t('diff')}</label><select name=diff><option value="">-</option>${DIFFICULTIES.map(d => `<option ${i?.diff == d ? 'selected' : ''}>${d}</option>`).join('')}</select></div></div><p><button>${t('save')}</button> <button type=button data-act=close>${t('close')}</button></p></form></div></div>`;
+    const f = (k, l, v, x = '') => `<div><label>${t(l)}</label><input name=${k} ${x} value="${escapeHtml(v)}"></div>`;
+    return `<div class="box sm"><div><form id=wf data-id="${escapeHtml(i?.id)}"><div class=grid>${f('name', 'name', i?.name, 'required')}${f('lid', 'lid', i?.levelId, 'inputmode=numeric')}${f('creator', 'creator', i?.creator)}<div><label>${t('diff')}</label><select name=diff><option value="">-</option>${DIFFICULTIES.map(d => `<option ${i?.diff == d ? 'selected' : ''}>${d}</option>`).join('')}</select></div></div><p><button>${t('save')}</button> <button type=button data-act=close>${t('close')}</button></p></form></div></div>`;
 }

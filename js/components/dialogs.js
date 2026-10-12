@@ -40,7 +40,15 @@ function showDialog({ title, msg, input, def, ok, cancel, danger }) {
         const i = m.querySelector('#dgi'), done = v => {
             m.remove();
             res(v);
+        }, accept = () => {
+            if (i && !i.value.trim()) {
+                i.setCustomValidity(t('errName'));
+                return i.reportValidity();
+            }
+            done(i ? i.value.trim() : true);
         };
+        if (i)
+            i.oninput = () => i.setCustomValidity('');
         if (i) {
             i.focus();
             i.select();
@@ -51,13 +59,13 @@ function showDialog({ title, msg, input, def, ok, cancel, danger }) {
             e.stopPropagation();
             const r = e.target.dataset.r;
             if (r != null)
-                done(r == '1' ? (i ? i.value.trim() : true) : (i ? null : false));
+                r == '1' ? accept() : done(i ? null : false);
         };
         m.onkeydown = e => {
             e.stopPropagation();
             if (e.key == 'Enter') {
                 e.preventDefault();
-                done(i ? i.value.trim() : true);
+                accept();
             }
             if (e.key == 'Escape')
                 done(i ? null : false);
