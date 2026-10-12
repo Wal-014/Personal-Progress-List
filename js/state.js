@@ -32,7 +32,7 @@ let store = loadStore();
 let profile = store && store.profs[store.cur].data;
 
 /** Estado de la interfaz: pantalla, selección, búsqueda, tema e idioma. */
-let ui = { tab: 'home', menu: 0, wl: null, q: '', tag: '', z: 28, lang: localStorage.gl || 'es', theme: localStorage.gt || 'dark' };
+let ui = { tab: 'home', wl: null, q: '', tag: '', z: 28, lang: localStorage.gl || 'es', theme: themeOf(localStorage.gt) };
 
 /** Guarda todos los perfiles en localStorage. */
 const save = () => localStorage.gdp = JSON.stringify(store);
