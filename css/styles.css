@@ -1374,10 +1374,11 @@ input.ro {
   gap: 8px;
 }
 
-/* Rows share the list's columns so the selects line up whether or not a row has the send buttons */
+/* Rows share the list's columns so the selects line up whether or not a row has the send buttons.
+   The first column is the 42px tile plus the row's 10px padding, which a subgrid adds to its edge tracks */
 .wl {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) minmax(0, 320px) auto;
+  grid-template-columns: 52px minmax(0, 1fr) minmax(0, 360px) auto;
   gap: 8px;
 }
 
@@ -1436,7 +1437,7 @@ input.ro {
 
 @media (max-width: 760px) {
   .wl {
-    grid-template-columns: 42px minmax(0, 1fr);
+    grid-template-columns: 52px minmax(0, 1fr);
   }
 
   .wsel, .wact {
