@@ -32,12 +32,14 @@ const legalUI = k => `<div class="box sm"><div><h3>${t(k)}</h3><p style="white-s
 /** Diálogo propio que devuelve una promesa (sustituye a alert, confirm y prompt). */
 function showDialog({ title, msg, input, def, ok, cancel, danger }) {
     return new Promise(res => {
-        const m = document.createElement('div');
+        const m = document.createElement('dialog');
         m.className = 'modal';
-        m.style.zIndex = 30;
-        m.innerHTML = `<div class="box sm"><div><h3>${escapeHtml(title || '')}</h3>${msg ? `<p style="white-space:pre-wrap">${escapeHtml(msg)}</p>` : ''}${input ? `<input id=dgi value="${escapeHtml(def || '')}" style="width:100%">` : ''}<p class=dgb>${cancel === false ? '' : `<button data-r=0>${t('cancel')}</button>`}<button class="${danger ? 'dg' : 'pri'}" data-r=1>${ok || t('ok2')}</button></p></div></div>`;
+        m.setAttribute('aria-labelledby', 'dgt');
+        m.innerHTML = `<div class="box sm"><div><h3 id=dgt>${escapeHtml(title || '')}</h3>${msg ? `<p style="white-space:pre-wrap">${escapeHtml(msg)}</p>` : ''}${input ? `<input id=dgi aria-labelledby=dgt value="${escapeHtml(def || '')}" style="width:100%">` : ''}<p class=dgb>${cancel === false ? '' : `<button data-r=0>${t('cancel')}</button>`}<button class="${danger ? 'dg' : 'pri'}" data-r=1>${ok || t('ok2')}</button></p></div></div>`;
         document.body.appendChild(m);
+        m.showModal();
         const i = m.querySelector('#dgi'), done = v => {
+            m.close();
             m.remove();
             res(v);
         }, accept = () => {
@@ -84,13 +86,23 @@ const showAlert = msg => showDialog({ title: msg, cancel: false });
 
 /** Abre una ventana modal. */
 const openModal = h => {
-    qs('#md').innerHTML = `<div class=modal>${h}</div>`;
+    qs('#md').innerHTML = `<dialog class=modal>${h}</dialog>`;
+    const d = qs('#md dialog'), title = d.querySelector('h2, h3');
+    if (title) {
+        title.id = 'mdt';
+        d.setAttribute('aria-labelledby', 'mdt');
+    }
+    d.addEventListener('close', () => d.remove());
+    d.showModal();
 };
 
 /** Cierra la ventana modal. */
-const closeModal = () => qs('#md').innerHTML = '';
+const closeModal = () => {
+    qs('#md dialog')?.close();
+    qs('#md').innerHTML = '';
+};
 
 /** Gestor de tags: crear, renombrar, cambiar color y eliminar. */
 function tagsUI() {
-    return `<div class=box><div><h2>${t('tagsT')}</h2>${profile.tags.map((g, i) => `<p class=trow><input type=color data-tc=${i} value="${escapeHtml(g.color)}"><input data-tn=${i} value="${escapeHtml(g.name)}"><button data-act=tdel data-i=${i}>✕</button></p>`).join('')}<p class=trow><input type=color id=nc value="#00e5ff"><input id=nn placeholder="${t('newTag')}"><button data-act=tadd>${t('add')}</button></p><p><button data-act=close>${t('close')}</button></p></div></div>`;
+    return `<div class=box><div><h2>${t('tagsT')}</h2>${profile.tags.map((g, i) => `<p class=trow><input type=color data-tc=${i} value="${escapeHtml(g.color)}" aria-label="${t('color')} · ${escapeHtml(g.name)}"><input data-tn=${i} value="${escapeHtml(g.name)}" aria-label="${t('name')}"><button data-act=tdel data-i=${i} aria-label="${t('del')} · ${escapeHtml(g.name)}">✕</button></p>`).join('')}<p class=trow><input type=color id=nc value="#00e5ff" aria-label="${t('color')}"><input id=nn placeholder="${t('newTag')}" aria-label="${t('newTag')}"><button data-act=tadd>${t('add')}</button></p><p><button data-act=close>${t('close')}</button></p></div></div>`;
 }
