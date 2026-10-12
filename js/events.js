@@ -2,11 +2,11 @@
  * Eventos globales: clics, formularios, teclado y tooltips. Cada acción se identifica con el atributo data-act.
  */
 
-/** Opens or closes the side menu, moving focus into it or back to the menu button. */
-function setMenu(open) {
-    ui.menu = open;
+/** Re-renders behind the pause menu and reopens it, keeping focus on the control that was used. */
+function reopenPause(selector) {
     render();
-    qs(open ? '#th' : '[data-act=menu]').focus();
+    openModal(pauseUI());
+    qs('#md ' + selector)?.focus();
 }
 
 document.body.onclick = e => {
@@ -22,10 +22,8 @@ document.body.onclick = e => {
     }
     if (a) {
         const k = a.dataset.act, id = a.dataset.id;
-        if (k != 'menu' && k != 'sync' && ui.menu) {
-            ui.menu = 0;
-            render();
-        }
+        if (a.closest('.pause') && ['wnew', 'tags', 'sync', 'exp', 'imp', 'legal'].includes(k))
+            closeModal();
         if (k == 'tab') {
             ui.tab = a.dataset.v;
             ui.tag = ui.q = '';
@@ -33,8 +31,12 @@ document.body.onclick = e => {
             ui.sel = null;
             ui.edit = 0;
         }
-        else if (k == 'menu')
-            return setMenu(!ui.menu);
+        else if (k == 'pause')
+            return openModal(pauseUI());
+        else if (k == 'theme') {
+            ui.theme = localStorage.gt = a.dataset.v;
+            return reopenPause(`[data-act=theme][data-v=${a.dataset.v}]`);
+        }
         else if (k == 'bell')
             return openModal(bellUI());
         else if (k == 'legal')
@@ -49,6 +51,8 @@ document.body.onclick = e => {
         }
         else if (k == 'lang') {
             ui.lang = localStorage.gl = a.dataset.v;
+            if (a.closest('.pause'))
+                return reopenPause(`[data-act=lang][data-v=${a.dataset.v}]`);
         }
         else if (k == 'zi' || k == 'zo') {
             const w = qs('#tlw'), r = (w.scrollLeft + w.clientWidth / 2) / w.scrollWidth;
@@ -59,6 +63,12 @@ document.body.onclick = e => {
             return;
         }
         else if (k == 'add') {
+            if (!['classic', 'platform'].includes(ui.tab)) {
+                closeModal();
+                ui.tab = 'classic';
+                ui.wl = null;
+                render();
+            }
             ui.sel = 'new';
             ui.edit = 1;
             renderPanel();
@@ -289,7 +299,7 @@ document.body.onclick = e => {
             render();
             scrollSel();
         }
-        else if (c.classList.contains('card'))
+        else if (c.classList.contains('lv'))
             selectLevel(c.dataset.id);
     }
 };
@@ -399,10 +409,7 @@ document.body.onchange = e => {
             validateAgainstAredl(e.target.form);
         return;
     }
-    if (i == 'th') {
-        ui.theme = localStorage.gt = e.target.value;
-    }
-    else if (i == 'fi') {
+    if (i == 'fi') {
         const f = e.target.files[0];
         if (f)
             f.text().then(x => {
@@ -429,17 +436,11 @@ document.body.onchange = e => {
                 });
             });
         e.target.value = '';
-        return;
     }
-    else
-        return;
-    render();
 };
 document.onkeydown = e => {
     if (e.key == 'Escape') {
         closeModal();
-        if (ui.menu)
-            setMenu(0);
     }
     if ((e.key == 'Enter' || e.key == ' ') && e.target.matches('[role=button]')) {
         e.preventDefault();

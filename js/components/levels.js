@@ -11,10 +11,13 @@ function meter(v, lab = '') {
     return hd(`<b style="color:${c}">${v > 0 ? '+' : ''}${escapeHtml(v)}</b>`) + `<div class="meter ${v >= 8 ? 'g' : ''}" style="color:${c}"><i style="background:${c};left:${v >= 0 ? 50 : 50 - p}%;width:${p}%"></i></div>`;
 }
 
-/** Tarjeta de un nivel en la lista. */
+/** A level row in the list, drawn as an editor object. */
 function card(l, i, n) {
-    const u = thumbUrl(l);
-    return `<div class="card ${i === 0 ? 'top1' : i === 1 ? 'top2' : i === 2 ? 'top3' : ''}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0 style="${u ? `background-image:url('${u}');` : ''}animation-delay:${Math.min(+i || 0, 14) * 30}ms"><div class=rk>${i == 'pre' ? `<b style="font-size:15px">${t('first')}</b>` : i != null ? `<b>#${i + 1}</b> / ${n}` : '<b>—</b>'}<small>${aredlLabel(l)}</small></div><div class=nm>${escapeHtml(l.name)}${l.creator || l.date ? ` <small class=by>${[l.creator ? t('by') + ' ' + escapeHtml(l.creator) : '', escapeHtml(formatDate(l.date))].filter(Boolean).join(' · ')}</small>` : ''}<div>${(l.tags || []).map(x => `<span class=chip data-tag="${escapeHtml(x)}" style="color:${tagColor(x)};border-color:${tagColor(x)}">${escapeHtml(x)}</span>`).join('')}</div></div><div class=mt>${meter(l.enj, t('enj'))}<div style="height:8px"></div>${meter(l.lik, t('lik'))}</div></div>`;
+    const u = thumbUrl(l), rank = i == 'pre' ? ICONS.classic : i != null ? i + 1 : '—';
+    const podium = i === 0 ? ' top1' : i === 1 ? ' top2' : i === 2 ? ' top3' : '';
+    const meta = [l.creator ? t('by') + ' ' + escapeHtml(l.creator) : '', escapeHtml(formatDate(l.date)), aredlLabel(l)].filter(Boolean).join(' · ');
+    const enj = l.enj == null ? '' : `<span class="badge${l.enj < 0 ? ' neg' : ''}" title="${t('enj')}" aria-label="${t('enj')} ${l.enj > 0 ? '+' : ''}${escapeHtml(l.enj)}">${l.enj > 0 ? '+' : ''}${escapeHtml(l.enj)}</span>`;
+    return `<div class="obj lv${podium}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${u ? ` style="--th:url('${u}')"` : ''}><span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + (i + 1) + ' / ' + n : t('unplaced')}">${rank}</span><div class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>${meta}</span>${l.tags?.length ? `<div>${l.tags.map(x => `<span class=chip data-tag="${escapeHtml(x)}" style="color:${tagColor(x)};border-color:${tagColor(x)}">${escapeHtml(x)}</span>`).join('')}</div>` : ''}</div>${enj}</div>`;
 }
 
 /** Ids of the ranked levels of a list, in order: Pre-Extremes levels and ids of deleted levels have no rank. */
@@ -26,7 +29,7 @@ const rankedIds = kind => profile.order[kind].filter(id => {
 /** Cuerpo de la lista: niveles colocados, sin colocar y primeros pasos. */
 function list() {
     const ids = profile.order[ui.tab], ok = l => (!ui.q || l.name.toLowerCase().includes(ui.q)) && (!ui.tag || (l.tags || []).includes(ui.tag)), all = profile.levels.filter(l => l.kind == ui.tab), pl = rankedIds(ui.tab).map(findLevel), un = all.filter(l => !ids.includes(l.id) && !isPre(l) && ok(l)), pre = all.filter(l => isPre(l) && ok(l));
-    return `<div id=lst>${pl.map((l, i) => ok(l) ? card(l, i, pl.length) : '').join('')}</div>${un.length ? `<h3>${t('unplaced')}</h3>` + un.map(l => card(l)).join('') : ''}${pre.length ? `<h3>${t('first')}</h3>` + pre.map(l => card(l, 'pre')).join('') : ''}${all.length ? '' : `<p>${t('empty')}</p>`}`;
+    return `<div id=lst>${pl.map((l, i) => ok(l) ? card(l, i, pl.length) : '').join('')}</div>${un.length ? `<h2 class=grp>${t('unplaced')}</h2>` + un.map(l => card(l)).join('') : ''}${pre.length ? `<h2 class=grp>${t('first')}</h2>` + pre.map(l => card(l, 'pre')).join('') : ''}${all.length ? '' : `<p class=by>${t('empty')}</p>`}`;
 }
 
 /** Panel con la información completa de un nivel. */
@@ -37,18 +40,18 @@ function detail(l) {
         h += `<b data-hp="${p}" data-hn="${escapeHtml(d[p] || 0)}"><i style="height:${(d[p] || 0) / mx * 100}%"></i></b>`;
         ax += `<span>${p % 10 == 0 || hi - lo < 12 ? p + '%' : ''}</span>`;
     }
-    return `<div class=box><div class=hero style="${u ? `background-image:linear-gradient(transparent 40%,var(--card)),url('${u}')` : ''}"></div><div><h2>${escapeHtml(l.name)}</h2><p style="color:var(--mut)">${escapeHtml(orDash(l.creator))} · ID ${escapeHtml(orDash(l.levelId))} · ${escapeHtml(orDash(l.diff))} · ${aredlLabel(l)}</p>
+    return `<div class=box>${u ? `<div class=hero style="background-image:url('${u}')"></div>` : ''}<h2>${escapeHtml(l.name)}</h2><p class=by>${escapeHtml(orDash(l.creator))} · ID ${escapeHtml(orDash(l.levelId))} · ${escapeHtml(orDash(l.diff))} · ${aredlLabel(l)}</p>
 <div class=dgrid>${sc('sa', `<div class=grid>${st('attT', orDash(totalAttempts(l)), 'big')}${st('attN', orDash(l.attN))}${st('attC', orDash(l.attC))}${st('best', ks.length ? `${hi}% ×${d[hi]}` : '-')}</div>`)}
 ${sc('sT', `<div class=grid>${st('tT', orDash(formatDuration(totalSeconds(l))), 'big')}${st('tN', orDash(formatDuration(l.tN)))}${st('tP', orDash(formatDuration(l.tP)))}${st('tPC', orDash(formatDuration(l.tPC)))}</div>`)}
-${sc('s4', `<div class=grid>${st('date', orDash(formatDate(l.date)))}</div>${y ? `<a class=yt target=_blank rel=noopener href="${escapeHtml(link)}"><img src="https://img.youtube.com/vi/${y}/hqdefault.jpg" alt=""><span>▶</span></a>` : link ? `<p><a style="color:var(--a)" target=_blank rel=noopener href="${escapeHtml(link)}">▶ ${t('link')}</a></p>` : ''}`)}
+${sc('s4', `<div class=grid>${st('date', orDash(formatDate(l.date)))}</div>${y ? `<a class=yt target=_blank rel=noopener href="${escapeHtml(link)}"><img src="https://img.youtube.com/vi/${y}/hqdefault.jpg" alt=""><span>${ICONS.play}</span></a>` : link ? `<p><a style="color:var(--a)" target=_blank rel=noopener href="${escapeHtml(link)}">${ICONS.play} ${t('link')}</a></p>` : ''}`)}
 ${sc('s5', `<div class=grid><div class=st><small>${t('enj')}</small>${meter(l.enj)}</div><div class=st><small>${t('lik')}</small>${meter(l.lik)}</div></div>`)}
 ${(l.tags?.length || l.notes) ? sc('sh', `${(l.tags || []).map(x => `<span class=chip data-tag="${escapeHtml(x)}" style="color:${tagColor(x)};border-color:${tagColor(x)}">${escapeHtml(x)}</span>`).join('')}${l.notes ? `<p style="white-space:pre-wrap">${escapeHtml(l.notes)}</p>` : ''}`) : ''}
 ${h ? sc('dh', `<div class=hist>${h}</div><div class=ax>${ax}</div>`) : ''}
-</div><p><button data-act=edit data-id="${escapeHtml(l.id)}">${t('edit')}</button> <button data-act=lvclose>${t('close')}</button></p></div></div>`;
+</div><p class=dgb><button class=blue data-act=edit data-id="${escapeHtml(l.id)}">${ICONS.edit} ${t('edit')}</button> <button data-act=lvclose>${t('close')}</button></p></div>`;
 }
 
 /** Etiqueta seleccionada dentro del formulario. */
-const tagChip = n => `<span class=chip data-act=tgrm data-v="${escapeHtml(n)}" style="color:${tagColor(n)};border-color:${tagColor(n)}">${escapeHtml(n)} ✕<input type=hidden name=tg value="${escapeHtml(n)}"></span>`;
+const tagChip = n => `<span class=chip data-act=tgrm data-v="${escapeHtml(n)}" style="color:${tagColor(n)};border-color:${tagColor(n)}">${escapeHtml(n)} ${ICONS.del}<input type=hidden name=tg value="${escapeHtml(n)}"></span>`;
 
 /** Recalcula intentos y tiempo totales mientras se edita. */
 function updateTotals(f) {
@@ -67,20 +70,20 @@ function renderTagSuggestions() {
 
 /** Formulario para añadir o editar un nivel. */
 function form(l) {
-    const f = (k, v, ty = 'text', x = '') => `<div><label for=fm-${k}>${t(k)}</label>${ty == 'number' && !x.includes('readonly') ? `<div class=num><button type=button data-act=step data-d=-1>−</button><input id=fm-${k} name=${k} type=number ${x} value="${escapeHtml(v)}"><button type=button data-act=step data-d=1>+</button></div>` : `<input id=fm-${k} name=${k} type=${ty} ${x} value="${escapeHtml(v)}"${x.includes('readonly') ? ' class=ro' : ''}>`}</div>`, kind = l?.kind || (['classic', 'platform'].includes(ui.tab) ? ui.tab : 'classic'), o = l || { tags: [], ar: { s: 'n' } }, pos = rankedIds(kind).indexOf(l?.id) + 1 || '', sec = (k, b) => `<fieldset><legend>${t(k)}</legend><div class=grid>${b}</div></fieldset>`, sel = (lab, nm, opts) => `<div><label for=fm-${nm}>${lab}</label><select id=fm-${nm} name=${nm}>${opts}</select></div>`;
-    return `<div class=box><div><form id=fm data-id="${escapeHtml(l?.id)}"><div class=warn id=wn></div>
+    const f = (k, v, ty = 'text', x = '') => `<div><label for=fm-${k}>${t(k)}</label>${ty == 'number' && !x.includes('readonly') ? `<div class=num><button type=button class=blue data-act=step data-d=-1 aria-label="−1">−</button><input id=fm-${k} name=${k} type=number ${x} value="${escapeHtml(v)}"><button type=button class=blue data-act=step data-d=1 aria-label="+1">+</button></div>` : `<input id=fm-${k} name=${k} type=${ty} ${x} value="${escapeHtml(v)}"${x.includes('readonly') ? ' class=ro' : ''}>`}</div>`, kind = l?.kind || (['classic', 'platform'].includes(ui.tab) ? ui.tab : 'classic'), o = l || { tags: [], ar: { s: 'n' } }, pos = rankedIds(kind).indexOf(l?.id) + 1 || '', sec = (k, b) => `<fieldset><legend>${t(k)}</legend><div class=grid>${b}</div></fieldset>`, sel = (lab, nm, opts) => `<div><label for=fm-${nm}>${lab}</label><select id=fm-${nm} name=${nm}>${opts}</select></div>`;
+    return `<div class=box><h2>${l ? t('edit') : t('palAdd')}</h2><form id=fm data-id="${escapeHtml(l?.id)}"><div class=warn id=wn></div>
 ${sec('s1', f('name', o.name, 'text', 'required') + f('lid', o.levelId, 'text', 'inputmode=numeric') + f('creator', o.creator) + sel(t('diff'), 'diff', '<option value="">-</option>' + DIFFICULTIES.map(d => `<option ${o.diff == d ? 'selected' : ''}>${d}</option>`).join('')) + sel(t('kind'), 'kind', ['classic', 'platform'].map(k => `<option value=${k} ${k == kind ? 'selected' : ''}>${t(k)}</option>`).join('')))}
 ${sec('s2', f('pos', pos, 'number', 'min=1 step=1') + sel('AREDL', 'as', [['r', t('onl')], ['n', t('notin')], ['p', t('pending')]].map(([k, v]) => `<option value=${k} ${o.ar?.s == k ? 'selected' : ''}>${v}</option>`).join('')) + f('ap', o.ar?.p, 'number', 'readonly tabindex=-1'))}
 ${sec('s3', f('attC', o.attC, 'number', 'min=0 step=1') + f('attN', o.attN, 'number', 'min=0 step=1') + f('tN', formatDuration(o.tN), 'text', 'placeholder="1h 30m 0s"') + f('tP', formatDuration(o.tP)) + f('tPC', formatDuration(o.tPC)) + f('attT', totalAttempts(o), 'number', 'readonly tabindex=-1') + f('tT', formatDuration(totalSeconds(o)), 'text', 'readonly tabindex=-1'))}
 ${sec('s4', f('date', o.date, 'date') + f('link', o.link))}
 <fieldset><legend>${t('s5')}</legend><div class=grid>${f('enj', o.enj, 'number', 'min=-10 max=10')}${f('lik', o.lik, 'number', 'min=-10 max=10')}</div><label for=tgq style="margin-top:12px">${t('tags')}</label><input id=tgq placeholder="${t('tgs')}" autocomplete=off><div id=tgr class=tgr></div><div id=tgs>${(o.tags || []).map(tagChip).join('')}</div></fieldset>
 <fieldset><legend>${t('s6')}</legend><label for=fm-notes>${t('notes')}</label><textarea id=fm-notes name=notes rows=3>${escapeHtml(o.notes)}</textarea><label for=fm-deaths style="margin-top:10px">${t('deaths')}</label><textarea id=fm-deaths name=deaths rows=5>${escapeHtml(Object.keys(o.deaths || {}).sort((a, b) => a - b).map(k => `${k}% x${o.deaths[k]}`).join('\n'))}</textarea></fieldset>
-<p><button>${t('save')}</button> <button type=button data-act=lvclose>${t('close')}</button> ${l ? `<button type=button data-act=del data-id="${escapeHtml(l.id)}">${t('del')}</button>` : ''}</p></form></div></div>`;
+<p class=dgb><button class=pri>${t('save')}</button> <button type=button data-act=lvclose>${t('close')}</button> ${l ? `<button type=button class=dg data-act=del data-id="${escapeHtml(l.id)}">${t('del')}</button>` : ''}</p></form></div>`;
 }
 
-/** Columna izquierda: buscador, botón de añadir y lista. */
+/** Left column: search, active tag filter and the list. */
 function lcol() {
-    return `<div class=lh><input id=q placeholder="${t('search')}" value="${escapeHtml(ui.q)}"><button class=pri data-act=add>${t('add')}</button></div>${ui.tag ? `<p><button data-act=ct>✕ ${escapeHtml(ui.tag)}</button></p>` : ''}<div id=lw>${list()}</div>`;
+    return `<div class=lh><input id=q type=search placeholder="${t('search')}" aria-label="${t('search')}" value="${escapeHtml(ui.q)}"></div>${ui.tag ? `<p><button class=xs data-act=ct aria-label="${t('del')} · ${escapeHtml(ui.tag)}">${ICONS.del}</button> <span class=chip style="color:${tagColor(ui.tag)};border-color:${tagColor(ui.tag)}">${escapeHtml(ui.tag)}</span></p>` : ''}<div id=lw>${list()}</div>`;
 }
 
 /** Columna derecha: información, formulario o mensaje vacío. */
@@ -100,7 +103,7 @@ function initSort() {
 }
 
 /** Desplaza la lista hasta el nivel seleccionado. */
-const scrollSel = () => document.querySelector('.card.sel')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+const scrollSel = () => document.querySelector('.lv.sel')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
 
 /** Redibuja solo la lista (conserva el scroll y el texto de búsqueda). */
 function renderList() {
@@ -120,10 +123,12 @@ function renderPanel() {
 function selectLevel(id) {
     ui.sel = id;
     ui.edit = 0;
-    document.querySelectorAll('.card.sel').forEach(c => c.classList.remove('sel'));
-    document.querySelector(`.card[data-id="${CSS.escape(id)}"]`)?.classList.add('sel');
+    document.querySelectorAll('.lv.sel').forEach(c => c.classList.remove('sel'));
+    document.querySelector(`.lv[data-id="${CSS.escape(id)}"]`)?.classList.add('sel');
     renderPanel();
-    if (innerWidth < 900)
+    if (innerWidth <= 560)
+        scrollTo({ top: 0 });
+    else if (innerWidth < 900)
         qs('.rcol').scrollIntoView({ behavior: 'smooth' });
 }
 

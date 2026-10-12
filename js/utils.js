@@ -91,3 +91,6 @@ const tagColor = n => {
 /** Los niveles con el tag «Pre-Extremes» se muestran aparte, en «Primeros pasos». */
 const PRE_TAG = 'Pre-Extremes';
 const isPre = l => (l.tags || []).includes(PRE_TAG);
+
+/** Theme to use for a saved preference: the removed dark and light themes map to their closest new theme. */
+const themeOf = v => ({ dark: 'night', light: 'blue' })[v] || (THEMES.includes(v) ? v : 'blue');

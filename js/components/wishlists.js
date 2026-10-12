@@ -20,17 +20,18 @@ const progressBar = w => {
     return `<div class=pb><i style="width:${p.n ? p.d / p.n * 100 : 0}%"></i></div>`;
 };
 
-/** Pantalla de una wishlist. */
+/** Wishlist screen. */
 function wishView() {
     const w = currentWishlist(), p = wishlistProgress(w);
-    return `<div class=bar><button data-act=home class=ic>${ICONS.back} ${t('back2')}</button><h2>${escapeHtml(w.name)} <small class=by>${p.d} / ${p.n} · <span class="s-${p.s}">${t('st_' + p.s)}</span></small></h2><span style="flex:1"></span><button class=pri data-act=wadd>${t('witem')}</button><button data-act=wren>${t('wren')}</button><button class=dg data-act=wdelL>${t('wdelL')}</button></div>${progressBar(w)}` + w.items.map(i => {
-        const u = thumbUrl(i), id = escapeHtml(i.id);
-        return `<div class=card data-id="${id}" style="${u ? `background-image:url('${u}')` : ''}"><div class=nm>${escapeHtml(i.name)}${i.creator ? ` <small class=by>${t('by')} ${escapeHtml(i.creator)}</small>` : ''}</div><div class="mt wa"><div class=r1><select data-wi="${id}" aria-label="${t('status')}">${['todo', 'prog', 'done'].map(s => `<option value=${s} ${i.status == s ? 'selected' : ''}>${t('st_' + s)}</option>`).join('')}</select><select data-wd="${id}" aria-label="${t('diff')}"><option value="">${t('diff')}</option>${DIFFICULTIES.map(d => `<option ${i.diff == d ? 'selected' : ''}>${d}</option>`).join('')}</select></div><div class=r2>${i.status == 'done' ? `<button data-act=wto data-v=classic data-id="${id}">${isInList(i, 'classic') ? '✓ ' : ''}${t('toC')}</button><button data-act=wto data-v=platform data-id="${id}">${isInList(i, 'platform') ? '✓ ' : ''}${t('toP')}</button>` : ''}<button data-act=wedit data-id="${id}" aria-label="${t('edit')}">✎</button><button data-act=wdel data-id="${id}" aria-label="${t('del')}">✕</button></div></div></div>`;
-    }).join('');
+    const item = i => {
+        const u = thumbUrl(i), id = escapeHtml(i.id), to = (k, label) => `<button class=xs-txt data-act=wto data-v=${k} data-id="${id}">${isInList(i, k) ? ICONS.check : ''}${t(label)}</button>`;
+        return `<div class="obj wi" data-id="${id}"${u ? ` style="--th:url('${u}')"` : ''}><span class="tg s-${i.status}">${ICONS.wish}</span><div class=info><span class=nm>${escapeHtml(i.name)}</span>${i.creator ? `<span class=by>${t('by')} ${escapeHtml(i.creator)}</span>` : ''}</div><div class=wsel><select data-wi="${id}" aria-label="${t('status')}">${['todo', 'prog', 'done'].map(s => `<option value=${s} ${i.status == s ? 'selected' : ''}>${t('st_' + s)}</option>`).join('')}</select><select data-wd="${id}" aria-label="${t('diff')}"><option value="">${t('diff')}</option>${DIFFICULTIES.map(d => `<option ${i.diff == d ? 'selected' : ''}>${d}</option>`).join('')}</select></div><div class=wact>${i.status == 'done' ? to('classic', 'toC') + to('platform', 'toP') : ''}<button class=xs data-act=wedit data-id="${id}" aria-label="${t('edit')}">${ICONS.edit}</button><button class="xs dg" data-act=wdel data-id="${id}" aria-label="${t('del')}">${ICONS.del}</button></div></div>`;
+    };
+    return `<div class=wh><div class=info><h2>${escapeHtml(w.name)}</h2><span class=by>${p.d} / ${p.n} · ${t('st_' + p.s)}</span>${progressBar(w)}</div><div class=wa><button class=pri data-act=wadd>${t('witem')}</button><button data-act=wren>${t('wren')}</button><button class=dg data-act=wdelL>${t('wdelL')}</button></div></div><div class=wl>${w.items.map(item).join('') || `<p class=by>${t('empty')}</p>`}</div>`;
 }
 
 /** Formulario para añadir o editar un nivel de wishlist. */
 function wform(i) {
     const f = (k, l, v, x = '') => `<div><label for=wf-${k}>${t(l)}</label><input id=wf-${k} name=${k} ${x} value="${escapeHtml(v)}"></div>`;
-    return `<div class="box sm"><div><form id=wf data-id="${escapeHtml(i?.id)}"><div class=grid>${f('name', 'name', i?.name, 'required')}${f('lid', 'lid', i?.levelId, 'inputmode=numeric')}${f('creator', 'creator', i?.creator)}<div><label for=wf-diff>${t('diff')}</label><select id=wf-diff name=diff><option value="">-</option>${DIFFICULTIES.map(d => `<option ${i?.diff == d ? 'selected' : ''}>${d}</option>`).join('')}</select></div></div><p><button>${t('save')}</button> <button type=button data-act=close>${t('close')}</button></p></form></div></div>`;
+    return `<div class="box sm"><h2>${i ? t('edit') : t('palAdd')}</h2><form id=wf data-id="${escapeHtml(i?.id)}"><div class=grid>${f('name', 'name', i?.name, 'required')}${f('lid', 'lid', i?.levelId, 'inputmode=numeric')}${f('creator', 'creator', i?.creator)}<div><label for=wf-diff>${t('diff')}</label><select id=wf-diff name=diff><option value="">-</option>${DIFFICULTIES.map(d => `<option ${i?.diff == d ? 'selected' : ''}>${d}</option>`).join('')}</select></div></div><p class=dgb><button class=pri>${t('save')}</button> <button type=button data-act=close>${t('close')}</button></p></form></div>`;
 }

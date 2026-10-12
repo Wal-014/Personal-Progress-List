@@ -20,14 +20,11 @@ function alerts() {
 /** Contenido de la campana de avisos. */
 const bellUI = () => {
     const A = alerts();
-    return `<div class=box><div><h2 class=ic>${ICONS.bell} ${t('bell')}</h2>${A.length ? A.map(a => `<p>• ${a}</p>`).join('') : `<p>${t('nonot')}</p>`}<p><button data-act=close>${t('close')}</button></p></div></div>`;
+    return `<div class=box><h2>${ICONS.bell} ${t('bell')}</h2>${A.length ? `<ul class=bl>${A.map(a => `<li>${a}</li>`).join('')}</ul>` : `<p>${t('nonot')}</p>`}<p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
 };
 
-/** Pie de página con derechos de autor y enlaces legales. */
-const footer = () => `<footer class=ft><span>© ${new Date().getFullYear()} Retlaw · ${t('rights')}</span><nav>${['terms', 'privacy', 'credits'].map(k => `<a class=lk data-act=legal data-v=${k} role=button tabindex=0>${t(k)}</a>`).join(' · ')}</nav></footer>`;
-
 /** Ventana con términos, privacidad o créditos. */
-const legalUI = k => `<div class="box sm"><div><h3>${t(k)}</h3><p style="white-space:pre-wrap">${escapeHtml(t(k + 'Txt'))}</p><p class=dgb><button data-act=close>${t('close')}</button></p></div></div>`;
+const legalUI = k => `<div class="box sm"><h2>${t(k)}</h2><p style="white-space:pre-wrap">${escapeHtml(t(k + 'Txt'))}</p><p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
 
 /** Diálogo propio que devuelve una promesa (sustituye a alert, confirm y prompt). */
 function showDialog({ title, msg, input, def, ok, cancel, danger }) {
@@ -35,7 +32,7 @@ function showDialog({ title, msg, input, def, ok, cancel, danger }) {
         const m = document.createElement('dialog');
         m.className = 'modal';
         m.setAttribute('aria-labelledby', 'dgt');
-        m.innerHTML = `<div class="box sm"><div><h3 id=dgt>${escapeHtml(title || '')}</h3>${msg ? `<p style="white-space:pre-wrap">${escapeHtml(msg)}</p>` : ''}${input ? `<input id=dgi aria-labelledby=dgt value="${escapeHtml(def || '')}" style="width:100%">` : ''}<p class=dgb>${cancel === false ? '' : `<button data-r=0>${t('cancel')}</button>`}<button class="${danger ? 'dg' : 'pri'}" data-r=1>${ok || t('ok2')}</button></p></div></div>`;
+        m.innerHTML = `<div class="box sm"><h2 id=dgt>${escapeHtml(title || '')}</h2>${msg ? `<p style="white-space:pre-wrap">${escapeHtml(msg)}</p>` : ''}${input ? `<input id=dgi aria-labelledby=dgt value="${escapeHtml(def || '')}" style="width:100%">` : ''}<p class=dgb>${cancel === false ? '' : `<button data-r=0>${t('cancel')}</button>`}<button class="${danger ? 'dg' : 'pri'}" data-r=1>${ok || t('ok2')}</button></p></div>`;
         document.body.appendChild(m);
         m.showModal();
         const i = m.querySelector('#dgi'), done = v => {
@@ -104,5 +101,5 @@ const closeModal = () => {
 
 /** Gestor de tags: crear, renombrar, cambiar color y eliminar. */
 function tagsUI() {
-    return `<div class=box><div><h2>${t('tagsT')}</h2>${profile.tags.map((g, i) => `<p class=trow><input type=color data-tc=${i} value="${escapeHtml(g.color)}" aria-label="${t('color')} · ${escapeHtml(g.name)}"><input data-tn=${i} value="${escapeHtml(g.name)}" aria-label="${t('name')}"${g.name == PRE_TAG ? ' aria-describedby=tg-pre' : ''}><button data-act=tdel data-i=${i} aria-label="${t('del')} · ${escapeHtml(g.name)}">✕</button></p>${g.name == PRE_TAG ? `<small id=tg-pre class=by style="display:block;margin:-4px 0 8px 54px">${t('preTagHint')}</small>` : ''}`).join('')}<p class=trow><input type=color id=nc value="#00e5ff" aria-label="${t('color')}"><input id=nn placeholder="${t('newTag')}" aria-label="${t('newTag')}"><button data-act=tadd>${t('add')}</button></p><p><button data-act=close>${t('close')}</button></p></div></div>`;
+    return `<div class=box><h2>${ICONS.tag} ${t('tagsT')}</h2>${profile.tags.map((g, i) => `<p class=trow><input type=color data-tc=${i} value="${escapeHtml(g.color)}" aria-label="${t('color')} · ${escapeHtml(g.name)}"><input data-tn=${i} value="${escapeHtml(g.name)}" aria-label="${t('name')}"${g.name == PRE_TAG ? ' aria-describedby=tg-pre' : ''}><button class="xs dg" data-act=tdel data-i=${i} aria-label="${t('del')} · ${escapeHtml(g.name)}">${ICONS.del}</button></p>${g.name == PRE_TAG ? `<small id=tg-pre class=by style="display:block;margin:-4px 0 8px 54px">${t('preTagHint')}</small>` : ''}`).join('')}<p class=trow><input type=color id=nc value="#00e5ff" aria-label="${t('color')}"><input id=nn placeholder="${t('newTag')}" aria-label="${t('newTag')}"><button class=pri data-act=tadd>${t('add')}</button></p><p class=dgb><button data-act=close>${t('close')}</button></p></div>`;
 }
