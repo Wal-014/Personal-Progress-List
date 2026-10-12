@@ -1449,3 +1449,49 @@ input.ro {
     min-height: 44px;
   }
 }
+
+/* ===== Dialogs ===== */
+.modal .box h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 24px;
+}
+
+/* Prompt and confirm titles are whole sentences */
+.modal .box h2#dgt {
+  display: block;
+  font-size: 19px;
+  line-height: 1.3;
+}
+
+.bl {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.bl li {
+  margin: 6px 0;
+}
+
+.trow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+
+.trow input[type=color] {
+  flex: none;
+  width: 46px;
+  height: 40px;
+  padding: 2px;
+}
+
+.trow input:not([type=color]) {
+  flex: 1;
+}
+
+#tg-pre {
+  color: var(--plab);
+}
