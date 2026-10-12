@@ -319,8 +319,10 @@ document.body.onsubmit = e => {
         profile.levels.push(o);
     for (const k in profile.order)
         profile.order[k] = profile.order[k].filter(x => x != o.id);
-    if (g.pos)
-        profile.order[o.kind].splice(Math.max(0, +g.pos - 1), 0, o.id);
+    if (g.pos && !isPre(o)) {
+        const order = profile.order[o.kind], before = rankedIds(o.kind)[Math.max(0, +g.pos - 1)];
+        order.splice(before ? order.indexOf(before) : order.length, 0, o.id);
+    }
     save();
     closeModal();
     ui.sel = o.id;

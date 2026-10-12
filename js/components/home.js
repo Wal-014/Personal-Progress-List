@@ -5,7 +5,7 @@
 /** Pantalla de inicio. */
 function home() {
     const pcard = (id, v) => `<div class="card pc ${id == store.cur ? 'act' : ''}" data-act=psel data-id="${id}" role=button tabindex=0><div class=nm>${escapeHtml(v.name)}<div class=by style="margin:4px 0 0">${v.data.levels.length} ${t('lv')}${id == store.cur ? ' · ' + t('active') : ''}</div></div><div class=pact><button data-act=exp data-id="${id}" title="${t('expP')}" aria-label="${t('expP')}">⬇</button><button data-act=pedit data-id="${id}" title="${t('edit')}" aria-label="${t('edit')}">✎</button><button data-act=pdelid data-id="${id}" title="${t('del')}" aria-label="${t('del')}">✕</button></div></div>`, n = k => profile.levels.filter(l => l.kind == k).length, top = k => {
-        const l = findLevel(profile.order[k][0]);
+        const l = findLevel(rankedIds(k)[0]);
         return l && thumbUrl(l) ? `background-image:url('${thumbUrl(l)}')` : '';
     }, hc = (k, s, sub) => `<div class="card hm" data-act=tab data-v=${k} style="${s}" role=button tabindex=0><div class=nm>${t(k)}<div class=by style="margin:4px 0 0">${sub}</div></div></div>`;
     const WL = ['todo', 'prog', 'done'].map(s => {
