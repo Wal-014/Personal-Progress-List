@@ -11,10 +11,13 @@ function meter(v, lab = '') {
     return hd(`<b style="color:${c}">${v > 0 ? '+' : ''}${escapeHtml(v)}</b>`) + `<div class="meter ${v >= 8 ? 'g' : ''}" style="color:${c}"><i style="background:${c};left:${v >= 0 ? 50 : 50 - p}%;width:${p}%"></i></div>`;
 }
 
-/** Tarjeta de un nivel en la lista. */
+/** A level row in the list, drawn as an editor object. */
 function card(l, i, n) {
-    const u = thumbUrl(l);
-    return `<div class="card ${i === 0 ? 'top1' : i === 1 ? 'top2' : i === 2 ? 'top3' : ''}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0 style="${u ? `background-image:url('${u}');` : ''}animation-delay:${Math.min(+i || 0, 14) * 30}ms"><div class=rk>${i == 'pre' ? `<b style="font-size:15px">${t('first')}</b>` : i != null ? `<b>#${i + 1}</b> / ${n}` : '<b>—</b>'}<small>${aredlLabel(l)}</small></div><div class=nm>${escapeHtml(l.name)}${l.creator || l.date ? ` <small class=by>${[l.creator ? t('by') + ' ' + escapeHtml(l.creator) : '', escapeHtml(formatDate(l.date))].filter(Boolean).join(' · ')}</small>` : ''}<div>${(l.tags || []).map(x => `<span class=chip data-tag="${escapeHtml(x)}" style="color:${tagColor(x)};border-color:${tagColor(x)}">${escapeHtml(x)}</span>`).join('')}</div></div><div class=mt>${meter(l.enj, t('enj'))}<div style="height:8px"></div>${meter(l.lik, t('lik'))}</div></div>`;
+    const u = thumbUrl(l), rank = i == 'pre' ? ICONS.classic : i != null ? i + 1 : '—';
+    const podium = i === 0 ? ' top1' : i === 1 ? ' top2' : i === 2 ? ' top3' : '';
+    const meta = [l.creator ? t('by') + ' ' + escapeHtml(l.creator) : '', escapeHtml(formatDate(l.date)), aredlLabel(l)].filter(Boolean).join(' · ');
+    const enj = l.enj == null ? '' : `<span class="badge${l.enj < 0 ? ' neg' : ''}" title="${t('enj')}" aria-label="${t('enj')} ${l.enj > 0 ? '+' : ''}${escapeHtml(l.enj)}">${l.enj > 0 ? '+' : ''}${escapeHtml(l.enj)}</span>`;
+    return `<div class="obj lv${podium}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${u ? ` style="--th:url('${u}')"` : ''}><span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + (i + 1) + ' / ' + n : t('unplaced')}">${rank}</span><div class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>${meta}</span>${l.tags?.length ? `<div>${l.tags.map(x => `<span class=chip data-tag="${escapeHtml(x)}" style="color:${tagColor(x)};border-color:${tagColor(x)}">${escapeHtml(x)}</span>`).join('')}</div>` : ''}</div>${enj}</div>`;
 }
 
 /** Ids of the ranked levels of a list, in order: Pre-Extremes levels and ids of deleted levels have no rank. */
@@ -26,7 +29,7 @@ const rankedIds = kind => profile.order[kind].filter(id => {
 /** Cuerpo de la lista: niveles colocados, sin colocar y primeros pasos. */
 function list() {
     const ids = profile.order[ui.tab], ok = l => (!ui.q || l.name.toLowerCase().includes(ui.q)) && (!ui.tag || (l.tags || []).includes(ui.tag)), all = profile.levels.filter(l => l.kind == ui.tab), pl = rankedIds(ui.tab).map(findLevel), un = all.filter(l => !ids.includes(l.id) && !isPre(l) && ok(l)), pre = all.filter(l => isPre(l) && ok(l));
-    return `<div id=lst>${pl.map((l, i) => ok(l) ? card(l, i, pl.length) : '').join('')}</div>${un.length ? `<h3>${t('unplaced')}</h3>` + un.map(l => card(l)).join('') : ''}${pre.length ? `<h3>${t('first')}</h3>` + pre.map(l => card(l, 'pre')).join('') : ''}${all.length ? '' : `<p>${t('empty')}</p>`}`;
+    return `<div id=lst>${pl.map((l, i) => ok(l) ? card(l, i, pl.length) : '').join('')}</div>${un.length ? `<h2 class=grp>${t('unplaced')}</h2>` + un.map(l => card(l)).join('') : ''}${pre.length ? `<h2 class=grp>${t('first')}</h2>` + pre.map(l => card(l, 'pre')).join('') : ''}${all.length ? '' : `<p class=by>${t('empty')}</p>`}`;
 }
 
 /** Panel con la información completa de un nivel. */
@@ -78,9 +81,9 @@ ${sec('s4', f('date', o.date, 'date') + f('link', o.link))}
 <p><button>${t('save')}</button> <button type=button data-act=lvclose>${t('close')}</button> ${l ? `<button type=button data-act=del data-id="${escapeHtml(l.id)}">${t('del')}</button>` : ''}</p></form></div></div>`;
 }
 
-/** Columna izquierda: buscador, botón de añadir y lista. */
+/** Left column: search, active tag filter and the list. */
 function lcol() {
-    return `<div class=lh><input id=q placeholder="${t('search')}" value="${escapeHtml(ui.q)}"><button class=pri data-act=add>${t('add')}</button></div>${ui.tag ? `<p><button data-act=ct>✕ ${escapeHtml(ui.tag)}</button></p>` : ''}<div id=lw>${list()}</div>`;
+    return `<div class=lh><input id=q type=search placeholder="${t('search')}" aria-label="${t('search')}" value="${escapeHtml(ui.q)}"></div>${ui.tag ? `<p><button class=xs data-act=ct aria-label="${t('del')} · ${escapeHtml(ui.tag)}">${ICONS.del}</button> <span class=chip style="color:${tagColor(ui.tag)};border-color:${tagColor(ui.tag)}">${escapeHtml(ui.tag)}</span></p>` : ''}<div id=lw>${list()}</div>`;
 }
 
 /** Columna derecha: información, formulario o mensaje vacío. */
@@ -100,7 +103,7 @@ function initSort() {
 }
 
 /** Desplaza la lista hasta el nivel seleccionado. */
-const scrollSel = () => document.querySelector('.card.sel')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+const scrollSel = () => document.querySelector('.lv.sel')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
 
 /** Redibuja solo la lista (conserva el scroll y el texto de búsqueda). */
 function renderList() {
@@ -120,10 +123,12 @@ function renderPanel() {
 function selectLevel(id) {
     ui.sel = id;
     ui.edit = 0;
-    document.querySelectorAll('.card.sel').forEach(c => c.classList.remove('sel'));
-    document.querySelector(`.card[data-id="${CSS.escape(id)}"]`)?.classList.add('sel');
+    document.querySelectorAll('.lv.sel').forEach(c => c.classList.remove('sel'));
+    document.querySelector(`.lv[data-id="${CSS.escape(id)}"]`)?.classList.add('sel');
     renderPanel();
-    if (innerWidth < 900)
+    if (innerWidth <= 560)
+        scrollTo({ top: 0 });
+    else if (innerWidth < 900)
         qs('.rcol').scrollIntoView({ behavior: 'smooth' });
 }
 

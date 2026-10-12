@@ -299,7 +299,7 @@ document.body.onclick = e => {
             render();
             scrollSel();
         }
-        else if (c.classList.contains('card'))
+        else if (c.classList.contains('lv'))
             selectLevel(c.dataset.id);
     }
 };
