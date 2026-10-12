@@ -26,5 +26,7 @@ Object.assign(TRANSLATIONS.es, { dataUnreadable: 'No se pudieron leer los datos 
 Object.assign(TRANSLATIONS.en, { dataUnreadable: 'Your saved data could not be read, so the demo profile was loaded. A copy of the previous data was kept so it can be recovered.' });
 Object.assign(TRANSLATIONS.es, { tagExists: 'Ya existe un tag con ese nombre', tagEmpty: 'Escribe un nombre para el tag' });
 Object.assign(TRANSLATIONS.en, { tagExists: 'A tag with that name already exists', tagEmpty: 'Enter a name for the tag' });
+Object.assign(TRANSLATIONS.es, { preTagHint: 'Los niveles con este tag van a «Primeros pasos».', preTagConfirm: 'Los niveles con este tag van a «Primeros pasos». Si lo renombras o lo eliminas, esos niveles pasarán a «Sin colocar». ¿Continuar?' });
+Object.assign(TRANSLATIONS.en, { preTagHint: 'Levels with this tag go to "First steps".', preTagConfirm: 'Levels with this tag go to "First steps". If you rename or delete it, those levels will move to "Unplaced". Continue?' });
 Object.assign(TRANSLATIONS.es, { dark: 'Oscuro', light: 'Claro', synth: 'Synth' });
 Object.assign(TRANSLATIONS.en, { dark: 'Dark', light: 'Light', synth: 'Synth' });

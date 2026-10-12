@@ -89,4 +89,5 @@ const tagColor = n => {
 };
 
 /** Los niveles con el tag «Pre-Extremes» se muestran aparte, en «Primeros pasos». */
-const isPre = l => (l.tags || []).includes('Pre-Extremes');
+const PRE_TAG = 'Pre-Extremes';
+const isPre = l => (l.tags || []).includes(PRE_TAG);
