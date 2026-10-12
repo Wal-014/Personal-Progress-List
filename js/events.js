@@ -2,6 +2,13 @@
  * Eventos globales: clics, formularios, teclado y tooltips. Cada acción se identifica con el atributo data-act.
  */
 
+/** Opens or closes the side menu, moving focus into it or back to the menu button. */
+function setMenu(open) {
+    ui.menu = open;
+    render();
+    qs(open ? '#th' : '[data-act=menu]').focus();
+}
+
 document.body.onclick = e => {
     const g = e.target.closest('[data-tag]'), a = e.target.closest('[data-act]'), c = e.target.closest('[data-id]');
     if (e.target.classList.contains('modal'))
@@ -27,7 +34,7 @@ document.body.onclick = e => {
             ui.edit = 0;
         }
         else if (k == 'menu')
-            ui.menu = !ui.menu;
+            return setMenu(!ui.menu);
         else if (k == 'bell')
             return openModal(bellUI());
         else if (k == 'legal')
@@ -421,8 +428,15 @@ document.body.onchange = e => {
     render();
 };
 document.onkeydown = e => {
-    if (e.key == 'Escape')
+    if (e.key == 'Escape') {
         closeModal();
+        if (ui.menu)
+            setMenu(0);
+    }
+    if ((e.key == 'Enter' || e.key == ' ') && e.target.matches('[role=button]')) {
+        e.preventDefault();
+        e.target.click();
+    }
     if (e.key == 'Enter' && e.target.id == 'tgq') {
         e.preventDefault();
         qs('#tgr [data-act=tgadd]')?.click();

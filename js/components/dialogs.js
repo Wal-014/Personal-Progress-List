@@ -4,7 +4,7 @@
 
 /** Calcula los avisos pendientes (niveles sin colocar, sin ID o completados en wishlist). */
 function alerts() {
-    const A = [], lk = l => `<a class=lk data-act=edit data-id="${escapeHtml(l.id)}">${escapeHtml(l.name)}</a>`;
+    const A = [], lk = l => `<a class=lk data-act=edit data-id="${escapeHtml(l.id)}" role=button tabindex=0>${escapeHtml(l.name)}</a>`;
     ['classic', 'platform'].forEach(k => {
         const u = profile.levels.filter(l => l.kind == k && !isPre(l) && !profile.order[k].includes(l.id));
         if (u.length)
@@ -24,7 +24,7 @@ const bellUI = () => {
 };
 
 /** Pie de página con derechos de autor y enlaces legales. */
-const footer = () => `<footer class=ft><span>© ${new Date().getFullYear()} Retlaw · ${t('rights')}</span><nav>${['terms', 'privacy', 'credits'].map(k => `<a class=lk data-act=legal data-v=${k}>${t(k)}</a>`).join(' · ')}</nav></footer>`;
+const footer = () => `<footer class=ft><span>© ${new Date().getFullYear()} Retlaw · ${t('rights')}</span><nav>${['terms', 'privacy', 'credits'].map(k => `<a class=lk data-act=legal data-v=${k} role=button tabindex=0>${t(k)}</a>`).join(' · ')}</nav></footer>`;
 
 /** Ventana con términos, privacidad o créditos. */
 const legalUI = k => `<div class="box sm"><div><h3>${t(k)}</h3><p style="white-space:pre-wrap">${escapeHtml(t(k + 'Txt'))}</p><p class=dgb><button data-act=close>${t('close')}</button></p></div></div>`;
