@@ -55,6 +55,12 @@ FIELD_CHECKS.tP = FIELD_CHECKS.tPC = FIELD_CHECKS.tN;
 /** Error message for a form field, or '' when its value is valid. */
 const fieldError = (name, value) => FIELD_CHECKS[name]?.(value) || '';
 
+/** Today's date in the user's time zone as YYYY-MM-DD (toISOString() would give the UTC date). */
+const todayLocal = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 /** Intentos totales = intentos en normal + intentos en copia. */
 const totalAttempts = l => l.attN == null && l.attC == null ? null : (l.attN || 0) + (l.attC || 0);
 
