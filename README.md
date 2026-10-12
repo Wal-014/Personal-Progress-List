@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Wal-014/Personal-Progress-List/actions/workflows/pages/pages-build-deployment"><img alt="GitHub Pages" src="https://github.com/Wal-014/Personal-Progress-List/actions/workflows/pages/pages-build-deployment/badge.svg" /></a>
+  <a href="https://github.com/Wal-014/Personal-Progress-List/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Wal-014/Personal-Progress-List/actions/workflows/ci.yml/badge.svg" /></a>
   <img alt="JavaScript" src="https://img.shields.io/badge/JavaScript-no%20framework-26337e?logo=javascript&logoColor=white" />
   <img alt="PWA" src="https://img.shields.io/badge/PWA-installable-26337e?logo=pwa&logoColor=white" />
   <img alt="License" src="https://img.shields.io/badge/license-all%20rights%20reserved-26337e" />
@@ -39,6 +39,7 @@
 
 ```mermaid
 flowchart LR
+    CI["✅ GitHub Actions<br/>lint · test · deploy"] --> GH
     GH["🚀 GitHub Pages"] -->|static files| B["🖥️ Browser app<br/>index.html + js/"]
     B <--> LS[("💾 localStorage<br/>profiles")]
     B --> SW["⚙️ Service worker<br/>sw.js"]
@@ -54,24 +55,35 @@ The scripts are classic scripts, not ES modules, so the app also works by openin
 
 The service worker is network-first: it always tries the latest version and falls back to its cache offline. It only caches the app's own files, never API responses. The Lilita One font is self-hosted in `fonts/` (SIL OFL, see `fonts/OFL.txt`) because the Content Security Policy blocks external fonts.
 
-**Stack:** HTML · CSS · JavaScript (no framework, no build step) · SortableJS · GitHub Pages
+**Stack:** HTML · CSS · JavaScript (no framework, no build step) · SortableJS · GitHub Pages · GitHub Actions
 
 ## Running locally
 
-Needs a modern browser and any static file server, for example Python 3.
+Needs a modern browser and any static file server, for example Python 3. The checks need Node.js 24.
 
 ```bash
 python -m http.server 8000    # then open http://localhost:8000
+
+npm ci                        # install the dev tools (ESLint)
+npm run lint                  # ESLint over the app, the service worker and the tests
+npm test                      # unit tests with node:test (tests/)
 ```
 
 On Windows, `iniciar.bat` starts the same server and opens the browser; on macOS and Linux, `iniciar.command` does the same with `python3`. There are no environment variables: the app has no backend and none of the external services needs an API key. The first visit loads the demo profile from `data/demo-data.js`, which contains fictional data.
+
+Node is only used for the checks; the app itself has no dependencies to install. `eslint.config.js` reads the script list in `index.html` so that names shared between the classic scripts count as defined, and the tests run `js/config.js` and `js/utils.js` in a shared `vm` context the same way the page does.
 
 The banner is drawn in `docs/brand/banner.html`. Regenerate it from the repository root with
 `npx -y playwright@1.63.0 screenshot --viewport-size "1280,640" "file:///<absolute path>/docs/brand/banner.html" docs/brand/banner.png`.
 
 ## Deployment
 
-GitHub Pages serves the repository root from `main`, so every merge to `main` goes live at <https://wal-014.github.io/Personal-Progress-List/>. There is no build step and no secrets are needed; `.nojekyll` makes Pages serve the files as they are.
+The `CI` workflow (`.github/workflows/ci.yml`) runs lint and tests on every pull request and on every push to `main`. On `main`, a second job deploys the repository root to GitHub Pages only after those checks pass, so a merge goes live at <https://wal-014.github.io/Personal-Progress-List/> only when CI is green. There is no build step and no secrets are needed. Dependabot (`.github/dependabot.yml`) proposes weekly updates for the npm dev tools and the pinned actions.
+
+First-time setup, done once by a repository admin:
+
+1. **Settings → Pages → Build and deployment → Source:** choose **GitHub Actions**, so Pages stops publishing every push and waits for the CI deploy job.
+2. **Settings → Branches:** protect `main`, require a pull request and require the **ci** status check, so a failing PR cannot be merged.
 
 ## Security
 
@@ -81,6 +93,7 @@ GitHub Pages serves the repository root from `main`, so every merge to `main` go
 - **Output escaping** — user text such as level names, notes and links goes through `escapeHtml` (`js/utils.js`) before it is rendered.
 - **Import validation** — imported profiles are checked by `isValidProfileData` (`js/state.js`) and rejected when they do not match the expected shape.
 - **Personal data stays out of git** — `.gitignore` excludes `private/`, `*.profile.json` and `*-backup*.json`.
+- **Locked-down pipeline** — every action is pinned to a commit SHA, the workflow token is read-only except for the Pages deploy job, and checkout does not keep credentials.
 - **Polite API use** — requests to the AREDL API back off and retry when it answers `429 Too Many Requests`.
 
 ## License
