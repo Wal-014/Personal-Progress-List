@@ -389,17 +389,6 @@ document.body.onchange = e => {
     if (i == 'th') {
         ui.theme = localStorage.gt = e.target.value;
     }
-    else if (i == 'lg') {
-        ui.lang = localStorage.gl = e.target.value;
-    }
-    else if (i == 'pf') {
-        store.cur = e.target.value;
-        profile = store.profs[store.cur].data;
-        ensureProfileDefaults();
-        ui.tab = 'home';
-        ui.wl = null;
-        save();
-    }
     else if (i == 'fi') {
         const f = e.target.files[0];
         if (f)
