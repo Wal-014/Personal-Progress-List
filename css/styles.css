@@ -898,7 +898,7 @@ dialog.modal::backdrop {
 .rcol {
   position: sticky;
   top: 12px;
-  max-height: calc(100vh - var(--tb-h) - 40px);
+  max-height: calc(100vh - var(--tb-h) - 100px);
   overflow: auto;
 }
 
@@ -1017,5 +1017,147 @@ dialog.modal::backdrop {
 @media (max-width: 560px) {
   .split:has(.rcol.has) .lcol, .rcol:not(.has), #app:has(.rcol.has) .fab {
     display: none;
+  }
+}
+
+/* ===== Level detail ===== */
+.box .hero {
+  height: 150px;
+  margin: 0 0 12px;
+  border: 3px solid #000;
+  border-radius: 10px;
+  background: #000 center / cover;
+}
+
+.box > h2 {
+  font-size: 28px;
+  margin: 0;
+}
+
+.dgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0 12px;
+  margin-top: 12px;
+}
+
+.mh {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font: bold 11px Arial, Helvetica, sans-serif;
+  color: var(--plab);
+  text-transform: uppercase;
+}
+
+.mh b {
+  font-family: 'Lilita One', 'Arial Black', sans-serif;
+  font-weight: 400;
+  font-size: 18px;
+  -webkit-text-stroke: 3px #000;
+  paint-order: stroke fill;
+  text-transform: none;
+}
+
+.meter {
+  position: relative;
+  height: 12px;
+  margin-top: 4px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, .45);
+  border: 2px solid #000;
+  border-radius: 6px;
+}
+
+.meter::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: rgba(255, 255, 255, .35);
+}
+
+.meter i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.hist {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 110px;
+  border-bottom: 2px solid #fff;
+}
+
+.hist b {
+  display: flex;
+  align-items: flex-end;
+  flex: 1;
+  height: 100%;
+}
+
+.hist i {
+  display: block;
+  width: 100%;
+  background: var(--pk);
+  border: 1px solid #000;
+  border-bottom: 0;
+}
+
+.hist b:hover i {
+  background: var(--ye);
+}
+
+.ax {
+  display: flex;
+  font: bold 10px Arial, Helvetica, sans-serif;
+  color: var(--plab);
+}
+
+.ax span {
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.yt {
+  position: relative;
+  display: block;
+  margin-top: 10px;
+  overflow: hidden;
+  border: 3px solid #000;
+  border-radius: 10px;
+}
+
+.yt img {
+  display: block;
+  width: 100%;
+}
+
+.yt span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.yt .i {
+  width: 56px;
+  height: 56px;
+}
+
+@media (max-width: 560px) {
+  .box {
+    padding: 14px 12px;
+  }
+
+  .box .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
 }

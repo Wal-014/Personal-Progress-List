@@ -40,14 +40,14 @@ function detail(l) {
         h += `<b data-hp="${p}" data-hn="${escapeHtml(d[p] || 0)}"><i style="height:${(d[p] || 0) / mx * 100}%"></i></b>`;
         ax += `<span>${p % 10 == 0 || hi - lo < 12 ? p + '%' : ''}</span>`;
     }
-    return `<div class=box><div class=hero style="${u ? `background-image:linear-gradient(transparent 40%,var(--card)),url('${u}')` : ''}"></div><div><h2>${escapeHtml(l.name)}</h2><p style="color:var(--mut)">${escapeHtml(orDash(l.creator))} · ID ${escapeHtml(orDash(l.levelId))} · ${escapeHtml(orDash(l.diff))} · ${aredlLabel(l)}</p>
+    return `<div class=box>${u ? `<div class=hero style="background-image:url('${u}')"></div>` : ''}<h2>${escapeHtml(l.name)}</h2><p class=by>${escapeHtml(orDash(l.creator))} · ID ${escapeHtml(orDash(l.levelId))} · ${escapeHtml(orDash(l.diff))} · ${aredlLabel(l)}</p>
 <div class=dgrid>${sc('sa', `<div class=grid>${st('attT', orDash(totalAttempts(l)), 'big')}${st('attN', orDash(l.attN))}${st('attC', orDash(l.attC))}${st('best', ks.length ? `${hi}% ×${d[hi]}` : '-')}</div>`)}
 ${sc('sT', `<div class=grid>${st('tT', orDash(formatDuration(totalSeconds(l))), 'big')}${st('tN', orDash(formatDuration(l.tN)))}${st('tP', orDash(formatDuration(l.tP)))}${st('tPC', orDash(formatDuration(l.tPC)))}</div>`)}
-${sc('s4', `<div class=grid>${st('date', orDash(formatDate(l.date)))}</div>${y ? `<a class=yt target=_blank rel=noopener href="${escapeHtml(link)}"><img src="https://img.youtube.com/vi/${y}/hqdefault.jpg" alt=""><span>▶</span></a>` : link ? `<p><a style="color:var(--a)" target=_blank rel=noopener href="${escapeHtml(link)}">▶ ${t('link')}</a></p>` : ''}`)}
+${sc('s4', `<div class=grid>${st('date', orDash(formatDate(l.date)))}</div>${y ? `<a class=yt target=_blank rel=noopener href="${escapeHtml(link)}"><img src="https://img.youtube.com/vi/${y}/hqdefault.jpg" alt=""><span>${ICONS.play}</span></a>` : link ? `<p><a style="color:var(--a)" target=_blank rel=noopener href="${escapeHtml(link)}">${ICONS.play} ${t('link')}</a></p>` : ''}`)}
 ${sc('s5', `<div class=grid><div class=st><small>${t('enj')}</small>${meter(l.enj)}</div><div class=st><small>${t('lik')}</small>${meter(l.lik)}</div></div>`)}
 ${(l.tags?.length || l.notes) ? sc('sh', `${(l.tags || []).map(x => `<span class=chip data-tag="${escapeHtml(x)}" style="color:${tagColor(x)};border-color:${tagColor(x)}">${escapeHtml(x)}</span>`).join('')}${l.notes ? `<p style="white-space:pre-wrap">${escapeHtml(l.notes)}</p>` : ''}`) : ''}
 ${h ? sc('dh', `<div class=hist>${h}</div><div class=ax>${ax}</div>`) : ''}
-</div><p><button data-act=edit data-id="${escapeHtml(l.id)}">${t('edit')}</button> <button data-act=lvclose>${t('close')}</button></p></div></div>`;
+</div><p class=dgb><button class=blue data-act=edit data-id="${escapeHtml(l.id)}">${ICONS.edit} ${t('edit')}</button> <button data-act=lvclose>${t('close')}</button></p></div>`;
 }
 
 /** Etiqueta seleccionada dentro del formulario. */
