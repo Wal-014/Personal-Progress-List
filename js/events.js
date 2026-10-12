@@ -140,7 +140,7 @@ document.body.onclick = e => {
             askText(t('pname'), '').then(n => {
                 if (!n)
                     return;
-                const i = 'p' + Date.now();
+                const i = newId('p');
                 store.profs[i] = { name: n, data: { levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] } };
                 store.cur = i;
                 profile = store.profs[i].data;
@@ -190,7 +190,7 @@ document.body.onclick = e => {
             askText(t('wname'), '').then(n => {
                 if (!n)
                     return;
-                const w = { id: 'w' + Date.now(), name: n, items: [] };
+                const w = { id: newId('w'), name: n, items: [] };
                 profile.wishlists.push(w);
                 ui.tab = 'wish';
                 ui.wl = w.id;
@@ -252,7 +252,7 @@ document.body.onclick = e => {
                 showAlert(t('exists'));
                 return;
             }
-            profile.levels.push({ id: 'n' + Date.now(), name: i.name, kind: kd, levelId: i.levelId || null, creator: i.creator || null, diff: i.diff || null, ar: { s: 'n' }, deaths: {}, tags: [], notes: '', date: new Date().toISOString().slice(0, 10) });
+            profile.levels.push({ id: newId('n'), name: i.name, kind: kd, levelId: i.levelId || null, creator: i.creator || null, diff: i.diff || null, ar: { s: 'n' }, deaths: {}, tags: [], notes: '', date: new Date().toISOString().slice(0, 10) });
             i.added = true;
             save();
             showAlert(t('addedOk'));
@@ -288,7 +288,7 @@ document.body.onsubmit = e => {
         const g = Object.fromEntries(new FormData(e.target)), w = currentWishlist();
         let i = w.items.find(x => x.id == e.target.dataset.id);
         if (!i) {
-            i = { id: 'i' + Date.now(), status: 'todo' };
+            i = { id: newId('i'), status: 'todo' };
             w.items.push(i);
         }
         Object.assign(i, { name: g.name || '?', levelId: g.lid || null, creator: g.creator || null, diff: g.diff || null });
@@ -302,7 +302,7 @@ document.body.onsubmit = e => {
     const g = Object.fromEntries(new FormData(e.target)), N = k => g[k] === '' ? null : +g[k], C = k => {
         const v = N(k);
         return v == null ? v : Math.max(-10, Math.min(10, v));
-    }, old = findLevel(e.target.dataset.id), o = old || { id: 'n' + Date.now() };
+    }, old = findLevel(e.target.dataset.id), o = old || { id: newId('n') };
     Object.assign(o, { name: g.name || '?', kind: g.kind, levelId: g.lid || null, creator: g.creator || null, diff: g.diff || null, attC: N('attC'), attN: N('attN'), date: g.date || null, link: g.link || null, enj: C('enj'), lik: C('lik'), tN: parseDuration(g.tN), tP: parseDuration(g.tP), tPC: parseDuration(g.tPC), notes: g.notes, tags: new FormData(e.target).getAll('tg'), deaths: parseDeaths(g.deaths), ar: { s: g.as, p: g.as == 'r' ? N('ap') : null } });
     if (!old)
         profile.levels.push(o);
@@ -399,7 +399,7 @@ document.body.onchange = e => {
                 askText(t('pname'), d.profileName || f.name.replace(/\.json$/, '')).then(n => {
                     if (!n)
                         return;
-                    const id = 'p' + Date.now();
+                    const id = newId('p');
                     delete d.profileName;
                     store.profs[id] = { name: n, data: d };
                     store.cur = id;

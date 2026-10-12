@@ -30,16 +30,25 @@ function isValidProfileData(d) {
 /** Completa campos que puedan faltar en perfiles antiguos o importados. */
 function ensureProfileDefaults() {
     profile.wishlists = profile.wishlists || [];
+    fixIds(profile.levels, 'n');
+    fixIds(profile.wishlists, 'w');
     profile.wishlists.forEach(w => {
-        w.id = w.id || 'w' + Date.now();
-        w.items.forEach((i, k) => {
-            i.id = i.id || 'i' + k + Date.now();
-            i.status = i.status || (i.done ? 'done' : 'todo');
-        });
+        fixIds(w.items, 'i');
+        w.items.forEach(i => i.status = i.status || (i.done ? 'done' : 'todo'));
     });
     if (!profile.tags) {
         const pal = ['#ff2bd6', '#00e5ff', '#ffd400', '#7cff6b', '#ff7a3d', '#9d7bff'];
         profile.tags = [...new Set(profile.levels.flatMap(l => l.tags || []))].map((n, i) => ({ name: n, color: pal[i % 6] }));
         save();
     }
+}
+
+/** Gives a new id to every entry that has none or repeats an earlier one. */
+function fixIds(list, prefix) {
+    const seen = new Set();
+    list.forEach(x => {
+        if (!x.id || seen.has(x.id))
+            x.id = newId(prefix);
+        seen.add(x.id);
+    });
 }
