@@ -4,7 +4,7 @@
 
 /** Calcula los avisos pendientes (niveles sin colocar, sin ID o completados en wishlist). */
 function alerts() {
-    const A = [], lk = l => `<a class=lk data-act=edit data-id="${l.id}">${escapeHtml(l.name)}</a>`;
+    const A = [], lk = l => `<a class=lk data-act=edit data-id="${escapeHtml(l.id)}">${escapeHtml(l.name)}</a>`;
     ['classic', 'platform'].forEach(k => {
         const u = profile.levels.filter(l => l.kind == k && !isPre(l) && !profile.order[k].includes(l.id));
         if (u.length)
@@ -84,5 +84,5 @@ const closeModal = () => qs('#md').innerHTML = '';
 
 /** Gestor de tags: crear, renombrar, cambiar color y eliminar. */
 function tagsUI() {
-    return `<div class=box><div><h2>${t('tagsT')}</h2>${profile.tags.map((g, i) => `<p class=trow><input type=color data-tc=${i} value="${g.color}"><input data-tn=${i} value="${escapeHtml(g.name)}"><button data-act=tdel data-i=${i}>✕</button></p>`).join('')}<p class=trow><input type=color id=nc value="#00e5ff"><input id=nn placeholder="${t('newTag')}"><button data-act=tadd>${t('add')}</button></p><p><button data-act=close>${t('close')}</button></p></div></div>`;
+    return `<div class=box><div><h2>${t('tagsT')}</h2>${profile.tags.map((g, i) => `<p class=trow><input type=color data-tc=${i} value="${escapeHtml(g.color)}"><input data-tn=${i} value="${escapeHtml(g.name)}"><button data-act=tdel data-i=${i}>✕</button></p>`).join('')}<p class=trow><input type=color id=nc value="#00e5ff"><input id=nn placeholder="${t('newTag')}"><button data-act=tadd>${t('add')}</button></p><p><button data-act=close>${t('close')}</button></p></div></div>`;
 }
