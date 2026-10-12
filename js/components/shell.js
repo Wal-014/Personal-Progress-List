@@ -12,7 +12,7 @@ const screenTitle = () => ui.tab == 'wish' ? t('wish') : t(ui.tab);
 function topBar() {
     const A = alerts().length, onHome = ui.tab == 'home' || ui.tab == 'wish' && !currentWishlist();
     const left = onHome
-        ? `<span class=logo data-act=tab data-v=home role=button tabindex=0 aria-label="${t('home')}">${ICONS.cube}</span><div><h1>Personal Ranked Progress</h1><span class=by>${escapeHtml(store.profs[store.cur].name)} · ${profile.levels.length} ${t('lv')}</span></div>`
+        ? `<span class=logo data-act=tab data-v=home role=button tabindex=0 aria-label="${t('home')}">${cubeIcon()}</span><div><h1>Personal Ranked Progress</h1><span class=by>${escapeHtml(store.profs[store.cur].name)} · ${profile.levels.length} ${t('lv')}</span></div>`
         : `<button class="sq pri" data-act=tab data-v=home aria-label="${t('back2')}">${ICONS.back}</button><h1>${escapeHtml(screenTitle())}</h1>`;
     return `<header class=top>${left}<span class=sp></span><button class=sq data-act=bell aria-label="${t('bell')}${A ? ` (${A})` : ''}">${ICONS.bell}${A ? `<b class=bdg aria-hidden=true>${A}</b>` : ''}</button><button class=sq data-act=pause aria-label="${t('pause')}">${ICONS.pause}</button></header>`;
 }
