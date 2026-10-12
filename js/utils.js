@@ -92,5 +92,11 @@ const tagColor = n => {
 const PRE_TAG = 'Pre-Extremes';
 const isPre = l => (l.tags || []).includes(PRE_TAG);
 
+/** Relative time of a past moment, like «hace 3 horas», in the app language. */
+const timeAgo = ms => {
+    const s = (Date.now() - ms) / 1000, f = new Intl.RelativeTimeFormat(ui.lang, { numeric: 'auto' });
+    return s < 3600 ? f.format(-Math.round(s / 60), 'minute') : s < 86400 ? f.format(-Math.round(s / 3600), 'hour') : f.format(-Math.round(s / 86400), 'day');
+};
+
 /** Theme to use for a saved preference: the removed dark and light themes map to their closest new theme. */
 const themeOf = v => ({ dark: 'night', light: 'blue' })[v] || (THEMES.includes(v) ? v : 'blue');

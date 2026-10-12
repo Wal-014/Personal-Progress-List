@@ -97,82 +97,86 @@ async function enrichWishlist(w) {
         }
 }
 
-/** Copia local de la lista de la AREDL (se llena con «Actualizar desde AREDL»). */
+/** Copia local de la lista de la AREDL (se descarga sola y se renueva cada AREDL_MAX_AGE). */
 let aredlCache = JSON.parse(localStorage.gar || '[]');
 
-/** Actualiza ID, puesto y publisher de todos los niveles del perfil desde la AREDL. */
-async function syncWithAredl() {
+/** After this long the lists are downloaded again on their own. */
+const AREDL_MAX_AGE = 12 * 3600 * 1000;
+
+/** Fills id, publisher and AREDL position of the given levels from the cached lists. Returns the levels that matched. */
+function matchWithAredl(levels) {
+    const by = new Map();
+    aredlCache.forEach(x => {
+        by.set(x.k + x.i, x);
+        by.set(x.k + x.n.toLowerCase(), x);
+    });
+    return levels.filter(l => {
+        const k = l.kind == 'platform' ? 'p' : 'd', x = (l.levelId && by.get(k + l.levelId)) || by.get(k + l.name.toLowerCase()) || findAredlByName(l.name, k);
+        if (x) {
+            l.levelId = l.levelId || String(x.i);
+            l.creator = l.creator || x.u;
+            l.ar = { s: 'r', p: x.p };
+        }
+        return !!x;
+    });
+}
+
+/** Asks the API for the publisher of levels that still have none (the lists do not always include it). */
+async function fetchMissingCreators(levels) {
+    const todo = levels.filter(l => !l.creator), sleep = ms => new Promise(s => setTimeout(s, ms));
+    const fetchJson = async (u) => {
+        for (let i = 0; i < 4; i++) {
+            const r = await fetch(u);
+            if (r.status == 429) {
+                await sleep(Math.max(2000, (+r.headers.get('retry-after') || 0) * 1000));
+                continue;
+            }
+            return r.ok ? r.json() : null;
+        }
+        return null;
+    };
+    let j = 0;
+    await Promise.all(Array.from({ length: 4 }, async () => {
+        while (j < todo.length) {
+            const l = todo[j++];
+            try {
+                const x = await fetchJson(AREDL_API + (l.kind == 'platform' ? 'arepl' : 'aredl') + '/levels/' + l.levelId), u = x && nm(x.publisher);
+                if (u)
+                    l.creator = u;
+            }
+            catch (e) {
+            }
+            await sleep(250);
+        }
+    }));
+}
+
+/** Downloads the lists and updates the active profile's levels. Only a manual update reports a failure. */
+async function syncWithAredl(manual) {
     if (ui.sync)
         return;
-    // Progress lives in ui.sync so it survives re-renders; the button is looked up again every time.
-    const progress = s => {
-        ui.sync = s;
-        const b = qs('[data-act=sync]');
-        if (b) {
-            b.querySelector('.pl').textContent = s;
-            b.disabled = true;
-        }
-    };
+    ui.sync = 1;
+    renderSyncStatus();
     try {
-        progress('…');
         if (!await loadAredlList(true))
             throw Error('no response');
-        const by = new Map();
-        aredlCache.forEach(x => {
-            by.set(x.k + x.i, x);
-            by.set(x.k + x.n.toLowerCase(), x);
-        });
-        let n = 0;
-        const hit = [];
-        profile.levels.forEach(l => {
-            const k = l.kind == 'platform' ? 'p' : 'd', x = (l.levelId && by.get(k + l.levelId)) || by.get(k + l.name.toLowerCase()) || findAredlByName(l.name, k);
-            if (x) {
-                l.levelId = l.levelId || String(x.i);
-                l.creator = l.creator || x.u;
-                l.ar = { s: 'r', p: x.p };
-                n++;
-                hit.push(l);
-            }
-        });
-        const todo = hit.filter(l => !l.creator);
-        let j = 0, pc = 0;
-        const sleep = ms => new Promise(s => setTimeout(s, ms));
-        const fetchJson = async (u) => {
-            for (let i = 0; i < 4; i++) {
-                const r = await fetch(u);
-                if (r.status == 429) {
-                    await sleep(Math.max(2000, (+r.headers.get('retry-after') || 0) * 1000));
-                    continue;
-                }
-                return r.ok ? r.json() : null;
-            }
-            return null;
-        };
-        await Promise.all(Array.from({ length: 4 }, async () => {
-            while (j < todo.length) {
-                const l = todo[j++];
-                progress(`${j}/${todo.length}`);
-                try {
-                    const x = await fetchJson(AREDL_API + (l.kind == 'platform' ? 'arepl' : 'aredl') + '/levels/' + l.levelId), u = x && nm(x.publisher);
-                    if (u) {
-                        l.creator = u;
-                        pc++;
-                    }
-                }
-                catch (e) {
-                }
-                await sleep(250);
-            }
-        }));
+        await fetchMissingCreators(matchWithAredl(profile.levels));
+        localStorage.gas = Date.now();
         save();
-        ui.sync = '';
-        render();
-        const count = k => aredlCache.filter(x => x.k == k).length;
-        showAlert(`${t('ok')}: ${n}/${profile.levels.length}\nAREDL ${count('d')} · AREPL ${count('p')}\n${t('creator')}: ${pc}/${todo.length}`);
     }
     catch (e) {
-        ui.sync = '';
-        render();
-        showAlert('AREDL: ' + e.message);
+        if (manual)
+            showAlert('AREDL: ' + e.message);
     }
+    ui.sync = 0;
+    // Redrawing would wipe a form or dialog the user has open; the new data shows on the next render
+    if (!qs('form, dialog[open]'))
+        render();
+    renderSyncStatus();
+}
+
+/** Updates from AREDL on its own when the last update is old and the browser is online. */
+function autoSyncIfStale() {
+    if (navigator.onLine && Date.now() - (+localStorage.gas || 0) > AREDL_MAX_AGE)
+        syncWithAredl();
 }
