@@ -461,7 +461,7 @@ document.body.onmousemove = e => {
             tp.innerHTML = `<b>${h.dataset.hp}%</b> · ${h.dataset.hn} ${t('dU')}`;
         else {
             const l = findLevel(p.dataset.id), u = thumbUrl(l);
-            tp.innerHTML = `${u ? `<img src="${u}" alt="">` : ''}<b>${escapeHtml(l.name)}</b><br>${escapeHtml(totalAttempts(l))} ${t('att')} · ${escapeHtml(l.date)}`;
+            tp.innerHTML = `${u ? `<img src="${u}" alt="">` : ''}<b>${escapeHtml(l.name)}</b><br>${escapeHtml(totalAttempts(l))} ${t('att')} · ${escapeHtml(formatDate(l.date))}`;
             tp.querySelector('img')?.addEventListener('error', e => e.target.remove());
         }
     }
