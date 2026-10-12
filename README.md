@@ -1,83 +1,90 @@
-# Personal Ranked Progress
+<p align="center">
+  <img alt="Personal Ranked Progress — your hardest levels, ranked your way" src="docs/brand/banner.png" width="880" />
+</p>
 
-Aplicación web para llevar el seguimiento de los niveles más difíciles de **Geometry Dash** que has completado: tu top personal, intentos, tiempo de juego, muertes por porcentaje, valoraciones y una línea de tiempo de tus completions. Pensada para reemplazar una hoja de Excel por algo más visual e interactivo.
+<p align="center">
+  <a href="https://github.com/Wal-014/Personal-Progress-List/actions/workflows/pages/pages-build-deployment"><img alt="GitHub Pages" src="https://github.com/Wal-014/Personal-Progress-List/actions/workflows/pages/pages-build-deployment/badge.svg" /></a>
+  <img alt="JavaScript" src="https://img.shields.io/badge/JavaScript-no%20framework-26337e?logo=javascript&logoColor=white" />
+  <img alt="PWA" src="https://img.shields.io/badge/PWA-installable-26337e?logo=pwa&logoColor=white" />
+  <img alt="License" src="https://img.shields.io/badge/license-all%20rights%20reserved-26337e" />
+</p>
 
-**Ver la aplicación:** <https://wal-014.github.io/Personal-Progress-List/>
+<p align="center">
+  <b>Track the hardest Geometry Dash levels you have beaten, in a list you rank yourself.</b><br>
+  Attempts, play time, deaths by percent, ratings and a timeline of your completions, styled after the level editor and saved in your browser.
+</p>
 
-> Proyecto personal. No está afiliado a RobTop Games, a Geometry Dash ni a la AREDL.
+<p align="center">
+  <a href="https://wal-014.github.io/Personal-Progress-List/">Live demo</a> ·
+  <a href="https://github.com/Wal-014/Personal-Progress-List/issues">Report a bug</a> ·
+  <a href="#running-locally">Run it locally</a>
+</p>
 
-## Capturas
+> Personal project. Not affiliated with RobTop Games, Geometry Dash or the AREDL.
 
-| Inicio | Lista y detalle | Estadísticas (tema claro) |
-|---|---|---|
-| ![Inicio](docs/screenshots/inicio-oscuro.png) | ![Lista](docs/screenshots/lista-oscuro.png) | ![Estadísticas](docs/screenshots/estadisticas-claro.png) |
+---
 
+## What it does
 
-## Características
+- **Profiles** — each profile has its own lists, wishlists and tags; create, rename, delete, export and import them.
+- **Your own ranking** — Classic and Platformer lists with drag-and-drop cards for your personal top (`#12 / 90`), the level's AREDL position and its thumbnail as the card background.
+- **Level details** — attempts (normal and copy), play time, completion date, YouTube video with its thumbnail, enjoyment and liking ratings from −10 to 10, tags, notes and a deaths-by-percent histogram.
+- **Automatic AREDL sync** — positions, IDs and publishers refresh when the app opens or regains focus if they are more than 12 hours old; a chip in the top bar shows the status and the pause menu has **Update now**.
+- **Wishlists** — *Not started / In progress / Completed* states, a progress bar per list, and completed levels sent to your lists.
+- **Statistics** — totals, a zoomable attempts timeline, and completions by difficulty and by year.
+- **Search, tags and notifications** — live search that keeps the selected level, colour tags, and a bell that lists levels not yet placed in your ranking, completed wishlist levels not yet in a list, and levels without an ID.
+- **Themes, languages and offline use** — Classic blue, Night and Synth themes, Spanish and English, and an installable PWA that opens without a connection.
 
-- **Perfiles**: cada perfil tiene sus propias listas, wishlists y tags. Se pueden crear, renombrar, borrar, exportar e importar.
-- **Listas de niveles** (Clásicos y Plataforma) con tarjetas arrastrables para ordenar tu top personal (`#12 / 90`), puesto en la AREDL y miniatura del nivel de fondo.
-- **Panel de información** al lado de la lista: intentos (en normal y en copia), tiempos, fecha, video de YouTube con su miniatura, valoración de −10 a 10, tags, notas e histograma de muertes por porcentaje.
-- **Búsqueda** que filtra mientras escribes y mantiene el nivel seleccionado al borrar el texto.
-- **Wishlists** con estados *Sin empezar / En progreso / Completado*, barra de progreso por lista y envío de los niveles completados a tus listas.
-- **Estadísticas**: totales, cronograma de intentos con zoom, distribución por dificultad y por año.
-- **Tags** personalizables con color.
-- **Temas** (oscuro, claro y synth) con fondo animado, e **idiomas** español e inglés.
-- **PWA**: se puede instalar en el celular o el escritorio y abrir sin conexión.
-- **Avisos** (campana) para niveles sin colocar o sin ID.
+## How it works
 
-## Tecnologías
-
-HTML, CSS y JavaScript sin framework ni paso de compilación. Única dependencia externa: [SortableJS](https://sortablejs.github.io/Sortable/) (cargada por CDN) para arrastrar tarjetas.
-
-Servicios externos que consulta el navegador:
-
-| Servicio | Para qué |
-|---|---|
-| [AREDL API](https://api.aredl.net/v2/docs) | Posición en la lista, ID y publisher de los niveles |
-| [Level Thumbnails](https://levelthumbs.prevter.me/swagger/) | Miniatura de cada nivel (`/thumbnail/{id}`) |
-| YouTube | Miniatura de los videos (`img.youtube.com`) |
-
-Ninguno requiere clave de API.
-
-## Estructura del proyecto
-
-```
-├── index.html            Página única; carga los scripts en orden
-├── css/styles.css        Estilos y temas (variables CSS)
-├── js/
-│   ├── config.js         Constantes (dificultades, URL de la API, iconos)
-│   ├── i18n.js           Traducciones ES / EN
-│   ├── utils.js          Funciones auxiliares puras
-│   ├── state.js          Perfiles, localStorage y estado de la interfaz
-│   ├── api.js            Integración con la AREDL
-│   ├── components/       Pantallas: levels, wishlists, stats, home, dialogs
-│   ├── render.js         Dibuja la aplicación completa
-│   ├── events.js         Clics, formularios, teclado (acciones por data-act)
-│   └── main.js           Punto de entrada
-├── data/demo-data.js     Perfil de demostración (datos ficticios)
-├── manifest.json, sw.js  PWA (instalación y modo sin conexión)
-└── iniciar.bat / .command  Atajos para abrir la app en local
+```mermaid
+flowchart LR
+    GH["🚀 GitHub Pages"] -->|static files| B["🖥️ Browser app<br/>index.html + js/"]
+    B <--> LS[("💾 localStorage<br/>profiles")]
+    B --> SW["⚙️ Service worker<br/>sw.js"]
+    B --> A["🏆 AREDL / AREPL API"]
+    B --> T["🖼️ Level Thumbnails"]
+    B --> Y["▶️ YouTube thumbnails"]
+    B --> C["📦 cdnjs<br/>SortableJS"]
 ```
 
-Los scripts son clásicos (no módulos ES) para que la página también funcione abriendo `index.html` directamente; por eso el orden de carga en `index.html` importa.
+There is no backend and no account. Profiles live in the browser's `localStorage` and only leave it when you export one (the download button on its card on Home, or **Export** in the toolbar). To move a profile to another device, export it and use **Import profile** there; tabs open on the same device stay in sync. Level IDs do appear in the requests to the AREDL API, Level Thumbnails and YouTube, because those services look levels up by ID.
 
-## Ejecutar en local
+The scripts are classic scripts, not ES modules, so the app also works by opening `index.html` directly from disk. That is why the load order in `index.html` matters: each file uses what the previous ones define (`config` → `i18n` → `utils` → `state` → `api` → `components/` → `render` → `events` → `main`). User actions are wired through `data-act` attributes handled in `js/events.js`.
 
-Sirve la carpeta con cualquier servidor estático, por ejemplo `python -m http.server 8000`, y abre <http://localhost:8000>. En Windows también puedes usar `iniciar.bat`.
+The service worker is network-first: it always tries the latest version and falls back to its cache offline. It only caches the app's own files, never API responses. The Lilita One font is self-hosted in `fonts/` (SIL OFL, see `fonts/OFL.txt`) because the Content Security Policy blocks external fonts.
 
-## Datos y privacidad
+**Stack:** HTML · CSS · JavaScript (no framework, no build step) · SortableJS · GitHub Pages
 
-- **No hay backend ni cuentas.** Los perfiles se guardan en el `localStorage` del navegador de cada persona y no se envían a ningún servidor propio.
-- Los datos solo salen del navegador si **exportas** un perfil (botón ⬇ de su tarjeta en Inicio). Para llevarlo a otro dispositivo: exportar y luego **Importar perfil**.
-- El perfil de demostración (`data/demo-data.js`) contiene datos ficticios.
+## Running locally
 
-## Créditos
+Needs a modern browser and any static file server, for example Python 3.
 
-- Posiciones y publishers: [All Rated Extreme Demons List](https://aredl.net).
-- Miniaturas de niveles: [Level Thumbnails](https://levelthumbs.prevter.me).
-- Geometry Dash © RobTop Games.
+```bash
+python -m http.server 8000    # then open http://localhost:8000
+```
 
-## Licencia
+On Windows, `iniciar.bat` starts the same server and opens the browser; on macOS and Linux, `iniciar.command` does the same with `python3`. There are no environment variables: the app has no backend and none of the external services needs an API key. The first visit loads the demo profile from `data/demo-data.js`, which contains fictional data.
 
-Todos los derechos reservados. El código se publica para consulta; consulta [`LICENSE`](LICENSE).
+The banner is drawn in `docs/brand/banner.html`. Regenerate it from the repository root with
+`npx -y playwright@1.63.0 screenshot --viewport-size "1280,640" "file:///<absolute path>/docs/brand/banner.html" docs/brand/banner.png`.
+
+## Deployment
+
+GitHub Pages serves the repository root from `main`, so every merge to `main` goes live at <https://wal-014.github.io/Personal-Progress-List/>. There is no build step and no secrets are needed; `.nojekyll` makes Pages serve the files as they are.
+
+## Security
+
+- **No secrets** — there is no backend and no API key; nothing secret exists to leak.
+- **Content Security Policy** — a `<meta>` policy in `index.html` sets `default-src 'self'`, allows scripts only from the app and `cdnjs.cloudflare.com`, network requests only to `api.aredl.net`, images only from the thumbnail hosts, and sets `object-src 'none'`, `base-uri 'self'` and `form-action 'none'`. `style-src` allows `'unsafe-inline'` because the UI renders inline `style` attributes. Headers such as `frame-ancestors` and HSTS cannot be set from a `<meta>` tag on GitHub Pages.
+- **Subresource Integrity** — SortableJS is loaded from cdnjs with an `integrity` hash.
+- **Output escaping** — user text such as level names, notes and links goes through `escapeHtml` (`js/utils.js`) before it is rendered.
+- **Import validation** — imported profiles are checked by `isValidProfileData` (`js/state.js`) and rejected when they do not match the expected shape.
+- **Personal data stays out of git** — `.gitignore` excludes `private/`, `*.profile.json` and `*-backup*.json`.
+- **Polite API use** — requests to the AREDL API back off and retry when it answers `429 Too Many Requests`.
+
+## License
+
+All rights reserved. The code is published for viewing only; see [`LICENSE`](LICENSE).
+
+Credits: positions and publishers from the [All Rated Extreme Demons List](https://aredl.net) ([API](https://api.aredl.net/v2/docs)), level thumbnails from [Level Thumbnails](https://levelthumbs.prevter.me). Geometry Dash © RobTop Games.
