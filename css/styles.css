@@ -1249,6 +1249,9 @@ main {
 }
 
 @media (max-width: 900px) {
+  .split {
+    grid-template-columns: 1fr;
+  }
   .lcol {
     height: 70vh;
   }
@@ -1276,6 +1279,39 @@ main {
   width: 156px;
   min-width: 156px;
   padding: 6px 10px 11px;
+}
+
+/* Must stay after the fixed-size card rules above: there is no room for side-by-side columns on phones,
+   so the meters and the wishlist controls move to their own row under the name */
+@media (max-width: 560px) {
+  .lcol .card {
+    flex-wrap: wrap;
+    height: auto;
+    row-gap: 8px;
+  }
+  .lcol .nm {
+    flex: 1;
+  }
+  .lcol .mt {
+    display: grid;
+    grid-template-rows: auto auto;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    column-gap: 16px;
+    width: 100%;
+    min-width: 0;
+    padding: 6px 10px 9px;
+  }
+  .lcol .mt > div:not([class]) {
+    display: none;
+  }
+  .card:has(.mt.wa) {
+    flex-wrap: wrap;
+  }
+  .mt.wa {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 /* ===== Ajustes del tema claro ===== */
