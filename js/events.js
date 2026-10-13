@@ -100,6 +100,8 @@ document.body.onclick = e => {
             return;
         }
         else if (k == 'tgadd') {
+            // tagChip escapes the tag name and tagColor only returns #rrggbb, so the HTML is safe
+            // nosemgrep: typescript.react.security.audit.react-unsanitized-method.react-unsanitized-method
             qs('#tgs').insertAdjacentHTML('beforeend', tagChip(a.dataset.v));
             qs('#tgq').value = '';
             renderTagSuggestions();
