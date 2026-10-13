@@ -15,7 +15,7 @@ const sharedGlobals = Object.fromEntries(
 );
 
 export default [
-    { ignores: ['node_modules/'] },
+    { ignores: ['node_modules/', 'vendor/'] },
     js.configs.recommended,
     {
         files: appFiles,
