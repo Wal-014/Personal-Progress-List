@@ -3,7 +3,7 @@
  * Estrategia: red primero (siempre la versión más reciente) y caché como respaldo.
  * Solo gestiona archivos propios; las peticiones a APIs externas no se interceptan.
  */
-const CACHE = 'prp-1.1.0';
+const CACHE = 'prp-1.2.0';
 const SHELL = [
   "./",
   "index.html",
@@ -11,6 +11,7 @@ const SHELL = [
   "data/demo-data.js",
   "manifest.json",
   "icon.svg",
+  "vendor/Sortable.min.js",
   "fonts/lilita-one-latin.woff2",
   "fonts/lilita-one-latin-ext.woff2",
   "js/config.js",

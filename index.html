@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <!-- style-src needs 'unsafe-inline' because the UI renders inline style attributes; scripts stay restricted -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://levelthumbs.prevter.me https://img.youtube.com; connect-src 'self' https://api.aredl.net; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://levelthumbs.prevter.me https://img.youtube.com; connect-src 'self' https://api.aredl.net; object-src 'none'; base-uri 'self'; form-action 'none'">
   <title>Personal Ranked Progress</title>
   <meta name="description" content="Seguimiento visual de niveles completados de Geometry Dash: listas, estadísticas, cronograma y wishlists.">
   <link rel="manifest" href="manifest.json">
@@ -12,7 +13,7 @@
   <meta name="theme-color" content="#26337e">
   <link rel="stylesheet" href="css/styles.css">
   <!-- Librería para reordenar tarjetas arrastrando -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js" integrity="sha512-TelkP3PCMJv+viMWynjKcvLsQzx6dJHvIGhfqzFtZKgAjKM1YPqcwzzDEoTc/BHjf43PcPzTQOjuTr4YdE8lNQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="vendor/Sortable.min.js"></script>
   <!-- Perfil de demostración que se carga la primera vez -->
   <script src="data/demo-data.js"></script>
 </head>
