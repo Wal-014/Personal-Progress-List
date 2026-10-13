@@ -4,6 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/Wal-014/Personal-Progress-List/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Wal-014/Personal-Progress-List/actions/workflows/ci.yml/badge.svg" /></a>
+  <a href="https://github.com/Wal-014/Personal-Progress-List/actions/workflows/security.yml"><img alt="Security" src="https://github.com/Wal-014/Personal-Progress-List/actions/workflows/security.yml/badge.svg" /></a>
   <img alt="JavaScript" src="https://img.shields.io/badge/JavaScript-no%20framework-26337e?logo=javascript&logoColor=white" />
   <img alt="PWA" src="https://img.shields.io/badge/PWA-installable-26337e?logo=pwa&logoColor=white" />
   <img alt="License" src="https://img.shields.io/badge/license-all%20rights%20reserved-26337e" />
@@ -80,10 +81,12 @@ The banner is drawn in `docs/brand/banner.html`. Regenerate it from the reposito
 
 The `CI` workflow (`.github/workflows/ci.yml`) runs lint and tests on every pull request and on every push to `main`. On `main`, a second job deploys the repository root to GitHub Pages only after those checks pass, so a merge goes live at <https://wal-014.github.io/Personal-Progress-List/> only when CI is green. There is no build step and no secrets are needed. Dependabot (`.github/dependabot.yml`) proposes weekly updates for the npm dev tools and the pinned actions.
 
+The `Security` workflow (`.github/workflows/security.yml`) runs on the same events with one job per scanner: gitleaks (secrets, including git history), semgrep (vulnerable code), osv-scanner (vulnerable dependencies in `package-lock.json`) and zizmor (unsafe workflow configuration).
+
 First-time setup, done once by a repository admin:
 
 1. **Settings → Pages → Build and deployment → Source:** choose **GitHub Actions**, so Pages stops publishing every push and waits for the CI deploy job.
-2. **Settings → Branches:** protect `main`, require a pull request and require the **ci** status check, so a failing PR cannot be merged.
+2. **Settings → Branches:** protect `main`, require a pull request and require the **ci** status check (and the four **Security** jobs), so a failing PR cannot be merged.
 
 ## Security
 
