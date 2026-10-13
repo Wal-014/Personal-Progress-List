@@ -15,7 +15,7 @@ document.body.onclick = e => {
         return closeModal();
     if (g) {
         ui.tag = g.dataset.tag;
-        if (!['classic', 'platform'].includes(ui.tab))
+        if (!isListTab())
             ui.tab = 'classic';
         closeModal();
         return render();
@@ -63,7 +63,7 @@ document.body.onclick = e => {
             return;
         }
         else if (k == 'add') {
-            if (!['classic', 'platform'].includes(ui.tab)) {
+            if (!isListTab()) {
                 closeModal();
                 ui.tab = 'classic';
                 ui.wl = null;
@@ -160,7 +160,7 @@ document.body.onclick = e => {
                 if (!n)
                     return;
                 const i = newId('p');
-                store.profs[i] = { name: n, data: { levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] } };
+                store.profs[i] = { name: n, data: emptyProfile() };
                 store.cur = i;
                 profile = store.profs[i].data;
                 ui.tab = 'home';

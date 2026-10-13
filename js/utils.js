@@ -88,6 +88,12 @@ const tagColor = n => {
     return /^#[0-9a-f]{6}$/i.test(c) ? c : 'var(--b)';
 };
 
+/** Inline style that paints a tag chip in its colour. */
+const tagStyle = n => {
+    const c = tagColor(n);
+    return `color:${c};border-color:${c}`;
+};
+
 /** Los niveles con el tag «Pre-Extremes» se muestran aparte, en «Primeros pasos». */
 const PRE_TAG = 'Pre-Extremes';
 const isPre = l => (l.tags || []).includes(PRE_TAG);

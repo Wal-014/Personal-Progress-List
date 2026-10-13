@@ -2,9 +2,9 @@
  * Punto de entrada: carga el perfil inicial, dibuja la interfaz y registra el service worker.
  */
 
-(async () => {
+(() => {
     if (!store) {
-        const demo = window.DEMO_PROFILE || { levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] };
+        const demo = window.DEMO_PROFILE || emptyProfile();
         store = { cur: 'p1', profs: { p1: { name: demo.profileName || 'Demo', data: demo } } };
         profile = demo;
         save();

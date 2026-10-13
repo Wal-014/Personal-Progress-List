@@ -15,7 +15,7 @@ function controlSelector(el) {
 /** Dibuja toda la interfaz. Conserva el scroll de la lista cuando se redibuja la misma pantalla. */
 function render() {
     const focused = controlSelector(document.activeElement);
-    const sy = ui._t == ui.tab ? qs('#lw')?.scrollTop : 0, isL = ['classic', 'platform'].includes(ui.tab);
+    const sy = ui._t == ui.tab ? qs('#lw')?.scrollTop : 0, isL = isListTab();
     ui._t = ui.tab;
     const screen = ui.tab == 'wish' && currentWishlist() ? wishView() : isL ? `<div class=split><div class=lcol>${lcol()}</div><div class="rcol ${ui.sel ? 'has' : ''}">${panel()}</div></div>` : ui.tab == 'stats' ? stats() : home();
     qs('#app').innerHTML = `${topBar()}<main class="${isL ? 'wide' : ''}">${screen}</main>${navBars(isL)}`;

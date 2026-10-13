@@ -34,6 +34,12 @@ let profile = store && store.profs[store.cur].data;
 /** Estado de la interfaz: pantalla, selección, búsqueda, tema e idioma. */
 let ui = { tab: 'home', wl: null, q: '', tag: '', z: 28, lang: localStorage.gl || 'es', theme: themeOf(localStorage.gt) };
 
+/** True when the current screen is one of the level lists. */
+const isListTab = () => ['classic', 'platform'].includes(ui.tab);
+
+/** Data of a profile with no levels, wishlists or tags. */
+const emptyProfile = () => ({ levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
+
 /** Guarda todos los perfiles en localStorage. */
 const save = () => localStorage.gdp = JSON.stringify(store);
 
@@ -61,7 +67,7 @@ function ensureProfileDefaults() {
     });
     if (!profile.tags) {
         const pal = ['#ff2bd6', '#00e5ff', '#ffd400', '#7cff6b', '#ff7a3d', '#9d7bff'];
-        profile.tags = [...new Set(profile.levels.flatMap(l => l.tags || []))].map((n, i) => ({ name: n, color: pal[i % 6] }));
+        profile.tags = [...new Set(profile.levels.flatMap(l => l.tags || []))].map((n, i) => ({ name: n, color: pal[i % pal.length] }));
         save();
     }
 }
