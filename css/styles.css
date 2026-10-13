@@ -105,7 +105,7 @@ a {
 }
 
 /* ===== Display type: outlined, like the game ===== */
-.gd, h1, h2, h3, legend, .nm {
+h1, h2, h3, legend, .nm {
   font-family: 'Lilita One', 'Arial Black', sans-serif;
   font-weight: 400;
   letter-spacing: .02em;

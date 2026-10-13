@@ -17,7 +17,7 @@ function card(l, i, n) {
     const podium = i === 0 ? ' top1' : i === 1 ? ' top2' : i === 2 ? ' top3' : '';
     const meta = [l.creator ? t('by') + ' ' + escapeHtml(l.creator) : '', escapeHtml(formatDate(l.date)), aredlLabel(l)].filter(Boolean).join(' · ');
     const enj = l.enj == null ? '' : `<span class="badge${l.enj < 0 ? ' neg' : ''}" title="${t('enj')}" aria-label="${t('enj')} ${l.enj > 0 ? '+' : ''}${escapeHtml(l.enj)}">${l.enj > 0 ? '+' : ''}${escapeHtml(l.enj)}</span>`;
-    return `<div class="obj lv${podium}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${u ? ` style="--th:url('${u}')"` : ''}><span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + (i + 1) + ' / ' + n : t('unplaced')}">${rank}</span><div class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>${meta}</span>${l.tags?.length ? `<div>${l.tags.map(x => `<span class=chip data-tag="${escapeHtml(x)}" style="color:${tagColor(x)};border-color:${tagColor(x)}">${escapeHtml(x)}</span>`).join('')}</div>` : ''}</div>${enj}</div>`;
+    return `<div class="obj lv${podium}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${u ? ` style="--th:url('${u}')"` : ''}><span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + (i + 1) + ' / ' + n : t('unplaced')}">${rank}</span><div class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>${meta}</span>${l.tags?.length ? `<div>${l.tags.map(x => `<span class=chip data-tag="${escapeHtml(x)}" style="${tagStyle(x)}">${escapeHtml(x)}</span>`).join('')}</div>` : ''}</div>${enj}</div>`;
 }
 
 /** Ids of the ranked levels of a list, in order: Pre-Extremes levels and ids of deleted levels have no rank. */
@@ -45,13 +45,13 @@ function detail(l) {
 ${sc('sT', `<div class=grid>${st('tT', orDash(formatDuration(totalSeconds(l))), 'big')}${st('tN', orDash(formatDuration(l.tN)))}${st('tP', orDash(formatDuration(l.tP)))}${st('tPC', orDash(formatDuration(l.tPC)))}</div>`)}
 ${sc('s4', `<div class=grid>${st('date', orDash(formatDate(l.date)))}</div>${y ? `<a class=yt target=_blank rel=noopener href="${escapeHtml(link)}"><img src="https://img.youtube.com/vi/${y}/hqdefault.jpg" alt=""><span>${ICONS.play}</span></a>` : link ? `<p><a style="color:var(--a)" target=_blank rel=noopener href="${escapeHtml(link)}">${ICONS.play} ${t('link')}</a></p>` : ''}`)}
 ${sc('s5', `<div class=grid><div class=st><small>${t('enj')}</small>${meter(l.enj)}</div><div class=st><small>${t('lik')}</small>${meter(l.lik)}</div></div>`)}
-${(l.tags?.length || l.notes) ? sc('sh', `${(l.tags || []).map(x => `<span class=chip data-tag="${escapeHtml(x)}" style="color:${tagColor(x)};border-color:${tagColor(x)}">${escapeHtml(x)}</span>`).join('')}${l.notes ? `<p style="white-space:pre-wrap">${escapeHtml(l.notes)}</p>` : ''}`) : ''}
+${(l.tags?.length || l.notes) ? sc('sh', `${(l.tags || []).map(x => `<span class=chip data-tag="${escapeHtml(x)}" style="${tagStyle(x)}">${escapeHtml(x)}</span>`).join('')}${l.notes ? `<p style="white-space:pre-wrap">${escapeHtml(l.notes)}</p>` : ''}`) : ''}
 ${h ? sc('dh', `<div class=hist>${h}</div><div class=ax>${ax}</div>`) : ''}
 </div><p class=dgb><button class=blue data-act=edit data-id="${escapeHtml(l.id)}">${ICONS.edit} ${t('edit')}</button> <button data-act=lvclose>${t('close')}</button></p></div>`;
 }
 
 /** Etiqueta seleccionada dentro del formulario. */
-const tagChip = n => `<span class=chip data-act=tgrm data-v="${escapeHtml(n)}" style="color:${tagColor(n)};border-color:${tagColor(n)}">${escapeHtml(n)} ${ICONS.del}<input type=hidden name=tg value="${escapeHtml(n)}"></span>`;
+const tagChip = n => `<span class=chip data-act=tgrm data-v="${escapeHtml(n)}" style="${tagStyle(n)}">${escapeHtml(n)} ${ICONS.del}<input type=hidden name=tg value="${escapeHtml(n)}"></span>`;
 
 /** Recalcula intentos y tiempo totales mientras se edita. */
 function updateTotals(f) {
@@ -65,12 +65,12 @@ function updateTotals(f) {
 function renderTagSuggestions() {
     const q = (qs('#tgq')?.value || '').toLowerCase(), sel = [...document.querySelectorAll('#tgs input')].map(i => i.value);
     if (qs('#tgr'))
-        qs('#tgr').innerHTML = profile.tags.filter(g => !sel.includes(g.name) && g.name.toLowerCase().includes(q)).map(g => `<span class=chip data-act=tgadd data-v="${escapeHtml(g.name)}" style="color:${tagColor(g.name)};border-color:${tagColor(g.name)}">+ ${escapeHtml(g.name)}</span>`).join('');
+        qs('#tgr').innerHTML = profile.tags.filter(g => !sel.includes(g.name) && g.name.toLowerCase().includes(q)).map(g => `<span class=chip data-act=tgadd data-v="${escapeHtml(g.name)}" style="${tagStyle(g.name)}">+ ${escapeHtml(g.name)}</span>`).join('');
 }
 
 /** Formulario para añadir o editar un nivel. */
 function form(l) {
-    const f = (k, v, ty = 'text', x = '') => `<div><label for=fm-${k}>${t(k)}</label>${ty == 'number' && !x.includes('readonly') ? `<div class=num><button type=button class=blue data-act=step data-d=-1 aria-label="−1">−</button><input id=fm-${k} name=${k} type=number ${x} value="${escapeHtml(v)}"><button type=button class=blue data-act=step data-d=1 aria-label="+1">+</button></div>` : `<input id=fm-${k} name=${k} type=${ty} ${x} value="${escapeHtml(v)}"${x.includes('readonly') ? ' class=ro' : ''}>`}</div>`, kind = l?.kind || (['classic', 'platform'].includes(ui.tab) ? ui.tab : 'classic'), o = l || { tags: [], ar: { s: 'n' } }, pos = rankedIds(kind).indexOf(l?.id) + 1 || '', sec = (k, b) => `<fieldset><legend>${t(k)}</legend><div class=grid>${b}</div></fieldset>`, sel = (lab, nm, opts) => `<div><label for=fm-${nm}>${lab}</label><select id=fm-${nm} name=${nm}>${opts}</select></div>`;
+    const f = (k, v, ty = 'text', x = '') => `<div><label for=fm-${k}>${t(k)}</label>${ty == 'number' && !x.includes('readonly') ? `<div class=num><button type=button class=blue data-act=step data-d=-1 aria-label="−1">−</button><input id=fm-${k} name=${k} type=number ${x} value="${escapeHtml(v)}"><button type=button class=blue data-act=step data-d=1 aria-label="+1">+</button></div>` : `<input id=fm-${k} name=${k} type=${ty} ${x} value="${escapeHtml(v)}"${x.includes('readonly') ? ' class=ro' : ''}>`}</div>`, kind = l?.kind || (isListTab() ? ui.tab : 'classic'), o = l || { tags: [], ar: { s: 'n' } }, pos = rankedIds(kind).indexOf(l?.id) + 1 || '', sec = (k, b) => `<fieldset><legend>${t(k)}</legend><div class=grid>${b}</div></fieldset>`, sel = (lab, nm, opts) => `<div><label for=fm-${nm}>${lab}</label><select id=fm-${nm} name=${nm}>${opts}</select></div>`;
     return `<div class=box><h2>${l ? t('edit') : t('palAdd')}</h2><form id=fm data-id="${escapeHtml(l?.id)}"><div class=warn id=wn></div>
 ${sec('s1', f('name', o.name, 'text', 'required') + f('lid', o.levelId, 'text', 'inputmode=numeric') + f('creator', o.creator) + sel(t('diff'), 'diff', '<option value="">-</option>' + DIFFICULTIES.map(d => `<option ${o.diff == d ? 'selected' : ''}>${d}</option>`).join('')) + sel(t('kind'), 'kind', ['classic', 'platform'].map(k => `<option value=${k} ${k == kind ? 'selected' : ''}>${t(k)}</option>`).join('')))}
 ${sec('s2', f('pos', pos, 'number', 'min=1 step=1') + sel('AREDL', 'as', [['r', t('onl')], ['n', t('notin')], ['p', t('pending')]].map(([k, v]) => `<option value=${k} ${o.ar?.s == k ? 'selected' : ''}>${v}</option>`).join('')) + f('ap', o.ar?.p, 'number', 'readonly tabindex=-1'))}
@@ -83,7 +83,7 @@ ${sec('s4', f('date', o.date, 'date') + f('link', o.link))}
 
 /** Left column: search, active tag filter and the list. */
 function lcol() {
-    return `<div class=lh><input id=q type=search placeholder="${t('search')}" aria-label="${t('search')}" value="${escapeHtml(ui.q)}"></div>${ui.tag ? `<p><button class=xs data-act=ct aria-label="${t('del')} · ${escapeHtml(ui.tag)}">${ICONS.del}</button> <span class=chip style="color:${tagColor(ui.tag)};border-color:${tagColor(ui.tag)}">${escapeHtml(ui.tag)}</span></p>` : ''}<div id=lw>${list()}</div>`;
+    return `<div class=lh><input id=q type=search placeholder="${t('search')}" aria-label="${t('search')}" value="${escapeHtml(ui.q)}"></div>${ui.tag ? `<p><button class=xs data-act=ct aria-label="${t('del')} · ${escapeHtml(ui.tag)}">${ICONS.del}</button> <span class=chip style="${tagStyle(ui.tag)}">${escapeHtml(ui.tag)}</span></p>` : ''}<div id=lw>${list()}</div>`;
 }
 
 /** Columna derecha: información, formulario o mensaje vacío. */
@@ -150,9 +150,10 @@ function validateAgainstAredl(f) {
         const similar = !id && name ? similarAredlNames(name, kind) : [];
         w.textContent = !aredlCache.length ? t('nocache') : id ? t('nolist') : name ? t('nf') + (similar.length ? ` ${t('didYouMean')} ${similar.join(', ')}` : '') : '';
     }
-    if (id) {
+    const thumb = thumbUrl({ levelId: id });
+    if (thumb) {
         const im = new Image();
         im.onerror = () => w.textContent += ' · ' + t('nothumb');
-        im.src = `https://levelthumbs.prevter.me/thumbnail/${id}`;
+        im.src = thumb;
     }
 }
