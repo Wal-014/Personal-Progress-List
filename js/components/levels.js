@@ -132,9 +132,12 @@ function selectLevel(id) {
         qs('.rcol').scrollIntoView({ behavior: 'smooth' });
 }
 
-/** Comprueba nombre e ID del formulario contra la lista de la AREDL y avisa si no coinciden. */
-function validateAgainstAredl(f) {
+/** Checks the form's name and ID against the AREDL list, then the community sheet, fills what they know and warns when neither has the level. */
+async function validateAgainstAredl(f) {
+    await loadSheetLevels();
     const q = k => f.elements[k], w = qs('#wn');
+    if (!w)
+        return;
     const name = q('name').value.trim(), id = q('lid').value.trim(), kind = q('kind').value == 'platform' ? 'p' : 'd';
     const m = id ? aredlCache.find(x => x.k == kind && String(x.i) == id) : findAredlByName(name, kind);
     if (m) {
@@ -149,6 +152,16 @@ function validateAgainstAredl(f) {
     else {
         const similar = !id && name ? similarAredlNames(name, kind) : [];
         w.textContent = !aredlCache.length ? t('nocache') : id ? t('nolist') : name ? t('nf') + (similar.length ? ` ${t('didYouMean')} ${similar.join(', ')}` : '') : '';
+    }
+    const s = findSheetLevel(q('lid').value.trim(), name, kind);
+    if (s) {
+        q('lid').value ||= s[0];
+        if (!q('creator').value)
+            q('creator').value = s[2];
+        if (!q('diff').value)
+            q('diff').value = DIFFICULTIES[s[3]] || '';
+        if (!m)
+            w.textContent = t('foundSheet');
     }
     const thumb = thumbUrl({ levelId: id });
     if (thumb) {

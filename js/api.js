@@ -1,5 +1,5 @@
 /**
- * Integración con servicios externos: lista de la AREDL (posiciones y publishers) y búsqueda de datos para las wishlists.
+ * AREDL and AREPL lists (positions and IDs), and the sync that also fills creators and difficulties from the community sheet.
  */
 
 /** Obtiene el nombre visible de un usuario de la API. */
@@ -58,7 +58,7 @@ async function loadAredlList(force) {
 /** The lists are downloaded again at most once per visit to look for levels missing from the cache. */
 let aredlReloadedForMissing = false;
 
-/** Completa ID y publisher de un nivel de wishlist consultando la AREDL. */
+/** Fills a wishlist level's ID from the AREDL (which also matches partial names), then its creator and difficulty from the community sheet. */
 async function enrichWishlistItem(it) {
     try {
         await loadAredlList();
@@ -69,17 +69,10 @@ async function enrichWishlistItem(it) {
             await loadAredlList(true);
             m = find();
         }
-        if (m) {
+        if (m)
             it.levelId = it.levelId || String(m.i);
-            if (!it.creator) {
-                const r = await fetch(AREDL_API + (m.k == 'p' ? 'arepl' : 'aredl') + '/levels/' + m.i);
-                if (r.ok) {
-                    const u = nm((await r.json()).publisher);
-                    if (u)
-                        it.creator = u;
-                }
-            }
-        }
+        await loadSheetLevels();
+        fillFromSheet(it);
     }
     catch (e) {
     }
@@ -91,7 +84,7 @@ async function enrichWishlistItem(it) {
 /** Completa los datos de todos los niveles pendientes de una wishlist. */
 async function enrichWishlist(w) {
     for (const i of w.items)
-        if (!i.chk && (!i.creator || !i.levelId)) {
+        if (!i.chk && (!i.creator || !i.levelId || !i.diff)) {
             await enrichWishlistItem(i);
             await new Promise(s => setTimeout(s, 300));
         }
@@ -121,37 +114,7 @@ function matchWithAredl(levels) {
     });
 }
 
-/** Asks the API for the publisher of levels that still have none (the lists do not always include it). */
-async function fetchMissingCreators(levels) {
-    const todo = levels.filter(l => !l.creator), sleep = ms => new Promise(s => setTimeout(s, ms));
-    const fetchJson = async (u) => {
-        for (let i = 0; i < 4; i++) {
-            const r = await fetch(u);
-            if (r.status == 429) {
-                await sleep(Math.max(2000, (+r.headers.get('retry-after') || 0) * 1000));
-                continue;
-            }
-            return r.ok ? r.json() : null;
-        }
-        return null;
-    };
-    let j = 0;
-    await Promise.all(Array.from({ length: 4 }, async () => {
-        while (j < todo.length) {
-            const l = todo[j++];
-            try {
-                const x = await fetchJson(AREDL_API + (l.kind == 'platform' ? 'arepl' : 'aredl') + '/levels/' + l.levelId), u = x && nm(x.publisher);
-                if (u)
-                    l.creator = u;
-            }
-            catch (e) {
-            }
-            await sleep(250);
-        }
-    }));
-}
-
-/** Downloads the lists and updates the active profile's levels. Only a manual update reports a failure. */
+/** Downloads the lists and updates the active profile's levels: AREDL positions, then creator and difficulty from the sheet. Only a manual update reports a failure. */
 async function syncWithAredl(manual) {
     if (ui.sync)
         return;
@@ -160,7 +123,9 @@ async function syncWithAredl(manual) {
     try {
         if (!await loadAredlList(true))
             throw Error('no response');
-        await fetchMissingCreators(matchWithAredl(profile.levels));
+        await loadSheetLevels();
+        matchWithAredl(profile.levels);
+        profile.levels.forEach(l => fillFromSheet(l, l.kind == 'platform' ? 'p' : 'd'));
         localStorage.gas = Date.now();
         save();
     }

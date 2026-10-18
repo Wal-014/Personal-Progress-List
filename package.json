@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "lint": "eslint .",
-    "test": "node --test"
+    "test": "node --test",
+    "levels": "node scripts/build-levels.js"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

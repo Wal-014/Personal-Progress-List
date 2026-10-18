@@ -19,6 +19,7 @@ const SHELL = [
   "js/utils.js",
   "js/state.js",
   "js/api.js",
+  "js/sheet.js",
   "js/components/levels.js",
   "js/components/wishlists.js",
   "js/components/stats.js",
