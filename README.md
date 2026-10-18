@@ -30,7 +30,8 @@
 - **Profiles** — each profile has its own lists, wishlists and tags; a menu at the top of Home switches between them and creates, renames, deletes, exports and imports them.
 - **Your own ranking** — Classic and Platformer lists with drag-and-drop cards for your personal top (`#12 / 90`), the level's AREDL position and its thumbnail as the card background.
 - **Level details** — attempts (normal and copy), play time, completion date, YouTube video with its thumbnail, enjoyment and liking ratings from −10 to 10, tags, notes and a deaths-by-percent histogram.
-- **Automatic AREDL sync** — positions, IDs and publishers refresh when the app opens or regains focus if they are more than 12 hours old; a chip in the top bar shows the status and the pause menu has **Update now**.
+- **Automatic AREDL sync** — AREDL positions, level IDs, creators and difficulties refresh when the app opens or regains focus if they are more than 12 hours old; a chip in the top bar shows the status and the pause menu has **Update now**.
+- **Every rated level** — creators and difficulties come from the Geometry Dash community sheet of rated levels, so the level form and wishlists fill in the ID, creator and difficulty of any rated level, not only those on the AREDL.
 - **Wishlists** — *Not started / In progress / Completed* states, a progress bar per list, and completed levels sent to your lists.
 - **Statistics** — totals, a zoomable attempts timeline, and completions by difficulty and by year.
 - **Search, tags and notifications** — live search that keeps the selected level, colour tags, and a bell that lists levels not yet placed in your ranking, completed wishlist levels not yet in a list, and levels without an ID.
@@ -40,7 +41,8 @@
 
 ```mermaid
 flowchart LR
-    CI["✅ GitHub Actions<br/>lint · test · deploy"] --> GH
+    GS["📊 Community sheet<br/>Google Sheets"] -->|daily| CI
+    CI["✅ GitHub Actions<br/>lint · test · deploy"] -->|data/levels.json| GH
     GH["🚀 GitHub Pages"] -->|static files| B["🖥️ Browser app<br/>index.html + js/"]
     B <--> LS[("💾 localStorage<br/>profiles")]
     B --> SW["⚙️ Service worker<br/>sw.js"]
@@ -49,9 +51,9 @@ flowchart LR
     B --> Y["▶️ YouTube thumbnails"]
 ```
 
-There is no backend and no account. Profiles live in the browser's `localStorage` and only leave it when you export one (**Export** in the profile menu on Home, or in the toolbar). To move a profile to another device, export it and use **Import profile** there; tabs open on the same device stay in sync. Level IDs do appear in the requests to the AREDL API, Level Thumbnails and YouTube, because those services look levels up by ID.
+There is no backend and no account. Profiles live in the browser's `localStorage` and only leave it when you export one (**Export** in the profile menu on Home, or in the toolbar). To move a profile to another device, export it and use **Import profile** there; tabs open on the same device stay in sync. Level IDs do appear in the requests to the AREDL API, Level Thumbnails and YouTube, because those services look levels up by ID. The browser never contacts Google: the deploy job downloads the community sheet (`scripts/build-levels.js`) and publishes a slim copy, `data/levels.json` (about 59,000 levels as `[id, name, creator, difficulty, platformer]`, roughly 1 MB compressed), which the app loads from the site only when it syncs, checks the level form or fills a wishlist. The AREDL lists still provide the positions, which the sheet does not have.
 
-The scripts are classic scripts, not ES modules, so the app also works by opening `index.html` directly from disk. That is why the load order in `index.html` matters: each file uses what the previous ones define (`config` → `i18n` → `utils` → `state` → `api` → `components/` → `render` → `events` → `main`). User actions are wired through `data-act` attributes handled in `js/events.js`.
+The scripts are classic scripts, not ES modules, so the app also works by opening `index.html` directly from disk. That is why the load order in `index.html` matters: each file uses what the previous ones define (`config` → `i18n` → `utils` → `state` → `api` → `sheet` → `components/` → `render` → `events` → `main`). User actions are wired through `data-act` attributes handled in `js/events.js`.
 
 The service worker is network-first: it always tries the latest version and falls back to its cache offline. It only caches the app's own files, never API responses. The Lilita One font is self-hosted in `fonts/` (SIL OFL, see `fonts/OFL.txt`) and SortableJS 1.15.2 in `vendor/` (MIT, notice kept in the file), because the Content Security Policy only allows the app's own fonts and scripts.
 
@@ -67,9 +69,10 @@ python -m http.server 8000    # then open http://localhost:8000
 npm ci                        # install the dev tools (ESLint)
 npm run lint                  # ESLint over the app, the service worker and the tests
 npm test                      # unit tests with node:test (tests/)
+npm run levels                # download the community sheet into data/levels.json (git-ignored)
 ```
 
-On Windows, `iniciar.bat` starts the same server and opens the browser; on macOS and Linux, `iniciar.command` does the same with `python3`. There are no environment variables: the app has no backend and none of the external services needs an API key. The first visit loads the demo profile from `data/demo-data.js`, which contains fictional data.
+On Windows, `iniciar.bat` starts the same server and opens the browser; on macOS and Linux, `iniciar.command` does the same with `python3`. There are no environment variables: the app has no backend and none of the external services needs an API key. The first visit loads the demo profile from `data/demo-data.js`, which contains fictional data. Without `data/levels.json` the app still works; it just cannot fill creators and difficulties from the sheet.
 
 Node is only used for the checks; the app itself has no dependencies to install. `eslint.config.js` reads the script list in `index.html` so that names shared between the classic scripts count as defined, and the tests run `js/config.js` and `js/utils.js` in a shared `vm` context the same way the page does.
 
@@ -78,7 +81,7 @@ The banner is drawn in `docs/brand/banner.html`. Regenerate it from the reposito
 
 ## Deployment
 
-The `CI` workflow (`.github/workflows/ci.yml`) runs lint and tests on every pull request and on every push to `main`. On `main`, a second job deploys the repository root to GitHub Pages only after those checks pass, so a merge goes live at <https://wal-014.github.io/Personal-Progress-List/> only when CI is green. There is no build step and no secrets are needed. Dependabot (`.github/dependabot.yml`) proposes weekly updates for the npm dev tools and the pinned actions.
+The `CI` workflow (`.github/workflows/ci.yml`) runs lint and tests on every pull request and on every push to `main`. On `main`, a second job deploys the repository root to GitHub Pages only after those checks pass, so a merge goes live at <https://wal-014.github.io/Personal-Progress-List/> only when CI is green. The only build step is `npm run levels`, which the deploy job runs to publish a fresh copy of the community sheet; a schedule also runs the workflow every day at 05:23 UTC for that reason. If the sheet cannot be downloaded or has far fewer levels than expected, the deploy fails and the previous version stays live. No secrets are needed. Dependabot (`.github/dependabot.yml`) proposes weekly updates for the npm dev tools and the pinned actions.
 
 The `Security` workflow (`.github/workflows/security.yml`) runs on the same events with one job per scanner: gitleaks (secrets, including git history), semgrep (vulnerable code), osv-scanner (vulnerable dependencies in `package-lock.json`) and zizmor (unsafe workflow configuration).
 
@@ -95,10 +98,10 @@ First-time setup, done once by a repository admin:
 - **Import validation** — imported profiles are checked by `isValidProfileData` (`js/state.js`) and rejected when they do not match the expected shape.
 - **Personal data stays out of git** — `.gitignore` excludes `private/`, `*.profile.json` and `*-backup*.json`.
 - **Locked-down pipeline** — every action is pinned to a commit SHA, the workflow token is read-only except for the Pages deploy job, and checkout does not keep credentials.
-- **Polite API use** — requests to the AREDL API back off and retry when it answers `429 Too Many Requests`.
+- **Few API requests** — a sync downloads the two AREDL lists once; creators come from the sheet copy instead of one AREDL request per level.
 
 ## License
 
 All rights reserved. The code is published for viewing only; see [`LICENSE`](LICENSE).
 
-Credits: positions and publishers from the [All Rated Extreme Demons List](https://aredl.net) ([API](https://api.aredl.net/v2/docs)), level thumbnails from [Level Thumbnails](https://levelthumbs.prevter.me). Geometry Dash © RobTop Games.
+Credits: positions from the [All Rated Extreme Demons List](https://aredl.net) ([API](https://api.aredl.net/v2/docs)), IDs, creators and difficulties from the [Geometry Dash community sheet of rated levels](https://docs.google.com/spreadsheets/d/1BBx9X8IYBtr7dA5cWu_smM2XBkLZzCXy7TjeEWRgag0), level thumbnails from [Level Thumbnails](https://levelthumbs.prevter.me). Geometry Dash © RobTop Games.

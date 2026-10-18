@@ -7,4 +7,7 @@ private/
 .DS_Store
 Thumbs.db
 node_modules/
+
+# Built from the community sheet by the deploy (npm run levels)
+data/levels.json
 .vscode/
