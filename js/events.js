@@ -54,16 +54,13 @@ const ACTIONS = {
     zi: () => zoomTimeline(1.5),
     zo: () => zoomTimeline(1 / 1.5),
     add() {
-        if (!isListTab()) {
-            closeModal();
-            ui.tab = 'classic';
-            ui.wl = null;
-            render();
+        // The edit form in the panel and the new-level form use the same ids, so only one can be open
+        if (ui.edit) {
+            ui.edit = 0;
+            renderPanel();
         }
-        ui.sel = 'new';
-        ui.edit = 1;
-        renderPanel();
-        qs('#fm input[name=name]')?.focus();
+        openModal(form());
+        qs('#fm input[name=name]').focus();
     },
     edit(a, id) {
         const fb = !!qs('#md .modal'), l = findLevel(id);
@@ -79,12 +76,9 @@ const ACTIONS = {
             scrollSel();
     },
     lvclose() {
-        if (ui.edit && ui.sel != 'new')
-            ui.edit = 0;
-        else {
+        if (!ui.edit)
             ui.sel = null;
-            ui.edit = 0;
-        }
+        ui.edit = 0;
         render();
     },
     tgadd(a) {
