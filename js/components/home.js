@@ -2,12 +2,8 @@
  * Home screen: the profile switcher, the profile's lists as blocks and wishlists as triggers.
  */
 
-/** Line drawings for the list blocks. */
-const BLOCK_ART = {
-    classic: '<svg class=art width=70 height=46 viewBox="0 0 70 46" aria-hidden=true><path d="M2 44 16 16l14 28zM30 44 44 16l14 28z" fill="#000" stroke="#fff" stroke-width=2 /></svg>',
-    platform: '<svg class=art width=60 height=46 viewBox="0 0 60 46" aria-hidden=true><rect x=4 y=22 width=20 height=20 fill="#000" stroke="#fff" stroke-width=2 /><rect x=28 y=10 width=20 height=20 fill="#000" stroke="#fff" stroke-width=2 /><circle cx=52 cy=40 r=5 fill="#ffe84a" stroke="#000" stroke-width=2 /></svg>',
-    stats: '<svg class=art width=90 height=46 viewBox="0 0 90 46" aria-hidden=true><polyline points="2,40 20,26 36,32 54,10 70,20 88,4" fill=none stroke="#000" stroke-width=7 stroke-linejoin=round /><polyline points="2,40 20,26 36,32 54,10 70,20 88,4" fill=none stroke="#3cff6c" stroke-width=3 stroke-linejoin=round /></svg>'
-};
+/** Chart line drawn on the statistics block; the list blocks show their #1 level's thumbnail instead. */
+const STATS_ART = '<svg class=art width=90 height=46 viewBox="0 0 90 46" aria-hidden=true><polyline points="2,40 20,26 36,32 54,10 70,20 88,4" fill=none stroke="#000" stroke-width=7 stroke-linejoin=round /><polyline points="2,40 20,26 36,32 54,10 70,20 88,4" fill=none stroke="#3cff6c" stroke-width=3 stroke-linejoin=round /></svg>';
 
 /** Home screen. */
 function home() {
@@ -15,7 +11,7 @@ function home() {
     const attempts = k => profile.levels.filter(l => l.kind == k).reduce((s, l) => s + (totalAttempts(l) || 0), 0);
     const block = (k, sub) => {
         const lead = k == 'stats' ? null : findLevel(rankedIds(k)[0]), u = lead ? thumbUrl(lead) : '';
-        return `<div class="block b-${k}" data-act=tab data-v=${k} role=button tabindex=0${u ? ` style="--th:url('${u}')"` : ''}>${lead ? `<span class=lead>#1 ${escapeHtml(lead.name)}</span>` : ''}${BLOCK_ART[k]}<h3>${t(k)}</h3><small>${sub}</small></div>`;
+        return `<div class="block b-${k}" data-act=tab data-v=${k} role=button tabindex=0${u ? ` style="--th:url('${u}')"` : ''}>${lead ? `<span class=lead>#1 ${escapeHtml(lead.name)}</span>` : ''}${k == 'stats' ? STATS_ART : ''}<h3>${t(k)}</h3><small>${sub}</small></div>`;
     };
     const listSub = k => `${count(k)} ${t('lv')}${attempts(k) ? ` · ${attempts(k).toLocaleString(ui.lang)} ${t('att')}` : ''}`;
     const order = { prog: 0, todo: 1, done: 2 };
