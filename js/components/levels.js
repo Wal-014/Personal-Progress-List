@@ -78,7 +78,7 @@ ${sec('s3', f('attC', o.attC, 'number', 'min=0 step=1') + f('attN', o.attN, 'num
 ${sec('s4', f('date', o.date, 'date') + f('link', o.link))}
 <fieldset><legend>${t('s5')}</legend><div class=grid>${f('enj', o.enj, 'number', 'min=-10 max=10')}${f('lik', o.lik, 'number', 'min=-10 max=10')}</div><label for=tgq style="margin-top:12px">${t('tags')}</label><input id=tgq placeholder="${t('tgs')}" autocomplete=off><div id=tgr class=tgr></div><div id=tgs>${(o.tags || []).map(tagChip).join('')}</div></fieldset>
 <fieldset><legend>${t('s6')}</legend><label for=fm-notes>${t('notes')}</label><textarea id=fm-notes name=notes rows=3>${escapeHtml(o.notes)}</textarea><label for=fm-deaths style="margin-top:10px">${t('deaths')}</label><textarea id=fm-deaths name=deaths rows=5>${escapeHtml(Object.keys(o.deaths || {}).sort((a, b) => a - b).map(k => `${k}% x${o.deaths[k]}`).join('\n'))}</textarea></fieldset>
-<p class=dgb><button class=pri>${t('save')}</button> <button type=button data-act=lvclose>${t('close')}</button> ${l ? `<button type=button class=dg data-act=del data-id="${escapeHtml(l.id)}">${t('del')}</button>` : ''}</p></form></div>`;
+<p class=dgb><button class=pri>${t('save')}</button> <button type=button data-act=${l ? 'lvclose' : 'close'}>${t('close')}</button> ${l ? `<button type=button class=dg data-act=del data-id="${escapeHtml(l.id)}">${t('del')}</button>` : ''}</p></form></div>`;
 }
 
 /** Left column: search, active tag filter and the list. */
@@ -88,8 +88,8 @@ function lcol() {
 
 /** Columna derecha: información, formulario o mensaje vacío. */
 function panel() {
-    const l = ui.sel && ui.sel != 'new' ? findLevel(ui.sel) : null;
-    return ui.edit ? form(ui.sel == 'new' ? null : l) : l ? detail(l) : `<div class=ph>${t('pick')}</div>`;
+    const l = ui.sel ? findLevel(ui.sel) : null;
+    return !l ? `<div class=ph>${t('pick')}</div>` : ui.edit ? form(l) : detail(l);
 }
 
 /** Activa el arrastre para reordenar el top. */

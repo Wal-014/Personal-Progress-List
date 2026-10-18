@@ -54,16 +54,13 @@ const ACTIONS = {
     zi: () => zoomTimeline(1.5),
     zo: () => zoomTimeline(1 / 1.5),
     add() {
-        if (!isListTab()) {
-            closeModal();
-            ui.tab = 'classic';
-            ui.wl = null;
-            render();
+        // The edit form in the panel and the new-level form use the same ids, so only one can be open
+        if (ui.edit) {
+            ui.edit = 0;
+            renderPanel();
         }
-        ui.sel = 'new';
-        ui.edit = 1;
-        renderPanel();
-        qs('#fm input[name=name]')?.focus();
+        openModal(form());
+        qs('#fm input[name=name]').focus();
     },
     edit(a, id) {
         const fb = !!qs('#md .modal'), l = findLevel(id);
@@ -79,12 +76,9 @@ const ACTIONS = {
             scrollSel();
     },
     lvclose() {
-        if (ui.edit && ui.sel != 'new')
-            ui.edit = 0;
-        else {
+        if (!ui.edit)
             ui.sel = null;
-            ui.edit = 0;
-        }
+        ui.edit = 0;
         render();
     },
     tgadd(a) {
@@ -270,6 +264,7 @@ document.body.onclick = e => {
         const k = a.dataset.act;
         if (a.closest('.pause') && ['wnew', 'tags', 'exp', 'imp', 'legal'].includes(k))
             closeModal();
+        a.closest(':popover-open')?.hidePopover();
         ACTIONS[k]?.(a, a.dataset.id);
         return;
     }
@@ -424,6 +419,13 @@ document.body.onchange = e => {
         e.target.value = '';
     }
 };
+// Popovers open in the top layer, away from their button; place the profile menu under it, inside the viewport
+document.addEventListener('beforetoggle', e => {
+    if (e.target.id != 'pmenu' || e.newState != 'open')
+        return;
+    const r = qs('[popovertarget=pmenu]').getBoundingClientRect(), w = Math.min(360, innerWidth - 24);
+    Object.assign(e.target.style, { width: w + 'px', top: r.bottom + 6 + 'px', left: Math.max(12, Math.min(r.left, innerWidth - w - 12)) + 'px' });
+}, true);
 document.onkeydown = e => {
     if (e.key == 'Escape') {
         closeModal();
