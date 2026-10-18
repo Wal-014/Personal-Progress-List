@@ -270,6 +270,7 @@ document.body.onclick = e => {
         const k = a.dataset.act;
         if (a.closest('.pause') && ['wnew', 'tags', 'exp', 'imp', 'legal'].includes(k))
             closeModal();
+        a.closest(':popover-open')?.hidePopover();
         ACTIONS[k]?.(a, a.dataset.id);
         return;
     }
@@ -424,6 +425,13 @@ document.body.onchange = e => {
         e.target.value = '';
     }
 };
+// Popovers open in the top layer, away from their button; place the profile menu under it, inside the viewport
+document.addEventListener('beforetoggle', e => {
+    if (e.target.id != 'pmenu' || e.newState != 'open')
+        return;
+    const r = qs('[popovertarget=pmenu]').getBoundingClientRect(), w = Math.min(360, innerWidth - 24);
+    Object.assign(e.target.style, { width: w + 'px', top: r.bottom + 6 + 'px', left: Math.max(12, Math.min(r.left, innerWidth - w - 12)) + 'px' });
+}, true);
 document.onkeydown = e => {
     if (e.key == 'Escape') {
         closeModal();

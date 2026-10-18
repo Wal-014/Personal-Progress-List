@@ -775,7 +775,7 @@ dialog.modal::backdrop {
   gap: 10px;
 }
 
-.trig, .pf {
+.trig {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -783,7 +783,7 @@ dialog.modal::backdrop {
   cursor: pointer;
 }
 
-.trig:hover, .pf:hover {
+.trig:hover {
   border-color: rgba(255, 255, 255, .45);
 }
 
@@ -794,7 +794,7 @@ dialog.modal::backdrop {
   min-width: 0;
 }
 
-.trig .nm, .pf .nm {
+.trig .nm {
   font-size: 18px;
   overflow-wrap: anywhere;
 }
@@ -836,30 +836,125 @@ dialog.modal::backdrop {
   background: var(--go);
 }
 
-.pfs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+.psw {
+  margin-top: 6px;
 }
 
-.pf .i {
+.pbtn {
+  justify-content: flex-start;
+  gap: 10px;
+  min-height: 56px;
+  padding: 6px 12px 6px 8px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  -webkit-text-stroke: 0;
+  box-shadow: none;
+}
+
+.pbtn:hover, .pbtn:has(+ :popover-open) {
+  border-color: var(--go);
+}
+
+.pbtn .nm, .prow .nm {
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+
+.pbtn > .i, .prow > .i:first-child {
   width: 38px;
   height: 38px;
 }
 
-.pf .pact .i {
-  width: 18px;
-  height: 18px;
+.pbtn .car {
+  width: 22px;
+  height: 22px;
+  transition: transform .15s;
 }
 
-.pf.act {
-  border-color: var(--go);
-  box-shadow: 0 0 0 2px rgba(60, 255, 108, .25);
+.pbtn:has(+ :popover-open) .car {
+  transform: rotate(180deg);
 }
 
-.pact {
-  display: flex;
+.pmenu {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  max-height: calc(100vh - 120px);
+  overflow: auto;
+  padding: 12px;
+  color: inherit;
+  background: var(--tool);
+  border: 3px solid #000;
+  border-radius: 12px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, .6), 0 10px 0 rgba(0, 0, 0, .4);
+}
+
+.pmenu h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.prows {
+  display: grid;
   gap: 4px;
+}
+
+.prow {
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 6px 10px 6px 6px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  -webkit-text-stroke: 0;
+  background: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.prow:hover {
+  background: var(--pal);
+}
+
+.prow.act {
+  background: var(--pal);
+  border-color: var(--go);
+}
+
+.pmas {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 2px solid var(--pal);
+}
+
+.pma {
+  flex-direction: column;
+  gap: 4px;
+  min-height: 64px;
+  padding: 6px 4px;
+  font: bold 12px Arial, Helvetica, sans-serif;
+  color: #e4e7f2;
+  -webkit-text-stroke: 0;
+  background: var(--pal);
+  border-width: 2px;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.pma .i {
+  width: 22px;
+  height: 22px;
+}
+
+.pma.dg {
+  border-color: #d4203c;
 }
 
 .slot .i {
@@ -876,8 +971,8 @@ dialog.modal::backdrop {
     min-height: 100px;
   }
 
-  .pf {
-    flex: 1 1 100%;
+  .pbtn {
+    width: 100%;
   }
 }
 
