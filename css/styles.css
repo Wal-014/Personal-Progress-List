@@ -503,18 +503,12 @@ dialog.modal::backdrop {
   bottom: 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 140px 1fr;
   gap: 10px;
   padding: 10px max(12px, calc((100vw - 1400px) / 2 + 20px)) calc(10px + env(safe-area-inset-bottom));
   background: var(--tool);
   border-top: 3px solid #000;
   box-shadow: 0 -3px 0 rgba(255, 255, 255, .6);
-}
-
-.modes {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
 }
 
 .mode {
@@ -650,7 +644,7 @@ dialog.modal::backdrop {
     bottom: 0;
     z-index: 30;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 4px;
     padding: 6px 6px calc(8px + env(safe-area-inset-bottom));
     background: var(--tool);
