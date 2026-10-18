@@ -449,7 +449,8 @@ document.body.onmousemove = e => {
     if (tp.dataset.k != k) {
         tp.dataset.k = k;
         if (h)
-            tp.innerHTML = `<b>${h.dataset.hp}%</b> · ${h.dataset.hn} ${t('dU')}`;
+            // dataset returns attribute values decoded, so they are escaped again before going into innerHTML
+            tp.innerHTML = `<b>${escapeHtml(h.dataset.hp)}%</b> · ${escapeHtml(h.dataset.hn)} ${t('dU')}`;
         else {
             const l = findLevel(p.dataset.id), u = thumbUrl(l);
             tp.innerHTML = `${u ? `<img src="${u}" alt="">` : ''}<b>${escapeHtml(l.name)}</b><br>${escapeHtml(totalAttempts(l))} ${t('att')} · ${escapeHtml(formatDate(l.date))}`;

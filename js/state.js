@@ -56,14 +56,21 @@ function isValidProfileData(d) {
         && (d.tags == null || isList(d.tags));
 }
 
-/** Completa campos que puedan faltar en perfiles antiguos o importados. */
+/** Deaths per percent kept from saved or imported data: whole percentages from 0 to 100 with a count of zero or more. */
+const cleanDeaths = d => Object.fromEntries(Object.entries(d && typeof d == 'object' ? d : {}).filter(([k, v]) => /^(100|[1-9]?\d)$/.test(k) && Number.isInteger(v) && v >= 0));
+
+/**
+ * Completa campos que puedan faltar en perfiles antiguos o importados.
+ * Imported files are only checked for their shape, so statuses and deaths are cleaned here before any template renders them.
+ */
 function ensureProfileDefaults() {
     profile.wishlists = profile.wishlists || [];
     fixIds(profile.levels, 'n');
+    profile.levels.forEach(l => l.deaths = cleanDeaths(l.deaths));
     fixIds(profile.wishlists, 'w');
     profile.wishlists.forEach(w => {
         fixIds(w.items, 'i');
-        w.items.forEach(i => i.status = i.status || (i.done ? 'done' : 'todo'));
+        w.items.forEach(i => i.status = ['todo', 'prog', 'done'].includes(i.status) ? i.status : i.done ? 'done' : 'todo');
     });
     if (!profile.tags) {
         const pal = ['#ff2bd6', '#00e5ff', '#ffd400', '#7cff6b', '#ff7a3d', '#9d7bff'];
