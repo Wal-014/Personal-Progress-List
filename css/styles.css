@@ -769,7 +769,7 @@ dialog.modal::backdrop {
   position: absolute;
   top: 12px;
   left: 14px;
-  max-width: 55%;
+  right: 14px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
