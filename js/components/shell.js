@@ -2,9 +2,6 @@
  * Editor shell: top bar, bottom toolbar (desktop), tab bar (phones) and the pause menu.
  */
 
-/** Screens reachable from the toolbar, in order. */
-const MODES = ['home', 'classic', 'platform', 'stats'];
-
 /** Title of the current screen for the top bar. */
 const screenTitle = () => ui.tab == 'wish' ? t('wish') : t(ui.tab);
 
@@ -40,13 +37,11 @@ function paletteButtons() {
     return pal('add', ICONS.add, t('palAdd')) + pal('wnew', ICONS.wish, t('palWish')) + pal('tags', ICONS.tag, t('tags')) + pal('exp', ICONS.exp, t('palExp'));
 }
 
-/** Bottom navigation: the editor toolbar on wide screens, a tab bar and an add button on phones. CSS shows one of them. */
+/** Bottom navigation: the editor toolbar on wide screens, a tab bar and an add button on phones. CSS shows one of them. The lists and statistics open from their Home cards. */
 function navBars(isList) {
-    const on = k => ui.tab == k ? ' aria-current=page' : '';
-    const mode = k => `<button class="mode${ui.tab == k ? ' pri' : ''}" data-act=tab data-v=${k}${on(k)}>${t(k == 'stats' ? 'statsShort' : k)}</button>`;
-    const tab = k => `<button class="tab${ui.tab == k ? ' pri' : ''}" data-act=tab data-v=${k}${on(k)}>${ICONS[k]}<span>${t(k == 'stats' ? 'statsShort' : k)}</span></button>`;
-    return `<nav class=toolbar aria-label="${t('nav')}"><div class=modes>${MODES.map(mode).join('')}</div><div class=palette>${paletteButtons()}</div></nav>`
-        + `<nav class=tabbar aria-label="${t('nav')}">${MODES.map(tab).join('')}<button class=tab data-act=pause>${ICONS.more}<span>${t('more')}</span></button></nav>`
+    const cur = ui.tab == 'home', home = (cls, label) => `<button class="${cls}${cur ? ' pri' : ''}" data-act=tab data-v=home${cur ? ' aria-current=page' : ''}>${label}</button>`;
+    return `<nav class=toolbar aria-label="${t('nav')}">${home('mode', t('home'))}<div class=palette>${paletteButtons()}</div></nav>`
+        + `<nav class=tabbar aria-label="${t('nav')}">${home('tab', `${ICONS.home}<span>${t('home')}</span>`)}<button class=tab data-act=pause>${ICONS.more}<span>${t('more')}</span></button></nav>`
         + (isList ? `<button class=fab data-act=add aria-label="${t('palAdd')}">${ICONS.plus}</button>` : '');
 }
 
