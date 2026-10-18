@@ -58,3 +58,17 @@ test('tagStyle paints a chip in its tag colour and drops anything that is not #r
     assert.equal(tagStyle('bad'), 'color:var(--b);border-color:var(--b)');
     assert.equal(tagStyle('missing'), 'color:var(--b);border-color:var(--b)');
 });
+
+test('ensureProfileDefaults drops imported wishlist statuses and deaths the app cannot render', () => {
+    const data = {
+        levels: [{ id: 'a', name: 'A', deaths: { 0: 3, 63: 4, 100: 1, 101: 1, 2000000: 1, '5.5': 1, x: 1, 70: '<b>', 80: -1 } }, { id: 'b', name: 'B', deaths: 'oops' }],
+        order: { classic: [], platform: [] },
+        wishlists: [{ id: 'w', items: [{ id: '1', status: 'prog' }, { id: '2', status: '"><b>x</b>' }, { id: '3', done: true }] }],
+        tags: []
+    };
+    setGlobal('profile', data);
+    app('ensureProfileDefaults()');
+    assert.deepEqual({ ...data.levels[0].deaths }, { 0: 3, 63: 4, 100: 1 });
+    assert.deepEqual({ ...data.levels[1].deaths }, {});
+    assert.deepEqual(data.wishlists[0].items.map(i => i.status), ['prog', 'todo', 'done']);
+});
