@@ -14,8 +14,8 @@ function home() {
     const count = k => profile.levels.filter(l => l.kind == k).length;
     const attempts = k => profile.levels.filter(l => l.kind == k).reduce((s, l) => s + (totalAttempts(l) || 0), 0);
     const block = (k, sub) => {
-        const lead = k == 'stats' ? null : findLevel(rankedIds(k)[0]);
-        return `<div class=block data-act=tab data-v=${k} role=button tabindex=0>${lead ? `<span class=lead>#1 ${escapeHtml(lead.name)}</span>` : ''}${BLOCK_ART[k]}<h3>${t(k)}</h3><small>${sub}</small></div>`;
+        const lead = k == 'stats' ? null : findLevel(rankedIds(k)[0]), u = lead ? thumbUrl(lead) : '';
+        return `<div class="block b-${k}" data-act=tab data-v=${k} role=button tabindex=0${u ? ` style="--th:url('${u}')"` : ''}>${lead ? `<span class=lead>#1 ${escapeHtml(lead.name)}</span>` : ''}${BLOCK_ART[k]}<h3>${t(k)}</h3><small>${sub}</small></div>`;
     };
     const listSub = k => `${count(k)} ${t('lv')}${attempts(k) ? ` · ${attempts(k).toLocaleString(ui.lang)} ${t('att')}` : ''}`;
     const order = { prog: 0, todo: 1, done: 2 };
