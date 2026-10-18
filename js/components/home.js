@@ -1,5 +1,5 @@
 /**
- * Home screen: the profile's lists as blocks, wishlists as triggers and the profiles.
+ * Home screen: the profile switcher, the profile's lists as blocks and wishlists as triggers.
  */
 
 /** Line drawings for the list blocks. */
@@ -23,11 +23,22 @@ function home() {
         const p = wishlistProgress(w);
         return `<div class="obj trig" data-act=wopen data-id="${escapeHtml(w.id)}" role=button tabindex=0><span class="tg s-${p.s}">${ICONS.wish}</span><div class=info><span class=nm>${escapeHtml(w.name)}</span>${progressBar(w)}<span class=by>${p.d} / ${p.n} · ${t('st_' + p.s)}</span></div></div>`;
     }).join('');
-    const prof = ([id, v], i) => `<div class="obj pf ${id == store.cur ? 'act' : ''}" data-act=psel data-id="${escapeHtml(id)}" role=button tabindex=0>${cubeIcon(i)}<div class=info><span class=nm>${escapeHtml(v.name)}</span><span class=by>${v.data.levels.length} ${t('lv')}${id == store.cur ? ' · ' + t('active') : ''}</span></div><div class=pact><button class=xs data-act=exp data-id="${escapeHtml(id)}" title="${t('expP')}" aria-label="${t('expP')}">${ICONS.exp}</button><button class=xs data-act=pedit data-id="${escapeHtml(id)}" title="${t('edit')}" aria-label="${t('edit')}">${ICONS.edit}</button><button class="xs dg" data-act=pdelid data-id="${escapeHtml(id)}" title="${t('del')}" aria-label="${t('del')}">${ICONS.del}</button></div></div>`;
-    return `<h2 class=sec>${t('lists')} <small class=by>${escapeHtml(store.profs[store.cur].name)}</small></h2>
+    return `${profileSwitcher()}<h2 class=sec>${t('lists')}</h2>
 <div class=blocks>${block('classic', listSub('classic'))}${block('platform', listSub('platform'))}${block('stats', t('statsSub'))}</div>
 <h2 class=sec>${t('wish')}</h2>
-<div class=trigs>${wishes}<div class=slot data-act=wnew role=button tabindex=0>${t('wnew')}</div></div>${profile.wishlists.length ? '' : `<p class=by>${t('noWL')}</p>`}
-<h2 class=sec>${t('profs')}</h2>
-<div class=pfs>${Object.entries(store.profs).map(prof).join('')}<div class=slot data-act=pnew role=button tabindex=0>${ICONS.add} ${t('pnew')}</div><div class=slot data-act=imp role=button tabindex=0>${ICONS.imp} ${t('impP')}</div></div>`;
+<div class=trigs>${wishes}<div class=slot data-act=wnew role=button tabindex=0>${t('wnew')}</div></div>${profile.wishlists.length ? '' : `<p class=by>${t('noWL')}</p>`}`;
+}
+
+/** Active profile button and its menu: switch profile, manage the active one, add or import another. */
+function profileSwitcher() {
+    const ids = Object.keys(store.profs), cur = store.profs[store.cur], at = ids.indexOf(store.cur);
+    const row = (id, i) => {
+        const p = store.profs[id], on = id == store.cur;
+        return `<button class="prow${on ? ' act' : ''}" data-act=psel data-id="${escapeHtml(id)}"${on ? ' aria-current=true' : ''}>${cubeIcon(i)}<span class=info><span class=nm>${escapeHtml(p.name)}</span><span class=by>${p.data.levels.length} ${t('lv')}</span></span>${on ? ICONS.check : ''}</button>`;
+    };
+    const act = (a, icon, label, cls = '') => `<button class="pma${cls}" data-act=${a} data-id="${escapeHtml(store.cur)}">${icon}<span>${label}</span></button>`;
+    return `<div class=psw><button class="obj pbtn" popovertarget=pmenu aria-label="${t('profs')}: ${escapeHtml(cur.name)}">${cubeIcon(at)}<span class=info><span class=nm>${escapeHtml(cur.name)}</span><span class=by>${profile.levels.length} ${t('lv')}</span></span><svg class="i car" viewBox="0 0 24 24" aria-hidden=true><path d="M6 9l6 6 6-6" fill=none stroke="#fff" stroke-width=3 stroke-linecap=round stroke-linejoin=round /></svg></button>
+<div id=pmenu class=pmenu popover><h3>${t('profs')}</h3><div class=prows>${ids.map(row).join('')}</div>
+<div class=pmas>${act('pedit', ICONS.edit, t('wren'))}${act('exp', ICONS.exp, t('palExp'))}${act('pdelid', ICONS.del, t('del'), ' dg')}</div>
+<div class=pmas>${act('pnew', ICONS.add, t('pnew'))}${act('imp', ICONS.imp, t('impP'))}</div></div></div>`;
 }

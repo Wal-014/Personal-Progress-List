@@ -27,7 +27,7 @@
 
 ## What it does
 
-- **Profiles** — each profile has its own lists, wishlists and tags; create, rename, delete, export and import them.
+- **Profiles** — each profile has its own lists, wishlists and tags; a menu at the top of Home switches between them and creates, renames, deletes, exports and imports them.
 - **Your own ranking** — Classic and Platformer lists with drag-and-drop cards for your personal top (`#12 / 90`), the level's AREDL position and its thumbnail as the card background.
 - **Level details** — attempts (normal and copy), play time, completion date, YouTube video with its thumbnail, enjoyment and liking ratings from −10 to 10, tags, notes and a deaths-by-percent histogram.
 - **Automatic AREDL sync** — positions, IDs and publishers refresh when the app opens or regains focus if they are more than 12 hours old; a chip in the top bar shows the status and the pause menu has **Update now**.
@@ -49,7 +49,7 @@ flowchart LR
     B --> Y["▶️ YouTube thumbnails"]
 ```
 
-There is no backend and no account. Profiles live in the browser's `localStorage` and only leave it when you export one (the download button on its card on Home, or **Export** in the toolbar). To move a profile to another device, export it and use **Import profile** there; tabs open on the same device stay in sync. Level IDs do appear in the requests to the AREDL API, Level Thumbnails and YouTube, because those services look levels up by ID.
+There is no backend and no account. Profiles live in the browser's `localStorage` and only leave it when you export one (**Export** in the profile menu on Home, or in the toolbar). To move a profile to another device, export it and use **Import profile** there; tabs open on the same device stay in sync. Level IDs do appear in the requests to the AREDL API, Level Thumbnails and YouTube, because those services look levels up by ID.
 
 The scripts are classic scripts, not ES modules, so the app also works by opening `index.html` directly from disk. That is why the load order in `index.html` matters: each file uses what the previous ones define (`config` → `i18n` → `utils` → `state` → `api` → `components/` → `render` → `events` → `main`). User actions are wired through `data-act` attributes handled in `js/events.js`.
 
