@@ -25,16 +25,15 @@ function home() {
 <div class=trigs>${wishes}<div class=slot data-act=wnew role=button tabindex=0>${t('wnew')}</div></div>${profile.wishlists.length ? '' : `<p class=by>${t('noWL')}</p>`}`;
 }
 
-/** Active profile button and its menu: switch profile, manage the active one, add or import another. */
+/** Active profile button with export and import beside it, and its menu: switch, rename or delete any profile, or add a new one. */
 function profileSwitcher() {
     const ids = Object.keys(store.profs), cur = store.profs[store.cur], at = ids.indexOf(store.cur);
     const row = (id, i) => {
-        const p = store.profs[id], on = id == store.cur;
-        return `<button class="prow${on ? ' act' : ''}" data-act=psel data-id="${escapeHtml(id)}"${on ? ' aria-current=true' : ''}>${cubeIcon(i)}<span class=info><span class=nm>${escapeHtml(p.name)}</span><span class=by>${p.data.levels.length} ${t('lv')}</span></span>${on ? ICONS.check : ''}</button>`;
+        const p = store.profs[id], on = id == store.cur, eid = escapeHtml(id), name = escapeHtml(p.name);
+        return `<div class="prow${on ? ' act' : ''}"><button class=psel data-act=psel data-id="${eid}"${on ? ' aria-current=true' : ''}>${cubeIcon(i)}<span class=info><span class=nm>${name}</span><span class=by>${p.data.levels.length} ${t('lv')}</span></span>${on ? ICONS.check : ''}</button><button class=xs data-act=pedit data-id="${eid}" aria-label="${t('wren')} · ${name}">${ICONS.edit}</button><button class="xs dg" data-act=pdelid data-id="${eid}" aria-label="${t('del')} · ${name}">${ICONS.del}</button></div>`;
     };
-    const act = (a, icon, label, cls = '') => `<button class="pma${cls}" data-act=${a} data-id="${escapeHtml(store.cur)}">${icon}<span>${label}</span></button>`;
-    return `<div class=psw><button class="obj pbtn" popovertarget=pmenu aria-label="${t('profs')}: ${escapeHtml(cur.name)}">${cubeIcon(at)}<span class=info><span class=nm>${escapeHtml(cur.name)}</span><span class=by>${profile.levels.length} ${t('lv')}</span></span><svg class="i car" viewBox="0 0 24 24" aria-hidden=true><path d="M6 9l6 6 6-6" fill=none stroke="#fff" stroke-width=3 stroke-linecap=round stroke-linejoin=round /></svg></button>
+    const io = (a, icon, label, aria) => `<button class=pio data-act=${a} aria-label="${aria}">${icon}<span>${label}</span></button>`;
+    return `<div class=psw><button class="obj pbtn" popovertarget=pmenu aria-label="${t('profs')}: ${escapeHtml(cur.name)}">${cubeIcon(at)}<span class=info><span class=nm>${escapeHtml(cur.name)}</span><span class=by>${profile.levels.length} ${t('lv')}</span></span><svg class="i car" viewBox="0 0 24 24" aria-hidden=true><path d="M6 9l6 6 6-6" fill=none stroke="#fff" stroke-width=3 stroke-linecap=round stroke-linejoin=round /></svg></button>${io('exp', ICONS.exp, t('palExp'), `${t('expP')} · ${escapeHtml(cur.name)}`)}${io('imp', ICONS.imp, t('imp'), t('impP'))}
 <div id=pmenu class=pmenu popover><h3>${t('profs')}</h3><div class=prows>${ids.map(row).join('')}</div>
-<div class=pmas>${act('pedit', ICONS.edit, t('wren'))}${act('exp', ICONS.exp, t('palExp'))}${act('pdelid', ICONS.del, t('del'), ' dg')}</div>
-<div class=pmas>${act('pnew', ICONS.add, t('pnew'))}${act('imp', ICONS.imp, t('impP'))}</div></div></div>`;
+<button class=pma data-act=pnew>${ICONS.add}<span>${t('pnew')}</span></button></div></div>`;
 }

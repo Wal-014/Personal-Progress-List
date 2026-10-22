@@ -845,12 +845,15 @@ dialog.modal::backdrop {
 }
 
 .psw {
+  display: flex;
+  gap: 8px;
   margin-top: 6px;
 }
 
 .pbtn {
   justify-content: flex-start;
   gap: 10px;
+  min-width: 0;
   min-height: 56px;
   padding: 6px 12px 6px 8px;
   font: inherit;
@@ -860,7 +863,7 @@ dialog.modal::backdrop {
   box-shadow: none;
 }
 
-.pbtn:hover, .pbtn:has(+ :popover-open) {
+.pbtn:hover, .pbtn:has(~ :popover-open) {
   border-color: var(--go);
 }
 
@@ -869,7 +872,7 @@ dialog.modal::backdrop {
   overflow-wrap: anywhere;
 }
 
-.pbtn > .i, .prow > .i:first-child {
+.pbtn > .i, .psel > .i:first-child {
   width: 38px;
   height: 38px;
 }
@@ -880,8 +883,27 @@ dialog.modal::backdrop {
   transition: transform .15s;
 }
 
-.pbtn:has(+ :popover-open) .car {
+.pbtn:has(~ :popover-open) .car {
   transform: rotate(180deg);
+}
+
+.pio, .pma {
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 4px;
+  font: bold 12px Arial, Helvetica, sans-serif;
+  color: #e4e7f2;
+  -webkit-text-stroke: 0;
+  background: var(--pal);
+  border-width: 2px;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.pio {
+  flex: none;
+  width: 72px;
+  min-height: 56px;
 }
 
 .pmenu {
@@ -889,13 +911,17 @@ dialog.modal::backdrop {
   inset: auto;
   margin: 0;
   max-height: calc(100vh - 120px);
-  overflow: auto;
   padding: 12px;
   color: inherit;
   background: var(--tool);
   border: 3px solid #000;
   border-radius: 12px;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, .6), 0 10px 0 rgba(0, 0, 0, .4);
+}
+
+.pmenu:popover-open {
+  display: flex;
+  flex-direction: column;
 }
 
 .pmenu h3 {
@@ -906,21 +932,19 @@ dialog.modal::backdrop {
 .prows {
   display: grid;
   gap: 4px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .prow {
-  justify-content: flex-start;
-  gap: 10px;
-  width: 100%;
-  min-height: 52px;
-  padding: 6px 10px 6px 6px;
-  font: inherit;
-  color: inherit;
-  text-align: left;
-  -webkit-text-stroke: 0;
-  background: none;
-  border-color: transparent;
-  box-shadow: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 6px;
+  padding-right: 6px;
+  border: 3px solid transparent;
+  border-radius: 10px;
 }
 
 .prow:hover {
@@ -932,37 +956,31 @@ dialog.modal::backdrop {
   border-color: var(--go);
 }
 
-.pmas {
-  display: grid;
-  grid-auto-columns: minmax(0, 1fr);
-  grid-auto-flow: column;
-  gap: 6px;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 2px solid var(--pal);
-}
-
-.pma {
-  flex-direction: column;
-  gap: 4px;
-  min-height: 64px;
-  padding: 6px 4px;
-  font: bold 12px Arial, Helvetica, sans-serif;
-  color: #e4e7f2;
+.psel {
+  justify-content: flex-start;
+  gap: 10px;
+  min-width: 0;
+  min-height: 52px;
+  padding: 6px 4px 6px 6px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
   -webkit-text-stroke: 0;
-  background: var(--pal);
-  border-width: 2px;
-  border-radius: 8px;
+  background: none;
+  border: 0;
   box-shadow: none;
 }
 
-.pma .i {
-  width: 22px;
-  height: 22px;
+.pma {
+  flex: none;
+  flex-direction: row;
+  min-height: 48px;
+  margin-top: 10px;
 }
 
-.pma.dg {
-  border-color: #d4203c;
+.pio .i, .pma .i {
+  width: 22px;
+  height: 22px;
 }
 
 .slot .i {
@@ -980,7 +998,11 @@ dialog.modal::backdrop {
   }
 
   .pbtn {
-    width: 100%;
+    flex: 1;
+  }
+
+  .pio {
+    width: 60px;
   }
 }
 
