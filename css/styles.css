@@ -1286,6 +1286,16 @@ dialog.modal::backdrop {
   text-align: center;
 }
 
+/* The − and + buttons step editable numbers; the read-only totals are never stepped */
+input[type=number] {
+  appearance: textfield;
+}
+
+input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 input.ro {
   opacity: .75;
 }

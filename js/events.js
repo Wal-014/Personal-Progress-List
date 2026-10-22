@@ -60,6 +60,7 @@ const ACTIONS = {
             renderPanel();
         }
         openModal(form());
+        renderTagSuggestions();
         qs('#fm input[name=name]').focus();
     },
     edit(a, id) {
