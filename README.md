@@ -31,7 +31,8 @@
 - **Your own ranking** — Classic and Platformer lists with drag-and-drop cards for your personal top (`#12 / 90`), the level's AREDL position and its thumbnail as the card background.
 - **Level details** — attempts (normal and copy), play time, completion date, YouTube video with its thumbnail, enjoyment and liking ratings from −10 to 10, tags, notes and a deaths-by-percent histogram.
 - **Automatic AREDL sync** — AREDL positions, level IDs, creators and difficulties refresh when the app opens or regains focus if they are more than 12 hours old; a chip in the top bar shows the status and the pause menu has **Update now**.
-- **Every rated level** — creators and difficulties come from the Geometry Dash community sheet of rated levels, so the level form and wishlists fill in the ID, creator and difficulty of any rated level, not only those on the AREDL.
+- **Level search** — the level form and wishlists search [GDBrowser](https://gdbrowser.com) by name or ID, with a featured filter, and list the matches as cards with their thumbnail, most downloaded first. Picking one fills in the name, ID, creator, difficulty, rating and list, which cannot be edited by hand. When nothing matches, similar names from the AREDL and the community sheet are suggested.
+- **Every rated level** — sync fills missing creators and difficulties from the Geometry Dash community sheet of rated levels, not only for levels on the AREDL.
 - **Wishlists** — *Not started / In progress / Completed* states, a progress bar per list, and completed levels sent to your lists.
 - **Statistics** — totals, a zoomable attempts timeline, and completions by difficulty and by year.
 - **Search, tags and notifications** — live search that keeps the selected level, colour tags, and a bell that lists levels not yet placed in your ranking, completed wishlist levels not yet in a list, and levels without an ID.
@@ -46,14 +47,15 @@ flowchart LR
     GH["🚀 GitHub Pages"] -->|static files| B["🖥️ Browser app<br/>index.html + js/"]
     B <--> LS[("💾 localStorage<br/>profiles")]
     B --> SW["⚙️ Service worker<br/>sw.js"]
+    B --> G["🔎 GDBrowser API<br/>level search"]
     B --> A["🏆 AREDL / AREPL API"]
     B --> T["🖼️ Level Thumbnails"]
     B --> Y["▶️ YouTube thumbnails"]
 ```
 
-There is no backend and no account. Profiles live in the browser's `localStorage` and only leave it when you export one (**Export** in the profile menu on Home, or in the toolbar). To move a profile to another device, export it and use **Import profile** there; tabs open on the same device stay in sync. Level IDs do appear in the requests to the AREDL API, Level Thumbnails and YouTube, because those services look levels up by ID. The browser never contacts Google: the deploy job downloads the community sheet (`scripts/build-levels.js`) and publishes a slim copy, `data/levels.json` (about 59,000 levels as `[id, name, creator, difficulty, platformer]`, roughly 1 MB compressed), which the app loads from the site only when it syncs, checks the level form or fills a wishlist. The AREDL lists still provide the positions, which the sheet does not have.
+There is no backend and no account. Profiles live in the browser's `localStorage` and only leave it when you export one (**Export** in the profile menu on Home, or in the toolbar). To move a profile to another device, export it and use **Import profile** there; tabs open on the same device stay in sync. Level IDs do appear in the requests to the AREDL API, Level Thumbnails and YouTube, because those services look levels up by ID, and what you type in the level search is sent to GDBrowser. The browser never contacts Google: the deploy job downloads the community sheet (`scripts/build-levels.js`) and publishes a slim copy, `data/levels.json` (about 59,000 levels as `[id, name, creator, difficulty, platformer]`, roughly 1 MB compressed), which the app loads from the site only when it syncs, fills a wishlist or suggests names for a search that found nothing. The AREDL lists still provide the positions, which the sheet does not have. The level search uses GDBrowser rather than [GDHistory](https://history.geometrydash.eu/api/) because GDHistory sends no CORS headers, so a browser app cannot call it; GDBrowser returns the same level data. Thumbnails keep coming from Level Thumbnails, since neither service serves them.
 
-The scripts are classic scripts, not ES modules, so the app also works by opening `index.html` directly from disk. That is why the load order in `index.html` matters: each file uses what the previous ones define (`config` → `i18n` → `utils` → `state` → `api` → `sheet` → `components/` → `render` → `events` → `main`). User actions are wired through `data-act` attributes handled in `js/events.js`.
+The scripts are classic scripts, not ES modules, so the app also works by opening `index.html` directly from disk. That is why the load order in `index.html` matters: each file uses what the previous ones define (`config` → `i18n` → `utils` → `state` → `api` → `sheet` → `gd` → `components/` → `render` → `events` → `main`). User actions are wired through `data-act` attributes handled in `js/events.js`.
 
 The service worker is network-first: it always tries the latest version and falls back to its cache offline. It only caches the app's own files, never API responses. The Lilita One font is self-hosted in `fonts/` (SIL OFL, see `fonts/OFL.txt`) and SortableJS 1.15.2 in `vendor/` (MIT, notice kept in the file), because the Content Security Policy only allows the app's own fonts and scripts.
 
@@ -93,7 +95,7 @@ First-time setup, done once by a repository admin:
 ## Security
 
 - **No secrets** — there is no backend and no API key; nothing secret exists to leak.
-- **Content Security Policy** — a `<meta>` policy in `index.html` sets `default-src 'self'`, allows scripts only from the app itself, network requests only to `api.aredl.net`, images only from the thumbnail hosts, and sets `object-src 'none'`, `base-uri 'self'` and `form-action 'none'`. `style-src` allows `'unsafe-inline'` because the UI renders inline `style` attributes. A `<meta name="referrer">` tag sets `strict-origin-when-cross-origin`. `frame-ancestors` and `X-Content-Type-Options` need HTTP headers, which GitHub Pages does not let a site set; it does send HSTS on its own.
+- **Content Security Policy** — a `<meta>` policy in `index.html` sets `default-src 'self'`, allows scripts only from the app itself, network requests only to `api.aredl.net` and `gdbrowser.com`, images only from the thumbnail hosts, and sets `object-src 'none'`, `base-uri 'self'` and `form-action 'none'`. `style-src` allows `'unsafe-inline'` because the UI renders inline `style` attributes. A `<meta name="referrer">` tag sets `strict-origin-when-cross-origin`. `frame-ancestors` and `X-Content-Type-Options` need HTTP headers, which GitHub Pages does not let a site set; it does send HSTS on its own.
 - **Output escaping** — user text such as level names, notes and links goes through `escapeHtml` (`js/utils.js`) before it is rendered.
 - **Import validation** — imported profiles are checked by `isValidProfileData` (`js/state.js`) and rejected when they do not match the expected shape.
 - **Personal data stays out of git** — `.gitignore` excludes `private/`, `*.profile.json` and `*-backup*.json`.
@@ -104,4 +106,4 @@ First-time setup, done once by a repository admin:
 
 All rights reserved. The code is published for viewing only; see [`LICENSE`](LICENSE).
 
-Credits: positions from the [All Rated Extreme Demons List](https://aredl.net) ([API](https://api.aredl.net/v2/docs)), IDs, creators and difficulties from the [Geometry Dash community sheet of rated levels](https://docs.google.com/spreadsheets/d/1BBx9X8IYBtr7dA5cWu_smM2XBkLZzCXy7TjeEWRgag0), level thumbnails from [Level Thumbnails](https://levelthumbs.prevter.me). Geometry Dash © RobTop Games.
+Credits: level search and data from [GDBrowser](https://gdbrowser.com), positions from the [All Rated Extreme Demons List](https://aredl.net) ([API](https://api.aredl.net/v2/docs)), IDs, creators and difficulties from the [Geometry Dash community sheet of rated levels](https://docs.google.com/spreadsheets/d/1BBx9X8IYBtr7dA5cWu_smM2XBkLZzCXy7TjeEWRgag0), level thumbnails from [Level Thumbnails](https://levelthumbs.prevter.me). Geometry Dash © RobTop Games.
