@@ -91,6 +91,8 @@ const openModal = h => {
     }
     d.addEventListener('close', () => d.remove());
     d.showModal();
+    // The add-level dialog lists the tags under its tag search, like the edit panel does after render()
+    renderTagSuggestions();
 };
 
 /** Cierra la ventana modal. */
