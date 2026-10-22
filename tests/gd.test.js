@@ -40,3 +40,19 @@ test('search text is trimmed and collapsed, and text with nothing to search for 
     assert.equal(cleanQuery(' *** '), '');
     assert.equal(cleanQuery(''), '');
 });
+
+test('fillRatings fills difficulty and rating of saved levels without one, ten IDs per request', async () => {
+    const asked = [];
+    context.fetch = async url => {
+        asked.push(url);
+        return { json: async () => url.includes('10565740') ? [result({ featured: true }), result({ id: '13519', difficulty: 'Easy Demon', stars: 10, epic: true, featured: true })] : -1 };
+    };
+    const levels = [{ levelId: '10565740', diff: 'Hard Demon' }, { levelId: '13519' }, { levelId: '999', rating: 'rated' }, { levelId: null }, ...Array.from({ length: 9 }, (_, i) => ({ levelId: String(100 + i) }))];
+    await app('fillRatings')(levels);
+    assert.equal(asked.length, 2, '11 levels without a rating take two requests');
+    assert.match(asked[0], /search\/10565740,13519,100,.*\?list$/);
+    assert.deepEqual([levels[0].diff, levels[0].rating], ['Extreme Demon', 'featured']);
+    assert.deepEqual([levels[1].diff, levels[1].rating], ['Easy Demon', 'epic']);
+    assert.equal(levels[2].rating, 'rated', 'a level that has a rating is not asked for');
+    assert.equal(levels[12].rating, undefined, 'a level the API does not return keeps no rating');
+});

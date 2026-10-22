@@ -16,8 +16,7 @@ function card(l, i, n) {
     const u = thumbUrl(l), rank = i == 'pre' ? ICONS.classic : i != null ? i + 1 : '—';
     const podium = i === 0 ? ' top1' : i === 1 ? ' top2' : i === 2 ? ' top3' : '';
     const meta = [l.creator ? t('by') + ' ' + escapeHtml(l.creator) : '', escapeHtml(formatDate(l.date)), aredlLabel(l)].filter(Boolean).join(' · ');
-    const enj = l.enj == null ? '' : `<span class="badge${l.enj < 0 ? ' neg' : ''}" title="${t('enj')}" aria-label="${t('enj')} ${l.enj > 0 ? '+' : ''}${escapeHtml(l.enj)}">${l.enj > 0 ? '+' : ''}${escapeHtml(l.enj)}</span>`;
-    return `<div class="obj lv${podium}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${u ? ` style="--th:url('${u}')"` : ''}><span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + (i + 1) + ' / ' + n : t('unplaced')}">${rank}</span><div class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>${meta}</span>${l.tags?.length ? `<div>${l.tags.map(x => `<span class=chip data-tag="${escapeHtml(x)}" style="${tagStyle(x)}">${escapeHtml(x)}</span>`).join('')}</div>` : ''}</div>${enj}</div>`;
+    return `<div class="obj lv${podium}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${u ? ` style="--th:url('${u}')"` : ''}><span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + (i + 1) + ' / ' + n : t('unplaced')}">${rank}</span><div class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>${meta}</span>${l.tags?.length ? `<div>${l.tags.map(x => `<span class=chip data-tag="${escapeHtml(x)}" style="${tagStyle(x)}">${escapeHtml(x)}</span>`).join('')}</div>` : ''}</div>${difficultyFace(l)}</div>`;
 }
 
 /** Ids of the ranked levels of a list, in order: Pre-Extremes levels and ids of deleted levels have no rank. */
@@ -40,7 +39,7 @@ function detail(l) {
         h += `<b data-hp="${p}" data-hn="${escapeHtml(d[p] || 0)}"><i style="height:${(d[p] || 0) / mx * 100}%"></i></b>`;
         ax += `<span>${p % 10 == 0 || hi - lo < 12 ? p + '%' : ''}</span>`;
     }
-    return `<div class=box>${u ? `<div class=hero style="background-image:url('${u}')"></div>` : ''}<h2>${escapeHtml(l.name)}</h2><p class=by>${escapeHtml(orDash(l.creator))} · ID ${escapeHtml(orDash(l.levelId))} · ${escapeHtml(orDash(l.diff))} · ${aredlLabel(l)}</p>
+    return `<div class=box>${u ? `<div class=hero style="background-image:url('${u}')"></div>` : ''}<h2>${escapeHtml(l.name)}</h2><p class=by>${escapeHtml(orDash(l.creator))} · ID ${escapeHtml(orDash(l.levelId))} · ${escapeHtml(difficultyLabel(l))} · ${aredlLabel(l)}</p>
 <div class=dgrid>${sc('sa', `<div class=grid>${st('attT', orDash(totalAttempts(l)), 'big')}${st('attN', orDash(l.attN))}${st('attC', orDash(l.attC))}${st('best', ks.length ? `${hi}% ×${d[hi]}` : '-')}</div>`)}
 ${sc('sT', `<div class=grid>${st('tT', orDash(formatDuration(totalSeconds(l))), 'big')}${st('tN', orDash(formatDuration(l.tN)))}${st('tP', orDash(formatDuration(l.tP)))}${st('tPC', orDash(formatDuration(l.tPC)))}</div>`)}
 ${sc('s4', `<div class=grid>${st('date', orDash(formatDate(l.date)))}</div>${y ? `<a class=yt target=_blank rel=noopener href="${escapeHtml(link)}"><img src="https://img.youtube.com/vi/${y}/hqdefault.jpg" alt=""><span>${ICONS.play}</span></a>` : link ? `<p><a style="color:var(--a)" target=_blank rel=noopener href="${escapeHtml(link)}">${ICONS.play} ${t('link')}</a></p>` : ''}`)}

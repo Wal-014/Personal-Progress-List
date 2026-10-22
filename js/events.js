@@ -369,12 +369,6 @@ document.body.oninput = e => {
 };
 document.body.onchange = e => {
     const i = e.target.id, ds = e.target.dataset;
-    if (ds.wd != null) {
-        currentWishlist().items.find(i => i.id == ds.wd).diff = e.target.value || null;
-        save();
-        render();
-        return;
-    }
     if (ds.wi != null) {
         currentWishlist().items.find(i => i.id == ds.wi).status = e.target.value;
         save();

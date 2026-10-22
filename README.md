@@ -28,7 +28,8 @@
 ## What it does
 
 - **Profiles** — each profile has its own lists, wishlists and tags; a menu at the top of Home switches between them and creates, renames, deletes, exports and imports them.
-- **Your own ranking** — Classic and Platformer lists with drag-and-drop cards for your personal top (`#12 / 90`), the level's AREDL position and its thumbnail as the card background.
+- **Your own ranking** — Classic and Platformer lists with drag-and-drop cards for your personal top (`#12 / 90`), the level's AREDL position, its thumbnail as the card background and its difficulty face.
+- **Difficulty faces** — the game's face for each difficulty, from NA to Extreme Demon, with the Featured, Epic, Legendary or Mythic halo of its rating, on level cards, wishlist cards, search results and the level form. Sync looks up the rating of saved levels that do not have one yet.
 - **Level details** — attempts (normal and copy), play time, completion date, YouTube video with its thumbnail, enjoyment and liking ratings from −10 to 10, tags, notes and a deaths-by-percent histogram.
 - **Automatic AREDL sync** — AREDL positions, level IDs, creators and difficulties refresh when the app opens or regains focus if they are more than 12 hours old; a chip in the top bar shows the status and the pause menu has **Update now**.
 - **Level search** — the level form and wishlists search [GDBrowser](https://gdbrowser.com) by name or ID, with a featured filter, and list the matches as cards with their thumbnail, most downloaded first. Picking one fills in the name, ID, creator, difficulty, rating and list, which cannot be edited by hand. When nothing matches, similar names from the AREDL and the community sheet are suggested.
@@ -57,7 +58,7 @@ There is no backend and no account. Profiles live in the browser's `localStorage
 
 The scripts are classic scripts, not ES modules, so the app also works by opening `index.html` directly from disk. That is why the load order in `index.html` matters: each file uses what the previous ones define (`config` → `i18n` → `utils` → `state` → `api` → `sheet` → `gd` → `components/` → `render` → `events` → `main`). User actions are wired through `data-act` attributes handled in `js/events.js`.
 
-The service worker is network-first: it always tries the latest version and falls back to its cache offline. It only caches the app's own files, never API responses. The Lilita One font is self-hosted in `fonts/` (SIL OFL, see `fonts/OFL.txt`) and SortableJS 1.15.2 in `vendor/` (MIT, notice kept in the file), because the Content Security Policy only allows the app's own fonts and scripts.
+The service worker is network-first: it always tries the latest version and falls back to its cache offline. It only caches the app's own files, never API responses. The Lilita One font is self-hosted in `fonts/` (SIL OFL, see `fonts/OFL.txt`) and SortableJS 1.15.2 in `vendor/` (MIT, notice kept in the file), because the Content Security Policy only allows the app's own fonts and scripts. The difficulty faces are WebP copies of the game's sprites in `assets/faces/`, taken from GDBrowser and centred on one canvas so every halo lines up; serving them from the site keeps them working offline.
 
 **Stack:** HTML · CSS · JavaScript (no framework, no build step) · SortableJS · GitHub Pages · GitHub Actions
 
@@ -106,4 +107,4 @@ First-time setup, done once by a repository admin:
 
 All rights reserved. The code is published for viewing only; see [`LICENSE`](LICENSE).
 
-Credits: level search and data from [GDBrowser](https://gdbrowser.com), positions from the [All Rated Extreme Demons List](https://aredl.net) ([API](https://api.aredl.net/v2/docs)), IDs, creators and difficulties from the [Geometry Dash community sheet of rated levels](https://docs.google.com/spreadsheets/d/1BBx9X8IYBtr7dA5cWu_smM2XBkLZzCXy7TjeEWRgag0), level thumbnails from [Level Thumbnails](https://levelthumbs.prevter.me). Geometry Dash © RobTop Games.
+Credits: level search, data and difficulty faces from [GDBrowser](https://gdbrowser.com), positions from the [All Rated Extreme Demons List](https://aredl.net) ([API](https://api.aredl.net/v2/docs)), IDs, creators and difficulties from the [Geometry Dash community sheet of rated levels](https://docs.google.com/spreadsheets/d/1BBx9X8IYBtr7dA5cWu_smM2XBkLZzCXy7TjeEWRgag0), level thumbnails from [Level Thumbnails](https://levelthumbs.prevter.me). Geometry Dash © RobTop Games.

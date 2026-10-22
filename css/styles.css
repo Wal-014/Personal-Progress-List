@@ -343,7 +343,7 @@ input:user-invalid, select:user-invalid, textarea:user-invalid {
   clear: both;
 }
 
-.box label {
+.box label, .box .lab {
   display: block;
   margin-bottom: 4px;
   font: bold 11px Arial, Helvetica, sans-serif;
@@ -1098,17 +1098,21 @@ dialog.modal::backdrop {
   overflow-wrap: anywhere;
 }
 
-.badge {
-  padding: 3px 8px;
-  font: bold 13px Arial, Helvetica, sans-serif;
-  color: var(--ye);
-  background: #000;
-  border: 1px solid rgba(255, 255, 255, .4);
-  border-radius: 4px;
+/* Face sprites are twice as wide as the face so the widest halo fits; negative margins let the halo spill into the padding */
+.face {
+  flex: none;
+  width: 64px;
+  height: 64px;
 }
 
-.badge.neg {
-  color: #ff8095;
+.face.unk {
+  opacity: .45;
+}
+
+.lv .face {
+  width: 84px;
+  height: 84px;
+  margin: -19px -10px;
 }
 
 .grp {
@@ -1426,10 +1430,24 @@ input.ro {
   display: block;
 }
 
-.gdd {
-  font: bold 12px Arial, Helvetica, sans-serif;
-  color: var(--ye);
-  text-align: right;
+.gdc .face, .wi .face {
+  width: 80px;
+  height: 80px;
+  margin: -14px -8px;
+}
+
+.fdiff {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  font: bold 15px Arial, Helvetica, sans-serif;
+}
+
+.fdiff .face {
+  width: 84px;
+  height: 84px;
+  margin: -16px -10px;
 }
 
 .gdsim {
@@ -1641,7 +1659,8 @@ input.ro {
 
 .wsel {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   gap: 6px;
 }
 

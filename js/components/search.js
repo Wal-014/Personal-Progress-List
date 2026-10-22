@@ -8,9 +8,6 @@ let levelSearch = {};
 /** Bumped by every search so an answer that arrives after a newer search is dropped. */
 let levelSearchRun = 0;
 
-/** Difficulty and rating as text, like «Extreme Demon · Epic». Unrated levels show NA; a difficulty nobody knows shows a dash. */
-const difficultyLabel = l => l.rating == 'unrated' ? 'NA' : !l.diff ? '-' : l.diff + (['featured', 'epic', 'legendary', 'mythic'].includes(l.rating) ? ' · ' + t('r_' + l.rating) : '');
-
 /** Search box, featured filter and results panel. Drawing it starts a new search, so a form never shows another form's results. */
 function levelSearchBox() {
     levelSearch = { q: '', featured: 'all', results: [], page: 0, more: false, status: 'idle', similar: [] };
@@ -23,7 +20,7 @@ function levelSearchBox() {
 /** A result: the whole card picks the level. The thumbnail fills its background, black when there is none. */
 function resultCard(l, i) {
     const u = thumbUrl(l);
-    return `<button type=button class=gdc data-act=gdpick data-i=${i}${u ? ` style="--th:url('${u}')"` : ''}><span class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>ID ${escapeHtml(l.levelId)} · ${t('by')} ${escapeHtml(orDash(l.creator))}${l.kind == 'platform' ? ' · ' + t('platform') : ''}</span></span><span class=gdd>${escapeHtml(difficultyLabel(l))}</span></button>`;
+    return `<button type=button class=gdc data-act=gdpick data-i=${i}${u ? ` style="--th:url('${u}')"` : ''}><span class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>ID ${escapeHtml(l.levelId)} · ${t('by')} ${escapeHtml(orDash(l.creator))}${l.kind == 'platform' ? ' · ' + t('platform') : ''}</span></span>${difficultyFace(l)}</button>`;
 }
 
 /** Draws the results panel from the search state. */
@@ -88,7 +85,8 @@ function pickLevel(f, l) {
     set('diff', l.diff);
     set('rating', l.rating);
     set('kind', l.kind);
-    set('diffT', difficultyLabel(l));
+    qs('#lf-face').outerHTML = difficultyFace(l, 'lf-face');
+    qs('#lf-diffT').textContent = difficultyLabel(l);
     set('kindT', t(l.kind));
     qs('#gdq').setCustomValidity('');
     if (f.id == 'fm')
@@ -98,8 +96,8 @@ function pickLevel(f, l) {
 /** Read-only level fields filled by the search: name, ID, creator, difficulty and, in the level form, the list. */
 function levelFields(o, withKind) {
     const ro = (k, label, v) => `<div><label for=lf-${k}>${t(label)}</label><input id=lf-${k} name=${k} value="${escapeHtml(v)}" readonly class=ro></div>`;
-    const known = o.levelId || o.name;
     return ro('name', 'name', o.name) + ro('lid', 'lid', o.levelId) + ro('creator', 'creator', o.creator)
-        + ro('diffT', 'diff', known ? difficultyLabel(o) : '') + `<input type=hidden name=diff value="${escapeHtml(o.diff)}"><input type=hidden name=rating value="${escapeHtml(o.rating)}">`
+        + `<div><span class=lab>${t('diff')}</span><div class=fdiff>${difficultyFace(o, 'lf-face')}<span id=lf-diffT>${o.levelId || o.name ? escapeHtml(difficultyLabel(o)) : ''}</span></div></div>`
+        + `<input type=hidden name=diff value="${escapeHtml(o.diff)}"><input type=hidden name=rating value="${escapeHtml(o.rating)}">`
         + (withKind ? ro('kindT', 'kind', t(o.kind)) + `<input type=hidden name=kind value="${escapeHtml(o.kind)}">` : '');
 }

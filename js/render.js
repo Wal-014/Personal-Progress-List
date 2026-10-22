@@ -8,7 +8,7 @@ function controlSelector(el) {
         return null;
     if (el.id)
         return '#' + CSS.escape(el.id);
-    const attrs = ['data-act', 'data-id', 'data-v', 'data-wi', 'data-wd', 'name'].filter(a => el.hasAttribute(a));
+    const attrs = ['data-act', 'data-id', 'data-v', 'data-wi', 'name'].filter(a => el.hasAttribute(a));
     return attrs.length ? el.tagName.toLowerCase() + attrs.map(a => `[${a}="${CSS.escape(el.getAttribute(a))}"]`).join('') : null;
 }
 

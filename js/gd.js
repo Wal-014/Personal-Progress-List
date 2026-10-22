@@ -66,3 +66,25 @@ async function similarLevelNames(query) {
         }
     return [...new Set(names)].slice(0, 5);
 }
+
+/**
+ * Looks up difficulty and rating of saved levels that have an ID but no rating yet, ten IDs per request (one page of the game).
+ * A batch that fails is skipped and retried on the next sync; levels GDBrowser does not return keep no rating.
+ */
+async function fillRatings(levels) {
+    const todo = levels.filter(l => /^\d+$/.test(l.levelId || '') && !l.rating);
+    for (let i = 0; i < todo.length; i += 10) {
+        const batch = todo.slice(i, i + 10);
+        try {
+            const d = await (await fetch(`${GDB_API}search/${batch.map(l => l.levelId).join(',')}?list`)).json();
+            const found = new Map((Array.isArray(d) ? d : []).filter(x => x && /^\d+$/.test(x.id)).map(x => [String(x.id), fromGdb(x)]));
+            batch.forEach(l => {
+                const g = found.get(String(l.levelId));
+                if (g)
+                    Object.assign(l, { diff: g.diff, rating: g.rating });
+            });
+        }
+        catch {
+        }
+    }
+}
