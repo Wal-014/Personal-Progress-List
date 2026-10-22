@@ -166,7 +166,8 @@ const ACTIONS = {
     pdelid(a, id) {
         if (Object.keys(store.profs).length < 2)
             return showAlert(t('lastP'));
-        askConfirm(t('pdel')).then(ok => {
+        // The menu can delete any profile, not just the active one, so the dialog names it
+        showDialog({ title: t('pdel'), msg: store.profs[id].name, danger: 1 }).then(ok => {
             if (!ok)
                 return;
             delete store.profs[id];
@@ -424,7 +425,8 @@ document.addEventListener('beforetoggle', e => {
     if (e.target.id != 'pmenu' || e.newState != 'open')
         return;
     const r = qs('[popovertarget=pmenu]').getBoundingClientRect(), w = Math.min(360, innerWidth - 24);
-    Object.assign(e.target.style, { width: w + 'px', top: r.bottom + 6 + 'px', left: Math.max(12, Math.min(r.left, innerWidth - w - 12)) + 'px' });
+    // Only the profile rows scroll, so the menu never runs past the bottom of the screen
+    Object.assign(e.target.style, { width: w + 'px', top: r.bottom + 6 + 'px', left: Math.max(12, Math.min(r.left, innerWidth - w - 12)) + 'px', maxHeight: Math.max(200, innerHeight - r.bottom - 18) + 'px' });
 }, true);
 document.onkeydown = e => {
     if (e.key == 'Escape') {

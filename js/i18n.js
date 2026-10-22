@@ -32,3 +32,5 @@ Object.assign(TRANSLATIONS.es, { blue: 'Azul clásico', night: 'Noche', synth: '
 Object.assign(TRANSLATIONS.en, { blue: 'Classic blue', night: 'Night', synth: 'Synth', pause: 'Pause', resume: 'Resume', lang: 'Language', more: 'More', palAdd: 'Add level', palWish: 'Add Wishlist', palExp: 'Export', nav: 'Navigation' });
 Object.assign(TRANSLATIONS.es, { syncing: 'Actualizando AREDL…', syncNow: 'Actualizar ahora', aredlUpd: 'Actualizado', aredlNever: 'Aún sin actualizar', aredlOn: '{n} de {t} niveles en la lista' });
 Object.assign(TRANSLATIONS.en, { syncing: 'Updating AREDL…', syncNow: 'Update now', aredlUpd: 'Updated', aredlNever: 'Not updated yet', aredlOn: '{n} of {t} levels on the list' });
+Object.assign(TRANSLATIONS.es, { expP: 'Exportar perfil', imp: 'Importar' });
+Object.assign(TRANSLATIONS.en, { expP: 'Export profile', imp: 'Import' });
