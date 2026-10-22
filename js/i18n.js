@@ -24,8 +24,8 @@ Object.assign(TRANSLATIONS.en, { badFile: 'The file is not a valid exported prof
 const t = k => TRANSLATIONS[ui.lang][k] ?? k;
 Object.assign(TRANSLATIONS.es, { dataUnreadable: 'No se pudieron leer los datos guardados, así que se cargó el perfil de demostración. Se guardó una copia de los datos anteriores para poder recuperarlos.' });
 Object.assign(TRANSLATIONS.en, { dataUnreadable: 'Your saved data could not be read, so the demo profile was loaded. A copy of the previous data was kept so it can be recovered.' });
-Object.assign(TRANSLATIONS.es, { tagExists: 'Ya existe un tag con ese nombre', tagEmpty: 'Escribe un nombre para el tag' , expP: 'Exportar perfil', imp: 'Importar' });
-Object.assign(TRANSLATIONS.en, { tagExists: 'A tag with that name already exists', tagEmpty: 'Enter a name for the tag' , expP: 'Export profile', imp: 'Import' });
+Object.assign(TRANSLATIONS.es, { tagExists: 'Ya existe un tag con ese nombre', tagEmpty: 'Escribe un nombre para el tag', expP: 'Exportar perfil', imp: 'Importar' });
+Object.assign(TRANSLATIONS.en, { tagExists: 'A tag with that name already exists', tagEmpty: 'Enter a name for the tag', expP: 'Export profile', imp: 'Import' });
 Object.assign(TRANSLATIONS.es, { preTagHint: 'Los niveles con este tag van a «Primeros pasos».', preTagConfirm: 'Los niveles con este tag van a «Primeros pasos». Si lo renombras o lo eliminas, esos niveles pasarán a «Sin colocar». ¿Continuar?' });
 Object.assign(TRANSLATIONS.en, { preTagHint: 'Levels with this tag go to "First steps".', preTagConfirm: 'Levels with this tag go to "First steps". If you rename or delete it, those levels will move to "Unplaced". Continue?' });
 Object.assign(TRANSLATIONS.es, { blue: 'Azul clásico', night: 'Noche', synth: 'Synth', pause: 'Pausa', resume: 'Continuar', lang: 'Idioma', more: 'Más', palAdd: 'Añadir nivel', palWish: 'Añadir wishlist', palExp: 'Exportar', nav: 'Navegación' });
