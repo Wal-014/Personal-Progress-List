@@ -1317,6 +1317,101 @@ input.ro {
   opacity: .55;
 }
 
+/* ===== Level search ===== */
+.gdq {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+}
+
+.gdf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.gdf [aria-pressed=true] {
+  background: linear-gradient(var(--go1), var(--go2));
+}
+
+.gdm {
+  margin: 8px 0 0;
+  font: bold 13px Arial, Helvetica, sans-serif;
+  color: var(--plab);
+}
+
+.gdm:empty {
+  display: none;
+}
+
+.gdr {
+  display: grid;
+  gap: 6px;
+  max-height: 320px;
+  margin-top: 8px;
+  padding: 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: rgba(0, 0, 0, .35);
+  border: 2px solid rgba(255, 255, 255, .28);
+  border-radius: 8px;
+}
+
+.gdr[hidden], .gdclr[hidden] {
+  display: none;
+}
+
+/* The level thumbnail fills the card, darkened behind the text; black when the level has none */
+.gdc {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  justify-content: stretch;
+  width: 100%;
+  min-height: 60px;
+  padding: 8px 10px;
+  font: inherit;
+  text-align: left;
+  -webkit-text-stroke: 0;
+  background: linear-gradient(90deg, rgba(0, 0, 0, .9), rgba(0, 0, 0, .6) 60%, rgba(0, 0, 0, .35)), var(--th, none) center / cover no-repeat, #000;
+  border: 2px solid rgba(255, 255, 255, .4);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.gdc:hover, .gdc:focus-visible {
+  border-color: var(--go);
+}
+
+.gdc .nm {
+  display: block;
+  font-size: 17px;
+  overflow-wrap: anywhere;
+}
+
+.gdc .by {
+  display: block;
+}
+
+.gdd {
+  font: bold 12px Arial, Helvetica, sans-serif;
+  color: var(--ye);
+  text-align: right;
+}
+
+.gdsim {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+}
+
+.gds small {
+  display: block;
+  margin-top: 8px;
+}
+
 /* ===== Statistics ===== */
 .kpis {
   display: grid;

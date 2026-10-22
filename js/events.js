@@ -60,7 +60,7 @@ const ACTIONS = {
             renderPanel();
         }
         openModal(form());
-        qs('#fm input[name=name]').focus();
+        qs('#gdq').focus();
     },
     edit(a, id) {
         const fb = !!qs('#md .modal'), l = findLevel(id);
@@ -217,8 +217,32 @@ const ACTIONS = {
             render();
         });
     },
-    wadd: () => openModal(wform()),
+    wadd() {
+        openModal(wform());
+        qs('#gdq').focus();
+    },
     wedit: (a, id) => openModal(wform(currentWishlist().items.find(i => i.id == id))),
+    gdgo: () => runLevelSearch(),
+    gdmore: () => runLevelSearch(true),
+    gdtry(a) {
+        qs('#gdq').value = a.dataset.v;
+        runLevelSearch();
+    },
+    gdfeat(a) {
+        levelSearch.featured = a.dataset.v;
+        if (levelSearch.q)
+            runLevelSearch();
+        else
+            renderLevelSearch();
+    },
+    gdclear() {
+        levelSearch.featured = 'all';
+        if (levelSearch.q)
+            runLevelSearch();
+        else
+            renderLevelSearch();
+    },
+    gdpick: a => pickLevel(a.form, levelSearch.results[a.dataset.i]),
     wdel(a, id) {
         askConfirm(t('wconf')).then(ok => {
             if (!ok)
@@ -232,7 +256,7 @@ const ACTIONS = {
         const i = currentWishlist().items.find(x => x.id == id), kd = a.dataset.v;
         if (isInList(i, kd))
             return showAlert(t('exists'));
-        profile.levels.push({ id: newId('n'), name: i.name, kind: kd, levelId: i.levelId || null, creator: i.creator || null, diff: i.diff || null, ar: { s: 'n' }, deaths: {}, tags: [], notes: '', date: todayLocal() });
+        profile.levels.push({ id: newId('n'), name: i.name, kind: kd, levelId: i.levelId || null, creator: i.creator || null, diff: i.diff || null, rating: i.rating || null, ar: { s: 'n' }, deaths: {}, tags: [], notes: '', date: todayLocal() });
         i.added = true;
         save();
         showAlert(t('addedOk'));
@@ -284,6 +308,11 @@ document.body.onclick = e => {
 };
 document.body.onsubmit = e => {
     e.preventDefault();
+    // The level fields are read-only, so the browser does not check them: a level must be picked from the search
+    if (!e.target.elements.name.value) {
+        qs('#gdq').setCustomValidity(t('gdPick'));
+        return qs('#gdq').reportValidity();
+    }
     if (e.target.id == 'wf') {
         const g = Object.fromEntries(new FormData(e.target)), w = currentWishlist();
         let i = w.items.find(x => x.id == e.target.dataset.id);
@@ -291,7 +320,7 @@ document.body.onsubmit = e => {
             i = { id: newId('i'), status: 'todo' };
             w.items.push(i);
         }
-        Object.assign(i, { name: g.name.trim(), levelId: g.lid || null, creator: g.creator || null, diff: g.diff || null });
+        Object.assign(i, { name: g.name.trim(), levelId: g.lid || null, creator: g.creator || null, diff: g.diff || null, rating: g.rating || null });
         i.chk = 0;
         save();
         closeModal();
@@ -303,7 +332,7 @@ document.body.onsubmit = e => {
         const v = N(k);
         return v == null ? v : Math.max(-10, Math.min(10, v));
     }, old = findLevel(e.target.dataset.id), o = old || { id: newId('n') };
-    Object.assign(o, { name: g.name.trim(), kind: g.kind, levelId: g.lid || null, creator: g.creator || null, diff: g.diff || null, attC: N('attC'), attN: N('attN'), date: g.date || null, link: g.link || null, enj: C('enj'), lik: C('lik'), tN: parseDuration(g.tN), tP: parseDuration(g.tP), tPC: parseDuration(g.tPC), notes: g.notes, tags: new FormData(e.target).getAll('tg'), deaths: parseDeaths(g.deaths), ar: { s: g.as, p: g.as == 'r' ? N('ap') : null } });
+    Object.assign(o, { name: g.name.trim(), kind: g.kind, levelId: g.lid || null, creator: g.creator || null, diff: g.diff || null, rating: g.rating || null, attC: N('attC'), attN: N('attN'), date: g.date || null, link: g.link || null, enj: C('enj'), lik: C('lik'), tN: parseDuration(g.tN), tP: parseDuration(g.tP), tPC: parseDuration(g.tPC), notes: g.notes, tags: new FormData(e.target).getAll('tg'), deaths: parseDeaths(g.deaths), ar: { s: g.as, p: g.as == 'r' ? N('ap') : null } });
     if (!old)
         profile.levels.push(o);
     matchWithAredl([o]);
@@ -328,6 +357,8 @@ document.body.oninput = e => {
         updateTotals(e.target.form);
     if (e.target.id == 'tgq')
         renderTagSuggestions();
+    if (e.target.id == 'gdq')
+        e.target.setCustomValidity('');
     if (e.target.id == 'q') {
         ui.q = e.target.value.toLowerCase();
         renderList();
@@ -385,8 +416,6 @@ document.body.onchange = e => {
     if (e.target.form?.id == 'fm') {
         if (e.target.name == 'as' && e.target.value != 'r')
             e.target.form.elements.ap.value = '';
-        if (['name', 'lid', 'kind'].includes(e.target.name))
-            validateAgainstAredl(e.target.form);
         return;
     }
     if (i == 'fi') {
@@ -437,6 +466,11 @@ document.onkeydown = e => {
     if (e.key == 'Enter' && e.target.id == 'tgq') {
         e.preventDefault();
         qs('#tgr [data-act=tgadd]')?.click();
+    }
+    // Enter searches instead of submitting the form around the search box
+    if (e.key == 'Enter' && e.target.id == 'gdq') {
+        e.preventDefault();
+        runLevelSearch();
     }
 };
 document.body.onmousemove = e => {

@@ -32,6 +32,5 @@ function wishView() {
 
 /** Formulario para añadir o editar un nivel de wishlist. */
 function wform(i) {
-    const f = (k, l, v, x = '') => `<div><label for=wf-${k}>${t(l)}</label><input id=wf-${k} name=${k} ${x} value="${escapeHtml(v)}"></div>`;
-    return `<div class="box sm"><h2>${i ? t('edit') : t('palAdd')}</h2><form id=wf data-id="${escapeHtml(i?.id)}"><div class=grid>${f('name', 'name', i?.name, 'required')}${f('lid', 'lid', i?.levelId, 'inputmode=numeric')}${f('creator', 'creator', i?.creator)}<div><label for=wf-diff>${t('diff')}</label><select id=wf-diff name=diff><option value="">-</option>${DIFFICULTIES.map(d => `<option ${i?.diff == d ? 'selected' : ''}>${d}</option>`).join('')}</select></div></div><p class=dgb><button class=pri>${t('save')}</button> <button type=button data-act=close>${t('close')}</button></p></form></div>`;
+    return `<div class="box sm"><h2>${i ? t('edit') : t('palAdd')}</h2><form id=wf data-id="${escapeHtml(i?.id)}">${levelSearchBox()}<div class=grid>${levelFields(i || {}, false)}</div><p class=dgb><button class=pri>${t('save')}</button> <button type=button data-act=close>${t('close')}</button></p></form></div>`;
 }

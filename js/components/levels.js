@@ -70,9 +70,10 @@ function renderTagSuggestions() {
 
 /** Formulario para añadir o editar un nivel. */
 function form(l) {
-    const f = (k, v, ty = 'text', x = '') => `<div><label for=fm-${k}>${t(k)}</label>${ty == 'number' && !x.includes('readonly') ? `<div class=num><button type=button class=blue data-act=step data-d=-1 aria-label="−1">−</button><input id=fm-${k} name=${k} type=number ${x} value="${escapeHtml(v)}"><button type=button class=blue data-act=step data-d=1 aria-label="+1">+</button></div>` : `<input id=fm-${k} name=${k} type=${ty} ${x} value="${escapeHtml(v)}"${x.includes('readonly') ? ' class=ro' : ''}>`}</div>`, kind = l?.kind || (isListTab() ? ui.tab : 'classic'), o = l || { tags: [], ar: { s: 'n' } }, pos = rankedIds(kind).indexOf(l?.id) + 1 || '', sec = (k, b) => `<fieldset><legend>${t(k)}</legend><div class=grid>${b}</div></fieldset>`, sel = (lab, nm, opts) => `<div><label for=fm-${nm}>${lab}</label><select id=fm-${nm} name=${nm}>${opts}</select></div>`;
+    const f = (k, v, ty = 'text', x = '') => `<div><label for=fm-${k}>${t(k)}</label>${ty == 'number' && !x.includes('readonly') ? `<div class=num><button type=button class=blue data-act=step data-d=-1 aria-label="−1">−</button><input id=fm-${k} name=${k} type=number ${x} value="${escapeHtml(v)}"><button type=button class=blue data-act=step data-d=1 aria-label="+1">+</button></div>` : `<input id=fm-${k} name=${k} type=${ty} ${x} value="${escapeHtml(v)}"${x.includes('readonly') ? ' class=ro' : ''}>`}</div>`, kind = l?.kind || (isListTab() ? ui.tab : 'classic'), o = l || { tags: [], ar: { s: 'n' }, kind }, pos = rankedIds(kind).indexOf(l?.id) + 1 || '', sec = (k, b) => `<fieldset><legend>${t(k)}</legend><div class=grid>${b}</div></fieldset>`, sel = (lab, nm, opts) => `<div><label for=fm-${nm}>${lab}</label><select id=fm-${nm} name=${nm}>${opts}</select></div>`;
     return `<div class=box><h2>${l ? t('edit') : t('palAdd')}</h2><form id=fm data-id="${escapeHtml(l?.id)}"><div class=warn id=wn></div>
-${sec('s1', f('name', o.name, 'text', 'required') + f('lid', o.levelId, 'text', 'inputmode=numeric') + f('creator', o.creator) + sel(t('diff'), 'diff', '<option value="">-</option>' + DIFFICULTIES.map(d => `<option ${o.diff == d ? 'selected' : ''}>${d}</option>`).join('')) + sel(t('kind'), 'kind', ['classic', 'platform'].map(k => `<option value=${k} ${k == kind ? 'selected' : ''}>${t(k)}</option>`).join('')))}
+${levelSearchBox()}
+${sec('s1', levelFields(o, true))}
 ${sec('s2', f('pos', pos, 'number', 'min=1 step=1') + sel('AREDL', 'as', [['r', t('onl')], ['n', t('notin')], ['p', t('pending')]].map(([k, v]) => `<option value=${k} ${o.ar?.s == k ? 'selected' : ''}>${v}</option>`).join('')) + f('ap', o.ar?.p, 'number', 'readonly tabindex=-1'))}
 ${sec('s3', f('attC', o.attC, 'number', 'min=0 step=1') + f('attN', o.attN, 'number', 'min=0 step=1') + f('tN', formatDuration(o.tN), 'text', 'placeholder="1h 30m 0s"') + f('tP', formatDuration(o.tP)) + f('tPC', formatDuration(o.tPC)) + f('attT', totalAttempts(o), 'number', 'readonly tabindex=-1') + f('tT', formatDuration(totalSeconds(o)), 'text', 'readonly tabindex=-1'))}
 ${sec('s4', f('date', o.date, 'date') + f('link', o.link))}
@@ -132,41 +133,14 @@ function selectLevel(id) {
         qs('.rcol').scrollIntoView({ behavior: 'smooth' });
 }
 
-/** Checks the form's name and ID against the AREDL list, then the community sheet, fills what they know and warns when neither has the level. */
-async function validateAgainstAredl(f) {
-    await loadSheetLevels();
+/** Sets the form's AREDL or AREPL position from the picked level's ID, and says when the level is on the list. */
+async function fillAredlPosition(f) {
+    await loadAredlList();
     const q = k => f.elements[k], w = qs('#wn');
     if (!w)
         return;
-    const name = q('name').value.trim(), id = q('lid').value.trim(), kind = q('kind').value == 'platform' ? 'p' : 'd';
-    const m = id ? aredlCache.find(x => x.k == kind && String(x.i) == id) : findAredlByName(name, kind);
-    if (m) {
-        if (!id)
-            q('lid').value = m.i;
-        q('as').value = 'r';
-        q('ap').value = m.p;
-        if (m.u && !q('creator').value)
-            q('creator').value = m.u;
-        w.textContent = `${t('found')} · #${m.p}${normalizeName(m.n) == normalizeName(name) ? '' : ' · ' + m.n}`;
-    }
-    else {
-        const similar = !id && name ? similarAredlNames(name, kind) : [];
-        w.textContent = !aredlCache.length ? t('nocache') : id ? t('nolist') : name ? t('nf') + (similar.length ? ` ${t('didYouMean')} ${similar.join(', ')}` : '') : '';
-    }
-    const s = findSheetLevel(q('lid').value.trim(), name, kind);
-    if (s) {
-        q('lid').value ||= s[0];
-        if (!q('creator').value)
-            q('creator').value = s[2];
-        if (!q('diff').value)
-            q('diff').value = DIFFICULTIES[s[3]] || '';
-        if (!m)
-            w.textContent = t('foundSheet');
-    }
-    const thumb = thumbUrl({ levelId: id });
-    if (thumb) {
-        const im = new Image();
-        im.onerror = () => w.textContent += ' · ' + t('nothumb');
-        im.src = thumb;
-    }
+    const k = q('kind').value == 'platform' ? 'p' : 'd', m = aredlCache.find(x => x.k == k && String(x.i) == q('lid').value);
+    q('as').value = m ? 'r' : 'n';
+    q('ap').value = m ? m.p : '';
+    w.textContent = m ? `${t('found')} · #${m.p}` : '';
 }
