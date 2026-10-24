@@ -77,7 +77,7 @@ npm run levels                # download the community sheet into data/levels.js
 
 On Windows, `iniciar.bat` starts the same server and opens the browser; on macOS and Linux, `iniciar.command` does the same with `python3`. There are no environment variables: the app has no backend and none of the external services needs an API key. The first visit loads the demo profile from `data/demo-data.js`, which contains fictional data. Without `data/levels.json` the app still works; it just cannot fill creators and difficulties from the sheet.
 
-Node is only used for the checks; the app itself has no dependencies to install. `eslint.config.js` reads the script list in `index.html` so that names shared between the classic scripts count as defined, and the tests run `js/config.js` and `js/utils.js` in a shared `vm` context the same way the page does.
+`eslint.config.js` reads the script list in `index.html` so that names shared between the classic scripts count as defined, and the tests run `js/config.js` and `js/utils.js` in a shared `vm` context the same way the page does.
 
 The banner is drawn in `docs/brand/banner.html`. Regenerate it from the repository root with
 `npx -y playwright@1.63.0 screenshot --viewport-size "1280,640" "file:///<absolute path>/docs/brand/banner.html" docs/brand/banner.png`.
