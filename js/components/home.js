@@ -5,7 +5,6 @@
 /** Chart line drawn on the statistics block; the list blocks show their #1 level's thumbnail instead. */
 const STATS_ART = '<svg class=art width=90 height=46 viewBox="0 0 90 46" aria-hidden=true><polyline points="2,40 20,26 36,32 54,10 70,20 88,4" fill=none stroke="#000" stroke-width=7 stroke-linejoin=round /><polyline points="2,40 20,26 36,32 54,10 70,20 88,4" fill=none stroke="#3cff6c" stroke-width=3 stroke-linejoin=round /></svg>';
 
-/** Home screen. */
 function home() {
     const count = k => profile.levels.filter(l => l.kind == k).length;
     const attempts = k => profile.levels.filter(l => l.kind == k).reduce((s, l) => s + (totalAttempts(l) || 0), 0);
@@ -25,7 +24,6 @@ function home() {
 <div class=trigs>${wishes}<div class=slot data-act=wnew role=button tabindex=0>${t('wnew')}</div></div>${profile.wishlists.length ? '' : `<p class=by>${t('noWL')}</p>`}`;
 }
 
-/** Active profile button with export and import beside it, and its menu: switch, edit or delete any profile, or add a new one. */
 function profileSwitcher() {
     const ids = Object.keys(store.profs), cur = store.profs[store.cur];
     const row = id => {

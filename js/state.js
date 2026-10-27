@@ -1,5 +1,5 @@
 /**
- * Estado de la aplicación: perfiles guardados en localStorage, estado de la interfaz y utilidades de acceso.
+ * Stored profiles, interface state and access helpers.
  */
 
 /** True when the saved data could not be read at startup and was moved to localStorage.gdpBroken. */
@@ -28,19 +28,16 @@ function loadStore() {
 /** Profile store: { cur: active profile id, profs: { id: { name, color, data } } }. */
 let store = loadStore();
 
-/** Datos del perfil activo (niveles, orden, wishlists y tags). */
+/** Active profile data: levels, order, wishlists and tags. */
 let profile = store && store.profs[store.cur].data;
 
-/** Estado de la interfaz: pantalla, selección, búsqueda, tema e idioma. */
+/** Interface state: screen, selection, search, theme and language. */
 let ui = { tab: 'home', wl: null, q: '', tag: '', z: 28, lang: localStorage.gl || 'es', theme: themeOf(localStorage.gt) };
 
-/** True when the current screen is one of the level lists. */
 const isListTab = () => ['classic', 'platform'].includes(ui.tab);
 
-/** Data of a profile with no levels, wishlists or tags. */
 const emptyProfile = () => ({ levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
 
-/** Guarda todos los perfiles en localStorage. */
 const save = () => localStorage.gdp = JSON.stringify(store);
 
 /** Migrates profile colours by their original position, saving only when needed. */
@@ -62,10 +59,19 @@ function nextProfileColor() {
     return PROFILE_COLORS.find(color => !used.has(color)) || PROFILE_COLORS[profiles.length % PROFILE_COLORS.length];
 }
 
-/** Busca un nivel por id en el perfil activo. */
 const findLevel = id => profile.levels.find(l => l.id == id);
 
-/** Checks that imported data has the structure the app needs to render it. */
+function activateProfile(id) {
+    store.cur = id;
+    profile = store.profs[id].data;
+    ensureProfileDefaults();
+}
+
+function removeFromOrder(id) {
+    for (const kind in profile.order)
+        profile.order[kind] = profile.order[kind].filter(x => x != id);
+}
+
 function isValidProfileData(d) {
     const isObj = v => v != null && typeof v == 'object', isList = (a, check = isObj) => Array.isArray(a) && a.every(check);
     return isObj(d)
@@ -79,7 +85,7 @@ function isValidProfileData(d) {
 const cleanDeaths = d => Object.fromEntries(Object.entries(d && typeof d == 'object' ? d : {}).filter(([k, v]) => /^(100|[1-9]?\d)$/.test(k) && Number.isInteger(v) && v >= 0));
 
 /**
- * Completa campos que puedan faltar en perfiles antiguos o importados.
+ * Fills missing fields in older or imported profiles.
  * Imported files are only checked for their shape, so statuses and deaths are cleaned here before any template renders them.
  */
 function ensureProfileDefaults() {

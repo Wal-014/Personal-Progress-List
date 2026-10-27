@@ -1,5 +1,5 @@
 /**
- * Punto de entrada: carga el perfil inicial, dibuja la interfaz y registra el service worker.
+ * Entry point for profile loading, rendering and service worker registration.
  */
 
 (() => {

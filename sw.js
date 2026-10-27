@@ -1,7 +1,5 @@
 /**
- * Service worker: permite instalar la página como app y abrirla sin conexión.
- * Estrategia: red primero (siempre la versión más reciente) y caché como respaldo.
- * Solo gestiona archivos propios; las peticiones a APIs externas no se interceptan.
+ * Service worker for installation and offline use, fetching same-origin files from the network first with a cache fallback.
  */
 const CACHE = 'prp-1.4.0';
 const SHELL = [

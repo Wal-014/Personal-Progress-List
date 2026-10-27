@@ -1,6 +1,5 @@
 /**
- * Perfil de demostración (datos ficticios) que se carga la primera vez que se abre la app.
- * Los datos reales de cada persona se guardan en su navegador, no en este archivo.
+ * Fictional demo profile for first launch; personal data is stored in the browser.
  */
 window.DEMO_PROFILE = {
   "profileName": "Demo",

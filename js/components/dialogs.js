@@ -1,8 +1,7 @@
 /**
- * Ventanas emergentes propias (confirmar, preguntar, avisar), avisos de la campana, gestor de tags y textos legales.
+ * Custom dialogs, notifications, tag management and legal text.
  */
 
-/** Calcula los avisos pendientes (niveles sin colocar, sin ID o completados en wishlist). */
 function alerts() {
     const A = [], lk = l => `<a class=lk data-act=edit data-id="${escapeHtml(l.id)}" role=button tabindex=0>${escapeHtml(l.name)}</a>`;
     ['classic', 'platform'].forEach(k => {
@@ -17,16 +16,14 @@ function alerts() {
     return A;
 }
 
-/** Contenido de la campana de avisos. */
 const bellUI = () => {
     const A = alerts();
     return `<div class=box><h2>${ICONS.bell} ${t('bell')}</h2>${A.length ? `<ul class=bl>${A.map(a => `<li>${a}</li>`).join('')}</ul>` : `<p>${t('nonot')}</p>`}<p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
 };
 
-/** Ventana con términos, privacidad o créditos. */
 const legalUI = k => `<div class="box sm"><h2>${t(k)}</h2><p style="white-space:pre-wrap">${escapeHtml(t(k + 'Txt'))}</p><p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
 
-/** Diálogo propio que devuelve una promesa (sustituye a alert, confirm y prompt). */
+/** Promise-based replacement for alert, confirm and prompt. */
 function showDialog({ title, msg, input, def, ok, cancel, danger, label, extra = '', enhance }) {
     return new Promise(res => {
         const m = document.createElement('dialog');
@@ -73,7 +70,6 @@ function showDialog({ title, msg, input, def, ok, cancel, danger, label, extra =
     });
 }
 
-/** Pide un texto al usuario. */
 const askText = (title, def) => showDialog({ title, input: 1, def });
 
 /** Asks for a profile name and colour, sharing the prompt's validation and keyboard handling. */
@@ -94,13 +90,10 @@ function askProfile(title, name, color) {
     } });
 }
 
-/** Pide confirmación. */
 const askConfirm = title => showDialog({ title, danger: 1 });
 
-/** Muestra un aviso. */
 const showAlert = msg => showDialog({ title: msg, cancel: false });
 
-/** Abre una ventana modal. */
 const openModal = h => {
     qs('#md').innerHTML = `<dialog class=modal>${h}</dialog>`;
     const d = qs('#md dialog'), title = d.querySelector('h2, h3');
@@ -114,13 +107,11 @@ const openModal = h => {
     renderTagSuggestions();
 };
 
-/** Cierra la ventana modal. */
 const closeModal = () => {
     qs('#md dialog')?.close();
     qs('#md').innerHTML = '';
 };
 
-/** Gestor de tags: crear, renombrar, cambiar color y eliminar. */
 function tagsUI() {
     return `<div class=box><h2>${ICONS.tag} ${t('tagsT')}</h2>${profile.tags.map((g, i) => `<p class=trow><input type=color data-tc=${i} value="${escapeHtml(g.color)}" aria-label="${t('color')} · ${escapeHtml(g.name)}"><input data-tn=${i} value="${escapeHtml(g.name)}" aria-label="${t('name')}"${g.name == PRE_TAG ? ' aria-describedby=tg-pre' : ''}><button class="xs dg" data-act=tdel data-i=${i} aria-label="${t('del')} · ${escapeHtml(g.name)}">${ICONS.del}</button></p>${g.name == PRE_TAG ? `<small id=tg-pre class=by style="display:block;margin:-4px 0 8px 54px">${t('preTagHint')}</small>` : ''}`).join('')}<p class=trow><input type=color id=nc value="#00e5ff" aria-label="${t('color')}"><input id=nn placeholder="${t('newTag')}" aria-label="${t('newTag')}"><button class=pri data-act=tadd>${t('add')}</button></p><p class=dgb><button data-act=close>${t('close')}</button></p></div>`;
 }

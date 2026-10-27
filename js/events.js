@@ -1,5 +1,5 @@
 /**
- * Eventos globales: clics, formularios, teclado y tooltips. Cada acción se identifica con el atributo data-act.
+ * Global click, form, keyboard and tooltip handlers identified by data-act.
  */
 
 /** Re-renders behind the pause menu and reopens it, keeping focus on the control that was used. */
@@ -63,16 +63,16 @@ const ACTIONS = {
         qs('#gdq').focus();
     },
     edit(a, id) {
-        const fb = !!qs('#md .modal'), l = findLevel(id);
+        const openedFromDialog = !!qs('#md .modal'), l = findLevel(id);
         closeModal();
         if (l)
             ui.tab = l.kind;
         ui.sel = id;
         ui.edit = 1;
-        if (fb)
+        if (openedFromDialog)
             ui.q = ui.tag = '';
         render();
-        if (fb)
+        if (openedFromDialog)
             scrollSel();
     },
     lvclose() {
@@ -98,8 +98,7 @@ const ACTIONS = {
             if (!ok)
                 return;
             profile.levels = profile.levels.filter(l => l.id != id);
-            for (const o in profile.order)
-                profile.order[o] = profile.order[o].filter(x => x != id);
+            removeFromOrder(id);
             save();
             closeModal();
             ui.sel = null;
@@ -138,17 +137,14 @@ const ACTIONS = {
                 return;
             const i = newId('p');
             store.profs[i] = { name: p.name, color: p.color, data: emptyProfile() };
-            store.cur = i;
-            profile = store.profs[i].data;
+            activateProfile(i);
             ui.tab = 'home';
             save();
             render();
         });
     },
     psel(a, id) {
-        store.cur = id;
-        profile = store.profs[id].data;
-        ensureProfileDefaults();
+        activateProfile(id);
         matchWithAredl(profile.levels);
         ui.wl = null;
         save();
@@ -172,11 +168,8 @@ const ACTIONS = {
             if (!ok)
                 return;
             delete store.profs[id];
-            if (store.cur == id) {
-                store.cur = Object.keys(store.profs)[0];
-                profile = store.profs[store.cur].data;
-                ensureProfileDefaults();
-            }
+            if (store.cur == id)
+                activateProfile(Object.keys(store.profs)[0]);
             save();
             render();
         });
@@ -269,6 +262,108 @@ const ACTIONS = {
     }
 };
 
+function saveWishlistItem(form) {
+    const fields = Object.fromEntries(new FormData(form)), w = currentWishlist();
+    let item = w.items.find(x => x.id == form.dataset.id);
+    if (!item) {
+        item = { id: newId('i'), status: 'todo' };
+        w.items.push(item);
+    }
+    Object.assign(item, { name: fields.name.trim(), levelId: fields.lid || null, creator: fields.creator || null, diff: fields.diff || null, rating: fields.rating || null });
+    item.chk = 0;
+    save();
+    closeModal();
+    render();
+    enrichWishlistItem(item);
+}
+
+function saveLevel(form) {
+    const position = form.elements.pos.value, old = findLevel(form.dataset.id), level = old || { id: newId('n') };
+    Object.assign(level, levelFromForm(form));
+    if (!old)
+        profile.levels.push(level);
+    matchWithAredl([level]);
+    removeFromOrder(level.id);
+    if (position && !isPre(level)) {
+        const order = profile.order[level.kind], before = rankedIds(level.kind)[Math.max(0, +position - 1)];
+        order.splice(before ? order.indexOf(before) : order.length, 0, level.id);
+    }
+    save();
+    closeModal();
+    ui.sel = level.id;
+    ui.edit = 0;
+    ui.tab = level.kind;
+    render();
+    scrollSel();
+}
+
+function setWishlistStatus(input) {
+    currentWishlist().items.find(item => item.id == input.dataset.wi).status = input.value;
+    save();
+    render();
+}
+
+function setTagColor(input) {
+    profile.tags[input.dataset.tc].color = input.value;
+    save();
+    render();
+}
+
+function renameTag(input) {
+    const tag = profile.tags[input.dataset.tn], name = input.value.trim();
+    if (!name || profile.tags.some(x => x != tag && x.name == name)) {
+        input.value = tag.name;
+        return showAlert(t(name ? 'tagExists' : 'tagEmpty'));
+    }
+    const rename = () => {
+        const wasPre = tag.name == PRE_TAG;
+        profile.levels.forEach(level => level.tags = (level.tags || []).map(x => x == tag.name ? name : x));
+        if (ui.tag == tag.name)
+            ui.tag = name;
+        tag.name = name;
+        save();
+        render();
+        if (wasPre || name == PRE_TAG)
+            openModal(tagsUI());
+    };
+    if (tag.name != PRE_TAG || name == tag.name)
+        return rename();
+    askConfirm(t('preTagConfirm')).then(ok => {
+        if (ok)
+            rename();
+        else
+            input.value = tag.name;
+    });
+}
+
+function clearAredlPosition(form) {
+    form.elements.ap.value = '';
+}
+
+async function importProfile(file) {
+    const text = await file.text();
+    let data;
+    try {
+        data = JSON.parse(text);
+    }
+    catch {
+        return showAlert(t('badFile'));
+    }
+    if (!isValidProfileData(data))
+        return showAlert(t('badFile'));
+    const selected = await askProfile(t('impP'), data.profileName || file.name.replace(/\.json$/, ''), isHexColor(data.profileColor) ? data.profileColor : nextProfileColor());
+    if (!selected)
+        return;
+    const id = newId('p');
+    delete data.profileName;
+    delete data.profileColor;
+    store.profs[id] = { name: selected.name, color: selected.color, data };
+    activateProfile(id);
+    matchWithAredl(profile.levels);
+    save();
+    render();
+}
+
 document.body.onclick = e => {
     document.querySelectorAll('.gdf .ms[open]').forEach(d => {
         if (!d.contains(e.target))
@@ -313,42 +408,10 @@ document.body.onsubmit = e => {
         qs('#gdq').setCustomValidity(t('gdPick'));
         return qs('#gdq').reportValidity();
     }
-    if (e.target.id == 'wf') {
-        const g = Object.fromEntries(new FormData(e.target)), w = currentWishlist();
-        let i = w.items.find(x => x.id == e.target.dataset.id);
-        if (!i) {
-            i = { id: newId('i'), status: 'todo' };
-            w.items.push(i);
-        }
-        Object.assign(i, { name: g.name.trim(), levelId: g.lid || null, creator: g.creator || null, diff: g.diff || null, rating: g.rating || null });
-        i.chk = 0;
-        save();
-        closeModal();
-        render();
-        enrichWishlistItem(i);
-        return;
-    }
-    const g = Object.fromEntries(new FormData(e.target)), N = k => g[k] === '' ? null : +g[k], C = k => {
-        const v = N(k);
-        return v == null ? v : Math.max(-10, Math.min(10, v));
-    }, old = findLevel(e.target.dataset.id), o = old || { id: newId('n') };
-    Object.assign(o, { name: g.name.trim(), kind: g.kind, levelId: g.lid || null, creator: g.creator || null, diff: g.diff || null, rating: g.rating || null, attC: N('attC'), attN: N('attN'), date: g.date || null, link: g.link || null, enj: C('enj'), lik: C('lik'), tN: parseDuration(g.tN), tP: parseDuration(g.tP), tPC: parseDuration(g.tPC), notes: g.notes, tags: new FormData(e.target).getAll('tg'), deaths: parseDeaths(g.deaths), ar: { s: g.as, p: g.as == 'r' ? N('ap') : null } });
-    if (!old)
-        profile.levels.push(o);
-    matchWithAredl([o]);
-    for (const k in profile.order)
-        profile.order[k] = profile.order[k].filter(x => x != o.id);
-    if (g.pos && !isPre(o)) {
-        const order = profile.order[o.kind], before = rankedIds(o.kind)[Math.max(0, +g.pos - 1)];
-        order.splice(before ? order.indexOf(before) : order.length, 0, o.id);
-    }
-    save();
-    closeModal();
-    ui.sel = o.id;
-    ui.edit = 0;
-    ui.tab = o.kind;
-    render();
-    scrollSel();
+    if (e.target.id == 'wf')
+        saveWishlistItem(e.target);
+    else
+        saveLevel(e.target);
 };
 document.body.oninput = e => {
     if (['fm', 'wf'].includes(e.target.form?.id))
@@ -367,86 +430,22 @@ document.body.oninput = e => {
     }
 };
 document.body.onchange = e => {
-    const i = e.target.id, ds = e.target.dataset;
-    if (['gdrate', 'gddiff'].includes(e.target.name)) {
-        const key = e.target.name == 'gdrate' ? 'rates' : 'diffs';
-        levelSearch.f[key] = Array.from(document.querySelectorAll(`input[name=${e.target.name}]:checked`), x => x.value);
-        changeLevelFilters();
-        return;
-    }
-    if (ds.wi != null) {
-        currentWishlist().items.find(i => i.id == ds.wi).status = e.target.value;
-        save();
-        render();
-        return;
-    }
-    if (ds.tc != null) {
-        profile.tags[ds.tc].color = e.target.value;
-        save();
-        render();
-        return;
-    }
-    if (ds.tn != null) {
-        const g = profile.tags[ds.tn], v = e.target.value.trim();
-        if (!v || profile.tags.some(x => x != g && x.name == v)) {
-            e.target.value = g.name;
-            return showAlert(t(v ? 'tagExists' : 'tagEmpty'));
-        }
-        const rename = () => {
-            const wasPre = g.name == PRE_TAG;
-            profile.levels.forEach(l => l.tags = (l.tags || []).map(x => x == g.name ? v : x));
-            if (ui.tag == g.name)
-                ui.tag = v;
-            g.name = v;
-            save();
-            render();
-            if (wasPre || v == PRE_TAG)
-                openModal(tagsUI());
-        };
-        if (g.name != PRE_TAG || v == g.name)
-            return rename();
-        askConfirm(t('preTagConfirm')).then(ok => {
-            if (ok)
-                rename();
-            else
-                e.target.value = g.name;
-        });
-        return;
-    }
-    if (e.target.form?.id == 'fm') {
-        if (e.target.name == 'as' && e.target.value != 'r')
-            e.target.form.elements.ap.value = '';
-        return;
-    }
-    if (i == 'fi') {
-        const f = e.target.files[0];
-        if (f)
-            f.text().then(x => {
-                let d;
-                try {
-                    d = JSON.parse(x);
-                }
-                catch {
-                    return showAlert(t('badFile'));
-                }
-                if (!isValidProfileData(d))
-                    return showAlert(t('badFile'));
-                askProfile(t('impP'), d.profileName || f.name.replace(/\.json$/, ''), isHexColor(d.profileColor) ? d.profileColor : nextProfileColor()).then(p => {
-                    if (!p)
-                        return;
-                    const id = newId('p');
-                    delete d.profileName;
-                    delete d.profileColor;
-                    store.profs[id] = { name: p.name, color: p.color, data: d };
-                    store.cur = id;
-                    profile = d;
-                    ensureProfileDefaults();
-                    matchWithAredl(profile.levels);
-                    save();
-                    render();
-                });
-            });
-        e.target.value = '';
+    const input = e.target, ds = input.dataset;
+    if (['gdrate', 'gddiff'].includes(input.name))
+        return setLevelFilter(input);
+    if (ds.wi != null)
+        return setWishlistStatus(input);
+    if (ds.tc != null)
+        return setTagColor(input);
+    if (ds.tn != null)
+        return renameTag(input);
+    // Only a level on the list has a position
+    if (input.form?.id == 'fm' && input.name == 'as' && input.value != 'r')
+        return clearAredlPosition(input.form);
+    if (input.id == 'fi') {
+        if (input.files[0])
+            importProfile(input.files[0]);
+        input.value = '';
     }
 };
 // Popovers open in the top layer, away from their button; place the profile menu under it, inside the viewport
@@ -460,8 +459,8 @@ document.addEventListener('beforetoggle', e => {
 /** Fits an open filter panel below the bar inside the viewport. */
 document.addEventListener('toggle', e => {
     if (e.target.matches('.gdf .ms[open]')) {
-        const panel = e.target.querySelector('.msp'), bottom = e.target.closest('.gdf').getBoundingClientRect().bottom;
-        panel.style.setProperty('--ms-height', Math.max(0, innerHeight - bottom - 12) + 'px');
+        const optionsPanel = e.target.querySelector('.msp'), bottom = e.target.closest('.gdf').getBoundingClientRect().bottom;
+        optionsPanel.style.setProperty('--ms-height', Math.max(0, innerHeight - bottom - 12) + 'px');
     }
 }, true);
 document.onkeydown = e => {
@@ -523,10 +522,7 @@ window.addEventListener('storage', e => {
     catch {
         return;
     }
-    if (store.profs[cur])
-        store.cur = cur;
-    profile = store.profs[store.cur].data;
-    ensureProfileDefaults();
+    activateProfile(store.profs[cur] ? cur : store.cur);
     if (!qs('form, .modal'))
         render();
 });

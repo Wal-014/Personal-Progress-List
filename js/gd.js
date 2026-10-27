@@ -11,7 +11,6 @@ const difficultyOf = l => l.rating == 'unrated' || !l.diff ? 'NA' : l.diff;
 /** Applicable selections without changing the selections kept in the form. */
 const effectiveFilters = f => ({ rates: f.rated == 'rated' ? f.rates : [], diffs: f.rated == 'unrated' ? [] : f.diffs.filter(d => f.rated != 'rated' || d != 'NA') });
 
-/** Whether a level matches the rating mode and the applicable tier and difficulty selections. */
 function matchesFilters(l, f) {
     const { rates, diffs } = effectiveFilters(f);
     return (f.rated == 'all' || (l.rating != 'unrated') == (f.rated == 'rated')) && (!rates.length || rates.includes(l.rating)) && (!diffs.length || diffs.includes(difficultyOf(l)));

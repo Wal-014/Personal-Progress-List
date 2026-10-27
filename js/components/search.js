@@ -48,13 +48,18 @@ function changeLevelFilters() {
         renderLevelSearch();
 }
 
+function setLevelFilter(input) {
+    const key = input.name == 'gdrate' ? 'rates' : 'diffs';
+    levelSearch.f[key] = Array.from(document.querySelectorAll(`input[name=${input.name}]:checked`), x => x.value);
+    changeLevelFilters();
+}
+
 /** A result: the whole card picks the level. The thumbnail fills its background, black when there is none. */
 function resultCard(l, i) {
     const u = thumbUrl(l);
     return `<button type=button class=gdc data-act=gdpick data-i=${i}${u ? ` style="--th:url('${u}')"` : ''}><span class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>ID ${escapeHtml(l.levelId)} · ${t('by')} ${escapeHtml(orDash(l.creator))}${l.kind == 'platform' ? ' · ' + t('platform') : ''}</span></span>${difficultyFace(l)}</button>`;
 }
 
-/** Draws the results panel from the search state. */
 function renderLevelSearch() {
     const box = qs('#gdr'), s = levelSearch;
     if (!box)
