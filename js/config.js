@@ -26,13 +26,15 @@ const THEMES = ['blue', 'night', 'synth'];
 /** Preset profile colours by the translation key of their name, in the order used before profiles saved their own colour. */
 const PROFILE_PRESETS = { yellow: '#ffe94d', green: '#a6ff4d', pink: '#ff8af2', orange: '#ffb35c', cyan: '#7af6ff', red: '#ff7a8a', purple: '#c9a2ff' };
 const PROFILE_COLORS = Object.values(PROFILE_PRESETS);
+/** The cube's eye colour from before profiles had a secondary colour, so existing icons keep their look. */
+const DEFAULT_SECONDARY_COLOR = '#5ef0ff';
 /** Only full hexadecimal colours can be written into SVG markup. */
 const isHexColor = color => typeof color == 'string' && /^#[0-9a-f]{6}$/i.test(color);
 let cubeIds = 0;
 /** Classic cube icon. Every icon gets its own gradient id: a gradient defined inside a hidden icon would not paint the others. */
-const cubeIcon = color => {
-    const fill = isHexColor(color) ? color : PROFILE_COLORS[0], id = 'cube' + ++cubeIds;
-    return `<svg class=i viewBox="0 0 48 48" aria-hidden=true><defs><linearGradient id=${id} x1=0 y1=0 x2=0 y2=1><stop offset=0 stop-color="#000" stop-opacity=0 /><stop offset=1 stop-color="#000" stop-opacity=".3" /></linearGradient></defs><rect x=2.5 y=2.5 width=43 height=43 rx=3 fill="${fill}" stroke="#000" stroke-width=3 /><rect x=2.5 y=2.5 width=43 height=43 rx=3 fill="url(#${id})" /><rect x=6 y=6 width=36 height=36 rx=1.5 fill=none stroke="#fff" stroke-opacity=".35" stroke-width=1.5 /><rect x=12 y=13 width=8 height=8 fill="#5ef0ff" stroke="#000" stroke-width=2.5 /><rect x=28 y=13 width=8 height=8 fill="#5ef0ff" stroke="#000" stroke-width=2.5 /><rect x=12 y=28 width=24 height=6 fill="#5ef0ff" stroke="#000" stroke-width=2.5 /></svg>`;
+const cubeIcon = (color, secondaryColor) => {
+    const fill = isHexColor(color) ? color : PROFILE_COLORS[0], face = isHexColor(secondaryColor) ? secondaryColor : DEFAULT_SECONDARY_COLOR, id = 'cube' + ++cubeIds;
+    return `<svg class=i viewBox="0 0 48 48" aria-hidden=true><defs><linearGradient id=${id} x1=0 y1=0 x2=0 y2=1><stop offset=0 stop-color="#000" stop-opacity=0 /><stop offset=1 stop-color="#000" stop-opacity=".3" /></linearGradient></defs><rect x=2.5 y=2.5 width=43 height=43 rx=3 fill="${fill}" stroke="#000" stroke-width=3 /><rect x=2.5 y=2.5 width=43 height=43 rx=3 fill="url(#${id})" /><rect x=6 y=6 width=36 height=36 rx=1.5 fill=none stroke="#fff" stroke-opacity=".35" stroke-width=1.5 /><rect x=12 y=13 width=8 height=8 fill="${face}" stroke="#000" stroke-width=2.5 /><rect x=28 y=13 width=8 height=8 fill="${face}" stroke="#000" stroke-width=2.5 /><rect x=12 y=28 width=24 height=6 fill="${face}" stroke="#000" stroke-width=2.5 /></svg>`;
 };
 const FLAGS = { es: '<svg class=fl viewBox="0 0 60 40"><rect width=60 height=40 fill="#c60b1e"/><rect y=10 width=60 height=20 fill="#ffc400"/></svg>', en: '<svg class=fl viewBox="0 0 60 40"><rect width=60 height=40 fill="#012169"/><path d="M0 0L60 40M60 0L0 40" stroke="#fff" stroke-width=8 /><path d="M0 0L60 40M60 0L0 40" stroke="#c8102e" stroke-width=3 /><path d="M30 0V40M0 20H60" stroke="#fff" stroke-width=13 /><path d="M30 0V40M0 20H60" stroke="#c8102e" stroke-width=7 /></svg>' };
 const DIFFICULTIES = ['Auto', 'Easy', 'Normal', 'Hard', 'Harder', 'Insane', 'Easy Demon', 'Medium Demon', 'Hard Demon', 'Insane Demon', 'Extreme Demon'];

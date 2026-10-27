@@ -25,7 +25,7 @@ function loadStore() {
     return null;
 }
 
-/** Profile store: { cur: active profile id, profs: { id: { name, color, data } } }. */
+/** Profile store: { cur: active profile id, profs: { id: { name, color, secondaryColor, data } } }. */
 let store = loadStore();
 
 /** Active profile data: levels, order, wishlists and tags. */
@@ -46,6 +46,10 @@ function ensureProfileColors() {
     Object.keys(store.profs).forEach((id, i) => {
         if (!isHexColor(store.profs[id].color)) {
             store.profs[id].color = PROFILE_COLORS[i % PROFILE_COLORS.length];
+            changed = true;
+        }
+        if (!isHexColor(store.profs[id].secondaryColor)) {
+            store.profs[id].secondaryColor = DEFAULT_SECONDARY_COLOR;
             changed = true;
         }
     });

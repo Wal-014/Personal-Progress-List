@@ -132,11 +132,11 @@ const ACTIONS = {
     },
     sync: () => syncWithAredl(true),
     pnew() {
-        askProfile(t('pnew'), '', nextProfileColor()).then(p => {
+        askProfile(t('pnew'), { name: '', color: nextProfileColor(), secondaryColor: DEFAULT_SECONDARY_COLOR }).then(p => {
             if (!p)
                 return;
             const i = newId('p');
-            store.profs[i] = { name: p.name, color: p.color, data: emptyProfile() };
+            store.profs[i] = { name: p.name, color: p.color, secondaryColor: p.secondaryColor, data: emptyProfile() };
             activateProfile(i);
             ui.tab = 'home';
             save();
@@ -151,11 +151,12 @@ const ACTIONS = {
         render();
     },
     pedit(a, id) {
-        askProfile(t('pedit'), store.profs[id].name, store.profs[id].color).then(p => {
+        askProfile(t('pedit'), store.profs[id]).then(p => {
             if (!p)
                 return;
             store.profs[id].name = p.name;
             store.profs[id].color = p.color;
+            store.profs[id].secondaryColor = p.secondaryColor;
             save();
             render();
         });
@@ -253,7 +254,7 @@ const ACTIONS = {
     },
     imp: () => qs('#fi').click(),
     exp(a, id) {
-        const pr = store.profs[id || store.cur], u = URL.createObjectURL(new Blob([JSON.stringify({ ...pr.data, profileName: pr.name, profileColor: pr.color })], { type: 'application/json' })), x = document.createElement('a');
+        const pr = store.profs[id || store.cur], u = URL.createObjectURL(new Blob([JSON.stringify({ ...pr.data, profileName: pr.name, profileColor: pr.color, profileSecondaryColor: pr.secondaryColor })], { type: 'application/json' })), x = document.createElement('a');
         x.href = u;
         // Only characters that file systems reject are replaced, so accents and non-Latin names survive
         x.download = (pr.name.trim().replace(/[/:*?"<>|\s]+/g, '-') || 'profile') + '.json';
@@ -351,13 +352,14 @@ async function importProfile(file) {
     }
     if (!isValidProfileData(data))
         return showAlert(t('badFile'));
-    const selected = await askProfile(t('impP'), data.profileName || file.name.replace(/\.json$/, ''), isHexColor(data.profileColor) ? data.profileColor : nextProfileColor());
+    const selected = await askProfile(t('impP'), { name: data.profileName || file.name.replace(/\.json$/, ''), color: isHexColor(data.profileColor) ? data.profileColor : nextProfileColor(), secondaryColor: isHexColor(data.profileSecondaryColor) ? data.profileSecondaryColor : DEFAULT_SECONDARY_COLOR });
     if (!selected)
         return;
     const id = newId('p');
     delete data.profileName;
     delete data.profileColor;
-    store.profs[id] = { name: selected.name, color: selected.color, data };
+    delete data.profileSecondaryColor;
+    store.profs[id] = { name: selected.name, color: selected.color, secondaryColor: selected.secondaryColor, data };
     activateProfile(id);
     matchWithAredl(profile.levels);
     save();
