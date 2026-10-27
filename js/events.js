@@ -229,19 +229,13 @@ const ACTIONS = {
         qs('#gdq').value = a.dataset.v;
         runLevelSearch();
     },
-    gdfeat(a) {
-        levelSearch.featured = a.dataset.v;
-        if (levelSearch.q)
-            runLevelSearch();
-        else
-            renderLevelSearch();
+    gdrated(a) {
+        levelSearch.f.rated = a.dataset.v;
+        changeLevelFilters();
     },
     gdclear() {
-        levelSearch.featured = 'all';
-        if (levelSearch.q)
-            runLevelSearch();
-        else
-            renderLevelSearch();
+        levelSearch.f = { rated: 'all', rates: [], diffs: [] };
+        changeLevelFilters();
     },
     gdpick: a => pickLevel(a.form, levelSearch.results[a.dataset.i]),
     wdel(a, id) {
@@ -275,6 +269,10 @@ const ACTIONS = {
 };
 
 document.body.onclick = e => {
+    document.querySelectorAll('.gdf .ms[open]').forEach(d => {
+        if (!d.contains(e.target))
+            d.open = false;
+    });
     const g = e.target.closest('[data-tag]'), a = e.target.closest('[data-act]'), c = e.target.closest('[data-id]');
     if (e.target.classList.contains('modal'))
         return closeModal();
@@ -369,6 +367,12 @@ document.body.oninput = e => {
 };
 document.body.onchange = e => {
     const i = e.target.id, ds = e.target.dataset;
+    if (['gdrate', 'gddiff'].includes(e.target.name)) {
+        const key = e.target.name == 'gdrate' ? 'rates' : 'diffs';
+        levelSearch.f[key] = Array.from(document.querySelectorAll(`input[name=${e.target.name}]:checked`), i => i.value);
+        changeLevelFilters();
+        return;
+    }
     if (ds.wi != null) {
         currentWishlist().items.find(i => i.id == ds.wi).status = e.target.value;
         save();
@@ -451,8 +455,23 @@ document.addEventListener('beforetoggle', e => {
     // Only the profile rows scroll, so the menu never runs past the bottom of the screen
     Object.assign(e.target.style, { width: w + 'px', top: r.bottom + 6 + 'px', left: Math.max(12, Math.min(r.left, innerWidth - w - 12)) + 'px', maxHeight: Math.max(200, innerHeight - r.bottom - 18) + 'px' });
 }, true);
+/** Fits an open filter panel below the bar inside the viewport. */
+document.addEventListener('toggle', e => {
+    if (e.target.matches('.gdf .ms[open]')) {
+        const panel = e.target.querySelector('.msp'), bottom = e.target.closest('.gdf').getBoundingClientRect().bottom;
+        panel.style.setProperty('--ms-height', Math.max(0, innerHeight - bottom - 12) + 'px');
+    }
+}, true);
 document.onkeydown = e => {
     if (e.key == 'Escape') {
+        const dropdown = e.target.closest('.gdf .ms[open]');
+        if (dropdown) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropdown.open = false;
+            dropdown.querySelector('summary').focus();
+            return;
+        }
         closeModal();
     }
     if ((e.key == 'Enter' || e.key == ' ') && e.target.matches('[role=button]')) {

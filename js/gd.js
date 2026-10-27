@@ -1,9 +1,40 @@
 /**
- * Level search on GDBrowser: name or ID, featured filter, and the data the forms fill from the chosen level.
+ * Level search on GDBrowser: name or ID, rating and difficulty filters, and the data the forms fill from the chosen level.
  */
 
 /** Rating of a level: unrated (no stars), rated, then featured, epic, legendary and mythic. */
 const ratingOf = x => !(x.stars > 0) ? 'unrated' : x.mythic ? 'mythic' : x.legendary ? 'legendary' : x.epic ? 'epic' : x.featured ? 'featured' : 'rated';
+
+/** Difficulty shown by the game, including NA for unrated levels. */
+const difficultyOf = l => l.rating == 'unrated' || !l.diff ? 'NA' : l.diff;
+
+/** Applicable selections without changing the selections kept in the form. */
+const effectiveFilters = f => ({ rates: f.rated == 'rated' ? f.rates : [], diffs: f.rated == 'unrated' ? [] : f.diffs.filter(d => f.rated != 'rated' || d != 'NA') });
+
+/** Whether a level matches the rating mode and the applicable tier and difficulty selections. */
+function matchesFilters(l, f) {
+    const { rates, diffs } = effectiveFilters(f);
+    return (f.rated == 'all' || (l.rating != 'unrated') == (f.rated == 'rated')) && (!rates.length || rates.includes(l.rating)) && (!diffs.length || diffs.includes(difficultyOf(l)));
+}
+
+/** Server filters that return a superset of the selected levels; mixed difficulties stay broad. */
+function searchParams(f) {
+    const { rates, diffs } = effectiveFilters(f);
+    if (f.rated == 'unrated' || f.rated == 'all' && diffs.length == 1 && diffs[0] == 'NA')
+        return '&noStar';
+    const known = diffs.length && !diffs.includes('NA');
+    let params = f.rated == 'rated' || known ? '&' + (rates.length == 1 && ['featured', 'epic', 'legendary', 'mythic'].includes(rates[0]) ? rates[0] : 'starred') : '';
+    if (known) {
+        const ids = DIFFICULTIES.map((d, i) => diffs.includes(d) ? i : -1).filter(i => i >= 0);
+        if (diffs.every(d => DIFFICULTIES.indexOf(d) >= 1 && DIFFICULTIES.indexOf(d) <= 5))
+            params += '&diff=' + ids.join(',');
+        else if (diffs.length == 1 && diffs[0] == 'Auto')
+            params += '&diff=-3';
+        else if (diffs.every(d => DIFFICULTIES.indexOf(d) >= 6))
+            params += '&diff=-2' + (diffs.length == 1 ? '&demonFilter=' + (ids[0] - 5) : '');
+    }
+    return params;
+}
 
 /** Level data kept from a GDBrowser result. Unrated levels have no difficulty: the game shows them as NA. */
 function fromGdb(x) {
@@ -27,15 +58,15 @@ const cleanQuery = q => {
 };
 
 /**
- * Levels matching a name fragment or an ID, most downloaded first, and whether another page may follow. featured is 'all', 'yes' or 'no'.
- * The API filters featured levels itself but has no filter for the rest, so 'no' drops featured levels from each page.
+ * Levels matching a name fragment or an ID and the filters, most downloaded first, and whether another page may follow.
+ * The API filters are approximate, so every result is checked locally as well.
  * Each page holds the game's 10 levels. With a search text the API ignores its download order, so each page is sorted here.
  * Throws when the service does not answer.
  */
-async function searchLevels(query, featured, page) {
+async function searchLevels(query, f, page) {
     let d;
     try {
-        const r = await fetch(`${GDB_API}search/${encodeURIComponent(query)}?page=${page}${featured == 'yes' ? '&featured' : ''}`);
+        const r = await fetch(`${GDB_API}search/${encodeURIComponent(query)}?page=${page}${searchParams(f)}`);
         if (!r.ok)
             throw Error('HTTP ' + r.status);
         d = await r.json();
@@ -49,7 +80,7 @@ async function searchLevels(query, featured, page) {
     }
     if (!Array.isArray(d))
         return { levels: [], more: false };
-    const levels = d.filter(x => x && /^\d+$/.test(x.id)).map(fromGdb).filter(l => featured != 'no' || ['unrated', 'rated'].includes(l.rating));
+    const levels = d.filter(x => x && /^\d+$/.test(x.id)).map(fromGdb).filter(l => matchesFilters(l, f));
     return { levels: levels.sort((a, b) => b.downloads - a.downloads), more: d.length >= 10 };
 }
 
