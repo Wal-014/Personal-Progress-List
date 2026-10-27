@@ -342,6 +342,23 @@ input:user-invalid, select:user-invalid, textarea:user-invalid {
   height: 12px;
 }
 
+.chip[data-tag] {
+  transition: box-shadow .15s, background-color .15s;
+}
+
+.chip[data-tag]:focus-visible {
+  box-shadow: 0 0 0 1px currentColor, 0 0 10px currentColor;
+  background-color: color-mix(in srgb, currentColor 22%, #000);
+}
+
+/* A tap on a touch screen would leave the hover glow stuck */
+@media (hover: hover) {
+  .chip[data-tag]:hover {
+    box-shadow: 0 0 0 1px currentColor, 0 0 10px currentColor;
+    background-color: color-mix(in srgb, currentColor 22%, #000);
+  }
+}
+
 /* ===== Edit Object panel: details, forms and dialogs ===== */
 .box {
   position: relative;
