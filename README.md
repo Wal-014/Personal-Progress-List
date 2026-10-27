@@ -27,16 +27,16 @@
 
 ## What it does
 
-- **Profiles** — each profile has its own lists, wishlists and tags; a menu at the top of Home switches between them and creates, renames, deletes, exports and imports them.
+- **Profiles** — each profile has its own lists, wishlists and tags, and a cube icon in a primary and a secondary colour of your choice; a menu at the top of Home switches between them and creates, edits, deletes, exports and imports them.
 - **Your own ranking** — Classic and Platformer lists with drag-and-drop cards for your personal top (`#12 / 90`), the level's AREDL position, its thumbnail as the card background and its difficulty face.
 - **Difficulty faces** — the game's face for each difficulty, from NA to Extreme Demon, with the Featured, Epic, Legendary or Mythic halo of its rating, on level cards, wishlist cards, search results and the level form. Sync looks up the rating of saved levels that do not have one yet.
 - **Level details** — attempts (normal and copy), play time, completion date, YouTube video with its thumbnail, enjoyment and liking ratings from −10 to 10, tags, notes and a deaths-by-percent histogram.
 - **Automatic AREDL sync** — AREDL positions, level IDs, creators and difficulties refresh when the app opens or regains focus if they are more than 12 hours old; a chip in the top bar shows the status and the pause menu has **Update now**.
-- **Level search** — the level form and wishlists search [GDBrowser](https://gdbrowser.com) by name or ID, with a featured filter, and list the matches as cards with their thumbnail, most downloaded first. Picking one fills in the name, ID, creator, difficulty, rating and list, which cannot be edited by hand. When nothing matches, similar names from the AREDL and the community sheet are suggested.
+- **Level search** — the level form and wishlists search [GDBrowser](https://gdbrowser.com) by name or ID, with Rated / Unrated, rate type and difficulty filters, and list the matches as cards with their thumbnail, most downloaded first. Picking one fills in the name, ID, creator, difficulty, rating and list, which cannot be edited by hand. When nothing matches, similar names from the AREDL and the community sheet are suggested.
 - **Every rated level** — sync fills missing creators and difficulties from the Geometry Dash community sheet of rated levels, not only for levels on the AREDL.
 - **Wishlists** — *Not started / In progress / Completed* states, a progress bar per list, and completed levels sent to your lists.
 - **Statistics** — totals, a zoomable attempts timeline, and completions by difficulty and by year.
-- **Search, tags and notifications** — live search that keeps the selected level, colour tags, and a bell that lists levels not yet placed in your ranking, completed wishlist levels not yet in a list, and levels without an ID.
+- **Search, tags and notifications** — live name search that keeps the selected level, a tag filter that shows the levels with any of the chosen tags, colour tags that filter the list when clicked, and a bell that lists levels not yet placed in your ranking, completed wishlist levels not yet in a list, and levels without an ID.
 - **Themes, languages and offline use** — Classic blue, Night and Synth themes, Spanish and English, and an installable PWA that opens without a connection.
 
 ## How it works
@@ -77,7 +77,7 @@ npm run levels                # download the community sheet into data/levels.js
 
 On Windows, `iniciar.bat` starts the same server and opens the browser; on macOS and Linux, `iniciar.command` does the same with `python3`. There are no environment variables: the app has no backend and none of the external services needs an API key. The first visit loads the demo profile from `data/demo-data.js`, which contains fictional data. Without `data/levels.json` the app still works; it just cannot fill creators and difficulties from the sheet.
 
-Node is only used for the checks; the app itself has no dependencies to install. `eslint.config.js` reads the script list in `index.html` so that names shared between the classic scripts count as defined, and the tests run `js/config.js` and `js/utils.js` in a shared `vm` context the same way the page does.
+Node is only used for the checks; the app itself has no dependencies to install. `eslint.config.js` reads the script list in `index.html` so that names shared between the classic scripts count as defined and no local variable can hide one of them. `tests/load-scripts.js` runs the scripts a test needs in one shared `vm` context, the same way the page does, and `tests/globals.test.js` fails when two scripts declare the same top-level name or when one is never used.
 
 The banner is drawn in `docs/brand/banner.html`. Regenerate it from the repository root with
 `npx -y playwright@1.63.0 screenshot --viewport-size "1280,640" "file:///<absolute path>/docs/brand/banner.html" docs/brand/banner.png`.
