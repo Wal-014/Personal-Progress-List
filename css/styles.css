@@ -1366,10 +1366,86 @@ input.ro {
 }
 
 .gdf {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
   margin-top: 8px;
+}
+
+.gdseg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.gdf .ms {
+  min-width: 0;
+}
+
+.gdf summary {
+  padding: 7px 9px;
+  font: bold 13px Arial, Helvetica, sans-serif;
+  cursor: pointer;
+  background: rgba(0, 0, 0, .35);
+  border: 2px solid rgba(255, 255, 255, .4);
+  border-radius: 8px;
+}
+
+.gdf summary:focus-visible {
+  outline: 3px solid var(--plab);
+  outline-offset: 2px;
+}
+
+.gdf .msp {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 4px;
+  max-height: min(280px, var(--ms-height, 50dvh));
+  padding: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--panel);
+  border: 3px solid #000;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 3px var(--panel-in), 0 8px 0 rgba(0, 0, 0, .35);
+}
+
+.gdf .msp label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin: 0;
+  font: bold 13px Arial, Helvetica, sans-serif;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.gdf .msp input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  accent-color: var(--go2);
+}
+
+.gdf .msp img {
+  flex: none;
+  width: 32px;
+  height: 32px;
+}
+
+/* The option labels set display: flex, which would otherwise beat [hidden] */
+.gdf [hidden], .gdf .msp label[hidden] {
+  display: none;
 }
 
 .gdf [aria-pressed=true] {
