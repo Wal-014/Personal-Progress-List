@@ -1104,6 +1104,10 @@ dialog.modal::backdrop {
   flex: none;
   width: 64px;
   height: 64px;
+  /* Keep the global image cap from squeezing halos in narrow grid tracks. */
+  max-width: none;
+  aspect-ratio: 1;
+  object-fit: contain;
 }
 
 .face.unk {
