@@ -19,7 +19,7 @@ test('difficulty uses NA for unrated levels and missing difficulties', () => {
 });
 
 test('Rated includes star-only levels and moons, while Unrated excludes both', () => {
-    const matches = app('matchesFilters');
+    const matches = app('matchesSearchFilters');
     for (const platformer of [false, true]) {
         const level = app('fromGdb')(result({ platformer }));
         assert.equal(matches(level, filters({ rated: 'rated' })), true);
@@ -29,7 +29,7 @@ test('Rated includes star-only levels and moons, while Unrated excludes both', (
 });
 
 test('rating tiers and difficulties are OR within each selection and AND across selections', () => {
-    const matches = app('matchesFilters');
+    const matches = app('matchesSearchFilters');
     const f = filters({ rated: 'rated', rates: ['rated', 'epic'], diffs: ['Hard Demon', 'Extreme Demon'] });
     for (const rating of ['unrated', 'rated', 'featured', 'epic', 'legendary', 'mythic'])
         for (const diff of ['Hard', 'Hard Demon', 'Extreme Demon'])
@@ -37,7 +37,7 @@ test('rating tiers and difficulties are OR within each selection and AND across 
 });
 
 test('inapplicable selections are ignored without being lost', () => {
-    const matches = app('matchesFilters');
+    const matches = app('matchesSearchFilters');
     const f = filters({ rates: ['epic'], diffs: ['NA', 'Hard'] });
     const before = structuredClone(f);
     assert.equal(matches({ rating: 'rated', diff: 'Hard' }, f), true);

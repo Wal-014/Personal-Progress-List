@@ -87,10 +87,10 @@ const aredlLabel = l => {
     return listName + ' -';
 };
 
-/** Tag colour from the active profile, falling back to the theme colour. */
+/** Tag colour from the active profile, falling back to the text colour. */
 const tagColor = n => {
     const c = profile.tags?.find(g => g.name == n)?.color;
-    return /^#[0-9a-f]{6}$/i.test(c) ? c : 'var(--b)';
+    return /^#[0-9a-f]{6}$/i.test(c) ? c : 'var(--fg)';
 };
 
 const tagStyle = n => {

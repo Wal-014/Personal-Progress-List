@@ -64,8 +64,8 @@ test('tagStyle paints a chip in its tag colour and drops anything that is not #r
     setGlobal('profile', { tags: [{ name: 'ok', color: '#12ab9F' }, { name: 'bad', color: 'red;background:url(x)' }] });
     const tagStyle = app('tagStyle');
     assert.equal(tagStyle('ok'), 'color:#12ab9F;border-color:#12ab9F');
-    assert.equal(tagStyle('bad'), 'color:var(--b);border-color:var(--b)');
-    assert.equal(tagStyle('missing'), 'color:var(--b);border-color:var(--b)');
+    assert.equal(tagStyle('bad'), 'color:var(--fg);border-color:var(--fg)');
+    assert.equal(tagStyle('missing'), 'color:var(--fg);border-color:var(--fg)');
 });
 
 test('ensureProfileDefaults drops imported wishlist statuses and deaths the app cannot render', () => {

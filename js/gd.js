@@ -11,7 +11,7 @@ const difficultyOf = l => l.rating == 'unrated' || !l.diff ? 'NA' : l.diff;
 /** Applicable selections without changing the selections kept in the form. */
 const effectiveFilters = f => ({ rates: f.rated == 'rated' ? f.rates : [], diffs: f.rated == 'unrated' ? [] : f.diffs.filter(d => f.rated != 'rated' || d != 'NA') });
 
-function matchesFilters(l, f) {
+function matchesSearchFilters(l, f) {
     const { rates, diffs } = effectiveFilters(f);
     return (f.rated == 'all' || (l.rating != 'unrated') == (f.rated == 'rated')) && (!rates.length || rates.includes(l.rating)) && (!diffs.length || diffs.includes(difficultyOf(l)));
 }
@@ -82,7 +82,7 @@ async function searchLevels(query, f, page) {
     }
     if (!Array.isArray(d))
         return { levels: [], more: false };
-    const levels = d.filter(x => x && /^\d+$/.test(x.id)).map(fromGdb).filter(l => matchesFilters(l, f));
+    const levels = d.filter(x => x && /^\d+$/.test(x.id)).map(fromGdb).filter(l => matchesSearchFilters(l, f));
     return { levels: levels.sort((a, b) => b.downloads - a.downloads), more: d.length >= 10 };
 }
 

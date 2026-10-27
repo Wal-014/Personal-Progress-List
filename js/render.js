@@ -15,8 +15,8 @@ function controlSelector(el) {
 /** Preserves list scroll when redrawing the same screen. */
 function render() {
     const focused = controlSelector(document.activeElement);
-    const listScrollTop = ui._t == ui.tab ? qs('#lw')?.scrollTop : 0, isLevelList = isListTab();
-    ui._t = ui.tab;
+    const listScrollTop = ui.renderedTab == ui.tab ? qs('#lw')?.scrollTop : 0, isLevelList = isListTab();
+    ui.renderedTab = ui.tab;
     const screen = ui.tab == 'wish' && currentWishlist() ? wishView() : isLevelList ? `<div class=split><div class=lcol>${lcol()}</div><div class="rcol ${ui.sel ? 'has' : ''}">${panel()}</div></div>` : ui.tab == 'stats' ? stats() : home();
     qs('#app').innerHTML = `${topBar()}<main class="${isLevelList ? 'wide' : ''}">${screen}</main>${navBars(isLevelList)}`;
     document.documentElement.dataset.t = ui.theme;
