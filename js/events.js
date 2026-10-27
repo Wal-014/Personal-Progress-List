@@ -62,7 +62,7 @@ const ACTIONS = {
             ui.edit = 0;
             renderPanel();
         }
-        openModal(form());
+        openModal(levelForm());
         qs('#gdq').focus();
     },
     edit(a, id) {
@@ -512,7 +512,7 @@ document.body.onmousemove = e => {
         else {
             const l = findLevel(p.dataset.id), u = thumbUrl(l);
             tp.innerHTML = `${u ? `<img src="${u}" alt="">` : ''}<b>${escapeHtml(l.name)}</b><br>${escapeHtml(totalAttempts(l))} ${t('att')} · ${escapeHtml(formatDate(l.date))}`;
-            tp.querySelector('img')?.addEventListener('error', e => e.target.remove());
+            tp.querySelector('img')?.addEventListener('error', ({ target }) => target.remove());
         }
     }
     tp.style.display = 'block';
