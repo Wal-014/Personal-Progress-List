@@ -28,6 +28,7 @@
                 location.reload();
             }
         });
+        // Offline use is optional: without a service worker (opened from disk, or blocked) the app still runs online
         navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {
         });
     }

@@ -1,16 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import vm from 'node:vm';
+import { loadScripts } from './load-scripts.js';
 
 /** Loads the list scripts and the event handlers with a stub DOM; `calls` records the redraws they ask for. */
 const createApp = () => {
     const calls = [], dom = {};
     const document = { body: {}, addEventListener() {}, querySelector: selector => dom[selector] ?? null, querySelectorAll: selector => dom[selector] ?? [] };
-    const context = vm.createContext({ localStorage: {}, document, window: { addEventListener() {} } });
-    for (const file of ['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/api.js', 'js/components/faces.js', 'js/components/levels.js', 'js/events.js'])
-        vm.runInContext(readFileSync(file, 'utf8'), context, { filename: file });
-    const app = code => vm.runInContext(code, context);
+    const { context, app } = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/api.js', 'js/components/faces.js', 'js/components/levels.js', 'js/events.js'], { localStorage: {}, document, window: { addEventListener() {} } });
     for (const name of ['render', 'closeModal', 'openModal', 'tagsUI'])
         context[name] = () => calls.push(name);
     context.askConfirm = async () => true;
@@ -36,6 +32,19 @@ test('leaving the list clears the name search and the tag filter', () => {
     app('ACTIONS.tab({ dataset: { v: "home" } })');
     assert.equal(app('ui.q'), '');
     assert.deepEqual(tagFilter(app), []);
+});
+
+test('opening a level from the timeline or from a dialog clears the list filters so the level shows', () => {
+    const { app, dom } = createApp();
+    app('profile.levels = [{ id: "l1", kind: "platform", name: "Level" }]; ui.tab = "stats"; ui.q = "other"; ui.tagFilter = ["A"]');
+    const point = { classList: { contains: name => name == 'pt' }, dataset: { id: 'l1' } };
+    const target = { classList: { contains: () => false }, closest: selector => selector == '[data-id]' ? point : null };
+    app('document.body.onclick')({ target });
+    assert.deepEqual([app('ui.tab'), app('ui.sel'), app('ui.q'), tagFilter(app)], ['platform', 'l1', '', []]);
+    app('ui.q = "other"; ui.tagFilter = ["A"]');
+    dom['#md .modal'] = {};
+    app('ACTIONS.edit(null, "l1")');
+    assert.deepEqual([app('ui.edit'), app('ui.q'), tagFilter(app)], [1, '', []]);
 });
 
 test('the clear button empties only the tag filter and focuses the dropdown', () => {

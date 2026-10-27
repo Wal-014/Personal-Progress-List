@@ -36,6 +36,12 @@ let ui = { tab: 'home', wl: null, q: '', tagFilter: [], z: 28, lang: localStorag
 
 const isListTab = () => ['classic', 'platform'].includes(ui.tab);
 
+/** Clears the name search and the tag filter, so the next list opens unfiltered. */
+function resetListFilters() {
+    ui.q = '';
+    ui.tagFilter = [];
+}
+
 const emptyProfile = () => ({ levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
 
 const save = () => localStorage.gdp = JSON.stringify(store);
@@ -109,9 +115,9 @@ function ensureProfileDefaults() {
 }
 
 /** Gives a new id to every entry that has none or repeats an earlier one. */
-function fixIds(list, prefix) {
+function fixIds(entries, prefix) {
     const seen = new Set();
-    list.forEach(x => {
+    entries.forEach(x => {
         if (!x.id || seen.has(x.id))
             x.id = newId(prefix);
         seen.add(x.id);

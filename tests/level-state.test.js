@@ -1,10 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import vm from 'node:vm';
+import { loadScripts } from './load-scripts.js';
 
 const createApp = () => {
-    const context = vm.createContext({
+    const { app, context } = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/components/levels.js'], {
         localStorage: {},
         FormData: class extends URLSearchParams {
             constructor(form) {
@@ -12,9 +11,6 @@ const createApp = () => {
             }
         }
     });
-    for (const file of ['js/config.js', 'js/utils.js', 'js/state.js', 'js/components/levels.js'])
-        vm.runInContext(readFileSync(file, 'utf8'), context, { filename: file });
-    const app = code => vm.runInContext(code, context);
     const plain = value => JSON.parse(JSON.stringify(value));
     return { app, context, plain };
 };

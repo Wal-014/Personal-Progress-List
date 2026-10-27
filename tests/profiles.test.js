@@ -1,20 +1,24 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import vm from 'node:vm';
+import { loadScripts } from './load-scripts.js';
 
 const createApp = () => {
     let writes = 0;
-    const localStorage = {}, context = vm.createContext({ localStorage });
+    const localStorage = {};
     Object.defineProperty(localStorage, 'gdp', { get: () => localStorage.saved, set: value => { localStorage.saved = value; writes++; } });
-    for (const file of ['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js'])
-        vm.runInContext(readFileSync(file, 'utf8'), context, { filename: file });
-    const app = code => vm.runInContext(code, context);
+    const { context, app, load } = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js'], { localStorage });
     const setProfiles = profs => {
         context.profs = profs;
         app('store = { cur: Object.keys(profs)[0], profs }');
     };
-    return { app, context, localStorage, setProfiles, writes: () => writes };
+    const loadEvents = () => {
+        context.document = { body: {}, addEventListener() {} };
+        context.window = { addEventListener() {} };
+        context.render = () => {};
+        context.matchWithAredl = () => {};
+        load(['js/events.js']);
+    };
+    return { app, context, load, loadEvents, localStorage, setProfiles, writes: () => writes };
 };
 
 test('isHexColor accepts only six hexadecimal digits after a hash', () => {
@@ -99,18 +103,11 @@ test('nextProfileColor cycles by profile count once every preset is used', () =>
     assert.equal(app('nextProfileColor()'), '#a6ff4d');
 });
 
-const loadEvents = context => {
-    context.document = { body: {}, addEventListener() {} };
-    context.window = { addEventListener() {} };
-    context.render = () => {};
-    context.matchWithAredl = () => {};
-    vm.runInContext(readFileSync('js/events.js', 'utf8'), context, { filename: 'js/events.js' });
-};
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
 test('askProfile preserves untouched colours exactly and defaults invalid values', async () => {
-    const { app, context } = createApp();
-    vm.runInContext(readFileSync('js/components/dialogs.js', 'utf8'), context, { filename: 'js/components/dialogs.js' });
+    const { app, context, load } = createApp();
+    load(['js/components/dialogs.js']);
     context.showDialog = ({ enhance }) => enhance({ querySelector: () => ({}) })('Player');
     const ask = app('askProfile');
     assert.deepEqual({ ...await ask('Edit profile', { name: 'Player', color: '#FFE94D', secondaryColor: '#ABCDEF' }) }, { name: 'Player', color: '#FFE94D', secondaryColor: '#ABCDEF' });
@@ -118,8 +115,8 @@ test('askProfile preserves untouched colours exactly and defaults invalid values
 });
 
 test('askProfile shows a labelled radio group per colour with its own radio name', () => {
-    const { app, context } = createApp();
-    vm.runInContext(readFileSync('js/components/dialogs.js', 'utf8'), context, { filename: 'js/components/dialogs.js' });
+    const { app, context, load } = createApp();
+    load(['js/components/dialogs.js']);
     let extra;
     context.showDialog = options => {
         extra = options.extra;
@@ -135,8 +132,8 @@ test('askProfile shows a labelled radio group per colour with its own radio name
 });
 
 test('the profile dialog changes only the colour group that was edited', () => {
-    const { app, context } = createApp();
-    vm.runInContext(readFileSync('js/components/dialogs.js', 'utf8'), context, { filename: 'js/components/dialogs.js' });
+    const { app, context, load } = createApp();
+    load(['js/components/dialogs.js']);
     const colourGroup = color => {
         const custom = { parentNode: { dataset: {} } }, radios = [...app('PROFILE_COLORS')].map(value => ({ value, checked: false }));
         const group = { dataset: { color }, custom, radios, querySelector: () => custom, querySelectorAll: () => radios };
@@ -168,9 +165,9 @@ test('the profile dialog changes only the colour group that was edited', () => {
 });
 
 test('creating and editing profiles saves both colours independently outside their data', async () => {
-    const { app, context, setProfiles } = createApp();
+    const { app, context, setProfiles, loadEvents } = createApp();
     setProfiles({ old: { name: 'Old', color: '#ffe94d', secondaryColor: '#ABCDEF', data: app('emptyProfile()') } });
-    loadEvents(context);
+    loadEvents();
     context.askProfile = async (title, values) => {
         assert.equal(title, 'Nuevo perfil');
         assert.deepEqual({ ...values }, { name: '', color: '#a6ff4d', secondaryColor: '#5ef0ff' });
@@ -206,9 +203,9 @@ test('creating and editing profiles saves both colours independently outside the
 });
 
 test('export and import preserve profile metadata separately from level data', async () => {
-    const { app, context, setProfiles } = createApp();
+    const { app, context, setProfiles, loadEvents } = createApp();
     setProfiles({ a: { name: 'Player', color: '#123456', secondaryColor: '#ABCDEF', data: app('emptyProfile()') } });
-    loadEvents(context);
+    loadEvents();
     let exported;
     context.Blob = Blob;
     context.URL = { createObjectURL: blob => { exported = blob; return 'blob:test'; }, revokeObjectURL() {} };
@@ -234,9 +231,9 @@ test('export and import preserve profile metadata separately from level data', a
 });
 
 test('import offers an unused preset for an invalid colour and leaves cancellation unchanged', async () => {
-    const { app, context, setProfiles, writes } = createApp();
+    const { app, context, setProfiles, writes, loadEvents } = createApp();
     setProfiles({ a: { name: 'Player', color: '#ffe94d', data: app('emptyProfile()') } });
-    loadEvents(context);
+    loadEvents();
     context.askProfile = async (title, values) => {
         assert.equal(title, 'Importar perfil');
         assert.deepEqual({ ...values }, { name: 'Fallback', color: '#a6ff4d', secondaryColor: '#5ef0ff' });
@@ -251,9 +248,9 @@ test('import offers an unused preset for an invalid colour and leaves cancellati
 
 test('importing older files or invalid secondary colours supplies the default outside data', async () => {
     for (const secondaryColor of [undefined, null, '#abc', '"><script>']) {
-        const { app, context, setProfiles } = createApp();
+        const { app, context, setProfiles, loadEvents } = createApp();
         setProfiles({ a: { name: 'Player', color: '#ffe94d', secondaryColor: '#123456', data: app('emptyProfile()') } });
-        loadEvents(context);
+        loadEvents();
         context.askProfile = async (title, values) => {
             assert.equal(values.color, '#ABCDEF');
             assert.equal(values.secondaryColor, '#5ef0ff');

@@ -1,16 +1,19 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import vm from 'node:vm';
+import { loadScripts } from './load-scripts.js';
 
 // state.js and api.js read localStorage when they load, so an empty one is provided
-const context = vm.createContext({ localStorage: {} });
-for (const file of ['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js'])
-    vm.runInContext(readFileSync(file, 'utf8'), context, { filename: file });
-const app = name => vm.runInContext(name, context);
+const { context, app } = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js'], { localStorage: {} });
+
+test('an unreadable AREDL cache is dropped instead of breaking every AREDL lookup', () => {
+    for (const [stored, expected] of [['{broken', []], ['{"k":"d"}', []], ['[{"k":"d","i":1}]', [{ k: 'd', i: 1 }]]]) {
+        const fresh = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js'], { localStorage: { gar: stored } });
+        assert.deepEqual(JSON.parse(JSON.stringify(fresh.app('aredlCache'))), expected, stored);
+    }
+});
 const setGlobal = (name, value) => {
     context.__value = value;
-    vm.runInContext(`${name} = __value`, context);
+    app(`${name} = __value`);
 };
 
 test('isValidProfileData accepts an empty profile and a full one', () => {
@@ -55,8 +58,8 @@ test('tagStyle paints a chip in its tag colour and drops anything that is not #r
     setGlobal('profile', { tags: [{ name: 'ok', color: '#12ab9F' }, { name: 'bad', color: 'red;background:url(x)' }] });
     const tagStyle = app('tagStyle');
     assert.equal(tagStyle('ok'), 'color:#12ab9F;border-color:#12ab9F');
-    assert.equal(tagStyle('bad'), 'color:var(--b);border-color:var(--b)');
-    assert.equal(tagStyle('missing'), 'color:var(--b);border-color:var(--b)');
+    assert.equal(tagStyle('bad'), 'color:var(--fg);border-color:var(--fg)');
+    assert.equal(tagStyle('missing'), 'color:var(--fg);border-color:var(--fg)');
 });
 
 test('ensureProfileDefaults drops imported wishlist statuses and deaths the app cannot render', () => {

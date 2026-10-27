@@ -110,7 +110,8 @@ function formField(key, value, type = 'text', attrs = '') {
     return `<div><label for=fm-${key}>${t(key)}</label>${type == 'number' && !attrs.includes('readonly') ? `<div class=num><button type=button class=blue data-act=step data-d=-1 aria-label="−1">−</button><input id=fm-${key} name=${key} type=number ${attrs} value="${escapeHtml(value)}"><button type=button class=blue data-act=step data-d=1 aria-label="+1">+</button></div>` : `<input id=fm-${key} name=${key} type=${type} ${attrs} value="${escapeHtml(value)}"${attrs.includes('readonly') ? ' class=ro' : ''}>`}</div>`;
 }
 
-function form(level) {
+/** Form for adding a level or editing one. */
+function levelForm(level) {
     const kind = level?.kind || (isListTab() ? ui.tab : 'classic');
     const levelData = level || { tags: [], ar: { s: 'n' }, kind };
     const rankPosition = rankedIds(kind).indexOf(level?.id) + 1 || '';
@@ -169,7 +170,7 @@ function lcol() {
 /** Right column with level details, an editing form or an empty prompt. */
 function panel() {
     const l = ui.sel ? findLevel(ui.sel) : null;
-    return !l ? `<div class=ph>${t('pick')}</div>` : ui.edit ? form(l) : detail(l);
+    return !l ? `<div class=ph>${t('pick')}</div>` : ui.edit ? levelForm(l) : detail(l);
 }
 
 function initSort() {

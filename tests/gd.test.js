@@ -1,12 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import vm from 'node:vm';
+import { loadScripts } from './load-scripts.js';
 
-const context = vm.createContext({ localStorage: {} });
-for (const file of ['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js', 'js/sheet.js', 'js/gd.js'])
-    vm.runInContext(readFileSync(file, 'utf8'), context, { filename: file });
-const app = name => vm.runInContext(name, context);
+const { context, app } = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js', 'js/sheet.js', 'js/gd.js'], { localStorage: {} });
 
 const result = extra => ({ id: '10565740', name: 'Bloodbath', author: 'Riot', difficulty: 'Extreme Demon', stars: 10, downloads: 193000000, platformer: false, featured: false, epic: false, legendary: false, mythic: false, ...extra });
 const filters = extra => ({ rated: 'all', rates: [], diffs: [], ...extra });
@@ -19,7 +15,7 @@ test('difficulty uses NA for unrated levels and missing difficulties', () => {
 });
 
 test('Rated includes star-only levels and moons, while Unrated excludes both', () => {
-    const matches = app('matchesFilters');
+    const matches = app('matchesSearchFilters');
     for (const platformer of [false, true]) {
         const level = app('fromGdb')(result({ platformer }));
         assert.equal(matches(level, filters({ rated: 'rated' })), true);
@@ -29,7 +25,7 @@ test('Rated includes star-only levels and moons, while Unrated excludes both', (
 });
 
 test('rating tiers and difficulties are OR within each selection and AND across selections', () => {
-    const matches = app('matchesFilters');
+    const matches = app('matchesSearchFilters');
     const f = filters({ rated: 'rated', rates: ['rated', 'epic'], diffs: ['Hard Demon', 'Extreme Demon'] });
     for (const rating of ['unrated', 'rated', 'featured', 'epic', 'legendary', 'mythic'])
         for (const diff of ['Hard', 'Hard Demon', 'Extreme Demon'])
@@ -37,7 +33,7 @@ test('rating tiers and difficulties are OR within each selection and AND across 
 });
 
 test('inapplicable selections are ignored without being lost', () => {
-    const matches = app('matchesFilters');
+    const matches = app('matchesSearchFilters');
     const f = filters({ rates: ['epic'], diffs: ['NA', 'Hard'] });
     const before = structuredClone(f);
     assert.equal(matches({ rating: 'rated', diff: 'Hard' }, f), true);
