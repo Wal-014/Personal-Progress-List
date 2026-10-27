@@ -54,7 +54,6 @@ function resultCard(l, i) {
     return `<button type=button class=gdc data-act=gdpick data-i=${i}${u ? ` style="--th:url('${u}')"` : ''}><span class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>ID ${escapeHtml(l.levelId)} · ${t('by')} ${escapeHtml(orDash(l.creator))}${l.kind == 'platform' ? ' · ' + t('platform') : ''}</span></span>${difficultyFace(l)}</button>`;
 }
 
-/** Draws the results panel from the search state. */
 function renderLevelSearch() {
     const box = qs('#gdr'), s = levelSearch;
     if (!box)

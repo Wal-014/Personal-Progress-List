@@ -1,5 +1,5 @@
 /**
- * Eventos globales: clics, formularios, teclado y tooltips. Cada acción se identifica con el atributo data-act.
+ * Global click, form, keyboard and tooltip handlers identified by data-act.
  */
 
 /** Re-renders behind the pause menu and reopens it, keeping focus on the control that was used. */

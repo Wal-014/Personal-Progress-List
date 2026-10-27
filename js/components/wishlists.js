@@ -1,8 +1,8 @@
 /**
- * Pantalla de una wishlist: progreso, estados de cada nivel y envío a las listas principales.
+ * Wishlist progress, level statuses and transfers to the main lists.
  */
 
-/** Progreso de una wishlist: niveles completados, total y estado. */
+/** Wishlist progress as { n: total, d: completed, s: status }. */
 const wishlistProgress = w => {
     const n = w.items.length, d = w.items.filter(i => i.status == 'done').length;
     return { n, d, s: n && d == n ? 'done' : w.items.some(i => i.status != 'todo') ? 'prog' : 'todo' };
@@ -11,16 +11,13 @@ const wishlistProgress = w => {
 /** True when a wishlist item is already in one of the profile's lists (same level ID or same name). */
 const isInList = (i, k) => profile.levels.some(l => l.kind == k && (i.levelId && String(l.levelId) == String(i.levelId) || l.name.toLowerCase() == i.name.toLowerCase()));
 
-/** Wishlist abierta actualmente. */
 const currentWishlist = () => profile.wishlists.find(w => w.id == ui.wl);
 
-/** Barra de progreso de una wishlist. */
 const progressBar = w => {
     const p = wishlistProgress(w);
     return `<div class=pb><i style="width:${p.n ? p.d / p.n * 100 : 0}%"></i></div>`;
 };
 
-/** Wishlist screen. */
 function wishView() {
     const w = currentWishlist(), p = wishlistProgress(w);
     const item = i => {
@@ -30,7 +27,7 @@ function wishView() {
     return `<div class=wh><div class=info><h2>${escapeHtml(w.name)}</h2><span class=by>${p.d} / ${p.n} · ${t('st_' + p.s)}</span>${progressBar(w)}</div><div class=wa><button class=pri data-act=wadd>${t('witem')}</button><button data-act=wren>${t('wren')}</button><button class=dg data-act=wdelL>${t('wdelL')}</button></div></div><div class=wl>${w.items.map(item).join('') || `<p class=by>${t('empty')}</p>`}</div>`;
 }
 
-/** Formulario para añadir o editar un nivel de wishlist. */
+/** Form for adding or editing a wishlist level. */
 function wform(i) {
     return `<div class="box sm"><h2>${i ? t('edit') : t('palAdd')}</h2><form id=wf data-id="${escapeHtml(i?.id)}">${levelSearchBox()}<div class=grid>${levelFields(i || {}, false)}</div><p class=dgb><button class=pri>${t('save')}</button> <button type=button data-act=close>${t('close')}</button></p></form></div>`;
 }

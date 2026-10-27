@@ -12,7 +12,7 @@ function controlSelector(el) {
     return attrs.length ? el.tagName.toLowerCase() + attrs.map(a => `[${a}="${CSS.escape(el.getAttribute(a))}"]`).join('') : null;
 }
 
-/** Dibuja toda la interfaz. Conserva el scroll de la lista cuando se redibuja la misma pantalla. */
+/** Preserves list scroll when redrawing the same screen. */
 function render() {
     const focused = controlSelector(document.activeElement);
     const sy = ui._t == ui.tab ? qs('#lw')?.scrollTop : 0, isL = isListTab();

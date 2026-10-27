@@ -1,11 +1,10 @@
 /**
- * Funciones auxiliares puras: escape de HTML, formato y lectura de duraciones, cálculos de intentos y tiempos.
+ * Shared DOM, formatting, validation and calculation helpers, some using the active profile or interface state.
  */
 
-/** Atajo de document.querySelector. */
+/** Short form of document.querySelector. */
 const qs = s => document.querySelector(s);
 
-/** Escapa texto antes de insertarlo en HTML. */
 const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 /** Returns the link only if it is http(s), so schemes like javascript: never reach an href. */
@@ -17,19 +16,18 @@ const newId = prefix => prefix + Date.now().toString(36) + Math.random().toStrin
 /** Shows a stored YYYY-MM-DD date as DD/MM/YYYY, the format used across the app. */
 const formatDate = d => d ? d.split('-').reverse().join('/') : '';
 
-/** Muestra «-» cuando no hay dato. */
 const orDash = v => v == null || v === '' ? '-' : v;
 
-/** Convierte segundos a «1h 30m 0s». */
+/** Formats seconds as "1h 30m 0s". */
 const formatDuration = s => s == null ? '' : `${~~(s / 3600)}h ${~~(s % 3600 / 60)}m ${s % 60}s`;
 
-/** Convierte «1h 30m 0s» a segundos (null si no es válido). */
+/** Parses "1h 30m 0s" into seconds, or null when invalid. */
 const parseDuration = x => {
     const m = /^\s*(?:(\d+)h)?\s*(?:(\d+)m)?\s*(?:(\d+)s)?\s*$/.exec(x || '');
     return m && (m[1] || m[2] || m[3]) ? +(m[1] || 0) * 3600 + +(m[2] || 0) * 60 + +(m[3] || 0) : null;
 };
 
-/** Lee el texto «63% x4» (una línea por porcentaje) y devuelve {porcentaje: muertes}. */
+/** Parses "63% x4" lines into { percent: deaths }, summing repeated percentages. */
 const parseDeaths = x => {
     const d = {};
     for (const m of x.matchAll(/(\d+)\s*%\s*x\s*(\d+)/gi))
@@ -64,41 +62,38 @@ const todayLocal = () => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
-/** Intentos totales = intentos en normal + intentos en copia. */
+/** Attempts in normal mode (attN) plus in a copy of the level (attC), or null when neither is known. */
 const totalAttempts = l => l.attN == null && l.attC == null ? null : (l.attN || 0) + (l.attC || 0);
 
-/** Tiempo total = normal + práctica + práctica en copia. */
+/** Play time in normal mode (tN), practice (tP) and practice in a copy (tPC), in seconds, or null when none is known. */
 const totalSeconds = l => {
     const a = [l.tN, l.tP, l.tPC].filter(x => x != null);
     return a.length ? a.reduce((x, y) => x + y) : null;
 };
 
-/** URL de la miniatura del nivel en Level Thumbnails. */
 const thumbUrl = l => /^\d+$/.test(l.levelId) ? `https://levelthumbs.prevter.me/thumbnail/${l.levelId}` : '';
 
-/** Texto del puesto en la AREDL / AREPL. */
 const aredlLabel = l => {
     const L = l.kind == 'platform' ? 'AREPL' : 'AREDL';
     return l.ar?.s == 'r' ? (l.ar.p != null ? `${L} #${escapeHtml(l.ar.p)}` : `${L} · ${t('onl')}`) : l.ar?.s == 'p' ? t('pending') : l.ar?.s == 'n' ? t('notin') : L + ' -';
 };
 
-/** Color asignado a un tag. */
+/** Tag colour from the active profile, falling back to the theme colour. */
 const tagColor = n => {
     const c = profile.tags?.find(g => g.name == n)?.color;
     return /^#[0-9a-f]{6}$/i.test(c) ? c : 'var(--b)';
 };
 
-/** Inline style that paints a tag chip in its colour. */
 const tagStyle = n => {
     const c = tagColor(n);
     return `color:${c};border-color:${c}`;
 };
 
-/** Los niveles con el tag «Pre-Extremes» se muestran aparte, en «Primeros pasos». */
+/** Levels tagged "Pre-Extremes" appear separately under "First steps". */
 const PRE_TAG = 'Pre-Extremes';
 const isPre = l => (l.tags || []).includes(PRE_TAG);
 
-/** Relative time of a past moment, like «hace 3 horas», in the app language. */
+/** Relative time of a past moment, such as "3 hours ago", using ui.lang. */
 const timeAgo = ms => {
     const s = (Date.now() - ms) / 1000, f = new Intl.RelativeTimeFormat(ui.lang, { numeric: 'auto' });
     return s < 3600 ? f.format(-Math.round(s / 60), 'minute') : s < 86400 ? f.format(-Math.round(s / 3600), 'hour') : f.format(-Math.round(s / 86400), 'day');

@@ -1,5 +1,5 @@
 /**
- * Constantes de la aplicación: dificultades, URL de la API, iconos, banderas y temas.
+ * Application constants for difficulties, API URLs, icons, flags and themes.
  */
 
 const ICONS = {

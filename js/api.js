@@ -2,17 +2,17 @@
  * AREDL and AREPL lists (positions and IDs), and the sync that also fills creators and difficulties from the community sheet.
  */
 
-/** Obtiene el nombre visible de un usuario de la API. */
+/** Display name of an API user, or null when none is available. */
 const nm = x => typeof x == 'string' ? x : x && (x.global_name || x.username || x.name || x.display_name || x.discord_username || Object.values(x).find(v => typeof v == 'string' && v.length < 32 && !/^[0-9a-f-]{20,}$/i.test(v))) || null;
 
-/** Normaliza un nombre para compararlo: sin mayúsculas, tildes, espacios ni símbolos. */
+/** Name comparison ignores case, accents, spaces and symbols. */
 const normalizeName = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
 
 /** Cached levels of one list, skipping entries whose name has no letters or digits (they would match any name). */
 const namedAredlLevels = kind => aredlCache.filter(x => x.k == kind && normalizeName(x.n));
 
 /**
- * Busca un nivel por nombre en la caché de la AREDL (kind: 'd' clásicos, 'p' plataforma).
+ * Searches cached AREDL names (kind: 'd' classic, 'p' platformer).
  * First an exact normalized match; otherwise the single official name that contains what was typed.
  * The reverse (typed text containing an official name) is not accepted: "Kenos Remake" is not "Kenos".
  */
@@ -28,13 +28,13 @@ function findAredlByName(name, kind) {
     return partial.length == 1 ? partial[0] : null;
 }
 
-/** Hasta tres nombres de la AREDL que se parecen al escrito (para sugerir). */
+/** Up to three similar AREDL names for suggestions. */
 function similarAredlNames(name, kind) {
     const n = normalizeName(name).slice(0, 4);
     return n ? namedAredlLevels(kind).filter(x => normalizeName(x.n).includes(n)).slice(0, 3).map(x => x.n) : [];
 }
 
-/** Descarga la lista de la AREDL y de la AREPL si todavía no está en caché (o siempre, con force). Returns true when fresh lists arrived. */
+/** Downloads uncached AREDL and AREPL lists (always with force); returns true when fresh lists arrive. */
 async function loadAredlList(force) {
     if (aredlCache.length && !force)
         return false;
@@ -81,7 +81,6 @@ async function enrichWishlistItem(it) {
     render();
 }
 
-/** Completa los datos de todos los niveles pendientes de una wishlist. */
 async function enrichWishlist(w) {
     for (const i of w.items)
         if (!i.chk && (!i.creator || !i.levelId || !i.diff)) {
@@ -90,7 +89,7 @@ async function enrichWishlist(w) {
         }
 }
 
-/** Copia local de la lista de la AREDL (se descarga sola y se renueva cada AREDL_MAX_AGE). */
+/** Locally stored AREDL and AREPL lists, refreshed after AREDL_MAX_AGE. */
 let aredlCache = JSON.parse(localStorage.gar || '[]');
 
 /** After this long the lists are downloaded again on their own. */
@@ -141,7 +140,6 @@ async function syncWithAredl(manual) {
     renderSyncStatus();
 }
 
-/** Updates from AREDL on its own when the last update is old and the browser is online. */
 function autoSyncIfStale() {
     if (navigator.onLine && Date.now() - (+localStorage.gas || 0) > AREDL_MAX_AGE)
         syncWithAredl();

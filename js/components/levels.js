@@ -1,8 +1,8 @@
 /**
- * Lista de niveles (Clásicos y Plataforma), panel de información y formulario de edición.
+ * Classic and platformer level lists, details and editing forms.
  */
 
-/** Barra de -10 a 10 para disfrutabilidad y nivel de agrado. */
+/** Enjoyment or appeal meter on a scale from -10 to 10. */
 function meter(v, lab = '') {
     const hd = b => `<div class=mh>${lab ? `<span>${lab}</span>` : ''}${b}</div>`;
     if (v == null)
@@ -25,13 +25,12 @@ const rankedIds = kind => profile.order[kind].filter(id => {
     return l && !isPre(l);
 });
 
-/** Cuerpo de la lista: niveles colocados, sin colocar y primeros pasos. */
+/** List body grouped into ranked, unplaced and first-step levels. */
 function list() {
     const ids = profile.order[ui.tab], ok = l => (!ui.q || l.name.toLowerCase().includes(ui.q)) && (!ui.tag || (l.tags || []).includes(ui.tag)), all = profile.levels.filter(l => l.kind == ui.tab), pl = rankedIds(ui.tab).map(findLevel), un = all.filter(l => !ids.includes(l.id) && !isPre(l) && ok(l)), pre = all.filter(l => isPre(l) && ok(l));
     return `<div id=lst>${pl.map((l, i) => ok(l) ? card(l, i, pl.length) : '').join('')}</div>${un.length ? `<h2 class=grp>${t('unplaced')}</h2>` + un.map(l => card(l)).join('') : ''}${pre.length ? `<h2 class=grp>${t('first')}</h2>` + pre.map(l => card(l, 'pre')).join('') : ''}${all.length ? '' : `<p class=by>${t('empty')}</p>`}`;
 }
 
-/** Panel con la información completa de un nivel. */
 function detail(l) {
     const d = l.deaths || {}, ks = Object.keys(d).map(Number).sort((a, b) => a - b), lo = ks[0], hi = ks.at(-1), mx = Math.max(1, ...Object.values(d)), st = (k, v, c = '') => `<div class="st ${c}"><small>${t(k)}</small><b>${escapeHtml(v)}</b></div>`, u = thumbUrl(l), sc = (k, b) => `<fieldset><legend>${t(k)}</legend>${b}</fieldset>`, link = safeUrl(l.link), y = (/(?:v=|youtu\.be\/|shorts\/|embed\/)([\w-]{11})/.exec(link) || [])[1];
     let h = '', ax = '';
@@ -49,10 +48,8 @@ ${h ? sc('dh', `<div class=hist>${h}</div><div class=ax>${ax}</div>`) : ''}
 </div><p class=dgb><button class=blue data-act=edit data-id="${escapeHtml(l.id)}">${ICONS.edit} ${t('edit')}</button> <button data-act=lvclose>${t('close')}</button></p></div>`;
 }
 
-/** Etiqueta seleccionada dentro del formulario. */
 const tagChip = n => `<span class=chip data-act=tgrm data-v="${escapeHtml(n)}" style="${tagStyle(n)}">${escapeHtml(n)} ${ICONS.del}<input type=hidden name=tg value="${escapeHtml(n)}"></span>`;
 
-/** Recalcula intentos y tiempo totales mientras se edita. */
 function updateTotals(f) {
     const q = k => f.elements[k], n = k => q(k).value === '' ? null : +q(k).value, a = n('attN'), c = n('attC');
     q('attT').value = a == null && c == null ? '' : (a || 0) + (c || 0);
@@ -60,14 +57,12 @@ function updateTotals(f) {
     q('tT').value = s.length ? formatDuration(s.reduce((x, y) => x + y)) : '';
 }
 
-/** Muestra los tags que coinciden con lo escrito en el buscador del formulario. */
 function renderTagSuggestions() {
     const q = (qs('#tgq')?.value || '').toLowerCase(), sel = [...document.querySelectorAll('#tgs input')].map(i => i.value);
     if (qs('#tgr'))
         qs('#tgr').innerHTML = profile.tags.filter(g => !sel.includes(g.name) && g.name.toLowerCase().includes(q)).map(g => `<span class=chip data-act=tgadd data-v="${escapeHtml(g.name)}" style="${tagStyle(g.name)}">+ ${escapeHtml(g.name)}</span>`).join('');
 }
 
-/** Formulario para añadir o editar un nivel. */
 function form(l) {
     const f = (k, v, ty = 'text', x = '') => `<div><label for=fm-${k}>${t(k)}</label>${ty == 'number' && !x.includes('readonly') ? `<div class=num><button type=button class=blue data-act=step data-d=-1 aria-label="−1">−</button><input id=fm-${k} name=${k} type=number ${x} value="${escapeHtml(v)}"><button type=button class=blue data-act=step data-d=1 aria-label="+1">+</button></div>` : `<input id=fm-${k} name=${k} type=${ty} ${x} value="${escapeHtml(v)}"${x.includes('readonly') ? ' class=ro' : ''}>`}</div>`, kind = l?.kind || (isListTab() ? ui.tab : 'classic'), o = l || { tags: [], ar: { s: 'n' }, kind }, pos = rankedIds(kind).indexOf(l?.id) + 1 || '', sec = (k, b) => `<fieldset><legend>${t(k)}</legend><div class=grid>${b}</div></fieldset>`, sel = (lab, nm, opts) => `<div><label for=fm-${nm}>${lab}</label><select id=fm-${nm} name=${nm}>${opts}</select></div>`;
     return `<div class=box><h2>${l ? t('edit') : t('palAdd')}</h2><form id=fm data-id="${escapeHtml(l?.id)}"><div class=warn id=wn></div>
@@ -86,13 +81,12 @@ function lcol() {
     return `<div class=lh><input id=q type=search placeholder="${t('search')}" aria-label="${t('search')}" value="${escapeHtml(ui.q)}"></div>${ui.tag ? `<p><button class=xs data-act=ct aria-label="${t('del')} · ${escapeHtml(ui.tag)}">${ICONS.del}</button> <span class=chip style="${tagStyle(ui.tag)}">${escapeHtml(ui.tag)}</span></p>` : ''}<div id=lw>${list()}</div>`;
 }
 
-/** Columna derecha: información, formulario o mensaje vacío. */
+/** Right column with level details, an editing form or an empty prompt. */
 function panel() {
     const l = ui.sel ? findLevel(ui.sel) : null;
     return !l ? `<div class=ph>${t('pick')}</div>` : ui.edit ? form(l) : detail(l);
 }
 
-/** Activa el arrastre para reordenar el top. */
 function initSort() {
     if (qs('#lst') && !ui.q && !ui.tag)
         new Sortable(qs('#lst'), { animation: 180, onEnd: () => {
@@ -102,16 +96,14 @@ function initSort() {
             } });
 }
 
-/** Desplaza la lista hasta el nivel seleccionado. */
 const scrollSel = () => document.querySelector('.lv.sel')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
 
-/** Redibuja solo la lista (conserva el scroll y el texto de búsqueda). */
+/** Redraws the list while preserving scroll and search text. */
 function renderList() {
     qs('#lw').innerHTML = list();
     initSort();
 }
 
-/** Redibuja solo el panel derecho. */
 function renderPanel() {
     const r = qs('.rcol');
     r.innerHTML = panel();
@@ -119,7 +111,7 @@ function renderPanel() {
     renderTagSuggestions();
 }
 
-/** Selecciona un nivel y muestra su información sin recargar la lista. */
+/** Selects a level without rebuilding the list. */
 function selectLevel(id) {
     ui.sel = id;
     ui.edit = 0;

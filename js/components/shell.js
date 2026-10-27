@@ -2,10 +2,8 @@
  * Editor shell: top bar, bottom toolbar (desktop), tab bar (phones) and the pause menu.
  */
 
-/** Title of the current screen for the top bar. */
 const screenTitle = () => ui.tab == 'wish' ? t('wish') : t(ui.tab);
 
-/** Top bar: logo and title on Home, back arrow and title elsewhere; bell and pause always. */
 function topBar() {
     const A = alerts().length, onHome = ui.tab == 'home' || ui.tab == 'wish' && !currentWishlist();
     const left = onHome
@@ -14,7 +12,6 @@ function topBar() {
     return `<header class=top>${left}<span class=sp></span><span id=syncst class=syncst role=status>${syncStatus()}</span><button class=sq data-act=bell aria-label="${t('bell')}${A ? ` (${A})` : ''}">${ICONS.bell}${A ? `<b class=bdg aria-hidden=true>${A}</b>` : ''}</button><button class=sq data-act=pause aria-label="${t('pause')}">${ICONS.pause}</button></header>`;
 }
 
-/** Top bar chip shown while the AREDL lists are being updated. */
 const syncStatus = () => ui.sync ? `${ICONS.sync}<span>${t('syncing')}</span>` : '';
 
 /** Last AREDL update, how many levels are on the list, and the manual update button. */
@@ -45,7 +42,6 @@ function navBars(isList) {
         + (isList ? `<button class=fab data-act=add aria-label="${t('palAdd')}">${ICONS.plus}</button>` : '');
 }
 
-/** Pause menu: theme, language, import, legal links (and the quick actions on phones). */
 function pauseUI() {
     const sw = k => `<button class="swatch sw-${k}" data-act=theme data-v=${k} aria-pressed=${ui.theme == k}><i></i>${t(k)}</button>`;
     const lang = ([k, n]) => `<button class="${ui.lang == k ? 'pri' : ''}" data-act=lang data-v=${k} aria-pressed=${ui.lang == k}>${FLAGS[k]}${n}</button>`;

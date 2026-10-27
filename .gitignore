@@ -1,9 +1,9 @@
-# Datos personales: nunca se suben
+# Personal data must never be committed
 private/
 *.profile.json
 *-backup*.json
 
-# Sistema y herramientas
+# System and tooling files
 .DS_Store
 Thumbs.db
 node_modules/

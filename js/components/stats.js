@@ -1,5 +1,5 @@
 /**
- * Pantalla de Estadísticas: totales, cronograma de intentos y distribución por dificultad y año.
+ * Statistics totals, attempts timeline and distributions by difficulty and year.
  */
 
 /** Horizontal bars (difficulty and year). */
@@ -8,7 +8,7 @@ const bars = o => {
     return Object.entries(o).map(([k, v]) => `<div class=hb><span>${escapeHtml(k)}</span><span class=tr><i style="width:${v / m * 100}%"></i></span><b>${v}</b></div>`).join('');
 };
 
-/** Cronograma SVG: intentos por nivel, ordenado por fecha, con zoom. */
+/** SVG timeline of attempts per level, ordered by date, with zoom. */
 function timelineHtml() {
     const L = profile.levels.filter(l => l.date && totalAttempts(l) != null), ds = [...new Set(L.map(l => l.date))].sort(), W = ui.z, M = Math.max(1, ...L.map(totalAttempts)), Y = v => 290 - v / M * 265, X = c => 34 + c * W, gl = [], w = ds.length * W + 50;
     for (let v = 10000; v < M; v += 10000)
@@ -30,7 +30,6 @@ ${W >= 24 ? ds.map((d, c) => `<text transform="rotate(-60 ${X(c)} 302)" x=${X(c)
 <polyline points="${line}" fill=none stroke="#000" stroke-width=7 stroke-linejoin=round pointer-events=none /><polyline points="${line}" fill=none stroke="var(--a)" stroke-width=3 stroke-linejoin=round pointer-events=none />${pts.map(([l, c, y]) => `<rect class=pt data-id="${escapeHtml(l.id)}" x=${X(c) - 6} y=${y - 6} width=12 height=12 fill="#fff" stroke="#000" stroke-width=2.5 />${W >= 60 ? `<text x=${X(c) + 10} y=${y + 4} font-size=11 font-weight=bold fill="#fff" pointer-events="none">${escapeHtml(totalAttempts(l))}</text>` : ''}`).join('')}</svg></div></div>`;
 }
 
-/** Pantalla de Estadísticas. */
 function stats() {
     const L = profile.levels.filter(l => totalAttempts(l) != null), A = L.reduce((s, l) => s + totalAttempts(l), 0), H = profile.levels.reduce((s, l) => s + (totalSeconds(l) || 0), 0), mx = L.length ? L.reduce((a, b) => totalAttempts(b) > totalAttempts(a) ? b : a) : null, dd = {}, yy = {};
     profile.levels.forEach(l => {

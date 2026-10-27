@@ -12,9 +12,7 @@
   <link rel="icon" href="icon.svg">
   <meta name="theme-color" content="#26337e">
   <link rel="stylesheet" href="css/styles.css">
-  <!-- Librería para reordenar tarjetas arrastrando -->
   <script src="vendor/Sortable.min.js"></script>
-  <!-- Perfil de demostración que se carga la primera vez -->
   <script src="data/demo-data.js"></script>
 </head>
 <body>
@@ -23,7 +21,7 @@
   <div id="tip"></div>
   <input type="file" id="fi" accept=".json" hidden>
 
-  <!-- El orden de carga importa: cada archivo usa lo definido en los anteriores -->
+  <!-- Load order matters: each classic script uses names defined by earlier scripts -->
   <script src="js/config.js"></script>
   <script src="js/i18n.js"></script>
   <script src="js/utils.js"></script>
