@@ -76,6 +76,21 @@ ${sec('s4', f('date', o.date, 'date') + f('link', o.link))}
 <p class=dgb><button class=pri>${t('save')}</button> <button type=button data-act=${l ? 'lvclose' : 'close'}>${t('close')}</button> ${l ? `<button type=button class=dg data-act=del data-id="${escapeHtml(l.id)}">${t('del')}</button>` : ''}</p></form></div>`;
 }
 
+function levelFromForm(form) {
+    const data = new FormData(form), fields = Object.fromEntries(data), number = key => fields[key] === '' ? null : +fields[key], clamp = key => {
+        const value = number(key);
+        return value == null ? value : Math.max(-10, Math.min(10, value));
+    };
+    return {
+        name: fields.name.trim(), kind: fields.kind, levelId: fields.lid || null, creator: fields.creator || null,
+        diff: fields.diff || null, rating: fields.rating || null, attC: number('attC'), attN: number('attN'),
+        date: fields.date || null, link: fields.link || null, enj: clamp('enj'), lik: clamp('lik'),
+        tN: parseDuration(fields.tN), tP: parseDuration(fields.tP), tPC: parseDuration(fields.tPC),
+        notes: fields.notes, tags: data.getAll('tg'), deaths: parseDeaths(fields.deaths),
+        ar: { s: fields.as, p: fields.as == 'r' ? number('ap') : null }
+    };
+}
+
 /** Left column: search, active tag filter and the list. */
 function lcol() {
     return `<div class=lh><input id=q type=search placeholder="${t('search')}" aria-label="${t('search')}" value="${escapeHtml(ui.q)}"></div>${ui.tag ? `<p><button class=xs data-act=ct aria-label="${t('del')} · ${escapeHtml(ui.tag)}">${ICONS.del}</button> <span class=chip style="${tagStyle(ui.tag)}">${escapeHtml(ui.tag)}</span></p>` : ''}<div id=lw>${list()}</div>`;

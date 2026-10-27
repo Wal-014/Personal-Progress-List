@@ -48,6 +48,12 @@ function changeLevelFilters() {
         renderLevelSearch();
 }
 
+function setLevelFilter(input) {
+    const key = input.name == 'gdrate' ? 'rates' : 'diffs';
+    levelSearch.f[key] = Array.from(document.querySelectorAll(`input[name=${input.name}]:checked`), x => x.value);
+    changeLevelFilters();
+}
+
 /** A result: the whole card picks the level. The thumbnail fills its background, black when there is none. */
 function resultCard(l, i) {
     const u = thumbUrl(l);

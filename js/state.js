@@ -61,6 +61,17 @@ function nextProfileColor() {
 
 const findLevel = id => profile.levels.find(l => l.id == id);
 
+function activateProfile(id) {
+    store.cur = id;
+    profile = store.profs[id].data;
+    ensureProfileDefaults();
+}
+
+function removeFromOrder(id) {
+    for (const kind in profile.order)
+        profile.order[kind] = profile.order[kind].filter(x => x != id);
+}
+
 function isValidProfileData(d) {
     const isObj = v => v != null && typeof v == 'object', isList = (a, check = isObj) => Array.isArray(a) && a.every(check);
     return isObj(d)
