@@ -150,6 +150,12 @@ function renderListTagFilters() {
     qs('.lh [data-act=ct]').hidden = !ui.tagFilter.length;
 }
 
+function setListTagFilter() {
+    ui.tagFilter = Array.from(document.querySelectorAll('.lh input[name=tagf]:checked'), checkbox => checkbox.value);
+    renderListTagFilters();
+    renderList();
+}
+
 /** Left column: name search, tag filters and the list. */
 function lcol() {
     const options = listTagOptions(profile.levels.filter(level => level.kind == ui.tab), ui.tagFilter);

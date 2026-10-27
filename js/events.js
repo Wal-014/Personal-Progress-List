@@ -435,11 +435,8 @@ document.body.oninput = e => {
 };
 document.body.onchange = e => {
     const input = e.target, ds = input.dataset;
-    if (input.name == 'tagf') {
-        ui.tagFilter = Array.from(document.querySelectorAll('.lh input[name=tagf]:checked'), checkbox => checkbox.value);
-        renderListTagFilters();
-        return renderList();
-    }
+    if (input.name == 'tagf')
+        return setListTagFilter();
     if (['gdrate', 'gddiff'].includes(input.name))
         return setLevelFilter(input);
     if (ds.wi != null)
