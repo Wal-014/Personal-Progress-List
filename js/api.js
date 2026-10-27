@@ -2,8 +2,19 @@
  * AREDL and AREPL lists (positions and IDs), and the sync that also fills creators and difficulties from the community sheet.
  */
 
+/** The stored AREDL and AREPL lists, or none when the stored copy cannot be read: it is only a cache, so it must not stop the app from starting. */
+function readAredlCache() {
+    try {
+        const lists = JSON.parse(localStorage.gar || '[]');
+        return Array.isArray(lists) ? lists : [];
+    }
+    catch {
+        return [];
+    }
+}
+
 /** Locally stored AREDL and AREPL lists, refreshed after AREDL_MAX_AGE. */
-let aredlCache = JSON.parse(localStorage.gar || '[]');
+let aredlCache = readAredlCache();
 
 /** After this long the lists are downloaded again on their own. */
 const AREDL_MAX_AGE = 12 * 3600 * 1000;
@@ -49,7 +60,7 @@ async function loadAredlList(force) {
             const r = await (await fetch(AREDL_API + q)).json();
             return Array.isArray(r) ? r : r.data || [];
         }
-        catch (e) {
+        catch {
             return [];
         }
     }, [d, q] = await Promise.all([get('aredl/levels'), get('arepl/levels')]);
@@ -80,7 +91,7 @@ async function enrichWishlistItem(it) {
         await loadSheetLevels();
         fillFromSheet(it);
     }
-    catch (e) {
+    catch {
     }
     it.chk = 1;
     save();

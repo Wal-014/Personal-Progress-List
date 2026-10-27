@@ -8,6 +8,15 @@ const context = vm.createContext({ localStorage: {} });
 for (const file of ['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js'])
     vm.runInContext(readFileSync(file, 'utf8'), context, { filename: file });
 const app = name => vm.runInContext(name, context);
+
+test('an unreadable AREDL cache is dropped instead of stopping the app from loading', () => {
+    for (const [stored, expected] of [['{broken', []], ['{"k":"d"}', []], ['[{"k":"d","i":1}]', [{ k: 'd', i: 1 }]]]) {
+        const fresh = vm.createContext({ localStorage: { gar: stored } });
+        for (const file of ['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js'])
+            vm.runInContext(readFileSync(file, 'utf8'), fresh, { filename: file });
+        assert.deepEqual(JSON.parse(JSON.stringify(vm.runInContext('aredlCache', fresh))), expected, stored);
+    }
+});
 const setGlobal = (name, value) => {
     context.__value = value;
     vm.runInContext(`${name} = __value`, context);
