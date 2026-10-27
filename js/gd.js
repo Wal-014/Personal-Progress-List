@@ -17,21 +17,24 @@ function matchesFilters(l, f) {
     return (f.rated == 'all' || (l.rating != 'unrated') == (f.rated == 'rated')) && (!rates.length || rates.includes(l.rating)) && (!diffs.length || diffs.includes(difficultyOf(l)));
 }
 
+/** Difficulties GDBrowser filters by number: Easy to Insane are diff=1-5, demons are diff=-2 with demonFilter=1-5. */
+const DIFF_FILTER = DIFFICULTIES.slice(1, 6), DEMON_FILTER = DIFFICULTIES.slice(6);
+
 /** Server filters that return a superset of the selected levels; mixed difficulties stay broad. */
 function searchParams(f) {
     const { rates, diffs } = effectiveFilters(f);
     if (f.rated == 'unrated' || f.rated == 'all' && diffs.length == 1 && diffs[0] == 'NA')
         return '&noStar';
-    const known = diffs.length && !diffs.includes('NA');
-    let params = f.rated == 'rated' || known ? '&' + (rates.length == 1 && ['featured', 'epic', 'legendary', 'mythic'].includes(rates[0]) ? rates[0] : 'starred') : '';
-    if (known) {
-        const ids = DIFFICULTIES.map((d, i) => diffs.includes(d) ? i : -1).filter(i => i >= 0);
-        if (diffs.every(d => DIFFICULTIES.indexOf(d) >= 1 && DIFFICULTIES.indexOf(d) <= 5))
-            params += '&diff=' + ids.join(',');
+    // An official difficulty implies a rated level, since unrated levels show NA
+    const officialDiffs = diffs.length > 0 && !diffs.includes('NA');
+    let params = f.rated == 'rated' || officialDiffs ? '&' + (rates.length == 1 && ['featured', 'epic', 'legendary', 'mythic'].includes(rates[0]) ? rates[0] : 'starred') : '';
+    if (officialDiffs) {
+        if (diffs.every(d => DIFF_FILTER.includes(d)))
+            params += '&diff=' + DIFF_FILTER.flatMap((d, i) => diffs.includes(d) ? [i + 1] : []).join(',');
         else if (diffs.length == 1 && diffs[0] == 'Auto')
             params += '&diff=-3';
-        else if (diffs.every(d => DIFFICULTIES.indexOf(d) >= 6))
-            params += '&diff=-2' + (diffs.length == 1 ? '&demonFilter=' + (ids[0] - 5) : '');
+        else if (diffs.every(d => DEMON_FILTER.includes(d)))
+            params += '&diff=-2' + (diffs.length == 1 ? '&demonFilter=' + (DEMON_FILTER.indexOf(diffs[0]) + 1) : '');
     }
     return params;
 }

@@ -369,7 +369,7 @@ document.body.onchange = e => {
     const i = e.target.id, ds = e.target.dataset;
     if (['gdrate', 'gddiff'].includes(e.target.name)) {
         const key = e.target.name == 'gdrate' ? 'rates' : 'diffs';
-        levelSearch.f[key] = Array.from(document.querySelectorAll(`input[name=${e.target.name}]:checked`), i => i.value);
+        levelSearch.f[key] = Array.from(document.querySelectorAll(`input[name=${e.target.name}]:checked`), x => x.value);
         changeLevelFilters();
         return;
     }
