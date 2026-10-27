@@ -158,7 +158,8 @@ const ACTIONS = {
         askProfile(t('pedit'), store.profs[id].name, store.profs[id].color).then(p => {
             if (!p)
                 return;
-            Object.assign(store.profs[id], p);
+            store.profs[id].name = p.name;
+            store.profs[id].color = p.color;
             save();
             render();
         });

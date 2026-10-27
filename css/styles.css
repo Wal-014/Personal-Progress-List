@@ -1725,16 +1725,18 @@ input.ro {
   padding-left: 18px;
 }
 
-.profile-name {
-  display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
-  column-gap: 12px;
-  align-items: center;
-  margin-bottom: 16px;
+.box .profile-colors {
+  margin-top: 16px;
+}
+
+.profile-colors-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
 }
 
 .profile-preview {
-  grid-row: span 2;
+  flex: none;
 }
 
 .profile-preview .i {
@@ -1745,6 +1747,8 @@ input.ro {
 
 .profile-swatches {
   display: flex;
+  flex: 1;
+  min-width: 0;
   flex-wrap: wrap;
   gap: 10px;
 }
