@@ -1825,10 +1825,15 @@ input.ro {
   height: 48px;
 }
 
-.profile-swatches {
-  display: flex;
+.profile-color-groups {
+  display: grid;
   flex: 1;
   min-width: 0;
+  gap: 12px;
+}
+
+.profile-swatches {
+  display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
