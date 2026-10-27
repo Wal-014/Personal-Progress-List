@@ -8,7 +8,7 @@ const createApp = () => {
     const calls = [], dom = {};
     const document = { body: {}, addEventListener() {}, querySelector: selector => dom[selector] ?? null, querySelectorAll: selector => dom[selector] ?? [] };
     const context = vm.createContext({ localStorage: {}, document, window: { addEventListener() {} } });
-    for (const file of ['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js', 'js/components/levels.js', 'js/events.js'])
+    for (const file of ['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/api.js', 'js/components/faces.js', 'js/components/levels.js', 'js/events.js'])
         vm.runInContext(readFileSync(file, 'utf8'), context, { filename: file });
     const app = code => vm.runInContext(code, context);
     for (const name of ['render', 'closeModal', 'openModal', 'tagsUI'])
@@ -121,4 +121,17 @@ test('the list header offers only its own tags, escaped, with the selection chec
     assert.match(platform, /data-act=ct [^>]* hidden>/);
     app('profile.levels = profile.levels.map(level => ({ ...level, tags: [] }))');
     assert.equal(app('lcol()').includes('<details'), false, 'a list without tags has no dropdown');
+});
+
+test('a finished AREDL update does not redraw over an open dropdown', async () => {
+    const { app, calls, context } = createApp();
+    let present = ['.ms[open]'];
+    context.document.querySelector = selector => selector.split(', ').some(part => present.includes(part)) ? {} : null;
+    context.loadAredlList = async () => false;
+    context.renderSyncStatus = () => {};
+    await app('syncWithAredl()');
+    assert.equal(calls.includes('render'), false);
+    present = [];
+    await app('syncWithAredl()');
+    assert.ok(calls.includes('render'));
 });

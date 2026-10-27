@@ -134,8 +134,8 @@ async function syncWithAredl(manual) {
             showAlert('AREDL: ' + e.message);
     }
     ui.sync = 0;
-    // Redrawing would wipe a form or dialog the user has open; the new data shows on the next render
-    if (!qs('form, dialog[open]'))
+    // Redrawing would wipe a form, dialog or dropdown the user has open; the new data shows on the next render
+    if (!qs('form, dialog[open], .ms[open]'))
         render();
     renderSyncStatus();
 }
