@@ -2,7 +2,7 @@
  * AREDL and AREPL lists (positions and IDs), and the sync that also fills creators and difficulties from the community sheet.
  */
 
-/** The stored AREDL and AREPL lists, or none when the stored copy cannot be read: it is only a cache, so it must not stop the app from starting. */
+/** The stored AREDL and AREPL lists, or none when the stored copy cannot be read: a failed parse here would leave aredlCache unusable and break every AREDL lookup until storage is cleared. */
 function readAredlCache() {
     try {
         const lists = JSON.parse(localStorage.gar || '[]');
