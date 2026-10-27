@@ -9,6 +9,7 @@
         profile = demo;
         save();
     }
+    ensureProfileColors();
     ensureProfileDefaults();
     render();
     if (storeWasUnreadable)

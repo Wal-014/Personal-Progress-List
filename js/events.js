@@ -133,11 +133,11 @@ const ACTIONS = {
     },
     sync: () => syncWithAredl(true),
     pnew() {
-        askText(t('pname'), '').then(n => {
-            if (!n)
+        askProfile(t('pnew'), '', nextProfileColor()).then(p => {
+            if (!p)
                 return;
             const i = newId('p');
-            store.profs[i] = { name: n, data: emptyProfile() };
+            store.profs[i] = { name: p.name, color: p.color, data: emptyProfile() };
             store.cur = i;
             profile = store.profs[i].data;
             ui.tab = 'home';
@@ -155,10 +155,10 @@ const ACTIONS = {
         render();
     },
     pedit(a, id) {
-        askText(t('pname'), store.profs[id].name).then(n => {
-            if (!n)
+        askProfile(t('pedit'), store.profs[id].name, store.profs[id].color).then(p => {
+            if (!p)
                 return;
-            store.profs[id].name = n;
+            Object.assign(store.profs[id], p);
             save();
             render();
         });
@@ -265,7 +265,7 @@ const ACTIONS = {
     },
     imp: () => qs('#fi').click(),
     exp(a, id) {
-        const pr = store.profs[id || store.cur], u = URL.createObjectURL(new Blob([JSON.stringify({ ...pr.data, profileName: pr.name })], { type: 'application/json' })), x = document.createElement('a');
+        const pr = store.profs[id || store.cur], u = URL.createObjectURL(new Blob([JSON.stringify({ ...pr.data, profileName: pr.name, profileColor: pr.color })], { type: 'application/json' })), x = document.createElement('a');
         x.href = u;
         // Only characters that file systems reject are replaced, so accents and non-Latin names survive
         x.download = (pr.name.trim().replace(/[/:*?"<>|\s]+/g, '-') || 'profile') + '.json';
@@ -426,12 +426,13 @@ document.body.onchange = e => {
                 }
                 if (!isValidProfileData(d))
                     return showAlert(t('badFile'));
-                askText(t('pname'), d.profileName || f.name.replace(/\.json$/, '')).then(n => {
-                    if (!n)
+                askProfile(t('impP'), d.profileName || f.name.replace(/\.json$/, ''), isHexColor(d.profileColor) ? d.profileColor : nextProfileColor()).then(p => {
+                    if (!p)
                         return;
                     const id = newId('p');
                     delete d.profileName;
-                    store.profs[id] = { name: n, data: d };
+                    delete d.profileColor;
+                    store.profs[id] = { name: p.name, color: p.color, data: d };
                     store.cur = id;
                     profile = d;
                     ensureProfileDefaults();

@@ -4,22 +4,21 @@
       <stop offset="0" stop-color="#3a4cb0"/>
       <stop offset="1" stop-color="#26337e"/>
     </linearGradient>
-    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffe94d"/>
-      <stop offset="1" stop-color="#ffa800"/>
-    </linearGradient>
     <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse">
       <path d="M64 0H0V64" fill="none" stroke="#000" stroke-opacity=".28" stroke-width="3"/>
     </pattern>
   </defs>
   <rect width="512" height="512" fill="url(#bg)"/>
   <rect width="512" height="512" fill="url(#grid)"/>
-  <!-- The cube stays inside the maskable safe zone (a centred circle of 40% radius) -->
-  <g transform="translate(112 112) scale(6)">
-    <rect x="2.5" y="2.5" width="43" height="43" rx="3" fill="url(#body)" stroke="#000" stroke-width="3"/>
-    <rect x="6" y="6" width="36" height="36" rx="1.5" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1.5"/>
-    <rect x="12" y="13" width="8" height="8" fill="#5ef0ff" stroke="#000" stroke-width="2.5"/>
-    <rect x="28" y="13" width="8" height="8" fill="#5ef0ff" stroke="#000" stroke-width="2.5"/>
-    <rect x="12" y="28" width="24" height="6" fill="#5ef0ff" stroke="#000" stroke-width="2.5"/>
+  <!-- Same mark as APP_ICON in js/config.js; it stays inside the maskable safe zone (a centred circle of 40% radius) -->
+  <g transform="translate(112 112) scale(6)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke="#000" stroke-width="5.5"><polyline points="3,45 14,37 22,41 44,20"/><polyline points="36.5,20.5 44,20 43.5,27.5"/></g>
+    <g stroke="#fff" stroke-width="2.5"><polyline points="3,45 14,37 22,41 44,20"/><polyline points="36.5,20.5 44,20 43.5,27.5"/></g>
+    <g transform="rotate(20 19 16)">
+      <rect x="9" y="6" width="20" height="20" rx="2" stroke="#000" stroke-width="5.5"/>
+      <rect x="9" y="6" width="20" height="20" rx="2" stroke="#fff" stroke-width="2.5"/>
+      <g stroke="#000" stroke-width="3.6"><rect x="12.5" y="10.5" width="4" height="4"/><rect x="21.5" y="10.5" width="4" height="4"/><rect x="12.5" y="18.5" width="13" height="3"/></g>
+      <g stroke="#fff" stroke-width="1.6"><rect x="12.5" y="10.5" width="4" height="4"/><rect x="21.5" y="10.5" width="4" height="4"/><rect x="12.5" y="18.5" width="13" height="3"/></g>
+    </g>
   </g>
 </svg>
