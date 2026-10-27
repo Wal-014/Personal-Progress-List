@@ -117,6 +117,56 @@ test('askProfile preserves untouched colours exactly and defaults invalid values
     assert.deepEqual({ ...await ask('New profile', { name: 'Player', color: null, secondaryColor: 'invalid' }) }, { name: 'Player', color: '#ffe94d', secondaryColor: '#5ef0ff' });
 });
 
+test('askProfile shows a labelled radio group per colour with its own radio name', () => {
+    const { app, context } = createApp();
+    vm.runInContext(readFileSync('js/components/dialogs.js', 'utf8'), context, { filename: 'js/components/dialogs.js' });
+    let extra;
+    context.showDialog = options => {
+        extra = options.extra;
+        return new Promise(() => {});
+    };
+    app('askProfile')('Edit profile', { name: 'Player', color: '#ffe94d', secondaryColor: '#5ef0ff' });
+    assert.match(extra, /<span class=lab id="profile-color">Color principal<\/span><div class=profile-swatches role=radiogroup aria-labelledby="profile-color" data-color=color>/);
+    assert.match(extra, /<span class=lab id="profile-secondaryColor">Color secundario<\/span><div class=profile-swatches role=radiogroup aria-labelledby="profile-secondaryColor" data-color=secondaryColor>/);
+    assert.equal(extra.match(/name="profile-color"/g).length, 7);
+    assert.equal(extra.match(/name="profile-secondaryColor"/g).length, 7);
+    assert.match(extra, /name="profile-color" value="#ffe94d" aria-label="Amarillo" checked/);
+    assert.match(extra, /data-selected=true><input type=color value="#5ef0ff"/, 'the default secondary colour is not a preset, so its custom picker is selected');
+});
+
+test('the profile dialog changes only the colour group that was edited', () => {
+    const { app, context } = createApp();
+    vm.runInContext(readFileSync('js/components/dialogs.js', 'utf8'), context, { filename: 'js/components/dialogs.js' });
+    const colourGroup = color => {
+        const custom = { parentNode: { dataset: {} } }, radios = [...app('PROFILE_COLORS')].map(value => ({ value, checked: false }));
+        const group = { dataset: { color }, custom, radios, querySelector: () => custom, querySelectorAll: () => radios };
+        [custom, ...radios].forEach(input => input.closest = () => group);
+        return group;
+    };
+    const primary = colourGroup('color'), secondary = colourGroup('secondaryColor'), preview = {}, fieldset = { querySelector: () => preview };
+    let read;
+    context.showDialog = ({ enhance }) => {
+        read = enhance({ querySelector: () => fieldset });
+        return new Promise(() => {});
+    };
+    app('askProfile')('Edit profile', { name: 'Player', color: '#ffe94d', secondaryColor: '#5ef0ff' });
+    const pink = secondary.radios.find(radio => radio.value == '#ff8af2');
+    fieldset.oninput({ target: pink });
+    assert.deepEqual({ ...read('Player') }, { name: 'Player', color: '#ffe94d', secondaryColor: '#ff8af2' });
+    assert.deepEqual(secondary.radios.filter(radio => radio.checked), [pink]);
+    assert.equal(secondary.custom.parentNode.dataset.selected, false);
+    assert.equal(primary.radios.some(radio => radio.checked), false, 'the other group is left alone');
+    assert.match(preview.innerHTML, /x=2\.5 y=2\.5 width=43 height=43 rx=3 fill="#ffe94d"/);
+    assert.equal(preview.innerHTML.match(/fill="#ff8af2"/g).length, 3);
+    primary.custom.value = '#123456';
+    fieldset.oninput({ target: primary.custom });
+    assert.deepEqual({ ...read('Player') }, { name: 'Player', color: '#123456', secondaryColor: '#ff8af2' });
+    assert.equal(primary.custom.parentNode.dataset.selected, true);
+    assert.equal(primary.radios.some(radio => radio.checked), false);
+    assert.equal(pink.checked, true, 'the secondary choice survives a primary change');
+    assert.match(preview.innerHTML, /fill="#123456"/);
+});
+
 test('creating and editing profiles saves both colours independently outside their data', async () => {
     const { app, context, setProfiles } = createApp();
     setProfiles({ old: { name: 'Old', color: '#ffe94d', secondaryColor: '#ABCDEF', data: app('emptyProfile()') } });
