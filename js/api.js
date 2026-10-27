@@ -2,8 +2,14 @@
  * AREDL and AREPL lists (positions and IDs), and the sync that also fills creators and difficulties from the community sheet.
  */
 
+/** Locally stored AREDL and AREPL lists, refreshed after AREDL_MAX_AGE. */
+let aredlCache = JSON.parse(localStorage.gar || '[]');
+
+/** After this long the lists are downloaded again on their own. */
+const AREDL_MAX_AGE = 12 * 3600 * 1000;
+
 /** Display name of an API user, or null when none is available. */
-const nm = x => typeof x == 'string' ? x : x && (x.global_name || x.username || x.name || x.display_name || x.discord_username || Object.values(x).find(v => typeof v == 'string' && v.length < 32 && !/^[0-9a-f-]{20,}$/i.test(v))) || null;
+const publisherName = x => typeof x == 'string' ? x : x && (x.global_name || x.username || x.name || x.display_name || x.discord_username || Object.values(x).find(v => typeof v == 'string' && v.length < 32 && !/^[0-9a-f-]{20,}$/i.test(v))) || null;
 
 /** Name comparison ignores case, accents, spaces and symbols. */
 const normalizeName = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
@@ -47,7 +53,7 @@ async function loadAredlList(force) {
             return [];
         }
     }, [d, q] = await Promise.all([get('aredl/levels'), get('arepl/levels')]);
-    const fresh = [...d.map(x => ({ k: 'd', i: x.level_id, n: String(x.name), p: x.position, u: nm(x.publisher) })), ...q.map(x => ({ k: 'p', i: x.level_id, n: String(x.name), p: x.position, u: nm(x.publisher) }))];
+    const fresh = [...d.map(x => ({ k: 'd', i: x.level_id, n: String(x.name), p: x.position, u: publisherName(x.publisher) })), ...q.map(x => ({ k: 'p', i: x.level_id, n: String(x.name), p: x.position, u: publisherName(x.publisher) }))];
     if (fresh.length)
         aredlCache = fresh;
     if (aredlCache.length)
@@ -88,12 +94,6 @@ async function enrichWishlist(w) {
             await new Promise(s => setTimeout(s, 300));
         }
 }
-
-/** Locally stored AREDL and AREPL lists, refreshed after AREDL_MAX_AGE. */
-let aredlCache = JSON.parse(localStorage.gar || '[]');
-
-/** After this long the lists are downloaded again on their own. */
-const AREDL_MAX_AGE = 12 * 3600 * 1000;
 
 /** Fills id, publisher and AREDL position of the given levels from the cached lists. Returns the levels that matched. */
 function matchWithAredl(levels) {

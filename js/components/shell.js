@@ -36,9 +36,9 @@ function paletteButtons() {
 
 /** Bottom navigation: the editor toolbar on wide screens, a tab bar and an add button on phones. CSS shows one of them. The lists and statistics open from their Home cards. */
 function navBars(isList) {
-    const cur = ui.tab == 'home', home = (cls, label) => `<button class="${cls}${cur ? ' pri' : ''}" data-act=tab data-v=home${cur ? ' aria-current=page' : ''}>${label}</button>`;
-    return `<nav class=toolbar aria-label="${t('nav')}">${home('mode', t('home'))}<div class=palette>${paletteButtons()}</div></nav>`
-        + `<nav class=tabbar aria-label="${t('nav')}">${home('tab', `${ICONS.home}<span>${t('home')}</span>`)}<button class=tab data-act=pause>${ICONS.more}<span>${t('more')}</span></button></nav>`
+    const cur = ui.tab == 'home', homeButton = (cls, label) => `<button class="${cls}${cur ? ' pri' : ''}" data-act=tab data-v=home${cur ? ' aria-current=page' : ''}>${label}</button>`;
+    return `<nav class=toolbar aria-label="${t('nav')}">${homeButton('mode', t('home'))}<div class=palette>${paletteButtons()}</div></nav>`
+        + `<nav class=tabbar aria-label="${t('nav')}">${homeButton('tab', `${ICONS.home}<span>${t('home')}</span>`)}<button class=tab data-act=pause>${ICONS.more}<span>${t('more')}</span></button></nav>`
         + (isList ? `<button class=fab data-act=add aria-label="${t('palAdd')}">${ICONS.plus}</button>` : '');
 }
 

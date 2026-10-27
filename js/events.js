@@ -459,8 +459,8 @@ document.addEventListener('beforetoggle', e => {
 /** Fits an open filter panel below the bar inside the viewport. */
 document.addEventListener('toggle', e => {
     if (e.target.matches('.gdf .ms[open]')) {
-        const panel = e.target.querySelector('.msp'), bottom = e.target.closest('.gdf').getBoundingClientRect().bottom;
-        panel.style.setProperty('--ms-height', Math.max(0, innerHeight - bottom - 12) + 'px');
+        const optionsPanel = e.target.querySelector('.msp'), bottom = e.target.closest('.gdf').getBoundingClientRect().bottom;
+        optionsPanel.style.setProperty('--ms-height', Math.max(0, innerHeight - bottom - 12) + 'px');
     }
 }, true);
 document.onkeydown = e => {

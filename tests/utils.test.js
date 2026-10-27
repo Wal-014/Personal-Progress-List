@@ -9,6 +9,27 @@ for (const file of ['js/config.js', 'js/utils.js'])
     vm.runInContext(readFileSync(file, 'utf8'), context, { filename: file });
 const app = name => vm.runInContext(name, context);
 
+const labelContext = vm.createContext({ ui: { lang: 'en' } });
+for (const file of ['js/i18n.js', 'js/utils.js'])
+    vm.runInContext(readFileSync(file, 'utf8'), labelContext, { filename: file });
+const label = vm.runInContext('aredlLabel', labelContext);
+
+for (const [kind, listName] of [['classic', 'AREDL'], ['platform', 'AREPL']]) {
+    test(`aredlLabel formats every status for ${kind} levels`, () => {
+        assert.equal(label({ kind, ar: { s: 'r', p: 42 } }), `${listName} #42`);
+        assert.equal(label({ kind, ar: { s: 'r', p: 0 } }), `${listName} #0`);
+        assert.equal(label({ kind, ar: { s: 'r', p: '<&' } }), `${listName} #&lt;&amp;`);
+        assert.equal(label({ kind, ar: { s: 'r' } }), `${listName} · On the list`);
+        assert.equal(label({ kind, ar: { s: 'r', p: null } }), `${listName} · On the list`);
+        assert.equal(label({ kind, ar: { s: 'p' } }), 'Not placed yet');
+        assert.equal(label({ kind, ar: { s: 'n' } }), 'Not on list');
+        for (const status of [undefined, null, '', 'unknown', 0, false])
+            assert.equal(label({ kind, ar: { s: status } }), `${listName} -`);
+        assert.equal(label({ kind, ar: null }), `${listName} -`);
+        assert.equal(label({ kind }), `${listName} -`);
+    });
+}
+
 test('escapeHtml escapes every HTML-significant character', () => {
     assert.equal(app('escapeHtml')(`<a href="x" title='y'>&</a>`), '&lt;a href=&quot;x&quot; title=&#39;y&#39;&gt;&amp;&lt;/a&gt;');
     assert.equal(app('escapeHtml')(null), '');

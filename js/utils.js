@@ -74,8 +74,17 @@ const totalSeconds = l => {
 const thumbUrl = l => /^\d+$/.test(l.levelId) ? `https://levelthumbs.prevter.me/thumbnail/${l.levelId}` : '';
 
 const aredlLabel = l => {
-    const L = l.kind == 'platform' ? 'AREPL' : 'AREDL';
-    return l.ar?.s == 'r' ? (l.ar.p != null ? `${L} #${escapeHtml(l.ar.p)}` : `${L} · ${t('onl')}`) : l.ar?.s == 'p' ? t('pending') : l.ar?.s == 'n' ? t('notin') : L + ' -';
+    const listName = l.kind == 'platform' ? 'AREPL' : 'AREDL';
+    if (l.ar?.s == 'r') {
+        if (l.ar.p != null)
+            return `${listName} #${escapeHtml(l.ar.p)}`;
+        return `${listName} · ${t('onl')}`;
+    }
+    if (l.ar?.s == 'p')
+        return t('pending');
+    if (l.ar?.s == 'n')
+        return t('notin');
+    return listName + ' -';
 };
 
 /** Tag colour from the active profile, falling back to the theme colour. */

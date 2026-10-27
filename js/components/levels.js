@@ -11,12 +11,16 @@ function meter(v, lab = '') {
     return hd(`<b style="color:${c}">${v > 0 ? '+' : ''}${escapeHtml(v)}</b>`) + `<div class="meter ${v >= 8 ? 'g' : ''}" style="color:${c}"><i style="background:${c};left:${v >= 0 ? 50 : 50 - p}%;width:${p}%"></i></div>`;
 }
 
+function tagFilterChip(name) {
+    return `<span class=chip data-tag="${escapeHtml(name)}" style="${tagStyle(name)}">${escapeHtml(name)}</span>`;
+}
+
 /** A level row in the list, drawn as an editor object. */
 function card(l, i, n) {
     const u = thumbUrl(l), rank = i == 'pre' ? ICONS.classic : i != null ? i + 1 : '—';
     const podium = i === 0 ? ' top1' : i === 1 ? ' top2' : i === 2 ? ' top3' : '';
     const meta = [l.creator ? t('by') + ' ' + escapeHtml(l.creator) : '', escapeHtml(formatDate(l.date)), aredlLabel(l)].filter(Boolean).join(' · ');
-    return `<div class="obj lv${podium}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${u ? ` style="--th:url('${u}')"` : ''}><span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + (i + 1) + ' / ' + n : t('unplaced')}">${rank}</span><div class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>${meta}</span>${l.tags?.length ? `<div>${l.tags.map(x => `<span class=chip data-tag="${escapeHtml(x)}" style="${tagStyle(x)}">${escapeHtml(x)}</span>`).join('')}</div>` : ''}</div>${difficultyFace(l)}</div>`;
+    return `<div class="obj lv${podium}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${u ? ` style="--th:url('${u}')"` : ''}><span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + (i + 1) + ' / ' + n : t('unplaced')}">${rank}</span><div class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>${meta}</span>${l.tags?.length ? `<div>${l.tags.map(tagFilterChip).join('')}</div>` : ''}</div>${difficultyFace(l)}</div>`;
 }
 
 /** Ids of the ranked levels of a list, in order: Pre-Extremes levels and ids of deleted levels have no rank. */
@@ -27,25 +31,51 @@ const rankedIds = kind => profile.order[kind].filter(id => {
 
 /** List body grouped into ranked, unplaced and first-step levels. */
 function list() {
-    const ids = profile.order[ui.tab], ok = l => (!ui.q || l.name.toLowerCase().includes(ui.q)) && (!ui.tag || (l.tags || []).includes(ui.tag)), all = profile.levels.filter(l => l.kind == ui.tab), pl = rankedIds(ui.tab).map(findLevel), un = all.filter(l => !ids.includes(l.id) && !isPre(l) && ok(l)), pre = all.filter(l => isPre(l) && ok(l));
-    return `<div id=lst>${pl.map((l, i) => ok(l) ? card(l, i, pl.length) : '').join('')}</div>${un.length ? `<h2 class=grp>${t('unplaced')}</h2>` + un.map(l => card(l)).join('') : ''}${pre.length ? `<h2 class=grp>${t('first')}</h2>` + pre.map(l => card(l, 'pre')).join('') : ''}${all.length ? '' : `<p class=by>${t('empty')}</p>`}`;
+    const orderedIds = profile.order[ui.tab];
+    const isShown = level => (!ui.q || level.name.toLowerCase().includes(ui.q)) && (!ui.tag || (level.tags || []).includes(ui.tag));
+    const listLevels = profile.levels.filter(level => level.kind == ui.tab);
+    const rankedLevels = rankedIds(ui.tab).map(findLevel);
+    const unplacedLevels = listLevels.filter(level => !orderedIds.includes(level.id) && !isPre(level) && isShown(level));
+    const firstStepLevels = listLevels.filter(level => isPre(level) && isShown(level));
+    return `<div id=lst>${rankedLevels.map((level, index) => isShown(level) ? card(level, index, rankedLevels.length) : '').join('')}</div>${unplacedLevels.length ? `<h2 class=grp>${t('unplaced')}</h2>` + unplacedLevels.map(level => card(level)).join('') : ''}${firstStepLevels.length ? `<h2 class=grp>${t('first')}</h2>` + firstStepLevels.map(level => card(level, 'pre')).join('') : ''}${listLevels.length ? '' : `<p class=by>${t('empty')}</p>`}`;
 }
 
-function detail(l) {
-    const d = l.deaths || {}, ks = Object.keys(d).map(Number).sort((a, b) => a - b), lo = ks[0], hi = ks.at(-1), mx = Math.max(1, ...Object.values(d)), st = (k, v, c = '') => `<div class="st ${c}"><small>${t(k)}</small><b>${escapeHtml(v)}</b></div>`, u = thumbUrl(l), sc = (k, b) => `<fieldset><legend>${t(k)}</legend>${b}</fieldset>`, link = safeUrl(l.link), y = (/(?:v=|youtu\.be\/|shorts\/|embed\/)([\w-]{11})/.exec(link) || [])[1];
-    let h = '', ax = '';
-    for (let p = lo; p <= hi; p++) {
-        h += `<b data-hp="${p}" data-hn="${escapeHtml(d[p] || 0)}"><i style="height:${(d[p] || 0) / mx * 100}%"></i></b>`;
-        ax += `<span>${p % 10 == 0 || hi - lo < 12 ? p + '%' : ''}</span>`;
+function youtubeId(url) {
+    return (/(?:v=|youtu\.be\/|shorts\/|embed\/)([\w-]{11})/.exec(url) || [])[1];
+}
+
+function deathHistogram(deaths) {
+    const percentages = Object.keys(deaths).map(Number).sort((a, b) => a - b);
+    const firstPercent = percentages[0];
+    const lastPercent = percentages.at(-1);
+    const maxDeaths = Math.max(1, ...Object.values(deaths));
+    let barsHtml = '';
+    let axisHtml = '';
+    for (let percent = firstPercent; percent <= lastPercent; percent++) {
+        barsHtml += `<b data-hp="${percent}" data-hn="${escapeHtml(deaths[percent] || 0)}"><i style="height:${(deaths[percent] || 0) / maxDeaths * 100}%"></i></b>`;
+        axisHtml += `<span>${percent % 10 == 0 || lastPercent - firstPercent < 12 ? percent + '%' : ''}</span>`;
     }
-    return `<div class=box>${u ? `<div class=hero style="background-image:url('${u}')"></div>` : ''}<h2>${escapeHtml(l.name)}</h2><p class=by>${escapeHtml(orDash(l.creator))} · ID ${escapeHtml(orDash(l.levelId))} · ${escapeHtml(difficultyLabel(l))} · ${aredlLabel(l)}</p>
-<div class=dgrid>${sc('sa', `<div class=grid>${st('attT', orDash(totalAttempts(l)), 'big')}${st('attN', orDash(l.attN))}${st('attC', orDash(l.attC))}${st('best', ks.length ? `${hi}% ×${d[hi]}` : '-')}</div>`)}
-${sc('sT', `<div class=grid>${st('tT', orDash(formatDuration(totalSeconds(l))), 'big')}${st('tN', orDash(formatDuration(l.tN)))}${st('tP', orDash(formatDuration(l.tP)))}${st('tPC', orDash(formatDuration(l.tPC)))}</div>`)}
-${sc('s4', `<div class=grid>${st('date', orDash(formatDate(l.date)))}</div>${y ? `<a class=yt target=_blank rel=noopener href="${escapeHtml(link)}"><img src="https://img.youtube.com/vi/${y}/hqdefault.jpg" alt=""><span>${ICONS.play}</span></a>` : link ? `<p><a style="color:var(--a)" target=_blank rel=noopener href="${escapeHtml(link)}">${ICONS.play} ${t('link')}</a></p>` : ''}`)}
-${sc('s5', `<div class=grid><div class=st><small>${t('enj')}</small>${meter(l.enj)}</div><div class=st><small>${t('lik')}</small>${meter(l.lik)}</div></div>`)}
-${(l.tags?.length || l.notes) ? sc('sh', `${(l.tags || []).map(x => `<span class=chip data-tag="${escapeHtml(x)}" style="${tagStyle(x)}">${escapeHtml(x)}</span>`).join('')}${l.notes ? `<p style="white-space:pre-wrap">${escapeHtml(l.notes)}</p>` : ''}`) : ''}
-${h ? sc('dh', `<div class=hist>${h}</div><div class=ax>${ax}</div>`) : ''}
-</div><p class=dgb><button class=blue data-act=edit data-id="${escapeHtml(l.id)}">${ICONS.edit} ${t('edit')}</button> <button data-act=lvclose>${t('close')}</button></p></div>`;
+    return barsHtml ? `<div class=hist>${barsHtml}</div><div class=ax>${axisHtml}</div>` : '';
+}
+
+function detail(level) {
+    const deaths = level.deaths || {};
+    const percentages = Object.keys(deaths).map(Number).sort((a, b) => a - b);
+    const bestPercent = percentages.at(-1);
+    const statCell = (key, value, className = '') => `<div class="st ${className}"><small>${t(key)}</small><b>${escapeHtml(value)}</b></div>`;
+    const thumbnail = thumbUrl(level);
+    const section = (key, body) => `<fieldset><legend>${t(key)}</legend>${body}</fieldset>`;
+    const link = safeUrl(level.link);
+    const videoId = youtubeId(link);
+    const histogram = deathHistogram(deaths);
+    return `<div class=box>${thumbnail ? `<div class=hero style="background-image:url('${thumbnail}')"></div>` : ''}<h2>${escapeHtml(level.name)}</h2><p class=by>${escapeHtml(orDash(level.creator))} · ID ${escapeHtml(orDash(level.levelId))} · ${escapeHtml(difficultyLabel(level))} · ${aredlLabel(level)}</p>
+<div class=dgrid>${section('sa', `<div class=grid>${statCell('attT', orDash(totalAttempts(level)), 'big')}${statCell('attN', orDash(level.attN))}${statCell('attC', orDash(level.attC))}${statCell('best', percentages.length ? `${bestPercent}% ×${deaths[bestPercent]}` : '-')}</div>`)}
+${section('sT', `<div class=grid>${statCell('tT', orDash(formatDuration(totalSeconds(level))), 'big')}${statCell('tN', orDash(formatDuration(level.tN)))}${statCell('tP', orDash(formatDuration(level.tP)))}${statCell('tPC', orDash(formatDuration(level.tPC)))}</div>`)}
+${section('s4', `<div class=grid>${statCell('date', orDash(formatDate(level.date)))}</div>${videoId ? `<a class=yt target=_blank rel=noopener href="${escapeHtml(link)}"><img src="https://img.youtube.com/vi/${videoId}/hqdefault.jpg" alt=""><span>${ICONS.play}</span></a>` : link ? `<p><a style="color:var(--a)" target=_blank rel=noopener href="${escapeHtml(link)}">${ICONS.play} ${t('link')}</a></p>` : ''}`)}
+${section('s5', `<div class=grid><div class=st><small>${t('enj')}</small>${meter(level.enj)}</div><div class=st><small>${t('lik')}</small>${meter(level.lik)}</div></div>`)}
+${(level.tags?.length || level.notes) ? section('sh', `${(level.tags || []).map(tagFilterChip).join('')}${level.notes ? `<p style="white-space:pre-wrap">${escapeHtml(level.notes)}</p>` : ''}`) : ''}
+${histogram ? section('dh', histogram) : ''}
+</div><p class=dgb><button class=blue data-act=edit data-id="${escapeHtml(level.id)}">${ICONS.edit} ${t('edit')}</button> <button data-act=lvclose>${t('close')}</button></p></div>`;
 }
 
 const tagChip = n => `<span class=chip data-act=tgrm data-v="${escapeHtml(n)}" style="${tagStyle(n)}">${escapeHtml(n)} ${ICONS.del}<input type=hidden name=tg value="${escapeHtml(n)}"></span>`;
@@ -63,17 +93,25 @@ function renderTagSuggestions() {
         qs('#tgr').innerHTML = profile.tags.filter(g => !sel.includes(g.name) && g.name.toLowerCase().includes(q)).map(g => `<span class=chip data-act=tgadd data-v="${escapeHtml(g.name)}" style="${tagStyle(g.name)}">+ ${escapeHtml(g.name)}</span>`).join('');
 }
 
-function form(l) {
-    const f = (k, v, ty = 'text', x = '') => `<div><label for=fm-${k}>${t(k)}</label>${ty == 'number' && !x.includes('readonly') ? `<div class=num><button type=button class=blue data-act=step data-d=-1 aria-label="−1">−</button><input id=fm-${k} name=${k} type=number ${x} value="${escapeHtml(v)}"><button type=button class=blue data-act=step data-d=1 aria-label="+1">+</button></div>` : `<input id=fm-${k} name=${k} type=${ty} ${x} value="${escapeHtml(v)}"${x.includes('readonly') ? ' class=ro' : ''}>`}</div>`, kind = l?.kind || (isListTab() ? ui.tab : 'classic'), o = l || { tags: [], ar: { s: 'n' }, kind }, pos = rankedIds(kind).indexOf(l?.id) + 1 || '', sec = (k, b) => `<fieldset><legend>${t(k)}</legend><div class=grid>${b}</div></fieldset>`, sel = (lab, nm, opts) => `<div><label for=fm-${nm}>${lab}</label><select id=fm-${nm} name=${nm}>${opts}</select></div>`;
-    return `<div class=box><h2>${l ? t('edit') : t('palAdd')}</h2><form id=fm data-id="${escapeHtml(l?.id)}"><div class=warn id=wn></div>
+function formField(key, value, type = 'text', attrs = '') {
+    return `<div><label for=fm-${key}>${t(key)}</label>${type == 'number' && !attrs.includes('readonly') ? `<div class=num><button type=button class=blue data-act=step data-d=-1 aria-label="−1">−</button><input id=fm-${key} name=${key} type=number ${attrs} value="${escapeHtml(value)}"><button type=button class=blue data-act=step data-d=1 aria-label="+1">+</button></div>` : `<input id=fm-${key} name=${key} type=${type} ${attrs} value="${escapeHtml(value)}"${attrs.includes('readonly') ? ' class=ro' : ''}>`}</div>`;
+}
+
+function form(level) {
+    const kind = level?.kind || (isListTab() ? ui.tab : 'classic');
+    const levelData = level || { tags: [], ar: { s: 'n' }, kind };
+    const rankPosition = rankedIds(kind).indexOf(level?.id) + 1 || '';
+    const section = (key, body) => `<fieldset><legend>${t(key)}</legend><div class=grid>${body}</div></fieldset>`;
+    const selectField = (label, name, options) => `<div><label for=fm-${name}>${label}</label><select id=fm-${name} name=${name}>${options}</select></div>`;
+    return `<div class=box><h2>${level ? t('edit') : t('palAdd')}</h2><form id=fm data-id="${escapeHtml(level?.id)}"><div class=warn id=wn></div>
 ${levelSearchBox()}
-${sec('s1', levelFields(o, true))}
-${sec('s2', f('pos', pos, 'number', 'min=1 step=1') + sel('AREDL', 'as', [['r', t('onl')], ['n', t('notin')], ['p', t('pending')]].map(([k, v]) => `<option value=${k} ${o.ar?.s == k ? 'selected' : ''}>${v}</option>`).join('')) + f('ap', o.ar?.p, 'number', 'readonly tabindex=-1'))}
-${sec('s3', f('attC', o.attC, 'number', 'min=0 step=1') + f('attN', o.attN, 'number', 'min=0 step=1') + f('tN', formatDuration(o.tN), 'text', 'placeholder="1h 30m 0s"') + f('tP', formatDuration(o.tP)) + f('tPC', formatDuration(o.tPC)) + f('attT', totalAttempts(o), 'number', 'readonly tabindex=-1') + f('tT', formatDuration(totalSeconds(o)), 'text', 'readonly tabindex=-1'))}
-${sec('s4', f('date', o.date, 'date') + f('link', o.link))}
-<fieldset><legend>${t('s5')}</legend><div class=grid>${f('enj', o.enj, 'number', 'min=-10 max=10')}${f('lik', o.lik, 'number', 'min=-10 max=10')}</div><label for=tgq style="margin-top:12px">${t('tags')}</label><input id=tgq placeholder="${t('tgs')}" autocomplete=off><div id=tgr class=tgr></div><div id=tgs>${(o.tags || []).map(tagChip).join('')}</div></fieldset>
-<fieldset><legend>${t('s6')}</legend><label for=fm-notes>${t('notes')}</label><textarea id=fm-notes name=notes rows=3>${escapeHtml(o.notes)}</textarea><label for=fm-deaths style="margin-top:10px">${t('deaths')}</label><textarea id=fm-deaths name=deaths rows=5>${escapeHtml(Object.keys(o.deaths || {}).sort((a, b) => a - b).map(k => `${k}% x${o.deaths[k]}`).join('\n'))}</textarea></fieldset>
-<p class=dgb><button class=pri>${t('save')}</button> <button type=button data-act=${l ? 'lvclose' : 'close'}>${t('close')}</button> ${l ? `<button type=button class=dg data-act=del data-id="${escapeHtml(l.id)}">${t('del')}</button>` : ''}</p></form></div>`;
+${section('s1', levelFields(levelData, true))}
+${section('s2', formField('pos', rankPosition, 'number', 'min=1 step=1') + selectField('AREDL', 'as', [['r', t('onl')], ['n', t('notin')], ['p', t('pending')]].map(([k, v]) => `<option value=${k} ${levelData.ar?.s == k ? 'selected' : ''}>${v}</option>`).join('')) + formField('ap', levelData.ar?.p, 'number', 'readonly tabindex=-1'))}
+${section('s3', formField('attC', levelData.attC, 'number', 'min=0 step=1') + formField('attN', levelData.attN, 'number', 'min=0 step=1') + formField('tN', formatDuration(levelData.tN), 'text', 'placeholder="1h 30m 0s"') + formField('tP', formatDuration(levelData.tP)) + formField('tPC', formatDuration(levelData.tPC)) + formField('attT', totalAttempts(levelData), 'number', 'readonly tabindex=-1') + formField('tT', formatDuration(totalSeconds(levelData)), 'text', 'readonly tabindex=-1'))}
+${section('s4', formField('date', levelData.date, 'date') + formField('link', levelData.link))}
+<fieldset><legend>${t('s5')}</legend><div class=grid>${formField('enj', levelData.enj, 'number', 'min=-10 max=10')}${formField('lik', levelData.lik, 'number', 'min=-10 max=10')}</div><label for=tgq style="margin-top:12px">${t('tags')}</label><input id=tgq placeholder="${t('tgs')}" autocomplete=off><div id=tgr class=tgr></div><div id=tgs>${(levelData.tags || []).map(tagChip).join('')}</div></fieldset>
+<fieldset><legend>${t('s6')}</legend><label for=fm-notes>${t('notes')}</label><textarea id=fm-notes name=notes rows=3>${escapeHtml(levelData.notes)}</textarea><label for=fm-deaths style="margin-top:10px">${t('deaths')}</label><textarea id=fm-deaths name=deaths rows=5>${escapeHtml(Object.keys(levelData.deaths || {}).sort((a, b) => a - b).map(k => `${k}% x${levelData.deaths[k]}`).join('\n'))}</textarea></fieldset>
+<p class=dgb><button class=pri>${t('save')}</button> <button type=button data-act=${level ? 'lvclose' : 'close'}>${t('close')}</button> ${level ? `<button type=button class=dg data-act=del data-id="${escapeHtml(level.id)}">${t('del')}</button>` : ''}</p></form></div>`;
 }
 
 function levelFromForm(form) {

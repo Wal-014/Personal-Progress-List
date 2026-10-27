@@ -15,14 +15,14 @@ function controlSelector(el) {
 /** Preserves list scroll when redrawing the same screen. */
 function render() {
     const focused = controlSelector(document.activeElement);
-    const sy = ui._t == ui.tab ? qs('#lw')?.scrollTop : 0, isL = isListTab();
+    const listScrollTop = ui._t == ui.tab ? qs('#lw')?.scrollTop : 0, isLevelList = isListTab();
     ui._t = ui.tab;
-    const screen = ui.tab == 'wish' && currentWishlist() ? wishView() : isL ? `<div class=split><div class=lcol>${lcol()}</div><div class="rcol ${ui.sel ? 'has' : ''}">${panel()}</div></div>` : ui.tab == 'stats' ? stats() : home();
-    qs('#app').innerHTML = `${topBar()}<main class="${isL ? 'wide' : ''}">${screen}</main>${navBars(isL)}`;
+    const screen = ui.tab == 'wish' && currentWishlist() ? wishView() : isLevelList ? `<div class=split><div class=lcol>${lcol()}</div><div class="rcol ${ui.sel ? 'has' : ''}">${panel()}</div></div>` : ui.tab == 'stats' ? stats() : home();
+    qs('#app').innerHTML = `${topBar()}<main class="${isLevelList ? 'wide' : ''}">${screen}</main>${navBars(isLevelList)}`;
     document.documentElement.dataset.t = ui.theme;
     document.documentElement.lang = ui.lang;
-    if (sy && qs('#lw'))
-        qs('#lw').scrollTop = sy;
+    if (listScrollTop && qs('#lw'))
+        qs('#lw').scrollTop = listScrollTop;
     initSort();
     renderTagSuggestions();
     // Rebuilding #app drops keyboard focus to <body>; put it back on the same control when it still exists

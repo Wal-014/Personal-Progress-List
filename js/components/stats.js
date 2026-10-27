@@ -10,34 +10,47 @@ const bars = o => {
 
 /** SVG timeline of attempts per level, ordered by date, with zoom. */
 function timelineHtml() {
-    const L = profile.levels.filter(l => l.date && totalAttempts(l) != null), ds = [...new Set(L.map(l => l.date))].sort(), W = ui.z, M = Math.max(1, ...L.map(totalAttempts)), Y = v => 290 - v / M * 265, X = c => 34 + c * W, gl = [], w = ds.length * W + 50;
-    for (let v = 10000; v < M; v += 10000)
-        if (M - v > M * .04)
-            gl.push(v);
-    gl.push(M);
-    const pts = [];
-    ds.forEach((d, c) => {
-        let pv = 999;
-        L.filter(l => l.date == d).sort((a, b) => totalAttempts(a) - totalAttempts(b)).forEach(l => {
-            const y = Math.min(Y(totalAttempts(l)), pv - 13);
-            pv = y;
-            pts.push([l, c, y]);
+    const datedLevels = profile.levels.filter(level => level.date && totalAttempts(level) != null);
+    const dates = [...new Set(datedLevels.map(level => level.date))].sort();
+    const dateSpacing = ui.z;
+    const maxAttempts = Math.max(1, ...datedLevels.map(totalAttempts));
+    const attemptY = attempts => 290 - attempts / maxAttempts * 265;
+    const dateX = index => 34 + index * dateSpacing;
+    const gridLines = [];
+    const chartWidth = dates.length * dateSpacing + 50;
+    for (let attempts = 10000; attempts < maxAttempts; attempts += 10000)
+        if (maxAttempts - attempts > maxAttempts * .04)
+            gridLines.push(attempts);
+    gridLines.push(maxAttempts);
+    const points = [];
+    dates.forEach((date, dateIndex) => {
+        let previousY = 999;
+        datedLevels.filter(level => level.date == date).sort((a, b) => totalAttempts(a) - totalAttempts(b)).forEach(level => {
+            // Keep points on the same date 13px apart so their markers never overlap.
+            const pointY = Math.min(attemptY(totalAttempts(level)), previousY - 13);
+            previousY = pointY;
+            points.push([level, dateIndex, pointY]);
         });
     });
-    const line = [...pts].sort((a, b) => a[1] - b[1]).map(([, c, y]) => `${X(c)},${y}`).join(' ');
-    return `<h2 class=tlh>${t('tl')} <span class=zoom><button class=xs data-act=zo aria-label="${t('tl')} −">−</button><span class=by>${Math.round(W / 28 * 100)}%</span><button class=xs data-act=zi aria-label="${t('tl')} +">+</button></span></h2><div style="display:flex"><svg width=58 height=370 style="flex:none">${gl.map(v => `<text x=54 y=${Y(v) + 4} font-size=10 text-anchor=end fill="var(--mut)">${v.toLocaleString(ui.lang)}</text>`).join('')}</svg><div id=tlw style="overflow-x:auto;flex:1"><svg width="${w}" height=370>${gl.map(v => `<line x1=0 x2=${w} y1=${Y(v)} y2=${Y(v)} stroke="var(--ln)" stroke-dasharray="${v == M ? '' : '4'}"/>`).join('')}<line x1=0 x2=${w} y1=290 y2=290 stroke="#fff" stroke-width=2 />
-${W >= 24 ? ds.map((d, c) => `<text transform="rotate(-60 ${X(c)} 302)" x=${X(c)} y=302 font-size=10 text-anchor=end fill="var(--mut)" pointer-events="none">${escapeHtml(formatDate(d))}</text>`).join('') : ''}
-<polyline points="${line}" fill=none stroke="#000" stroke-width=7 stroke-linejoin=round pointer-events=none /><polyline points="${line}" fill=none stroke="var(--a)" stroke-width=3 stroke-linejoin=round pointer-events=none />${pts.map(([l, c, y]) => `<rect class=pt data-id="${escapeHtml(l.id)}" x=${X(c) - 6} y=${y - 6} width=12 height=12 fill="#fff" stroke="#000" stroke-width=2.5 />${W >= 60 ? `<text x=${X(c) + 10} y=${y + 4} font-size=11 font-weight=bold fill="#fff" pointer-events="none">${escapeHtml(totalAttempts(l))}</text>` : ''}`).join('')}</svg></div></div>`;
+    const line = [...points].sort((a, b) => a[1] - b[1]).map(([, dateIndex, pointY]) => `${dateX(dateIndex)},${pointY}`).join(' ');
+    return `<h2 class=tlh>${t('tl')} <span class=zoom><button class=xs data-act=zo aria-label="${t('tl')} −">−</button><span class=by>${Math.round(dateSpacing / 28 * 100)}%</span><button class=xs data-act=zi aria-label="${t('tl')} +">+</button></span></h2><div style="display:flex"><svg width=58 height=370 style="flex:none">${gridLines.map(attempts => `<text x=54 y=${attemptY(attempts) + 4} font-size=10 text-anchor=end fill="var(--mut)">${attempts.toLocaleString(ui.lang)}</text>`).join('')}</svg><div id=tlw style="overflow-x:auto;flex:1"><svg width="${chartWidth}" height=370>${gridLines.map(attempts => `<line x1=0 x2=${chartWidth} y1=${attemptY(attempts)} y2=${attemptY(attempts)} stroke="var(--ln)" stroke-dasharray="${attempts == maxAttempts ? '' : '4'}"/>`).join('')}<line x1=0 x2=${chartWidth} y1=290 y2=290 stroke="#fff" stroke-width=2 />
+${dateSpacing >= 24 ? dates.map((date, dateIndex) => `<text transform="rotate(-60 ${dateX(dateIndex)} 302)" x=${dateX(dateIndex)} y=302 font-size=10 text-anchor=end fill="var(--mut)" pointer-events="none">${escapeHtml(formatDate(date))}</text>`).join('') : ''}
+<polyline points="${line}" fill=none stroke="#000" stroke-width=7 stroke-linejoin=round pointer-events=none /><polyline points="${line}" fill=none stroke="var(--a)" stroke-width=3 stroke-linejoin=round pointer-events=none />${points.map(([level, dateIndex, pointY]) => `<rect class=pt data-id="${escapeHtml(level.id)}" x=${dateX(dateIndex) - 6} y=${pointY - 6} width=12 height=12 fill="#fff" stroke="#000" stroke-width=2.5 />${dateSpacing >= 60 ? `<text x=${dateX(dateIndex) + 10} y=${pointY + 4} font-size=11 font-weight=bold fill="#fff" pointer-events="none">${escapeHtml(totalAttempts(level))}</text>` : ''}`).join('')}</svg></div></div>`;
 }
 
 function stats() {
-    const L = profile.levels.filter(l => totalAttempts(l) != null), A = L.reduce((s, l) => s + totalAttempts(l), 0), H = profile.levels.reduce((s, l) => s + (totalSeconds(l) || 0), 0), mx = L.length ? L.reduce((a, b) => totalAttempts(b) > totalAttempts(a) ? b : a) : null, dd = {}, yy = {};
-    profile.levels.forEach(l => {
-        dd[l.diff || '-'] = (dd[l.diff || '-'] || 0) + 1;
-        if (l.date)
-            yy[l.date.slice(0, 4)] = (yy[l.date.slice(0, 4)] || 0) + 1;
+    const levelsWithAttempts = profile.levels.filter(level => totalAttempts(level) != null);
+    const attemptTotal = levelsWithAttempts.reduce((sum, level) => sum + totalAttempts(level), 0);
+    const playSeconds = profile.levels.reduce((sum, level) => sum + (totalSeconds(level) || 0), 0);
+    const mostAttemptsLevel = levelsWithAttempts.length ? levelsWithAttempts.reduce((current, level) => totalAttempts(level) > totalAttempts(current) ? level : current) : null;
+    const difficultyCounts = {};
+    const yearCounts = {};
+    profile.levels.forEach(level => {
+        difficultyCounts[level.diff || '-'] = (difficultyCounts[level.diff || '-'] || 0) + 1;
+        if (level.date)
+            yearCounts[level.date.slice(0, 4)] = (yearCounts[level.date.slice(0, 4)] || 0) + 1;
     });
-    const st = (k, v, c = '') => `<div class="kpi ${c}"><small>${k}</small><b>${escapeHtml(v)}</b></div>`;
-    return `<div class=kpis>${st(t('lv'), profile.levels.length)}${st(t('attT'), A.toLocaleString(ui.lang), 'y')}${st(t('hrs'), Math.round(H / 3600))}${st(t('avg'), L.length ? Math.round(A / L.length).toLocaleString(ui.lang) : '-')}${mx ? st(t('most'), `${mx.name} · ${totalAttempts(mx).toLocaleString(ui.lang)}`, 'sm') : ''}</div>
-<div class=stats2><div class=well>${timelineHtml()}</div><div class=side><div class="well d"><h2>${t('byD')}</h2>${bars(Object.fromEntries([...DIFFICULTIES, '-'].filter(k => dd[k]).map(k => [k, dd[k]])))}</div><div class="well y"><h2>${t('byY')}</h2>${bars(yy)}</div></div></div>`;
+    const statCell = (label, value, className = '') => `<div class="kpi ${className}"><small>${label}</small><b>${escapeHtml(value)}</b></div>`;
+    return `<div class=kpis>${statCell(t('lv'), profile.levels.length)}${statCell(t('attT'), attemptTotal.toLocaleString(ui.lang), 'y')}${statCell(t('hrs'), Math.round(playSeconds / 3600))}${statCell(t('avg'), levelsWithAttempts.length ? Math.round(attemptTotal / levelsWithAttempts.length).toLocaleString(ui.lang) : '-')}${mostAttemptsLevel ? statCell(t('most'), `${mostAttemptsLevel.name} · ${totalAttempts(mostAttemptsLevel).toLocaleString(ui.lang)}`, 'sm') : ''}</div>
+<div class=stats2><div class=well>${timelineHtml()}</div><div class=side><div class="well d"><h2>${t('byD')}</h2>${bars(Object.fromEntries([...DIFFICULTIES, '-'].filter(difficulty => difficultyCounts[difficulty]).map(difficulty => [difficulty, difficultyCounts[difficulty]])))}</div><div class="well y"><h2>${t('byY')}</h2>${bars(yearCounts)}</div></div></div>`;
 }
