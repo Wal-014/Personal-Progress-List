@@ -11,8 +11,12 @@ function meter(v, lab = '') {
     return hd(`<b style="color:${c}">${v > 0 ? '+' : ''}${escapeHtml(v)}</b>`) + `<div class="meter ${v >= 8 ? 'g' : ''}" style="color:${c}"><i style="background:${c};left:${v >= 0 ? 50 : 50 - p}%;width:${p}%"></i></div>`;
 }
 
-function tagFilterChip(name) {
-    return `<span class=chip data-tag="${escapeHtml(name)}" style="${tagStyle(name)}">${escapeHtml(name)}</span>`;
+/**
+ * Chip that filters the list by its tag. Only chips outside a level card are focusable: the card is already a button, and a control nested in a button is lost to screen readers.
+ * The replacer function keeps "$" patterns in a tag name literal.
+ */
+function tagFilterChip(name, focusable) {
+    return `<span class=chip data-tag="${escapeHtml(name)}" style="${tagStyle(name)}"${focusable ? ` role=button tabindex=0 aria-label="${escapeHtml(t('filterTag').replace('{t}', () => name))}"` : ''}>${escapeHtml(name)}</span>`;
 }
 
 /** A level row in the list, drawn as an editor object. */
@@ -20,7 +24,7 @@ function card(l, i, n) {
     const u = thumbUrl(l), rank = i == 'pre' ? ICONS.classic : i != null ? i + 1 : '—';
     const podium = i === 0 ? ' top1' : i === 1 ? ' top2' : i === 2 ? ' top3' : '';
     const meta = [l.creator ? t('by') + ' ' + escapeHtml(l.creator) : '', escapeHtml(formatDate(l.date)), aredlLabel(l)].filter(Boolean).join(' · ');
-    return `<div class="obj lv${podium}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${u ? ` style="--th:url('${u}')"` : ''}><span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + (i + 1) + ' / ' + n : t('unplaced')}">${rank}</span><div class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>${meta}</span>${l.tags?.length ? `<div>${l.tags.map(tagFilterChip).join('')}</div>` : ''}</div>${difficultyFace(l)}</div>`;
+    return `<div class="obj lv${podium}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${u ? ` style="--th:url('${u}')"` : ''}><span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + (i + 1) + ' / ' + n : t('unplaced')}">${rank}</span><div class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>${meta}</span>${l.tags?.length ? `<div>${l.tags.map(name => tagFilterChip(name)).join('')}</div>` : ''}</div>${difficultyFace(l)}</div>`;
 }
 
 /** Ids of the ranked levels of a list, in order: Pre-Extremes levels and ids of deleted levels have no rank. */
@@ -73,7 +77,7 @@ function detail(level) {
 ${section('sT', `<div class=grid>${statCell('tT', orDash(formatDuration(totalSeconds(level))), 'big')}${statCell('tN', orDash(formatDuration(level.tN)))}${statCell('tP', orDash(formatDuration(level.tP)))}${statCell('tPC', orDash(formatDuration(level.tPC)))}</div>`)}
 ${section('s4', `<div class=grid>${statCell('date', orDash(formatDate(level.date)))}</div>${videoId ? `<a class=yt target=_blank rel=noopener href="${escapeHtml(link)}"><img src="https://img.youtube.com/vi/${videoId}/hqdefault.jpg" alt=""><span>${ICONS.play}</span></a>` : link ? `<p><a style="color:var(--a)" target=_blank rel=noopener href="${escapeHtml(link)}">${ICONS.play} ${t('link')}</a></p>` : ''}`)}
 ${section('s5', `<div class=grid><div class=st><small>${t('enj')}</small>${meter(level.enj)}</div><div class=st><small>${t('lik')}</small>${meter(level.lik)}</div></div>`)}
-${(level.tags?.length || level.notes) ? section('sh', `${(level.tags || []).map(tagFilterChip).join('')}${level.notes ? `<p style="white-space:pre-wrap">${escapeHtml(level.notes)}</p>` : ''}`) : ''}
+${(level.tags?.length || level.notes) ? section('sh', `${(level.tags || []).map(name => tagFilterChip(name, true)).join('')}${level.notes ? `<p style="white-space:pre-wrap">${escapeHtml(level.notes)}</p>` : ''}`) : ''}
 ${histogram ? section('dh', histogram) : ''}
 </div><p class=dgb><button class=blue data-act=edit data-id="${escapeHtml(level.id)}">${ICONS.edit} ${t('edit')}</button> <button data-act=lvclose>${t('close')}</button></p></div>`;
 }
