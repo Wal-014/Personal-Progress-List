@@ -33,15 +33,24 @@ const rankedIds = kind => profile.order[kind].filter(id => {
     return l && !isPre(l);
 });
 
+function matchesListFilters(level, query, selectedTags) {
+    return level.name.toLowerCase().includes(query) && (!selectedTags.length || selectedTags.some(name => (level.tags || []).includes(name)));
+}
+
+/** Tags of a list for its dropdown. Selected tags stay listed after their last level loses them, so an active filter can always be unchecked. */
+function listTagOptions(levels, selectedTags) {
+    return [...new Set([...levels.flatMap(level => level.tags || []), ...selectedTags])].sort((a, b) => a.localeCompare(b));
+}
+
 /** List body grouped into ranked, unplaced and first-step levels. */
 function list() {
     const orderedIds = profile.order[ui.tab];
-    const isShown = level => (!ui.q || level.name.toLowerCase().includes(ui.q)) && (!ui.tag || (level.tags || []).includes(ui.tag));
+    const isShown = level => matchesListFilters(level, ui.q, ui.tagFilter);
     const listLevels = profile.levels.filter(level => level.kind == ui.tab);
     const rankedLevels = rankedIds(ui.tab).map(findLevel);
     const unplacedLevels = listLevels.filter(level => !orderedIds.includes(level.id) && !isPre(level) && isShown(level));
     const firstStepLevels = listLevels.filter(level => isPre(level) && isShown(level));
-    return `<div id=lst>${rankedLevels.map((level, index) => isShown(level) ? card(level, index, rankedLevels.length) : '').join('')}</div>${unplacedLevels.length ? `<h2 class=grp>${t('unplaced')}</h2>` + unplacedLevels.map(level => card(level)).join('') : ''}${firstStepLevels.length ? `<h2 class=grp>${t('first')}</h2>` + firstStepLevels.map(level => card(level, 'pre')).join('') : ''}${listLevels.length ? '' : `<p class=by>${t('empty')}</p>`}`;
+    return `<div id=lst>${rankedLevels.map((level, index) => isShown(level) ? card(level, index, rankedLevels.length) : '').join('')}</div>${unplacedLevels.length ? `<h2 class=grp>${t('unplaced')}</h2>` + unplacedLevels.map(level => card(level)).join('') : ''}${firstStepLevels.length ? `<h2 class=grp>${t('first')}</h2>` + firstStepLevels.map(level => card(level, 'pre')).join('') : ''}${!listLevels.length ? `<p class=by>${t('empty')}</p>` : !listLevels.some(isShown) ? `<p class=by>${t('noMatch')}</p>` : ''}`;
 }
 
 function youtubeId(url) {
@@ -133,9 +142,28 @@ function levelFromForm(form) {
     };
 }
 
-/** Left column: search, active tag filter and the list. */
+const listTagSummary = () => t('tags') + ' · ' + (!ui.tagFilter.length ? t('f_all') : ui.tagFilter.length == 1 ? ui.tagFilter[0] : ui.tagFilter.length);
+
+/** Updates the tag dropdown and its clear button in place, so an open dropdown keeps its state and focus. */
+function renderListTagFilters() {
+    const dropdown = qs('.lh .ms');
+    if (!dropdown)
+        return;
+    dropdown.querySelectorAll('input').forEach(input => input.checked = ui.tagFilter.includes(input.value));
+    dropdown.querySelector('summary').textContent = listTagSummary();
+    qs('.lh [data-act=ct]').hidden = !ui.tagFilter.length;
+}
+
+function setListTagFilter() {
+    ui.tagFilter = Array.from(document.querySelectorAll('.lh input[name=tagf]:checked'), checkbox => checkbox.value);
+    renderListTagFilters();
+    renderList();
+}
+
+/** Left column: name search, tag filters and the list. */
 function lcol() {
-    return `<div class=lh><input id=q type=search placeholder="${t('search')}" aria-label="${t('search')}" value="${escapeHtml(ui.q)}"></div>${ui.tag ? `<p><button class=xs data-act=ct aria-label="${t('del')} · ${escapeHtml(ui.tag)}">${ICONS.del}</button> <span class=chip style="${tagStyle(ui.tag)}">${escapeHtml(ui.tag)}</span></p>` : ''}<div id=lw>${list()}</div>`;
+    const options = listTagOptions(profile.levels.filter(level => level.kind == ui.tab), ui.tagFilter);
+    return `<div class=lh><input id=q type=search placeholder="${t('search')}" aria-label="${t('search')}" value="${escapeHtml(ui.q)}">${options.length ? `<details class=ms><summary>${escapeHtml(listTagSummary())}</summary><div class=msp>${options.map(name => `<label><input type=checkbox name=tagf value="${escapeHtml(name)}"${ui.tagFilter.includes(name) ? ' checked' : ''}><span class=chip style="${tagStyle(name)}">${escapeHtml(name)}</span></label>`).join('')}</div></details><button type=button class="xs dg" data-act=ct aria-label="${t('clearTags')}" title="${t('clearTags')}"${ui.tagFilter.length ? '' : ' hidden'}>${ICONS.del}</button>` : ''}</div><div id=lw>${list()}</div>`;
 }
 
 /** Right column with level details, an editing form or an empty prompt. */
@@ -145,7 +173,7 @@ function panel() {
 }
 
 function initSort() {
-    if (qs('#lst') && !ui.q && !ui.tag)
+    if (qs('#lst') && !ui.q && !ui.tagFilter.length)
         new Sortable(qs('#lst'), { animation: 180, onEnd: () => {
                 profile.order[ui.tab] = [...qs('#lst').children].map(c => c.dataset.id);
                 save();

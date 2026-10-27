@@ -22,7 +22,8 @@ function zoomTimeline(factor) {
 const ACTIONS = {
     tab(a) {
         ui.tab = a.dataset.v;
-        ui.tag = ui.q = '';
+        ui.tagFilter = [];
+        ui.q = '';
         ui.wl = null;
         ui.sel = null;
         ui.edit = 0;
@@ -36,8 +37,10 @@ const ACTIONS = {
     bell: () => openModal(bellUI()),
     legal: a => openModal(legalUI(a.dataset.v)),
     ct() {
-        ui.tag = '';
-        render();
+        ui.tagFilter = [];
+        renderListTagFilters();
+        renderList();
+        qs('.lh .ms summary')?.focus();
     },
     step(a) {
         const i = a.parentNode.querySelector('input'), mn = i.min === '' ? -1e9 : +i.min, mx = i.max === '' ? 1e9 : +i.max;
@@ -69,8 +72,10 @@ const ACTIONS = {
             ui.tab = l.kind;
         ui.sel = id;
         ui.edit = 1;
-        if (openedFromDialog)
-            ui.q = ui.tag = '';
+        if (openedFromDialog) {
+            ui.q = '';
+            ui.tagFilter = [];
+        }
         render();
         if (openedFromDialog)
             scrollSel();
@@ -114,8 +119,7 @@ const ACTIONS = {
                 return;
             const n = profile.tags.splice(ix, 1)[0].name;
             profile.levels.forEach(l => l.tags = (l.tags || []).filter(x => x != n));
-            if (ui.tag == n)
-                ui.tag = '';
+            ui.tagFilter = ui.tagFilter.filter(name => name != n);
             save();
             render();
             openModal(tagsUI());
@@ -319,8 +323,7 @@ function renameTag(input) {
     const rename = () => {
         const wasPre = tag.name == PRE_TAG;
         profile.levels.forEach(level => level.tags = (level.tags || []).map(x => x == tag.name ? name : x));
-        if (ui.tag == tag.name)
-            ui.tag = name;
+        ui.tagFilter = ui.tagFilter.map(selectedTag => selectedTag == tag.name ? name : selectedTag);
         tag.name = name;
         save();
         render();
@@ -367,7 +370,7 @@ async function importProfile(file) {
 }
 
 document.body.onclick = e => {
-    document.querySelectorAll('.gdf .ms[open]').forEach(d => {
+    document.querySelectorAll('.ms[open]').forEach(d => {
         if (!d.contains(e.target))
             d.open = false;
     });
@@ -375,7 +378,7 @@ document.body.onclick = e => {
     if (e.target.classList.contains('modal'))
         return closeModal();
     if (g) {
-        ui.tag = g.dataset.tag;
+        ui.tagFilter = [g.dataset.tag];
         if (!isListTab())
             ui.tab = 'classic';
         closeModal();
@@ -395,7 +398,8 @@ document.body.onclick = e => {
             ui.tab = l.kind;
             ui.sel = l.id;
             ui.edit = 0;
-            ui.q = ui.tag = '';
+            ui.q = '';
+            ui.tagFilter = [];
             render();
             scrollSel();
         }
@@ -433,6 +437,8 @@ document.body.oninput = e => {
 };
 document.body.onchange = e => {
     const input = e.target, ds = input.dataset;
+    if (input.name == 'tagf')
+        return setListTagFilter();
     if (['gdrate', 'gddiff'].includes(input.name))
         return setLevelFilter(input);
     if (ds.wi != null)
@@ -458,16 +464,16 @@ document.addEventListener('beforetoggle', e => {
     // Only the profile rows scroll, so the menu never runs past the bottom of the screen
     Object.assign(e.target.style, { width: w + 'px', top: r.bottom + 6 + 'px', left: Math.max(12, Math.min(r.left, innerWidth - w - 12)) + 'px', maxHeight: Math.max(200, innerHeight - r.bottom - 18) + 'px' });
 }, true);
-/** Fits an open filter panel below the bar inside the viewport. */
+/** Fits an open dropdown panel inside the viewport. */
 document.addEventListener('toggle', e => {
-    if (e.target.matches('.gdf .ms[open]')) {
-        const optionsPanel = e.target.querySelector('.msp'), bottom = e.target.closest('.gdf').getBoundingClientRect().bottom;
-        optionsPanel.style.setProperty('--ms-height', Math.max(0, innerHeight - bottom - 12) + 'px');
+    if (e.target.matches('.ms[open]')) {
+        const optionsPanel = e.target.querySelector('.msp'), panelTop = optionsPanel.getBoundingClientRect().top;
+        optionsPanel.style.setProperty('--ms-height', Math.max(0, innerHeight - panelTop - 12) + 'px');
     }
 }, true);
 document.onkeydown = e => {
     if (e.key == 'Escape') {
-        const dropdown = e.target.closest('.gdf .ms[open]');
+        const dropdown = e.target.closest('.ms[open]');
         if (dropdown) {
             e.preventDefault();
             e.stopPropagation();

@@ -32,7 +32,7 @@ let store = loadStore();
 let profile = store && store.profs[store.cur].data;
 
 /** Interface state: screen, selection, search, theme and language. */
-let ui = { tab: 'home', wl: null, q: '', tag: '', z: 28, lang: localStorage.gl || 'es', theme: themeOf(localStorage.gt) };
+let ui = { tab: 'home', wl: null, q: '', tagFilter: [], z: 28, lang: localStorage.gl || 'es', theme: themeOf(localStorage.gt) };
 
 const isListTab = () => ['classic', 'platform'].includes(ui.tab);
 
