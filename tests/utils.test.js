@@ -1,18 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import vm from 'node:vm';
+import { loadScripts } from './load-scripts.js';
 
-// The app files are classic browser scripts, so they run in one shared context like in index.html.
-const context = vm.createContext({});
-for (const file of ['js/config.js', 'js/utils.js'])
-    vm.runInContext(readFileSync(file, 'utf8'), context, { filename: file });
-const app = name => vm.runInContext(name, context);
+const { app } = loadScripts(['js/config.js', 'js/utils.js']);
 
-const labelContext = vm.createContext({ ui: { lang: 'en' } });
-for (const file of ['js/i18n.js', 'js/utils.js'])
-    vm.runInContext(readFileSync(file, 'utf8'), labelContext, { filename: file });
-const label = vm.runInContext('aredlLabel', labelContext);
+const label = loadScripts(['js/i18n.js', 'js/utils.js'], { ui: { lang: 'en' } }).app('aredlLabel');
 
 for (const [kind, listName] of [['classic', 'AREDL'], ['platform', 'AREPL']]) {
     test(`aredlLabel formats every status for ${kind} levels`, () => {

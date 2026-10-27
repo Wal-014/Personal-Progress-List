@@ -1,12 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import vm from 'node:vm';
+import { loadScripts } from './load-scripts.js';
 
-const context = vm.createContext({ localStorage: {} });
-for (const file of ['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js', 'js/sheet.js', 'js/gd.js'])
-    vm.runInContext(readFileSync(file, 'utf8'), context, { filename: file });
-const app = name => vm.runInContext(name, context);
+const { context, app } = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js', 'js/sheet.js', 'js/gd.js'], { localStorage: {} });
 
 const result = extra => ({ id: '10565740', name: 'Bloodbath', author: 'Riot', difficulty: 'Extreme Demon', stars: 10, downloads: 193000000, platformer: false, featured: false, epic: false, legendary: false, mythic: false, ...extra });
 const filters = extra => ({ rated: 'all', rates: [], diffs: [], ...extra });

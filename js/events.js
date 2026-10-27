@@ -22,8 +22,7 @@ function zoomTimeline(factor) {
 const ACTIONS = {
     tab(a) {
         ui.tab = a.dataset.v;
-        ui.tagFilter = [];
-        ui.q = '';
+        resetListFilters();
         ui.wl = null;
         ui.sel = null;
         ui.edit = 0;
@@ -72,10 +71,8 @@ const ACTIONS = {
             ui.tab = l.kind;
         ui.sel = id;
         ui.edit = 1;
-        if (openedFromDialog) {
-            ui.q = '';
-            ui.tagFilter = [];
-        }
+        if (openedFromDialog)
+            resetListFilters();
         render();
         if (openedFromDialog)
             scrollSel();
@@ -398,8 +395,7 @@ document.body.onclick = e => {
             ui.tab = l.kind;
             ui.sel = l.id;
             ui.edit = 0;
-            ui.q = '';
-            ui.tagFilter = [];
+            resetListFilters();
             render();
             scrollSel();
         }

@@ -1,13 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import vm from 'node:vm';
+import { loadScripts } from './load-scripts.js';
 import { parseCsv, toLevels, DIFFICULTIES } from '../scripts/build-levels.js';
 
-const context = vm.createContext({ localStorage: {} });
-for (const file of ['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js', 'js/sheet.js'])
-    vm.runInContext(readFileSync(file, 'utf8'), context, { filename: file });
-const app = name => vm.runInContext(name, context);
+const { app } = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js', 'js/sheet.js'], { localStorage: {} });
 
 test('parseCsv handles quoted commas, newlines, doubled quotes and CRLF', () => {
     assert.deepEqual(parseCsv('a,"b, c","say ""hi"""\r\n"two\nlines",,x\n'), [['a', 'b, c', 'say "hi"'], ['two\nlines', '', 'x']]);
