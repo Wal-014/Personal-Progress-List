@@ -104,6 +104,46 @@ a {
   color: var(--cy);
 }
 
+/* ===== Scrollbars ===== */
+@media (hover: hover) and (pointer: fine) and (forced-colors: none) {
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, .25);
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, .55);
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, .8);
+    border-width: 2px;
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background-color: var(--go);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Firefox only: Chromium ignores the pseudo-elements above once scrollbar-color or scrollbar-width is set */
+  @supports not selector(::-webkit-scrollbar) {
+    :root {
+      scrollbar-color: rgba(255, 255, 255, .55) rgba(0, 0, 0, .25);
+    }
+  }
+}
+
 /* ===== Display type: outlined, like the game ===== */
 h1, h2, h3, legend, .nm {
   font-family: 'Lilita One', 'Arial Black', sans-serif;
@@ -300,6 +340,23 @@ input:user-invalid, select:user-invalid, textarea:user-invalid {
 .chip .i {
   width: 12px;
   height: 12px;
+}
+
+.chip[data-tag] {
+  transition: box-shadow .15s, background-color .15s;
+}
+
+.chip[data-tag]:focus-visible {
+  box-shadow: 0 0 0 1px currentColor, 0 0 10px currentColor;
+  background-color: color-mix(in srgb, currentColor 22%, #000);
+}
+
+/* A tap on a touch screen would leave the hover glow stuck */
+@media (hover: hover) {
+  .chip[data-tag]:hover {
+    box-shadow: 0 0 0 1px currentColor, 0 0 10px currentColor;
+    background-color: color-mix(in srgb, currentColor 22%, #000);
+  }
 }
 
 /* ===== Edit Object panel: details, forms and dialogs ===== */
@@ -1677,10 +1734,6 @@ input.ro {
   text-align: right;
 }
 
-#tlw {
-  scrollbar-color: var(--go) transparent;
-}
-
 /* ===== Tooltip (timeline points and death bars) ===== */
 #tip {
   position: fixed;
@@ -1857,10 +1910,15 @@ input.ro {
   height: 48px;
 }
 
-.profile-swatches {
-  display: flex;
+.profile-color-groups {
+  display: grid;
   flex: 1;
   min-width: 0;
+  gap: 12px;
+}
+
+.profile-swatches {
+  display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
