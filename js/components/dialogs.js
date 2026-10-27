@@ -27,12 +27,13 @@ const bellUI = () => {
 const legalUI = k => `<div class="box sm"><h2>${t(k)}</h2><p style="white-space:pre-wrap">${escapeHtml(t(k + 'Txt'))}</p><p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
 
 /** Diálogo propio que devuelve una promesa (sustituye a alert, confirm y prompt). */
-function showDialog({ title, msg, input, def, ok, cancel, danger }) {
+function showDialog({ title, msg, input, def, ok, cancel, danger, label, extra = '', enhance }) {
     return new Promise(res => {
         const m = document.createElement('dialog');
         m.className = 'modal';
         m.setAttribute('aria-labelledby', 'dgt');
-        m.innerHTML = `<div class="box sm"><h2 id=dgt>${escapeHtml(title || '')}</h2>${msg ? `<p style="white-space:pre-wrap">${escapeHtml(msg)}</p>` : ''}${input ? `<input id=dgi aria-labelledby=dgt value="${escapeHtml(def || '')}" style="width:100%">` : ''}<p class=dgb>${cancel === false ? '' : `<button data-r=0>${t('cancel')}</button>`}<button class="${danger ? 'dg' : 'pri'}" data-r=1>${ok || t('ok2')}</button></p></div>`;
+        m.innerHTML = `<div class="box sm"><h2 id=dgt>${escapeHtml(title || '')}</h2>${msg ? `<p style="white-space:pre-wrap">${escapeHtml(msg)}</p>` : ''}${input ? `${label ? `<label for=dgi>${escapeHtml(label)}</label>` : ''}<input id=dgi${label ? '' : ' aria-labelledby=dgt'} value="${escapeHtml(def || '')}" style="width:100%">` : ''}${extra}<p class=dgb>${cancel === false ? '' : `<button data-r=0>${t('cancel')}</button>`}<button class="${danger ? 'dg' : 'pri'}" data-r=1>${ok || t('ok2')}</button></p></div>`;
+        const read = enhance?.(m);
         document.body.appendChild(m);
         m.showModal();
         const i = m.querySelector('#dgi'), done = v => {
@@ -44,7 +45,7 @@ function showDialog({ title, msg, input, def, ok, cancel, danger }) {
                 i.setCustomValidity(t('errName'));
                 return i.reportValidity();
             }
-            done(i ? i.value.trim() : true);
+            done(read ? read(i.value.trim()) : i ? i.value.trim() : true);
         };
         if (i)
             i.oninput = () => i.setCustomValidity('');
@@ -74,6 +75,24 @@ function showDialog({ title, msg, input, def, ok, cancel, danger }) {
 
 /** Pide un texto al usuario. */
 const askText = (title, def) => showDialog({ title, input: 1, def });
+
+/** Asks for a profile name and colour, sharing the prompt's validation and keyboard handling. */
+function askProfile(title, name, color) {
+    let selected = isHexColor(color) ? color.toLowerCase() : PROFILE_COLORS[0];
+    const swatch = ([key, c]) => `<label class=profile-swatch style="--swatch:${c}"><input type=radio name=profile-color value="${c}" aria-label="${t(key)}"${c == selected ? ' checked' : ''}><span class=profile-color aria-hidden=true>${ICONS.check}</span></label>`;
+    const extra = `<fieldset class=profile-colors><legend>${t('color')}</legend><div class=profile-colors-row><span class=profile-preview>${cubeIcon(selected)}</span><div class=profile-swatches>${Object.entries(PROFILE_PRESETS).map(swatch).join('')}<span class="profile-swatch profile-custom" data-selected=${!PROFILE_COLORS.includes(selected)}><input type=color value="${selected}" aria-label="${t('customColor')}"><span class=profile-color aria-hidden=true>${ICONS.check}</span></span></div></div></fieldset>`;
+    return showDialog({ title, input: 1, def: name, label: t('pname'), extra, enhance: m => {
+        const fieldset = m.querySelector('.profile-colors'), custom = fieldset.querySelector('[type=color]');
+        fieldset.oninput = e => {
+            selected = e.target.value;
+            const isCustom = e.target == custom;
+            fieldset.querySelectorAll('[type=radio]').forEach(radio => radio.checked = !isCustom && radio.value == selected);
+            custom.parentNode.dataset.selected = isCustom;
+            fieldset.querySelector('.profile-preview').innerHTML = cubeIcon(selected);
+        };
+        return name => ({ name, color: selected });
+    } });
+}
 
 /** Pide confirmación. */
 const askConfirm = title => showDialog({ title, danger: 1 });

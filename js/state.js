@@ -25,7 +25,7 @@ function loadStore() {
     return null;
 }
 
-/** Contenedor de perfiles: { cur: id del perfil activo, profs: { id: { name, data } } }. */
+/** Profile store: { cur: active profile id, profs: { id: { name, color, data } } }. */
 let store = loadStore();
 
 /** Datos del perfil activo (niveles, orden, wishlists y tags). */
@@ -42,6 +42,25 @@ const emptyProfile = () => ({ levels: [], order: { classic: [], platform: [] }, 
 
 /** Guarda todos los perfiles en localStorage. */
 const save = () => localStorage.gdp = JSON.stringify(store);
+
+/** Migrates profile colours by their original position, saving only when needed. */
+function ensureProfileColors() {
+    let changed = false;
+    Object.keys(store.profs).forEach((id, i) => {
+        if (!isHexColor(store.profs[id].color)) {
+            store.profs[id].color = PROFILE_COLORS[i % PROFILE_COLORS.length];
+            changed = true;
+        }
+    });
+    if (changed)
+        save();
+}
+
+/** First unused preset, or the next position colour when every preset is used. */
+function nextProfileColor() {
+    const profiles = Object.values(store.profs), used = new Set(profiles.map(p => isHexColor(p.color) ? p.color.toLowerCase() : ''));
+    return PROFILE_COLORS.find(color => !used.has(color)) || PROFILE_COLORS[profiles.length % PROFILE_COLORS.length];
+}
 
 /** Busca un nivel por id en el perfil activo. */
 const findLevel = id => profile.levels.find(l => l.id == id);
