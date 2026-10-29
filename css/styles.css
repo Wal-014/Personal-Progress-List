@@ -46,6 +46,11 @@
   --ln: rgba(255, 255, 255, .14);
   --a: var(--go);
   --tb-h: 108px;
+  --dropdown-enter: 180ms;
+  --dropdown-exit: 120ms;
+  --dropdown-decelerate: cubic-bezier(.16, 1, .3, 1);
+  --dropdown-accelerate: cubic-bezier(.4, 0, 1, 1);
+  --dropdown-offset: translateY(-6px);
   color-scheme: dark;
 }
 
@@ -342,18 +347,18 @@ input:user-invalid, select:user-invalid, textarea:user-invalid {
   height: 12px;
 }
 
-.chip[data-tag] {
-  transition: box-shadow .15s, background-color .15s;
+.chip[data-tag], .ms .msp .chip {
+  transition: box-shadow 150ms ease-out, background-color 150ms ease-out;
 }
 
-.chip[data-tag]:focus-visible {
+.chip[data-tag]:focus-visible, .ms .msp label:has(:focus-visible) .chip {
   box-shadow: 0 0 0 1px currentColor, 0 0 10px currentColor;
   background-color: color-mix(in srgb, currentColor 22%, #000);
 }
 
 /* A tap on a touch screen would leave the hover glow stuck */
 @media (hover: hover) {
-  .chip[data-tag]:hover {
+  .chip[data-tag]:hover, .ms .msp label:hover .chip {
     box-shadow: 0 0 0 1px currentColor, 0 0 10px currentColor;
     background-color: color-mix(in srgb, currentColor 22%, #000);
   }
@@ -975,11 +980,13 @@ dialog.modal::backdrop {
   border: 3px solid #000;
   border-radius: 12px;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, .6), 0 10px 0 rgba(0, 0, 0, .4);
+  flex-direction: column;
+  transition-property: opacity, transform, overlay, display;
+  transition-behavior: allow-discrete;
 }
 
 .pmenu:popover-open {
   display: flex;
-  flex-direction: column;
 }
 
 .pmenu h3 {
@@ -1005,12 +1012,11 @@ dialog.modal::backdrop {
   border-radius: 10px;
 }
 
-.prow:hover {
+.prow.act, .prow:has(:focus-visible) {
   background: var(--pal);
 }
 
 .prow.act {
-  background: var(--pal);
   border-color: var(--go);
 }
 
@@ -1469,6 +1475,91 @@ input.ro {
   gap: 4px;
 }
 
+/* ===== Dropdowns: motion and option feedback ===== */
+/* Closed details may have no computed content style, so their entrance uses a keyframe. */
+@keyframes dropdown-enter {
+  from {
+    opacity: 0;
+    transform: var(--dropdown-offset);
+  }
+}
+
+.ms .msp, .pmenu {
+  opacity: 0;
+  transform: var(--dropdown-offset);
+  transition-duration: var(--dropdown-exit);
+  transition-timing-function: var(--dropdown-accelerate);
+}
+
+.ms .msp, .gdr {
+  transition-property: opacity, transform;
+}
+
+.ms[open] .msp, .pmenu:popover-open, .gdr {
+  opacity: 1;
+  transform: none;
+}
+
+.pmenu:popover-open, .gdr {
+  transition-duration: var(--dropdown-enter);
+  transition-timing-function: var(--dropdown-decelerate);
+}
+
+@starting-style {
+  .pmenu:popover-open, .gdr:not([hidden]) {
+    opacity: 0;
+    transform: var(--dropdown-offset);
+  }
+}
+
+.ms[open] .msp {
+  animation: dropdown-enter var(--dropdown-enter) var(--dropdown-decelerate);
+}
+
+.ms::details-content {
+  transition: content-visibility var(--dropdown-exit) allow-discrete;
+}
+
+/* A fading panel must release clicks immediately, including clicks on its sibling. */
+.ms:not([open]) .msp {
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .ms .msp label:hover {
+    background: rgba(0, 0, 0, .28);
+  }
+
+  .prow:hover {
+    background: var(--pal);
+  }
+
+  .ms .msp label:hover, .prow:hover .nm, .pma:hover, .gdc:hover .nm {
+    color: var(--go);
+  }
+
+  .gdc:hover {
+    border-color: var(--go);
+  }
+}
+
+.ms .msp label:has(:focus-visible) {
+  background: rgba(0, 0, 0, .28);
+}
+
+.ms .msp label:has(:focus-visible), .prow:has(:focus-visible) .nm,
+.pma:focus-visible, .gdc:focus-visible .nm {
+  color: var(--go);
+}
+
+.ms .msp label, .prow {
+  transition: background-color 150ms ease-out, color 150ms ease-out;
+}
+
+.prow .nm, .pma, .gdc .nm {
+  transition: color 150ms ease-out;
+}
+
 .ms {
   min-width: 0;
 }
@@ -1512,6 +1603,8 @@ input.ro {
   gap: 8px;
   min-height: 44px;
   margin: 0;
+  padding: 0 6px;
+  border-radius: 6px;
   font: bold 13px Arial, Helvetica, sans-serif;
   text-transform: none;
   cursor: pointer;
@@ -1620,9 +1713,10 @@ input.ro {
   border: 2px solid rgba(255, 255, 255, .4);
   border-radius: 8px;
   box-shadow: none;
+  transition: border-color 150ms ease-out;
 }
 
-.gdc:hover, .gdc:focus-visible {
+.gdc:focus-visible {
   border-color: var(--go);
 }
 
