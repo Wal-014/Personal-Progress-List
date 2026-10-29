@@ -9,6 +9,7 @@ const SHELL = [
   "data/demo-data.js",
   "manifest.json",
   "icon.svg",
+  "favicon.png",
   "vendor/Sortable.min.js",
   "fonts/lilita-one-latin.woff2",
   "fonts/lilita-one-latin-ext.woff2",
