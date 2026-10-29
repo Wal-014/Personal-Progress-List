@@ -13,7 +13,7 @@ function reopenPause(selector) {
 function zoomTimeline(factor) {
     const w = qs('#tlw'), r = (w.scrollLeft + w.clientWidth / 2) / w.scrollWidth;
     ui.z = Math.min(160, Math.max(6, ui.z * factor));
-    render();
+    renderTimeline();
     const n = qs('#tlw');
     n.scrollLeft = r * n.scrollWidth - n.clientWidth / 2;
 }
@@ -55,6 +55,15 @@ const ACTIONS = {
     },
     zi: () => zoomTimeline(1.5),
     zo: () => zoomTimeline(1 / 1.5),
+    'ranking-mode': a => setRankingMode(a.dataset.v),
+    'ranking-metric': a => setRankingMetric(a.dataset.v),
+    'ranking-order': () => setRankingOrder(),
+    'ranking-all': () => setRankingAll(),
+    'compare-toggle': () => toggleComparison(),
+    'compare-close': () => closeComparison(),
+    'compare-pick': (a, id) => pickComparisonLevel(id),
+    'compare-clear': a => clearComparisonSlot(+a.dataset.v),
+    'timeline-metric': a => setTimelineMetric(a.dataset.v),
     add() {
         // The edit form in the panel and the new-level form use the same ids, so only one can be open
         if (ui.edit) {
@@ -416,6 +425,8 @@ document.body.onsubmit = e => {
         saveLevel(e.target);
 };
 document.body.oninput = e => {
+    if (e.target.dataset.compareSlot != null)
+        return setComparisonSearch(e.target);
     if (['fm', 'wf'].includes(e.target.form?.id))
         e.target.setCustomValidity(fieldError(e.target.name, e.target.value));
     if (e.target.form?.id == 'fm' && ['attC', 'attN', 'tN', 'tP', 'tPC'].includes(e.target.name))
@@ -494,7 +505,7 @@ document.onkeydown = e => {
     }
 };
 document.body.onmousemove = e => {
-    const tp = qs('#tip'), h = e.target.closest('[data-hp]'), p = e.target.closest('.pt'), k = h ? 'h' + h.dataset.hp : p ? 'p' + p.dataset.id : '';
+    const tp = qs('#tip'), h = e.target.closest('[data-hp]'), p = e.target.closest('.pt'), k = h ? 'h' + h.dataset.hp : p ? 'p' + p.dataset.id + ui.timelineMetric : '';
     if (!k) {
         tp.style.display = 'none';
         tp.dataset.k = '';
@@ -506,8 +517,7 @@ document.body.onmousemove = e => {
             // dataset returns attribute values decoded, so they are escaped again before going into innerHTML
             tp.innerHTML = `<b>${escapeHtml(h.dataset.hp)}%</b> · ${escapeHtml(h.dataset.hn)} ${t('dU')}`;
         else {
-            const l = findLevel(p.dataset.id), u = thumbUrl(l);
-            tp.innerHTML = `${u ? `<img src="${u}" alt="">` : ''}<b>${escapeHtml(l.name)}</b><br>${escapeHtml(totalAttempts(l))} ${t('att')} · ${escapeHtml(formatDate(l.date))}`;
+            tp.innerHTML = timelineTooltip(findLevel(p.dataset.id));
             tp.querySelector('img')?.addEventListener('error', ({ target }) => target.remove());
         }
     }

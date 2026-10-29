@@ -31,8 +31,12 @@ let store = loadStore();
 /** Active profile data: levels, order, wishlists and tags. */
 let profile = store && store.profs[store.cur].data;
 
-/** Interface state: screen, selection, search, theme and language. */
-let ui = { tab: 'home', wl: null, q: '', tagFilter: [], z: 28, lang: localStorage.gl || 'es', theme: themeOf(localStorage.gt) };
+/** Interface state: screen, selection, search, statistics views (rankings, comparison, timeline), theme and language. */
+let ui = {
+    tab: 'home', wl: null, q: '', tagFilter: [], z: 28, lang: localStorage.gl || 'es', theme: themeOf(localStorage.gt),
+    rankingMode: 'classic', rankingMetric: 'att', rankingDirection: 'desc', rankingAll: false,
+    comparison: { open: false, slots: [null, null] }, timelineMetric: 'att'
+};
 
 const isListTab = () => ['classic', 'platform'].includes(ui.tab);
 
