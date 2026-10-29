@@ -6,6 +6,9 @@
 /** Sheet levels by ID, and by kind ('d' classic, 'p' platformer) plus normalized name; null marks a name several levels share. */
 let sheetById = new Map(), sheetByName = new Map();
 
+/** Names normalized once for substring searches over the full sheet. */
+let sheetNormalizedNames = new Map();
+
 /** Download of the sheet copy, made at most once per visit; the browser and the service worker cache the file. */
 let sheetLoad = null;
 
@@ -13,9 +16,11 @@ let sheetLoad = null;
 function useSheetLevels(levels) {
     sheetById = new Map();
     sheetByName = new Map();
+    sheetNormalizedNames = new Map();
     levels.forEach(x => {
         sheetById.set(String(x[0]), x);
-        const k = (x[4] ? 'p' : 'd') + normalizeName(x[1]);
+        const n = normalizeName(x[1]), k = (x[4] ? 'p' : 'd') + n;
+        sheetNormalizedNames.set(String(x[0]), n);
         sheetByName.set(k, sheetByName.has(k) ? null : x);
     });
 }

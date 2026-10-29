@@ -1,5 +1,5 @@
 /**
- * Level search on GDBrowser: name or ID, rating and difficulty filters, and the data the forms fill from the chosen level.
+ * Level search using the community sheet and GDBrowser, with rating and difficulty filters and data for the forms.
  */
 
 /** Rating of a level: unrated (no stars), rated, then featured, epic, legendary and mythic. */
@@ -59,13 +59,40 @@ const cleanQuery = q => {
     return /[\p{L}\p{N}]/u.test(s) ? s : '';
 };
 
-/**
- * Levels matching a name fragment or an ID and the filters, most downloaded first, and whether another page may follow.
- * The API filters are approximate, so every result is checked locally as well.
- * Each page holds the game's 10 levels. With a search text the API ignores its download order, so each page is sorted here.
- * Throws when the service does not answer.
- */
-async function searchLevels(query, f, page) {
+/** Normalized name order: exact, prefix, substring, then other names returned by the game. */
+const searchMatchRank = (name, query) => name == query ? 0 : name.startsWith(query) ? 1 : name.includes(query) ? 2 : 3;
+
+/** Sheet substring matches, filtered by known difficulties, ordered by name rank then shorter names. */
+function findSheetMatches(query, f) {
+    const n = normalizeName(query), { diffs } = effectiveFilters(f);
+    if (!n || f.rated == 'unrated')
+        return [];
+    const matches = [];
+    for (const [id, name] of sheetNormalizedNames) {
+        if (!name.includes(n))
+            continue;
+        const entry = sheetById.get(id);
+        if (!diffs.length || diffs.includes(DIFFICULTIES[entry[3]] || 'NA'))
+            matches.push({ id, name, length: entry[1].length });
+    }
+    return matches
+        .sort((a, b) => searchMatchRank(a.name, n) - searchMatchRank(b.name, n) || a.length - b.length)
+        .map(x => x.id);
+}
+
+/** Looks up at most ten IDs with current difficulty, rating and downloads; throws when GDBrowser does not answer. */
+async function fetchLevelsById(ids) {
+    if (!ids.length)
+        return [];
+    const r = await fetch(`${GDB_API}search/${ids.slice(0, 10).join(',')}?list`);
+    if (!r.ok)
+        throw Error('HTTP ' + r.status);
+    const d = await r.json();
+    return (Array.isArray(d) ? d : []).filter(x => x && /^\d+$/.test(x.id)).map(fromGdb);
+}
+
+/** One game search page, rechecked locally; a working known-level probe turns an HTTP/CORS failure into no matches. */
+async function searchGdbLevels(query, f, page) {
     let d;
     try {
         const r = await fetch(`${GDB_API}search/${encodeURIComponent(query)}?page=${page}${searchParams(f)}`);
@@ -83,7 +110,22 @@ async function searchLevels(query, f, page) {
     if (!Array.isArray(d))
         return { levels: [], more: false };
     const levels = d.filter(x => x && /^\d+$/.test(x.id)).map(fromGdb).filter(l => matchesSearchFilters(l, f));
-    return { levels: levels.sort((a, b) => b.downloads - a.downloads), more: d.length >= 10 };
+    return { levels, more: d.length >= 10 };
+}
+
+/**
+ * Merges the next ten cached sheet matches with the game's search page, requested in parallel until exhausted.
+ * Current API data is checked against the filters and deduplicated by ID, then sorted by match rank and downloads.
+ * Another page may follow while either source has more. Throws when either lookup does not answer.
+ */
+async function searchLevels(query, f, page, sheetMatches = [], gameMore = true) {
+    const [sheetLevels, remote] = await Promise.all([
+        fetchLevelsById(sheetMatches.slice(page * 10, (page + 1) * 10)),
+        gameMore ? searchGdbLevels(query, f, page) : { levels: [], more: false }
+    ]);
+    const levels = [...new Map([...sheetLevels.filter(l => matchesSearchFilters(l, f)), ...remote.levels].map(l => [l.levelId, l])).values()];
+    const n = normalizeName(query), rank = l => l.levelId == query ? 0 : searchMatchRank(normalizeName(l.name), n);
+    return { levels: levels.sort((a, b) => rank(a) - rank(b) || b.downloads - a.downloads), gameMore: remote.more, more: remote.more || sheetMatches.length > (page + 1) * 10 };
 }
 
 /** Up to five known level names that look like the text, from the AREDL lists and the community sheet, to suggest when a search finds nothing. */
@@ -109,8 +151,7 @@ async function fillRatings(levels) {
     for (let i = 0; i < todo.length; i += 10) {
         const batch = todo.slice(i, i + 10);
         try {
-            const d = await (await fetch(`${GDB_API}search/${batch.map(l => l.levelId).join(',')}?list`)).json();
-            const found = new Map((Array.isArray(d) ? d : []).filter(x => x && /^\d+$/.test(x.id)).map(x => [String(x.id), fromGdb(x)]));
+            const found = new Map((await fetchLevelsById(batch.map(l => l.levelId))).map(l => [l.levelId, l]));
             batch.forEach(l => {
                 const g = found.get(String(l.levelId));
                 if (g)

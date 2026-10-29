@@ -434,7 +434,7 @@ document.body.oninput = e => {
     if (e.target.id == 'tgq')
         renderTagSuggestions();
     if (e.target.id == 'gdq')
-        e.target.setCustomValidity('');
+        scheduleLevelSearch();
     if (e.target.id == 'q') {
         ui.q = e.target.value.toLowerCase();
         renderList();

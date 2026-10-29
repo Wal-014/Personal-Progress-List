@@ -83,7 +83,7 @@ test('search parameters narrow supported difficulty groups and leave mixed group
     assert.equal(params(filters({ rated: 'rated', rates: ['epic'], diffs: ['NA', 'Hard'] })), '&epic&diff=3');
 });
 
-test('search filters server results again, sorts downloads and keeps raw-page pagination', async () => {
+test('search filters server results again, ranks matching names and keeps raw-page pagination', async () => {
     const asked = [];
     context.fetch = async url => {
         asked.push(url);
@@ -91,7 +91,7 @@ test('search filters server results again, sorts downloads and keeps raw-page pa
     };
     const found = await app('searchLevels')('dash / 2', filters({ rated: 'rated' }), 3);
     assert.equal(asked[0], 'https://gdbrowser.com/api/search/dash%20%2F%202?page=3&starred');
-    assert.deepEqual(Array.from(found.levels, l => l.levelId), ['2', '156124']);
+    assert.deepEqual(Array.from(found.levels, l => l.levelId), ['156124', '2']);
     assert.equal(found.more, true);
     const epic = await app('searchLevels')('dash', filters({ rated: 'rated', rates: ['epic'] }), 0);
     assert.deepEqual(Array.from(epic.levels, l => l.levelId), ['2']);
@@ -147,7 +147,7 @@ test('fillRatings fills difficulty and rating of saved levels without one, ten I
     const asked = [];
     context.fetch = async url => {
         asked.push(url);
-        return { json: async () => url.includes('10565740') ? [result({ featured: true }), result({ id: '13519', difficulty: 'Easy Demon', stars: 10, epic: true, featured: true })] : -1 };
+        return { ok: true, json: async () => url.includes('10565740') ? [result({ featured: true }), result({ id: '13519', difficulty: 'Easy Demon', stars: 10, epic: true, featured: true })] : -1 };
     };
     const levels = [{ levelId: '10565740', diff: 'Hard Demon' }, { levelId: '13519' }, { levelId: '999', rating: 'rated' }, { levelId: null }, ...Array.from({ length: 9 }, (_, i) => ({ levelId: String(100 + i) }))];
     await app('fillRatings')(levels);
@@ -157,4 +157,98 @@ test('fillRatings fills difficulty and rating of saved levels without one, ten I
     assert.deepEqual([levels[1].diff, levels[1].rating], ['Easy Demon', 'epic']);
     assert.equal(levels[2].rating, 'rated', 'a level that has a rating is not asked for');
     assert.equal(levels[12].rating, undefined, 'a level the API does not return keeps no rating');
+});
+
+const freshSearch = () => loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js', 'js/sheet.js', 'js/gd.js'], { localStorage: {} });
+
+test('sheet matches any part ignoring case and accents, ordered by exact, prefix, contains and length', () => {
+    const search = freshSearch();
+    search.app(`useSheetLevels([
+        [1, 'Honeycomb Runner', '', 3], [2, 'COMB', '', 3], [3, 'Catacomb', '', 3],
+        [4, 'Comb Breaker', '', 3], [5, 'Comb A', '', 3], [6, 'Cursed Catacombs', '', 3, 1],
+        [7, 'Cómb', '', 3], [8, 'Unrelated', '', 3], [9, 'C o m b', '', 3]
+    ])`);
+    assert.deepEqual(Array.from(search.app('findSheetMatches')('cOmB', filters())), ['2', '7', '9', '5', '4', '3', '1', '6']);
+    assert.deepEqual(Array.from(search.app('findSheetMatches')('***', filters())), []);
+});
+
+test('sheet pre-filters Unrated and effective difficulties without guessing rating tiers or level kind', () => {
+    const search = freshSearch();
+    search.app(`useSheetLevels([[1, 'Comb', '', 3], [2, 'Comb P', '', 1, 1], [3, 'Comb Unknown', '', -1]])`);
+    const find = search.app('findSheetMatches');
+    assert.deepEqual(Array.from(find('comb', filters({ rated: 'unrated', diffs: ['Hard'] }))), []);
+    assert.deepEqual(Array.from(find('comb', filters({ diffs: ['Easy', 'Hard'] }))), ['1', '2']);
+    assert.deepEqual(Array.from(find('comb', filters({ diffs: ['NA'] }))), ['3']);
+    assert.deepEqual(Array.from(find('comb', filters({ rated: 'rated', diffs: ['NA'], rates: ['mythic'] }))), ['1', '2', '3']);
+});
+
+test('pages request both sources in parallel, dedupe IDs, recheck filters and rank before downloads', async () => {
+    const search = freshSearch(), asked = [], pending = [];
+    search.context.fetch = url => {
+        asked.push(url);
+        return new Promise(resolve => pending.push(resolve));
+    };
+    const page = search.app('searchLevels')('comb', filters({ rated: 'rated', rates: ['epic'], diffs: ['Hard'] }), 1, ['99', '98', '97', '96', '95', '94', '93', '92', '91', '90', '1', '2']);
+    assert.deepEqual(asked, ['https://gdbrowser.com/api/search/1,2?list', 'https://gdbrowser.com/api/search/comb?page=1&epic&diff=3']);
+    const ratedHard = extra => result({ epic: true, difficulty: 'Hard', ...extra });
+    pending[0]({ ok: true, json: async () => [ratedHard({ id: 1, name: 'Honeycomb', downloads: 900 }), ratedHard({ id: 2, name: 'Comb A', downloads: 100 }), ratedHard({ id: 9, name: 'Comb wrong difficulty', difficulty: 'Easy' }), ratedHard({ id: 10, name: 'Comb wrong rating', epic: false })] });
+    pending[1]({ ok: true, json: async () => [ratedHard({ id: 2, name: 'Comb A', downloads: 100 }), ratedHard({ id: 3, name: 'Comb', downloads: 1 }), ratedHard({ id: 4, name: 'Comb B', downloads: 200 }), ratedHard({ id: 5, name: 'Other', downloads: 1000 })] });
+    const found = await page;
+    assert.deepEqual(Array.from(found.levels, l => l.levelId), ['3', '4', '2', '1', '5']);
+    assert.equal(found.more, false);
+});
+
+test('ID matches outrank names and pagination continues while either source may have more', async () => {
+    const search = freshSearch();
+    let remote = [result({ id: '123', name: 'Other', downloads: 0 }), result({ id: '2', name: '123 prefix', downloads: 100 }), result({ id: '3', name: 'x123', downloads: 200 })];
+    search.context.fetch = async url => ({ ok: true, json: async () => url.endsWith('?list') ? [] : remote });
+    const ids = Array.from({ length: 11 }, (_, i) => String(i + 20));
+    let found = await search.app('searchLevels')('123', filters(), 0, ids);
+    assert.deepEqual(Array.from(found.levels, l => l.levelId), ['123', '2', '3']);
+    assert.equal(found.more, true, 'the sheet still has one match');
+    found = await search.app('searchLevels')('123', filters(), 1, ids);
+    assert.equal(found.more, false, 'both sources are exhausted');
+    remote = Array.from({ length: 10 }, (_, i) => result({ id: String(i + 40) }));
+    found = await search.app('searchLevels')('123', filters(), 1, ids);
+    assert.equal(found.more, true, 'a full remote page may have a successor');
+});
+
+test('a remote no-results probe preserves sheet results, but a failed ID lookup rejects the page', async () => {
+    const search = freshSearch();
+    search.context.fetch = async url => {
+        if (url.endsWith('?list'))
+            return { ok: true, json: async () => [result({ id: '1', name: 'Honeycomb' })] };
+        return { ok: url.endsWith('level/128'), status: 500 };
+    };
+    const found = await search.app('searchLevels')('comb', filters(), 0, ['1']);
+    assert.deepEqual(Array.from(found.levels, l => l.name), ['Honeycomb']);
+    search.context.fetch = async url => ({ ok: !url.endsWith('?list'), status: 503, json: async () => [] });
+    await assert.rejects(search.app('searchLevels')('comb', filters(), 0, ['1']), /HTTP 503/);
+    search.context.fetch = async url => {
+        if (url.endsWith('?list'))
+            throw Error('offline');
+        return { ok: true, json: async () => [] };
+    };
+    await assert.rejects(search.app('searchLevels')('comb', filters(), 0, ['1']), /offline/);
+});
+
+test('shared ID lookup caps batches at ten and converts only valid level IDs', async () => {
+    const search = freshSearch(), asked = [];
+    search.context.fetch = async url => {
+        asked.push(url);
+        return { ok: true, json: async () => [null, result({ id: 'bad' }), result({ id: 4, epic: true, platformer: true })] };
+    };
+    const found = await search.app('fetchLevelsById')(Array.from({ length: 12 }, (_, i) => String(i + 1)));
+    assert.deepEqual(asked, ['https://gdbrowser.com/api/search/1,2,3,4,5,6,7,8,9,10?list']);
+    assert.deepEqual(Array.from(found, l => [l.levelId, l.rating, l.kind]), [['4', 'epic', 'platform']]);
+    assert.deepEqual(Array.from(await search.app('fetchLevelsById')([])), []);
+    assert.equal(asked.length, 1);
+});
+
+test('fillRatings skips a failed batch and still fills the following batch through the shared lookup', async () => {
+    const search = freshSearch(), levels = Array.from({ length: 11 }, (_, i) => ({ levelId: String(i + 1) }));
+    search.context.fetch = async url => ({ ok: url.includes('/11?list'), status: 503, json: async () => [result({ id: url.includes('/11?list') ? 11 : 1, epic: true, difficulty: 'Hard' })] });
+    await search.app('fillRatings')(levels);
+    assert.equal(levels[0].rating, undefined);
+    assert.deepEqual([levels[10].rating, levels[10].diff], ['epic', 'Hard']);
 });
