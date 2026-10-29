@@ -1258,7 +1258,7 @@ dialog.modal::backdrop {
 
 .box > h2 {
   font-size: 28px;
-  margin: 0;
+  margin: 0 0 12px;
 }
 
 .dgrid {
