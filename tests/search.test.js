@@ -11,7 +11,7 @@ const settleSearch = async () => {
 function searchForm() {
     let now = 0, timerId = 0, reports = 0;
     const timers = new Map(), asked = [];
-    const input = { id: 'gdq', value: '', validity: '', matches: () => false, setCustomValidity(message) { this.validity = message; }, reportValidity() { reports++; } };
+    const input = { id: 'gdq', value: '', validity: '', dataset: {}, matches: () => false, setCustomValidity(message) { this.validity = message; }, reportValidity() { reports++; } };
     const results = { innerHTML: '', hidden: true }, message = { textContent: '' }, clear = { hidden: true };
     const document = { body: {}, querySelector: selector => ({ '#gdq': input, '#gdr': results, '#gdm': message, '.gdclr': clear })[selector], querySelectorAll: () => [], addEventListener() {} };
     const scripts = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/i18n.js', 'js/api.js', 'js/sheet.js', 'js/gd.js', 'js/components/faces.js', 'js/components/search.js'], {
