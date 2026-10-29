@@ -2,26 +2,15 @@
  * Level search used by the level and wishlist forms: search box, filters, result cards and the read-only fields they fill.
  */
 
-/** Search of the open form: text, filters, cached sheet matches, remaining game pages, results, status and suggestions. */
+/** Search of the open form: text searched, filters, results, next page, status and suggestions. */
 let levelSearch = {};
-
-const emptyLevelSearch = () => ({ q: '', sheetMatches: null, gameMore: true, results: [], page: 0, more: false, status: 'idle', similar: [] });
 
 /** Bumped by every search so an answer that arrives after a newer search is dropped. */
 let levelSearchRun = 0;
 
-let levelSearchTimer = null;
-
-function cancelLevelSearchTimer() {
-    clearTimeout(levelSearchTimer);
-    levelSearchTimer = null;
-}
-
 /** Search box, filters and results panel. Drawing it resets the search for the open form. */
 function levelSearchBox() {
-    cancelLevelSearchTimer();
-    levelSearchRun++;
-    levelSearch = { ...emptyLevelSearch(), f: { rated: 'all', rates: [], diffs: [] } };
+    levelSearch = { q: '', f: { rated: 'all', rates: [], diffs: [] }, results: [], page: 0, more: false, status: 'idle', similar: [] };
     const opt = v => `<button type=button class=xs-txt data-act=gdrated data-v=${v} aria-pressed=${v == 'all'}>${t('f_' + v)}</button>`;
     const check = (name, value, face, label) => `<label><input type=checkbox name=${name} value="${value}"><img src="assets/faces/${face}.webp" alt="" width=32 height=32 decoding=async><span>${label}</span></label>`;
     const rates = ['rated', 'featured', 'epic', 'legendary', 'mythic'].map(r => check('gdrate', r, 'hard' + (r == 'rated' ? '' : '-' + r), t('r_' + r))).join('');
@@ -29,24 +18,6 @@ function levelSearchBox() {
     return `<fieldset class=gds><legend>${t('gdS')}</legend><label for=gdq>${t('gdQ')}</label><div class=gdq><input id=gdq type=search maxlength=40 autocomplete=off aria-describedby=gdh><button type=button class=blue data-act=gdgo>${t('gdGo')}</button></div>
 <div class=gdf><div class=gdseg role=group aria-label="${t('f_rating')}">${['all', 'rated', 'unrated'].map(opt).join('')}</div><details class=ms name=gdms data-filter=rates hidden><summary>${t('f_rates')} · ${t('f_all')}</summary><div class=msp>${rates}</div></details><details class=ms name=gdms data-filter=diffs><summary>${t('diff')} · ${t('f_all')}</summary><div class=msp>${diffs}</div></details><button type=button class="xs dg gdclr" data-act=gdclear aria-label="${t('gdClear')}" title="${t('gdClear')}" hidden>${ICONS.del}</button></div>
 <p id=gdm class=gdm role=status></p><div id=gdr class=gdr hidden></div><small id=gdh class=by>${t('gdHint')}</small></fieldset>`;
-}
-
-/** Quietly searches after typing pauses; clearing the box also discards any answer still in flight. */
-function scheduleLevelSearch() {
-    const box = qs('#gdq'), q = cleanQuery(box.value);
-    box.setCustomValidity('');
-    cancelLevelSearchTimer();
-    if (!q) {
-        levelSearchRun++;
-        Object.assign(levelSearch, emptyLevelSearch());
-        renderLevelSearch();
-    }
-    else if (q.length >= 3 && q != levelSearch.q)
-        levelSearchTimer = setTimeout(() => {
-            levelSearchTimer = null;
-            if (qs('#gdq') == box)
-                runLevelSearch();
-        }, 400);
 }
 
 /** Updates filter controls in place, preserving open dropdowns and checkbox focus. */
@@ -103,7 +74,6 @@ function renderLevelSearch() {
 
 /** Runs the search in the box, or loads its next page. Invalid text is reported on the box and nothing is requested. */
 async function runLevelSearch(next) {
-    cancelLevelSearchTimer();
     const s = levelSearch, box = qs('#gdq');
     if (!next) {
         const q = cleanQuery(box.value);
@@ -111,26 +81,19 @@ async function runLevelSearch(next) {
             box.setCustomValidity(t('gdBad'));
             return box.reportValidity();
         }
-        Object.assign(s, emptyLevelSearch(), { q });
+        Object.assign(s, { q, results: [], page: 0, similar: [] });
     }
     const run = ++levelSearchRun;
     s.status = 'busy';
     renderLevelSearch();
     try {
-        if (!s.sheetMatches) {
-            await loadSheetLevels();
-            if (run != levelSearchRun)
-                return;
-            s.sheetMatches = findSheetMatches(s.q, s.f);
-        }
         // A page can lose all its levels to the filters, so a few more pages are tried before giving up
         do {
-            const { levels, more, gameMore } = await searchLevels(s.q, s.f, s.page, s.sheetMatches, s.gameMore);
+            const { levels, more } = await searchLevels(s.q, s.f, s.page);
             if (run != levelSearchRun)
                 return;
             s.results.push(...levels.filter(l => !s.results.some(r => r.levelId == l.levelId)));
             s.more = more;
-            s.gameMore = gameMore;
             s.page++;
         } while (!s.results.length && s.more && s.page < 5);
         s.status = s.results.length ? 'idle' : 'none';
@@ -142,8 +105,7 @@ async function runLevelSearch(next) {
             return;
         s.status = 'error';
     }
-    if (run == levelSearchRun)
-        renderLevelSearch();
+    renderLevelSearch();
 }
 
 /** Fills the form's read-only level fields with a picked result. Picking another result replaces them; searching again leaves them as they are. */
