@@ -35,7 +35,7 @@
 - **Level search** — the level form and wishlists search [GDBrowser](https://gdbrowser.com) by name or ID, with Rated / Unrated, rate type and difficulty filters, and list the matches as cards with their thumbnail, most downloaded first. Picking one fills in the name, ID, creator, difficulty, rating and list, which cannot be edited by hand. When nothing matches, similar names from the AREDL and the community sheet are suggested.
 - **Every rated level** — sync fills missing creators and difficulties from the Geometry Dash community sheet of rated levels, not only for levels on the AREDL.
 - **Wishlists** — *Not started / In progress / Completed* states, a progress bar per list, and completed levels sent to your lists.
-- **Statistics** — totals, a zoomable attempts timeline, and completions by difficulty and by year.
+- **Statistics** — totals, per-mode level rankings by attempts, playtime or enjoyment, two-level comparisons, a zoomable attempts/playtime timeline, and completions by difficulty and by year.
 - **Search, tags and notifications** — live name search that keeps the selected level, a tag filter that shows the levels with any of the chosen tags, colour tags that filter the list when clicked, and a bell that lists levels not yet placed in your ranking, completed wishlist levels not yet in a list, and levels without an ID.
 - **Themes, languages and offline use** — Classic blue, Night and Synth themes, Spanish and English, and an installable PWA that opens without a connection.
 
