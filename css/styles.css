@@ -1509,7 +1509,7 @@ input.ro {
 .ms .msp label {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-height: 44px;
   margin: 0;
   font: bold 13px Arial, Helvetica, sans-serif;
@@ -1517,13 +1517,49 @@ input.ro {
   cursor: pointer;
 }
 
-.ms .msp input {
+.ms .msp input[type=checkbox] {
+  appearance: none;
   flex: none;
-  width: 18px;
-  height: 18px;
-  min-height: 18px;
+  width: 20px;
+  height: 20px;
+  /* Keep the box compact when touch inputs get a 44px minimum height. */
+  min-height: 20px;
   margin: 0;
-  accent-color: var(--go2);
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, .55);
+  border-radius: 5px;
+  background: rgba(0, 0, 0, .4);
+  box-shadow: none;
+  cursor: pointer;
+  transition: border-color 150ms ease-out, background-color 150ms ease-out, box-shadow 150ms ease-out;
+}
+
+.ms .msp input[type=checkbox]:checked {
+  border-color: #000;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8l3 3 7-7' fill='none' stroke='%23000' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M3 8l3 3 7-7' fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"), linear-gradient(var(--go1), var(--go2));
+  background-position: center;
+  background-size: 14px 14px, 100% 100%;
+  background-repeat: no-repeat;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--go) 55%, transparent);
+}
+
+@media (hover: hover) {
+  .ms .msp label:hover input[type=checkbox] {
+    border-color: var(--go);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--go) 30%, transparent);
+  }
+}
+
+.ms .msp input[type=checkbox]:focus-visible {
+  outline: 3px solid var(--plab);
+  outline-offset: 2px;
+}
+
+/* Native controls stay recognizable in high-contrast mode. */
+@media (forced-colors: active) {
+  .ms .msp input[type=checkbox] {
+    appearance: auto;
+  }
 }
 
 .ms .msp img {
