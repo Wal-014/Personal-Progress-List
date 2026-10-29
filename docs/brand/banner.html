@@ -17,17 +17,10 @@
         --bg1: #3a4cb0;
         --bg2: #26337e;
         --gridc: rgba(0, 0, 0, 0.28);
-        --obj: #0a0e28;
         --meta: #d2d9ff;
         --fg: #fff;
         --go: #3cff6c;
         --ye: #ffe84a;
-        --cy: #00ffff;
-        --or: #ff8a00;
-        --panel: #9a5426;
-        --panel-in: #bd6e37;
-        --well: #3a1d0b;
-        --plab: #ffe6cc;
       }
 
       * {
@@ -66,39 +59,27 @@
           0 -3px 0 #000, 0 3px 0 #000, -3px 0 0 #000, 3px 0 0 #000, 0 6px 0 #000;
       }
 
-      /* ---- text column ---- */
       .text {
         position: absolute;
-        left: 56px;
-        top: 56px;
-        bottom: 56px;
-        width: 470px;
+        left: 64px;
+        top: 64px;
+        bottom: 96px;
+        width: 620px;
         display: flex;
         flex-direction: column;
         justify-content: center;
-        gap: 22px;
-        z-index: 2;
-      }
-      .brand {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-      }
-      .brand svg {
-        width: 64px;
-        height: 64px;
-        flex: none;
+        gap: 30px;
       }
       .name {
-        font-size: 30px;
-        line-height: 1.05;
+        font-size: 32px;
+        line-height: 1.1;
         letter-spacing: 0.5px;
       }
       .name span {
         color: var(--ye);
       }
       h1 {
-        font-size: 54px;
+        font-size: 62px;
         line-height: 1.08;
         letter-spacing: -0.5px;
       }
@@ -106,162 +87,24 @@
         color: var(--go);
       }
       .description {
+        width: 550px;
         font-size: 22px;
         line-height: 1.45;
         color: var(--meta);
         font-weight: 700;
       }
-      .chip {
-        align-self: flex-start;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 9px 16px;
-        border: 3px solid #fff;
-        background: var(--obj);
-        color: var(--ye);
-        font-size: 18px;
-        font-weight: 700;
-      }
-      .chip i {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: var(--go);
-        box-shadow: 0 0 0 2px #000;
-      }
-
-      /* ---- scene: the level list and the detail panel on the editor grid ---- */
-      .scene {
+      .mark {
         position: absolute;
-        left: 560px;
-        top: 0;
-        right: 0;
-        bottom: 0;
-      }
-      .list {
-        position: absolute;
-        left: 20px;
-        top: 96px;
-        width: 310px;
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-      }
-      .card {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        height: 76px;
-        padding: 0 14px;
-        background: var(--obj);
-        border: 3px solid rgba(255, 255, 255, 0.35);
-        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
-      }
-      .card.sel {
-        border-color: var(--go);
-        transform: translateX(18px);
-      }
-      .rank {
-        width: 44px;
-        height: 44px;
-        flex: none;
-        display: grid;
-        place-items: center;
-        border: 3px solid #fff;
-        font-family: "Lilita One", "Arial Black", sans-serif;
-        font-size: 24px;
-      }
-      .card:nth-child(1) .rank {
-        color: var(--ye);
-      }
-      .lv {
-        flex: 1;
-      }
-      .lv b {
-        display: block;
-        font-family: "Lilita One", "Arial Black", sans-serif;
-        font-weight: 400;
-        font-size: 21px;
-      }
-      .lv small {
-        font-size: 13px;
-        font-weight: 700;
-        color: var(--meta);
-      }
-      .score {
-        padding: 2px 7px;
-        border: 2px solid var(--go);
-        color: var(--go);
-        font-size: 15px;
-        font-weight: 700;
-      }
-      .card:nth-child(4) {
-        opacity: 0.55;
-      }
-
-      .panel {
-        position: absolute;
-        left: 368px;
-        top: 70px;
+        right: 80px;
+        bottom: 44px;
         width: 320px;
-        height: 420px;
-        padding: 18px;
-        background: var(--panel);
-        border: 4px solid #000;
-        border-radius: 14px;
-        box-shadow:
-          inset 0 0 0 4px var(--panel-in),
-          0 30px 60px rgba(0, 0, 0, 0.45);
+        height: 320px;
       }
-      .panel h2 {
-        font-size: 28px;
-        margin-bottom: 14px;
-      }
-      .stats {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-        margin-bottom: 14px;
-      }
-      .stat {
-        padding: 10px 12px;
-        background: var(--well);
-        border-radius: 8px;
-      }
-      .stat small {
-        display: block;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-        color: var(--plab);
-      }
-      .stat b {
-        font-family: "Lilita One", "Arial Black", sans-serif;
-        font-weight: 400;
-        font-size: 24px;
-        color: var(--ye);
-      }
-      .hist {
-        background: var(--well);
-        border-radius: 8px;
-        padding: 12px 12px 8px;
-      }
-      .hist small {
-        display: block;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-        color: var(--plab);
-        margin-bottom: 8px;
-      }
-
-      /* Ground strip with spikes and blocks, fading into the edge */
       .ground {
         position: absolute;
-        left: 0;
         right: 0;
         bottom: 0;
+        width: 720px;
         height: 92px;
         mask-image: linear-gradient(90deg, transparent, #000 18%);
       }
@@ -270,80 +113,36 @@
   <body>
     <div id="banner">
       <div class="text">
-        <div class="brand">
-          <svg viewBox="0 0 48 48" aria-hidden="true">
-            <defs>
-              <linearGradient id="cube" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stop-color="#ffe94d" />
-                <stop offset="1" stop-color="#ffa800" />
-              </linearGradient>
-            </defs>
-            <rect x="2.5" y="2.5" width="43" height="43" rx="3" fill="url(#cube)" stroke="#000" stroke-width="3" />
-            <rect x="6" y="6" width="36" height="36" rx="1.5" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1.5" />
-            <rect x="12" y="13" width="8" height="8" fill="#5ef0ff" stroke="#000" stroke-width="2.5" />
-            <rect x="28" y="13" width="8" height="8" fill="#5ef0ff" stroke="#000" stroke-width="2.5" />
-            <rect x="12" y="28" width="24" height="6" fill="#5ef0ff" stroke="#000" stroke-width="2.5" />
-          </svg>
-          <div class="name gd">Personal <span>Ranked</span><br />Progress</div>
-        </div>
-        <h1 class="gd">Your hardest levels, <span>ranked</span> your way.</h1>
-        <p class="description">Attempts, play time, deaths by percent and a timeline of every completion, saved in your browser.</p>
-        <div class="chip"><i></i>AREDL positions sync every 12 h</div>
+        <div class="name gd">Personal <span>Ranked</span> Progress</div>
+        <h1 class="gd">Your hardest levels,<br /><span>ranked</span> your way.</h1>
+        <p class="description">Your Geometry Dash progress, ranked by you and saved in your browser.</p>
       </div>
-
-      <div class="scene">
-        <div class="list">
-          <div class="card"><span class="rank">1</span><span class="lv"><b>Crimson Spire</b><small>AREDL #12</small></span><span class="score">+9</span></div>
-          <div class="card sel"><span class="rank">2</span><span class="lv"><b>Glacier Core</b><small>AREDL #31</small></span><span class="score">+6</span></div>
-          <div class="card"><span class="rank">3</span><span class="lv"><b>Neon Abyss</b><small>AREDL #58</small></span><span class="score">+4</span></div>
-          <div class="card"><span class="rank">4</span><span class="lv"><b>Iron Lantern</b><small>AREDL #104</small></span><span class="score">+2</span></div>
-        </div>
-
-        <div class="panel">
-          <h2 class="gd">Glacier Core</h2>
-          <div class="stats">
-            <div class="stat"><small>ATTEMPTS</small><b>7056</b></div>
-            <div class="stat"><small>PLAY TIME</small><b>21h 0m</b></div>
-            <div class="stat"><small>BEST FAIL</small><b>99%</b></div>
-            <div class="stat"><small>RATING</small><b>+6</b></div>
-          </div>
-          <div class="hist">
-            <small>DEATHS BY PERCENT</small>
-            <svg width="264" height="112" viewBox="0 0 284 120" aria-hidden="true">
-              <g stroke="#000" stroke-width="2">
-                <rect x="2" y="104" width="14" height="14" fill="#00ffff" />
-                <rect x="22" y="96" width="14" height="22" fill="#00ffff" />
-                <rect x="42" y="70" width="14" height="48" fill="#00ffff" />
-                <rect x="62" y="20" width="14" height="98" fill="#3cff6c" />
-                <rect x="82" y="34" width="14" height="84" fill="#3cff6c" />
-                <rect x="102" y="56" width="14" height="62" fill="#00ffff" />
-                <rect x="122" y="24" width="14" height="94" fill="#3cff6c" />
-                <rect x="142" y="26" width="14" height="92" fill="#3cff6c" />
-                <rect x="162" y="48" width="14" height="70" fill="#00ffff" />
-                <rect x="182" y="58" width="14" height="60" fill="#00ffff" />
-                <rect x="202" y="72" width="14" height="46" fill="#00ffff" />
-                <rect x="222" y="80" width="14" height="38" fill="#00ffff" />
-                <rect x="242" y="66" width="14" height="52" fill="#00ffff" />
-                <rect x="262" y="100" width="14" height="18" fill="#ffe84a" />
-              </g>
-            </svg>
-          </div>
-        </div>
-
-        <svg class="ground" viewBox="0 0 720 92" preserveAspectRatio="none" aria-hidden="true">
-          <rect x="0" y="52" width="720" height="40" fill="#0c1033" />
-          <line x1="0" y1="52" x2="720" y2="52" stroke="#fff" stroke-width="3" />
-          <g fill="#000" stroke="#fff" stroke-width="2.5" stroke-linejoin="round">
-            <path d="M70 52 86 22 102 52z" />
-            <path d="M102 52 118 22 134 52z" />
-            <rect x="250" y="20" width="32" height="32" />
-            <rect x="282" y="20" width="32" height="32" />
-            <path d="M420 52 436 22 452 52z" />
-            <rect x="560" y="20" width="32" height="32" />
-            <path d="M592 52 608 22 624 52z" />
+      <!-- The app mark, as ICONS.app in js/config.js -->
+      <svg class="mark" viewBox="0 0 48 48" aria-hidden="true">
+        <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <g stroke="#000" stroke-width="5.5"><polyline points="3,45 14,37 22,41 44,20" /><polyline points="36.5,20.5 44,20 43.5,27.5" /></g>
+          <g stroke="#fff" stroke-width="2.5"><polyline points="3,45 14,37 22,41 44,20" /><polyline points="36.5,20.5 44,20 43.5,27.5" /></g>
+          <g transform="rotate(20 19 16)">
+            <rect x="9" y="6" width="20" height="20" rx="2" stroke="#000" stroke-width="5.5" />
+            <rect x="9" y="6" width="20" height="20" rx="2" stroke="#fff" stroke-width="2.5" />
+            <g stroke="#000" stroke-width="3.6"><rect x="12.5" y="10.5" width="4" height="4" /><rect x="21.5" y="10.5" width="4" height="4" /><rect x="12.5" y="18.5" width="13" height="3" /></g>
+            <g stroke="#fff" stroke-width="1.6"><rect x="12.5" y="10.5" width="4" height="4" /><rect x="21.5" y="10.5" width="4" height="4" /><rect x="12.5" y="18.5" width="13" height="3" /></g>
           </g>
-        </svg>
-      </div>
+        </g>
+      </svg>
+      <svg class="ground" viewBox="0 0 720 92" preserveAspectRatio="none" aria-hidden="true">
+        <rect x="0" y="52" width="720" height="40" fill="#0c1033" />
+        <line x1="0" y1="52" x2="720" y2="52" stroke="#fff" stroke-width="3" />
+        <g fill="#000" stroke="#fff" stroke-width="2.5" stroke-linejoin="round">
+          <path d="M70 52 86 22 102 52z" />
+          <path d="M102 52 118 22 134 52z" />
+          <rect x="250" y="20" width="32" height="32" />
+          <rect x="282" y="20" width="32" height="32" />
+          <path d="M420 52 436 22 452 52z" />
+          <rect x="560" y="20" width="32" height="32" />
+          <path d="M592 52 608 22 624 52z" />
+        </g>
+      </svg>
     </div>
   </body>
 </html>
