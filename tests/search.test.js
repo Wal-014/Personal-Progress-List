@@ -12,7 +12,11 @@ function searchForm() {
     let now = 0, timerId = 0, reports = 0;
     const timers = new Map(), asked = [];
     const input = { id: 'gdq', value: '', validity: '', dataset: {}, matches: () => false, setCustomValidity(message) { this.validity = message; }, reportValidity() { reports++; } };
-    const results = { innerHTML: '', hidden: true }, message = { textContent: '' }, clear = { hidden: true };
+    const classes = new Set();
+    const results = { innerHTML: '', hidden: true }, message = { textContent: '', classList: {
+        toggle(name, force) { if (force) classes.add(name); else classes.delete(name); },
+        contains(name) { return classes.has(name); }
+    } }, clear = { hidden: true };
     const document = { body: {}, querySelector: selector => ({ '#gdq': input, '#gdr': results, '#gdm': message, '.gdclr': clear })[selector], querySelectorAll: () => [], addEventListener() {} };
     const scripts = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/i18n.js', 'js/api.js', 'js/sheet.js', 'js/gd.js', 'js/components/faces.js', 'js/components/search.js'], {
         document, localStorage: {}, window: { addEventListener() {} },
@@ -238,12 +242,60 @@ test('a full game page still requests its next page when the sheet is exhausted'
     assert.equal(form.app('levelSearch.more'), false);
 });
 
-test('an ID lookup failure reaches the existing search error message', async () => {
+test('a GDBrowser outage renders sheet results and a note that a new online search clears', async () => {
     const form = searchForm();
-    form.context.fetch = async url => ({ ok: !url.endsWith('?list'), status: 503, json: async () => url == 'data/levels.json' ? [[1, 'Comb', '', 3]] : [] });
+    form.context.fetch = async url => {
+        if (url == 'data/levels.json')
+            return { ok: true, json: async () => [[1, 'Comb', '', 3]] };
+        throw TypeError('Failed to fetch');
+    };
     form.type('comb');
     await form.tick(400);
-    assert.equal(form.app('levelSearch.status'), 'error');
+    assert.match(form.results.innerHTML, /class=gdc/);
+    assert.match(form.results.innerHTML, /Comb/);
+    assert.equal(form.app('levelSearch.status'), 'idle');
+    assert.equal(form.app('levelSearch.offline'), true);
+    assert.equal(form.message.textContent, form.app("t('gdN1') + ' ' + t('gdOff')"));
+    assert.equal(form.message.classList.contains('off'), true);
+    form.context.fetch = async () => ({ ok: true, json: async () => [searchRow('2', 'Other')] });
+    form.type('other');
+    await form.tick(400);
+    assert.equal(form.app('levelSearch.offline'), false);
+    assert.equal(form.message.textContent, form.app("t('gdN1')"));
+    assert.equal(form.message.classList.contains('off'), false);
+});
+
+test('no results during an outage announces no matches, the offline note, then suggestions', async () => {
+    const form = searchForm();
+    form.context.fetch = async url => {
+        if (url == 'data/levels.json')
+            return { ok: true, json: async () => [[1, 'Comb Breaker', '', 3]] };
+        throw TypeError('Failed to fetch');
+    };
+    form.type('combx');
+    await form.tick(400);
+    assert.equal(form.app('levelSearch.status'), 'none');
+    assert.equal(form.message.textContent, form.app("t('gdNone') + ' ' + t('gdOff') + ' ' + t('didYouMean')"));
+    assert.equal(form.message.classList.contains('off'), true);
+    assert.match(form.results.innerHTML, /data-act=gdtry/);
+    assert.match(form.results.innerHTML, /Comb Breaker/);
+});
+
+test('an offline page keeps the note through later online pages of the same search', async () => {
+    const form = searchForm();
+    form.context.fetch = async url => {
+        if (url == 'data/levels.json')
+            return { ok: true, json: async () => Array.from({ length: 11 }, (_, i) => [i + 1, 'Comb ' + i, '', 3]) };
+        throw TypeError('Failed to fetch');
+    };
+    form.type('comb');
+    await form.tick(400);
+    assert.equal(form.app('levelSearch.more'), true);
+    form.context.fetch = async () => ({ ok: true, json: async () => [searchRow('11', 'Comb 10')] });
+    await form.app('runLevelSearch(true)');
+    assert.equal(form.app('levelSearch.results.length'), 11);
+    assert.equal(form.app('levelSearch.offline'), true);
+    assert.equal(form.message.classList.contains('off'), true);
     assert.match(form.message.textContent, /GDBrowser/);
 });
 

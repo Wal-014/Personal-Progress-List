@@ -2,10 +2,10 @@
  * Level search used by the level and wishlist forms: search box, filters, result cards and the read-only fields they fill.
  */
 
-/** Search of the open form: text, filters, cached sheet matches, remaining game pages, results, status and suggestions. */
+/** Search of the open form: text, filters, cached sheet matches, remaining game pages, results, status, offline flag and suggestions. */
 let levelSearch = {};
 
-const emptyLevelSearch = () => ({ q: '', sheetMatches: null, gameMore: true, results: [], page: 0, more: false, status: 'idle', similar: [] });
+const emptyLevelSearch = () => ({ q: '', sheetMatches: null, gameMore: true, results: [], page: 0, more: false, offline: false, status: 'idle', similar: [] });
 
 /** Bumped by every search so an answer that arrives after a newer search is dropped. */
 let levelSearchRun = 0;
@@ -89,19 +89,22 @@ function resultCard(l, i) {
     return `<button type=button class=gdc data-act=gdpick data-i=${i}${u ? ` style="--th:url('${u}')"` : ''}><span class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>ID ${escapeHtml(l.levelId)} · ${t('by')} ${escapeHtml(orDash(l.creator))}${l.kind == 'platform' ? ' · ' + t('platform') : ''}</span></span>${difficultyFace(l)}</button>`;
 }
 
+/** Announces results and the offline note together, with suggestions introduced last. */
 function renderLevelSearch() {
     const box = qs('#gdr'), s = levelSearch;
     if (!box)
         return;
     const tryName = n => `<button type=button class=xs-txt data-act=gdtry data-v="${escapeHtml(n)}">${escapeHtml(n)}</button>`;
-    qs('#gdm').textContent = { busy: t('gdBusy'), error: t('gdErr'), none: t('gdNone') + (s.similar.length ? ` ${t('didYouMean')}` : ''), idle: s.results.length ? t(s.results.length == 1 ? 'gdN1' : 'gdN').replace('{n}', s.results.length) : '' }[s.status];
+    const message = qs('#gdm'), outcome = { busy: t('gdBusy'), none: t('gdNone'), idle: s.results.length ? t(s.results.length == 1 ? 'gdN1' : 'gdN').replace('{n}', s.results.length) : '' }[s.status];
+    message.textContent = [outcome, s.offline ? t('gdOff') : '', s.status == 'none' && s.similar.length ? t('didYouMean') : ''].filter(Boolean).join(' ');
+    message.classList.toggle('off', s.offline);
     box.innerHTML = s.status == 'none' ? (s.similar.length ? `<p class=gdsim>${s.similar.map(tryName).join('')}</p>` : '')
         : s.results.map(resultCard).join('') + (s.more && s.status == 'idle' ? `<button type=button class="xs-txt gdmore" data-act=gdmore>${t('gdMore')}</button>` : '');
     box.hidden = !box.innerHTML;
     renderLevelFilters();
 }
 
-/** Runs the search in the box, or loads its next page. Invalid text is reported on the box and nothing is requested. */
+/** Runs a search or its next page, keeping any offline note until a new search. Invalid text is reported without a request. */
 async function runLevelSearch(next) {
     cancelLevelSearchTimer();
     const s = levelSearch, box = qs('#gdq');
@@ -116,32 +119,26 @@ async function runLevelSearch(next) {
     const run = ++levelSearchRun;
     s.status = 'busy';
     renderLevelSearch();
-    try {
-        if (!s.sheetMatches) {
-            await loadSheetLevels();
-            if (run != levelSearchRun)
-                return;
-            s.sheetMatches = findSheetMatches(s.q, s.f);
-        }
-        // A page can lose all its levels to the filters, so a few more pages are tried before giving up
-        do {
-            const { levels, more, gameMore } = await searchLevels(s.q, s.f, s.page, s.sheetMatches, s.gameMore);
-            if (run != levelSearchRun)
-                return;
-            s.results.push(...levels.filter(l => !s.results.some(r => r.levelId == l.levelId)));
-            s.more = more;
-            s.gameMore = gameMore;
-            s.page++;
-        } while (!s.results.length && s.more && s.page < 5);
-        s.status = s.results.length ? 'idle' : 'none';
-        if (!s.results.length)
-            s.similar = await similarLevelNames(s.q);
-    }
-    catch {
+    if (!s.sheetMatches) {
+        await loadSheetLevels();
         if (run != levelSearchRun)
             return;
-        s.status = 'error';
+        s.sheetMatches = findSheetMatches(s.q, s.f);
     }
+    // A page can lose all its levels to the filters, so a few more pages are tried before giving up
+    do {
+        const { levels, more, gameMore, offline } = await searchLevels(s.q, s.f, s.page, s.sheetMatches, s.gameMore);
+        if (run != levelSearchRun)
+            return;
+        s.results.push(...levels.filter(l => !s.results.some(r => r.levelId == l.levelId)));
+        s.more = more;
+        s.gameMore = gameMore;
+        s.offline ||= offline;
+        s.page++;
+    } while (!s.results.length && s.more && s.page < 5);
+    s.status = s.results.length ? 'idle' : 'none';
+    if (!s.results.length)
+        s.similar = await similarLevelNames(s.q);
     if (run == levelSearchRun)
         renderLevelSearch();
 }
