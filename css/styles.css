@@ -1676,6 +1676,10 @@ input.ro {
   color: var(--plab);
 }
 
+.gdm.off {
+  color: var(--ye);
+}
+
 .gdm:empty {
   display: none;
 }

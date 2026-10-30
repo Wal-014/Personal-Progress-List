@@ -109,7 +109,9 @@ test('empty server responses and search failures retain the existing fallback be
     assert.equal(found.levels.length, 0);
     assert.equal(found.more, false);
     context.fetch = async () => { throw Error('offline'); };
-    await assert.rejects(app('searchLevels')('dash', filters(), 0), /offline/);
+    found = await app('searchLevels')('dash', filters(), 0);
+    assert.equal(found.offline, true);
+    assert.equal(found.more, false);
 });
 
 test('a GDBrowser result keeps its ID, name, creator, difficulty, list and downloads', () => {
@@ -213,7 +215,61 @@ test('ID matches outrank names and pagination continues while either source may 
     assert.equal(found.more, true, 'a full remote page may have a successor');
 });
 
-test('a remote no-results probe preserves sheet results, but a failed ID lookup rejects the page', async () => {
+test('sheet entries keep known data and leave rating unknown for a later sync', () => {
+    const fromSheet = app('fromSheet');
+    assert.deepEqual({ ...fromSheet([10565740, 'Bloodbath', 'Riot', 10]) }, { levelId: '10565740', name: 'Bloodbath', creator: 'Riot', diff: 'Extreme Demon', rating: null, kind: 'classic', downloads: 0 });
+    assert.deepEqual({ ...fromSheet([1, 123, '', -1, 1]) }, { levelId: '1', name: '123', creator: null, diff: null, rating: null, kind: 'platform', downloads: 0 });
+});
+
+test('a failed ID lookup returns only that sheet page and rechecks filters', async () => {
+    const search = freshSearch();
+    search.app("useSheetLevels([...Array.from({ length: 10 }, (_, i) => [i + 10, 'Comb Old ' + i, '', 3]), [1, 'Comb B', '', 3], [2, 'Comb A', '', 1]])");
+    const ids = [...Array.from({ length: 10 }, (_, i) => String(i + 10)), '1', '2'];
+    for (const failure of ['network', 'http', 'json']) {
+        search.context.fetch = async url => {
+            if (!url.endsWith('?list'))
+                return { ok: true, json: async () => [] };
+            if (failure == 'network')
+                throw TypeError('Failed to fetch');
+            return { ok: failure != 'http', status: 503, json: async () => { throw SyntaxError('Bad JSON'); } };
+        };
+        const found = await search.app('searchLevels')('comb', filters(), 1, ids);
+        assert.deepEqual(Array.from(found.levels, l => l.levelId), ['1', '2'], failure + ': ties keep sheet order');
+        assert.equal(found.offline, true);
+        assert.equal(found.more, false);
+        const hard = await search.app('searchLevels')('comb', filters({ diffs: ['Hard'] }), 1, ids);
+        assert.deepEqual(Array.from(hard.levels, l => l.levelId), ['1']);
+        const epic = await search.app('searchLevels')('comb', filters({ rated: 'rated', rates: ['epic'] }), 1, ids);
+        assert.equal(epic.levels.length, 0, 'unknown tiers cannot satisfy a rate filter');
+        assert.equal(epic.offline, true);
+        await assert.rejects(search.app('fetchLevelsById')(['1']));
+    }
+});
+
+test('a failed search and probe leave pagination driven by the sheet alone', async () => {
+    const search = freshSearch();
+    search.app("useSheetLevels(Array.from({ length: 11 }, (_, i) => [i + 1, 'Comb ' + i, '', 3]))");
+    const ids = Array.from(search.app('findSheetMatches')('comb', filters()));
+    for (const failure of ['network', 'http', 'json']) {
+        search.context.fetch = async () => {
+            if (failure == 'network')
+                throw TypeError('Failed to fetch');
+            return { ok: failure != 'http', status: 403, json: async () => { throw SyntaxError('Bad JSON'); } };
+        };
+        const found = await search.app('searchLevels')('comb', filters(), 0, ids);
+        assert.equal(found.levels.length, 10);
+        assert.equal(found.offline, true);
+        assert.equal(found.gameMore, false);
+        assert.equal(found.more, true);
+        const last = await search.app('searchLevels')('comb', filters(), 1, ids, found.gameMore);
+        assert.deepEqual(Array.from(last.levels, l => l.levelId), ['11']);
+        assert.equal(last.offline, true);
+        assert.equal(last.gameMore, false);
+        assert.equal(last.more, false);
+    }
+});
+
+test('a working no-results probe preserves sheet results and stays online', async () => {
     const search = freshSearch();
     search.context.fetch = async url => {
         if (url.endsWith('?list'))
@@ -222,14 +278,18 @@ test('a remote no-results probe preserves sheet results, but a failed ID lookup 
     };
     const found = await search.app('searchLevels')('comb', filters(), 0, ['1']);
     assert.deepEqual(Array.from(found.levels, l => l.name), ['Honeycomb']);
-    search.context.fetch = async url => ({ ok: !url.endsWith('?list'), status: 503, json: async () => [] });
-    await assert.rejects(search.app('searchLevels')('comb', filters(), 0, ['1']), /HTTP 503/);
-    search.context.fetch = async url => {
-        if (url.endsWith('?list'))
-            throw Error('offline');
-        return { ok: true, json: async () => [] };
-    };
-    await assert.rejects(search.app('searchLevels')('comb', filters(), 0, ['1']), /offline/);
+    assert.equal(found.offline, false);
+    assert.equal(found.gameMore, false);
+    assert.equal(found.more, false);
+});
+
+test('an ID query puts its sheet entry before name matches and respects difficulty and Unrated', () => {
+    const search = freshSearch();
+    search.app("useSheetLevels([[1, '123', '', 1], [2, '123 prefix', '', 3], [123, 'Other', '', 3], [3, 'x123', '', 3]])");
+    const find = search.app('findSheetMatches');
+    assert.deepEqual(Array.from(find('123', filters())), ['123', '1', '2', '3']);
+    assert.deepEqual(Array.from(find('123', filters({ diffs: ['Easy'] }))), ['1']);
+    assert.deepEqual(Array.from(find('123', filters({ rated: 'unrated' }))), []);
 });
 
 test('shared ID lookup caps batches at ten and converts only valid level IDs', async () => {
