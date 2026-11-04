@@ -2,10 +2,10 @@
  * Level search used by the level and wishlist forms: search box, filters, result cards and the read-only fields they fill.
  */
 
-/** Search of the open form: text, filters, cached sheet matches, remaining game pages, results, status, offline flag and suggestions. */
+/** Search of the open form: text, filters, coordinator state, results, pagination, coverage, status and suggestions. */
 let levelSearch = {};
 
-const emptyLevelSearch = () => ({ q: '', sheetMatches: null, gameMore: true, results: [], page: 0, more: false, offline: false, status: 'idle', similar: [] });
+const emptyLevelSearch = () => ({ q: '', search: null, results: [], more: false, coverage: 'complete', status: 'idle', similar: [] });
 
 /** Bumped by every search so an answer that arrives after a newer search is dropped. */
 let levelSearchRun = 0;
@@ -24,7 +24,7 @@ function levelSearchBox() {
     levelSearch = { ...emptyLevelSearch(), f: { rated: 'all', rates: [], diffs: [] } };
     const opt = v => `<button type=button class=xs-txt data-act=gdrated data-v=${v} aria-pressed=${v == 'all'}>${t('f_' + v)}</button>`;
     const check = (name, value, face, label) => `<label><input type=checkbox name=${name} value="${value}"><img src="assets/faces/${face}.webp" alt="" width=32 height=32 decoding=async><span>${label}</span></label>`;
-    const rates = ['rated', 'featured', 'epic', 'legendary', 'mythic'].map(r => check('gdrate', r, 'hard' + (r == 'rated' ? '' : '-' + r), t('r_' + r))).join('');
+    const rates = RATING_TIERS.map(r => check('gdrate', r, 'hard' + (r == 'rated' ? '' : '-' + r), t('r_' + r))).join('');
     const diffs = ['NA', ...DIFFICULTIES].map(d => check('gddiff', d, d == 'NA' ? 'unrated' : FACES[DIFFICULTIES.indexOf(d)], d)).join('');
     return `<fieldset class=gds><legend>${t('gdS')}</legend><label for=gdq>${t('gdQ')}</label><div class=gdq><input id=gdq type=search maxlength=40 autocomplete=off aria-describedby=gdh><button type=button class=blue data-act=gdgo>${t('gdGo')}</button></div>
 <div class=gdf><div class=gdseg role=group aria-label="${t('f_rating')}">${['all', 'rated', 'unrated'].map(opt).join('')}</div><details class=ms name=gdms data-filter=rates hidden><summary>${t('f_rates')} · ${t('f_all')}</summary><div class=msp>${rates}</div></details><details class=ms name=gdms data-filter=diffs><summary>${t('diff')} · ${t('f_all')}</summary><div class=msp>${diffs}</div></details><button type=button class="xs dg gdclr" data-act=gdclear aria-label="${t('gdClear')}" title="${t('gdClear')}" hidden>${ICONS.del}</button></div>
@@ -96,15 +96,15 @@ function renderLevelSearch() {
         return;
     const tryName = n => `<button type=button class=xs-txt data-act=gdtry data-v="${escapeHtml(n)}">${escapeHtml(n)}</button>`;
     const message = qs('#gdm'), outcome = { busy: t('gdBusy'), none: t('gdNone'), idle: s.results.length ? t(s.results.length == 1 ? 'gdN1' : 'gdN').replace('{n}', s.results.length) : '' }[s.status];
-    message.textContent = [outcome, s.offline ? t('gdOff') : '', s.status == 'none' && s.similar.length ? t('didYouMean') : ''].filter(Boolean).join(' ');
-    message.classList.toggle('off', s.offline);
+    message.textContent = [outcome, s.coverage != 'complete' ? t('gdOff') : '', s.status == 'none' && s.similar.length ? t('didYouMean') : ''].filter(Boolean).join(' ');
+    message.classList.toggle('off', s.coverage != 'complete');
     box.innerHTML = s.status == 'none' ? (s.similar.length ? `<p class=gdsim>${s.similar.map(tryName).join('')}</p>` : '')
         : s.results.map(resultCard).join('') + (s.more && s.status == 'idle' ? `<button type=button class="xs-txt gdmore" data-act=gdmore>${t('gdMore')}</button>` : '');
     box.hidden = !box.innerHTML;
     renderLevelFilters();
 }
 
-/** Runs a search or its next page, keeping any offline note until a new search. Invalid text is reported without a request. */
+/** Runs a search or its next page with cumulative coverage. Invalid text is reported without a request. */
 async function runLevelSearch(next) {
     cancelLevelSearchTimer();
     const s = levelSearch, box = qs('#gdq');
@@ -119,26 +119,28 @@ async function runLevelSearch(next) {
     const run = ++levelSearchRun;
     s.status = 'busy';
     renderLevelSearch();
-    if (!s.sheetMatches) {
-        await loadSheetLevels();
+    if (!s.search) {
+        const search = await startLevelSearch(s.q, s.f);
         if (run != levelSearchRun)
             return;
-        s.sheetMatches = findSheetMatches(s.q, s.f);
+        s.search = search;
     }
     // A page can lose all its levels to the filters, so a few more pages are tried before giving up
     do {
-        const { levels, more, gameMore, offline } = await searchLevels(s.q, s.f, s.page, s.sheetMatches, s.gameMore);
+        const { levels, more, coverage } = await nextLevelSearchPage(s.search);
         if (run != levelSearchRun)
             return;
         s.results.push(...levels.filter(l => !s.results.some(r => r.levelId == l.levelId)));
         s.more = more;
-        s.gameMore = gameMore;
-        s.offline ||= offline;
-        s.page++;
-    } while (!s.results.length && s.more && s.page < 5);
+        s.coverage = coverage;
+    } while (!s.results.length && s.more && s.search.page < 5);
     s.status = s.results.length ? 'idle' : 'none';
-    if (!s.results.length)
-        s.similar = await similarLevelNames(s.q);
+    if (!s.results.length) {
+        const similar = await similarLevelNames(s.q);
+        if (run != levelSearchRun)
+            return;
+        s.similar = similar;
+    }
     if (run == levelSearchRun)
         renderLevelSearch();
 }

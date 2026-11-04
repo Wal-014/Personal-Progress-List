@@ -124,7 +124,7 @@ function matchWithAredl(levels) {
     });
 }
 
-/** Downloads the lists and updates the active profile's levels: AREDL positions, creator and difficulty from the sheet, then the ratings still missing from GDBrowser. Only a manual update reports a failure. */
+/** Downloads AREDL positions and fills missing creators, difficulties and rating tiers of saved levels and wishlist items from the sheet, then asks GDBrowser for ratings still missing. Only a manual update reports a failure. */
 async function syncWithAredl(manual) {
     if (ui.sync)
         return;
@@ -136,6 +136,7 @@ async function syncWithAredl(manual) {
         await loadSheetLevels();
         matchWithAredl(profile.levels);
         profile.levels.forEach(l => fillFromSheet(l, l.kind == 'platform' ? 'p' : 'd'));
+        profile.wishlists.flatMap(w => w.items).forEach(l => fillFromSheet(l));
         await fillRatings([...profile.levels, ...profile.wishlists.flatMap(w => w.items)]);
         localStorage.gas = Date.now();
         save();

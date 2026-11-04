@@ -1,6 +1,6 @@
 /**
  * Downloads the community sheet of rated levels and writes the slim copy the app reads (data/levels.json).
- * Each level is [id, name, creator, difficulty index or -1, 1 for platformer].
+ * Each level is [id, name, creator, difficulty index or -1, 1 for platformer, rating tier index or -1].
  * Run by the deploy job every day, or locally with `npm run levels`.
  */
 import { writeFileSync } from 'node:fs';
@@ -10,6 +10,10 @@ const SHEET = 'https://docs.google.com/spreadsheets/d/1BBx9X8IYBtr7dA5cWu_smM2XB
 const OUT = 'data/levels.json';
 // Same order as DIFFICULTIES in js/config.js
 export const DIFFICULTIES = ['Auto', 'Easy', 'Normal', 'Hard', 'Harder', 'Insane', 'Easy Demon', 'Medium Demon', 'Hard Demon', 'Insane Demon', 'Extreme Demon'];
+// Same order as RATING_TIERS in js/config.js
+export const RATING_TIERS = ['rated', 'featured', 'epic', 'legendary', 'mythic'];
+// The sheet's Rating column marks each tier with one emoji
+const TIER_BY_EMOJI = new Map([['✔', 'rated'], ['✨', 'featured'], ['🔥', 'epic'], ['🌸', 'legendary'], ['💎', 'mythic']]);
 // The sheet has about 59,000 rated levels; far fewer means its layout changed and the old copy should stay live
 const MIN_LEVELS = 30000;
 
@@ -53,7 +57,7 @@ export function parseCsv(text) {
     return rows;
 }
 
-/** Turns sheet rows (name, creator, user ID, level ID, …, difficulty, reward) into slim levels. Header and divider rows have no numeric ID and are skipped; a repeated ID keeps its first row. */
+/** Turns sheet rows (name, creator, user ID, level ID, …, difficulty, reward, rating) into slim levels. Header and divider rows have no numeric ID and are skipped; a repeated ID keeps its first row. */
 export function toLevels(rows) {
     const seen = new Set(), levels = [];
     for (const r of rows) {
@@ -62,7 +66,7 @@ export function toLevels(rows) {
             continue;
         seen.add(id);
         // Platformer levels reward moons instead of stars
-        levels.push([+id, r[0].trim(), (r[1] || '').trim(), DIFFICULTIES.indexOf((r[8] || '').trim()), (r[9] || '').includes('🌙') ? 1 : 0]);
+        levels.push([+id, r[0].trim(), (r[1] || '').trim(), DIFFICULTIES.indexOf((r[8] || '').trim()), (r[9] || '').includes('🌙') ? 1 : 0, RATING_TIERS.indexOf(TIER_BY_EMOJI.get((r[10] || '').replace(/[\uFE0F\s]/g, '')))]);
     }
     return levels;
 }
@@ -75,7 +79,7 @@ async function main() {
     if (levels.length < MIN_LEVELS)
         throw Error(`Only ${levels.length} levels in the sheet; expected at least ${MIN_LEVELS}`);
     writeFileSync(OUT, JSON.stringify(levels));
-    console.log(`Wrote ${levels.length} levels to ${OUT}`);
+    console.log(`Wrote ${levels.length} levels to ${OUT}; ${levels.filter(l => l[5] >= 0).length} have a known rating tier`);
 }
 
 if (import.meta.url == pathToFileURL(process.argv[1]).href)
