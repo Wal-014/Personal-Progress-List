@@ -18,8 +18,8 @@ function searchForm() {
         contains(name) { return classes.has(name); }
     } }, clear = { hidden: true };
     const document = { body: {}, querySelector: selector => ({ '#gdq': input, '#gdr': results, '#gdm': message, '.gdclr': clear })[selector], querySelectorAll: () => [], addEventListener() {} };
-    const scripts = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/i18n.js', 'js/api.js', 'js/sheet.js', 'js/gd.js', 'js/components/faces.js', 'js/components/search.js'], {
-        document, localStorage: {}, window: { addEventListener() {} },
+    const scripts = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/i18n.js', 'js/api.js', 'js/sheet.js', 'js/gdbrowser.js', 'js/gd.js', 'js/components/faces.js', 'js/components/search.js'], {
+        document, localStorage: {}, AbortSignal, Date: { now: () => now }, window: { addEventListener() {} },
         setTimeout(callback, delay) { timers.set(++timerId, { at: now + delay, callback }); return timerId; },
         clearTimeout(id) { timers.delete(id); },
         fetch: async url => {
@@ -171,7 +171,7 @@ test('sheet matches are reused across pages, refreshed on query and filter chang
         asked.push(url);
         if (url == 'data/levels.json')
             return { ok: true, json: async () => Array.from({ length: 11 }, (_, i) => [i + 10, 'Comb ' + String(i).padStart(2, '0'), '', i ? 1 : 3]) };
-        return { ok: true, json: async () => url.endsWith('?list') ? url.split('/').at(-1).split('?')[0].split(',').map(id => searchRow(id, 'Comb ' + id)) : [searchRow('10', 'Comb 10')] };
+        return { ok: true, json: async () => [searchRow('10', 'Comb 10')] };
     };
     form.type('comb');
     await form.tick(400);
@@ -179,26 +179,25 @@ test('sheet matches are reused across pages, refreshed on query and filter chang
     assert.equal(form.app('levelSearch.more'), true);
     form.app("useSheetLevels([[50, 'Comb New', '', 3]])");
     await form.app('runLevelSearch(true)');
-    assert.equal(asked.some(url => url.endsWith('/20?list')), true, 'page two uses the original matches');
+    assert.equal(form.app("levelSearch.results.some(l => l.levelId == '20')"), true, 'page two uses the original matches');
+    assert.equal(asked.some(url => url.endsWith('?list')), false);
     assert.equal(form.app('levelSearch.results.length'), 11);
     assert.equal(form.app('levelSearch.more'), false);
     form.app("levelSearch.f.diffs = ['Hard']; changeLevelFilters()");
     await settleSearch();
-    assert.equal(asked.at(-2).endsWith('/50?list'), true, 'a filter change recomputes matches');
+    assert.equal(form.app("levelSearch.results.some(l => l.levelId == '50')"), true, 'a filter change recomputes matches');
     form.app("useSheetLevels([[60, 'Other', '', 3]])");
     form.type('other');
     await form.tick(400);
-    assert.equal(asked.at(-2).endsWith('/60?list'), true, 'a text change recomputes matches');
+    assert.equal(form.app("levelSearch.results.some(l => l.levelId == '60')"), true, 'a text change recomputes matches');
 });
 
-test('later pages only look up sheet IDs after the game is exhausted, and new searches reset both sources', async () => {
+test('later pages use only the sheet after the game is exhausted, and new searches reset both sources', async () => {
     const form = searchForm(), asked = [];
     form.context.fetch = async url => {
         asked.push(url);
         if (url == 'data/levels.json')
             return { ok: true, json: async () => Array.from({ length: 13 }, (_, i) => [i + 1, 'Catacomb ' + i, '', 3]) };
-        if (url.endsWith('?list'))
-            return { ok: true, json: async () => url.split('/').at(-1).split('?')[0].split(',').map(id => searchRow(id, 'Catacomb ' + id)) };
         if (url.includes('?page=0'))
             return { ok: true, json: async () => Array.from({ length: 5 }, (_, i) => searchRow(String(101 + i), 'Acomb ' + i)) };
         return { ok: false, status: 500 };
@@ -209,14 +208,13 @@ test('later pages only look up sheet IDs after the game is exhausted, and new se
     assert.equal(form.app('levelSearch.more'), true, 'three sheet matches remain');
     const pageStart = asked.length;
     await form.app('runLevelSearch(true)');
-    assert.deepEqual(asked.slice(pageStart), ['https://gdbrowser.com/api/search/11,12,13?list']);
+    assert.deepEqual(asked.slice(pageStart), []);
     assert.equal(form.app('levelSearch.results.length'), 18);
     assert.equal(form.app('levelSearch.more'), false, 'both sources are exhausted');
     const filterStart = asked.length;
     form.app("levelSearch.f.diffs = ['Hard']; changeLevelFilters()");
     await settleSearch();
     assert.deepEqual(asked.slice(filterStart), [
-        'https://gdbrowser.com/api/search/1,2,3,4,5,6,7,8,9,10?list',
         'https://gdbrowser.com/api/search/acomb?page=0&starred&diff=3'
     ]);
     form.type('other');
@@ -254,13 +252,13 @@ test('a GDBrowser outage renders sheet results and a note that a new online sear
     assert.match(form.results.innerHTML, /class=gdc/);
     assert.match(form.results.innerHTML, /Comb/);
     assert.equal(form.app('levelSearch.status'), 'idle');
-    assert.equal(form.app('levelSearch.offline'), true);
+    assert.equal(form.app('levelSearch.coverage'), 'partial');
     assert.equal(form.message.textContent, form.app("t('gdN1') + ' ' + t('gdOff')"));
     assert.equal(form.message.classList.contains('off'), true);
     form.context.fetch = async () => ({ ok: true, json: async () => [searchRow('2', 'Other')] });
     form.type('other');
-    await form.tick(400);
-    assert.equal(form.app('levelSearch.offline'), false);
+    await form.tick(300000);
+    assert.equal(form.app('levelSearch.coverage'), 'complete');
     assert.equal(form.message.textContent, form.app("t('gdN1')"));
     assert.equal(form.message.classList.contains('off'), false);
 });
@@ -281,7 +279,7 @@ test('no results during an outage announces no matches, the offline note, then s
     assert.match(form.results.innerHTML, /Comb Breaker/);
 });
 
-test('an offline page keeps the note through later online pages of the same search', async () => {
+test('an incomplete search keeps the note through later local pages', async () => {
     const form = searchForm();
     form.context.fetch = async url => {
         if (url == 'data/levels.json')
@@ -294,7 +292,7 @@ test('an offline page keeps the note through later online pages of the same sear
     form.context.fetch = async () => ({ ok: true, json: async () => [searchRow('11', 'Comb 10')] });
     await form.app('runLevelSearch(true)');
     assert.equal(form.app('levelSearch.results.length'), 11);
-    assert.equal(form.app('levelSearch.offline'), true);
+    assert.equal(form.app('levelSearch.coverage'), 'partial');
     assert.equal(form.message.classList.contains('off'), true);
     assert.match(form.message.textContent, /GDBrowser/);
 });
@@ -327,4 +325,86 @@ test('clearing during the initial sheet download prevents a stale search from st
     assert.deepEqual(form.asked, ['data/levels.json']);
     assert.equal(form.results.innerHTML, '');
     assert.equal(form.message.textContent, '');
+});
+
+test('Rated sheet-only results keep complete coverage and show no outage note', async () => {
+    const form = searchForm();
+    form.context.fetch = async url => {
+        if (url == 'data/levels.json')
+            return { ok: true, json: async () => [[1, 'Comb', 'Creator', 3, 0, 2]] };
+        return { ok: false, status: 403 };
+    };
+    form.app("levelSearch.f.rated = 'rated'");
+    form.type('comb');
+    await form.tick(400);
+    assert.equal(form.app('levelSearch.coverage'), 'complete');
+    assert.equal(form.message.classList.contains('off'), false);
+    assert.match(form.results.innerHTML, /hard-epic/);
+});
+
+test('a newer search during sheet loading drops the old coordinator answer', async () => {
+    const form = searchForm();
+    let finishSheet;
+    form.context.fetch = async url => {
+        form.asked.push(url);
+        if (url == 'data/levels.json')
+            return new Promise(resolve => { finishSheet = resolve; });
+        return { ok: true, json: async () => [searchRow('2', 'New level')] };
+    };
+    form.type('old');
+    await form.tick(400);
+    form.type('new');
+    await form.tick(400);
+    finishSheet({ ok: true, json: async () => [] });
+    await settleSearch();
+    assert.deepEqual(form.asked, ['data/levels.json', 'https://gdbrowser.com/api/search/new?page=0']);
+    assert.match(form.results.innerHTML, /New level/);
+});
+
+test('at most five empty filtered pages are tried before suggesting names', async () => {
+    const form = searchForm();
+    form.context.fetch = async url => {
+        form.asked.push(url);
+        return { ok: true, json: async () => url == 'data/levels.json' ? [] : Array.from({ length: 10 }, (_, i) => ({ ...searchRow(String(i), 'Comb'), stars: 0 })) };
+    };
+    form.app("levelSearch.f.rated = 'rated'");
+    form.input.value = 'comb';
+    await form.app('runLevelSearch()');
+    assert.equal(form.asked.filter(url => url.includes('?page=')).length, 5);
+    assert.equal(form.app('levelSearch.status'), 'none');
+    assert.equal(form.app('levelSearch.more'), true);
+});
+
+test('load more deduplicates levels already shown on earlier game pages', async () => {
+    const form = searchForm();
+    form.context.fetch = async url => ({ ok: true, json: async () => url == 'data/levels.json' ? [] : url.includes('?page=0')
+        ? Array.from({ length: 10 }, (_, i) => searchRow(String(i), 'Comb ' + i)) : [searchRow('1', 'Comb 1'), searchRow('10', 'Comb 10')] });
+    form.input.value = 'comb';
+    await form.app('runLevelSearch()');
+    await form.app('runLevelSearch(true)');
+    assert.deepEqual(Array.from(form.app('levelSearch.results'), l => l.levelId).sort(), ['0', '1', '10', '2', '3', '4', '5', '6', '7', '8', '9']);
+    assert.equal(form.app('levelSearch.more'), false);
+});
+
+test('a newer search discards suggestions delayed by a sheet retry', async () => {
+    const form = searchForm();
+    let calls = 0, finishSheet;
+    form.context.fetch = async url => {
+        if (url == 'data/levels.json') {
+            if (++calls == 1)
+                return { ok: false, status: 404 };
+            return new Promise(resolve => { finishSheet = resolve; });
+        }
+        return { ok: true, json: async () => url.includes('/oldx?') ? [] : [searchRow('2', 'New level')] };
+    };
+    form.type('oldx');
+    await form.tick(400);
+    assert.equal(calls, 2, 'suggestions retry the failed sheet');
+    form.type('new');
+    await form.tick(400);
+    finishSheet({ ok: true, json: async () => [[1, 'Oldx suggestion', '', 3, 0, 2]] });
+    await settleSearch();
+    assert.equal(form.app('levelSearch.q'), 'new');
+    assert.equal(form.app('levelSearch.similar.length'), 0);
+    assert.match(form.results.innerHTML, /New level/);
 });

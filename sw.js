@@ -19,6 +19,7 @@ const SHELL = [
   "js/state.js",
   "js/api.js",
   "js/sheet.js",
+  "js/gdbrowser.js",
   "js/gd.js",
   "js/components/faces.js",
   "js/components/levels.js",
