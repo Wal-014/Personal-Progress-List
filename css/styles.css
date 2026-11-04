@@ -1676,8 +1676,10 @@ input.ro {
   color: var(--plab);
 }
 
-.gdm.off {
+.gdm.warn {
   color: var(--ye);
+  border-left: 3px solid currentColor;
+  padding-left: 8px;
 }
 
 .gdm:empty {

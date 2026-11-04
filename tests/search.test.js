@@ -13,11 +13,31 @@ function searchForm() {
     const timers = new Map(), asked = [];
     const input = { id: 'gdq', value: '', validity: '', dataset: {}, matches: () => false, setCustomValidity(message) { this.validity = message; }, reportValidity() { reports++; } };
     const classes = new Set();
-    const results = { innerHTML: '', hidden: true }, message = { textContent: '', classList: {
+    let html = '', cards = [], more = null;
+    const button = dataset => ({ dataset, focus() { document.activeElement = this; } });
+    const results = { hidden: true,
+        get innerHTML() { return html; },
+        set innerHTML(value) {
+            if (cards.includes(document.activeElement) || more && document.activeElement == more)
+                document.activeElement = document.body;
+            html = value;
+            cards = [...value.matchAll(/data-act=gdpick data-i=(\d+)/g)].map(m => button({ act: 'gdpick', i: m[1] }));
+            more = value.includes('data-act=gdmore') ? button({ act: 'gdmore' }) : null;
+        }
+    }, message = { textContent: '', classList: {
         toggle(name, force) { if (force) classes.add(name); else classes.delete(name); },
         contains(name) { return classes.has(name); }
     } }, clear = { hidden: true };
-    const document = { body: {}, querySelector: selector => ({ '#gdq': input, '#gdr': results, '#gdm': message, '.gdclr': clear })[selector], querySelectorAll: () => [], addEventListener() {} };
+    const document = { body: {}, querySelector: selector => {
+        if (selector == '.gdmore' || selector == '[data-act=gdmore]')
+            return more;
+        if (selector.includes('data-act=gdpick')) {
+            const index = selector.match(/data-i=["']?(\d+)/);
+            return index ? cards.find(c => c.dataset.i == index[1]) : cards[0];
+        }
+        return { '#gdq': input, '#gdr': results, '#gdm': message, '.gdclr': clear }[selector];
+    }, querySelectorAll: () => [], addEventListener() {} };
+    input.focus = () => { document.activeElement = input; };
     const scripts = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/i18n.js', 'js/api.js', 'js/sheet.js', 'js/gdbrowser.js', 'js/gd.js', 'js/components/faces.js', 'js/components/search.js'], {
         document, localStorage: {}, AbortSignal, Date: { now: () => now }, window: { addEventListener() {} },
         setTimeout(callback, delay) { timers.set(++timerId, { at: now + delay, callback }); return timerId; },
@@ -48,6 +68,129 @@ function searchForm() {
         }
     };
 }
+
+const searchMessages = {
+    es: {
+        busy: 'Buscando…', one: '1 resultado.', many: '2 resultados, los más parecidos primero.', none: 'Ningún nivel coincide.', suggestion: '¿Quisiste decir:',
+        partial: 'GDBrowser no responde: solo se muestran niveles rated de la hoja de la comunidad.',
+        noneRated: 'Ningún nivel rated coincide. GDBrowser no responde, así que no se han podido buscar los niveles sin rate.',
+        unavailable: 'Ahora no se pueden buscar niveles sin rate porque GDBrowser no responde. Prueba de nuevo en unos minutos, o elige Todos o Rateados para buscar en la hoja de la comunidad.',
+        error: 'La búsqueda no está disponible: no se ha podido cargar la hoja de la comunidad y GDBrowser no responde. Prueba de nuevo en unos minutos.'
+    },
+    en: {
+        busy: 'Searching…', one: '1 result.', many: '2 results, best matches first.', none: 'No levels match.', suggestion: 'Did you mean:',
+        partial: 'GDBrowser is not responding: only rated levels from the community sheet are shown.',
+        noneRated: 'No rated level matches. GDBrowser is not responding, so unrated levels could not be searched.',
+        unavailable: 'Unrated levels cannot be searched right now because GDBrowser is not responding. Try again in a few minutes, or choose All or Rated to search the community sheet.',
+        error: 'Search is not available: the community sheet could not be loaded and GDBrowser is not responding. Try again in a few minutes.'
+    }
+};
+
+for (const [lang, m] of Object.entries(searchMessages)) {
+    const cases = [
+        ...['complete', 'partial', 'unavailable', 'error'].map(coverage => ['busy', coverage, 1, true, m.busy, false]),
+        ['idle', 'complete', 1, false, m.one, false],
+        ['idle', 'complete', 2, false, m.many, false],
+        ['idle', 'partial', 1, false, m.one + ' ' + m.partial, true],
+        ['idle', 'partial', 2, false, m.many + ' ' + m.partial, true],
+        ['idle', 'unavailable', 1, false, m.one, false],
+        ['idle', 'error', 2, false, m.many, false],
+        ['idle', 'complete', 0, false, '', false],
+        ['none', 'complete', 0, false, m.none, false],
+        ['none', 'complete', 0, true, m.none + ' ' + m.suggestion, false],
+        ['none', 'partial', 0, false, m.noneRated, true],
+        ['none', 'partial', 0, true, m.noneRated + ' ' + m.suggestion, true],
+        ['none', 'unavailable', 0, false, m.unavailable, true],
+        ['none', 'error', 0, false, m.error, true]
+    ];
+    for (const [status, coverage, count, similar, text, warn] of cases)
+        test(`${lang}: ${status}/${coverage}, ${count} results, suggestions ${similar}`, () => {
+            const form = searchForm();
+            form.app(`ui.lang = '${lang}'; levelSearch = { ...levelSearch, status: '${status}', coverage: '${coverage}', results: Array.from({ length: ${count} }, (_, i) => ({ levelId: String(i), name: 'Comb', diff: 'Hard', rating: 'rated' })), similar: ${similar ? "['Comb']" : '[]'} }`);
+            const state = form.app('levelSearch'), before = JSON.stringify(state);
+            const outcome = form.app('levelSearchMessage(levelSearch)');
+            assert.deepEqual({ ...outcome }, { text, warn });
+            assert.equal(JSON.stringify(state), before, 'message selection does not mutate the search');
+            form.message.classList.toggle('warn', !warn);
+            form.app('renderLevelSearch()');
+            assert.equal(form.message.textContent, text);
+            assert.equal(form.message.classList.contains('warn'), warn);
+            if (status == 'none')
+                assert.equal(form.results.innerHTML.includes('data-act=gdtry'), similar);
+        });
+}
+
+test('the search status announces the entire message atomically', () => {
+    const markup = searchForm().app('levelSearchBox()');
+    const status = markup.match(/<p\b[^>]*id=gdm[^>]*>/)[0];
+    assert.match(status, /\brole=status\b/);
+    assert.match(status, /\baria-atomic=(?:true|"true")/);
+});
+
+for (const coverage of ['unavailable', 'error'])
+    test(`${coverage} searches skip suggestions and never retry the sheet`, async () => {
+        const form = searchForm();
+        let suggestions = 0;
+        form.context.countSuggestion = () => { suggestions++; };
+        form.app('const realSimilarLevelNames = similarLevelNames; similarLevelNames = q => { countSuggestion(); return realSimilarLevelNames(q); }');
+        form.context.fetch = async url => {
+            form.asked.push(url);
+            return url == 'data/levels.json' && coverage == 'unavailable'
+                ? { ok: true, json: async () => [[1, 'Comb Breaker', 'Creator', 3, 0, 0]] }
+                : { ok: false, status: 403 };
+        };
+        if (coverage == 'unavailable')
+            form.app("levelSearch.f.rated = 'unrated'");
+        form.type('combx');
+        await form.tick(400);
+        assert.equal(form.app('levelSearch.coverage'), coverage);
+        assert.equal(suggestions, 0);
+        assert.equal(form.asked.filter(url => url == 'data/levels.json').length, 1);
+        assert.equal(form.app('levelSearch.similar.length'), 0);
+        assert.equal(form.results.innerHTML, '');
+    });
+
+for (const added of [true, false])
+    test(`Load more focuses ${added ? 'the first new card' : 'the search box when only duplicates return'}`, async () => {
+        const form = searchForm();
+        let finishPage;
+        form.context.fetch = async url => {
+            if (url == 'data/levels.json')
+                return { ok: true, json: async () => [] };
+            if (url.includes('?page=0'))
+                return { ok: true, json: async () => Array.from({ length: 10 }, (_, i) => searchRow(String(i), 'Comb ' + i)) };
+            return new Promise(resolve => { finishPage = resolve; });
+        };
+        form.input.value = 'comb';
+        await form.app('runLevelSearch()');
+        form.document.querySelector('.gdmore').focus();
+        const pending = form.app('ACTIONS.gdmore()');
+        assert.doesNotMatch(form.results.innerHTML, /data-act=gdmore/);
+        assert.equal(form.document.activeElement, form.document.body, 'redrawing removes the focused button');
+        finishPage({ ok: true, json: async () => added ? [searchRow('1', 'Comb 1'), searchRow('10', 'Comb 10'), searchRow('11', 'Comb 11')] : [searchRow('1', 'Comb 1')] });
+        await pending;
+        assert.equal(form.app('levelSearch.results.length'), added ? 12 : 10);
+        assert.equal(form.document.activeElement, added ? form.document.querySelector('[data-act=gdpick][data-i="10"]') : form.input);
+    });
+
+test('typing keeps focus through the search and rendering', async () => {
+    const form = searchForm();
+    form.input.focus();
+    form.type('comb');
+    await form.tick(400);
+    assert.equal(form.document.activeElement, form.input);
+});
+
+test('picking a suggestion searches its name and returns focus to the search box', async () => {
+    const form = searchForm();
+    form.document.activeElement = { dataset: { act: 'gdtry' } };
+    form.app("ACTIONS.gdtry({ dataset: { v: 'Comb Breaker' } })");
+    assert.equal(form.document.activeElement, form.input);
+    await settleSearch();
+    assert.equal(form.input.value, 'Comb Breaker');
+    assert.equal(form.app('levelSearch.q'), 'Comb Breaker');
+    assert.match(form.asked.at(-1), /search\/Comb%20Breaker\?page=0$/);
+});
 
 test('typing debounces for 400 ms after the last input and searches through the event hook', async () => {
     const form = searchForm();
@@ -253,17 +396,18 @@ test('a GDBrowser outage renders sheet results and a note that a new online sear
     assert.match(form.results.innerHTML, /Comb/);
     assert.equal(form.app('levelSearch.status'), 'idle');
     assert.equal(form.app('levelSearch.coverage'), 'partial');
-    assert.equal(form.message.textContent, form.app("t('gdN1') + ' ' + t('gdOff')"));
-    assert.equal(form.message.classList.contains('off'), true);
+    assert.equal(form.message.textContent, '1 resultado. ' + searchMessages.es.partial);
+    assert.equal(form.message.classList.contains('warn'), true);
     form.context.fetch = async () => ({ ok: true, json: async () => [searchRow('2', 'Other')] });
-    form.type('other');
     await form.tick(300000);
+    form.type('other');
+    await form.tick(400);
     assert.equal(form.app('levelSearch.coverage'), 'complete');
-    assert.equal(form.message.textContent, form.app("t('gdN1')"));
-    assert.equal(form.message.classList.contains('off'), false);
+    assert.equal(form.message.textContent, '1 resultado.');
+    assert.equal(form.message.classList.contains('warn'), false);
 });
 
-test('no results during an outage announces no matches, the offline note, then suggestions', async () => {
+test('no results during an outage announces no rated matches, then suggestions', async () => {
     const form = searchForm();
     form.context.fetch = async url => {
         if (url == 'data/levels.json')
@@ -273,8 +417,8 @@ test('no results during an outage announces no matches, the offline note, then s
     form.type('combx');
     await form.tick(400);
     assert.equal(form.app('levelSearch.status'), 'none');
-    assert.equal(form.message.textContent, form.app("t('gdNone') + ' ' + t('gdOff') + ' ' + t('didYouMean')"));
-    assert.equal(form.message.classList.contains('off'), true);
+    assert.equal(form.message.textContent, searchMessages.es.noneRated + ' ¿Quisiste decir:');
+    assert.equal(form.message.classList.contains('warn'), true);
     assert.match(form.results.innerHTML, /data-act=gdtry/);
     assert.match(form.results.innerHTML, /Comb Breaker/);
 });
@@ -293,8 +437,8 @@ test('an incomplete search keeps the note through later local pages', async () =
     await form.app('runLevelSearch(true)');
     assert.equal(form.app('levelSearch.results.length'), 11);
     assert.equal(form.app('levelSearch.coverage'), 'partial');
-    assert.equal(form.message.classList.contains('off'), true);
-    assert.match(form.message.textContent, /GDBrowser/);
+    assert.equal(form.message.classList.contains('warn'), true);
+    assert.equal(form.message.textContent, '11 resultados, los más parecidos primero. ' + searchMessages.es.partial);
 });
 
 test('a missing sheet leaves the game search working with no ID lookup', async () => {
@@ -338,7 +482,7 @@ test('Rated sheet-only results keep complete coverage and show no outage note', 
     form.type('comb');
     await form.tick(400);
     assert.equal(form.app('levelSearch.coverage'), 'complete');
-    assert.equal(form.message.classList.contains('off'), false);
+    assert.equal(form.message.classList.contains('warn'), false);
     assert.match(form.results.innerHTML, /hard-epic/);
 });
 
