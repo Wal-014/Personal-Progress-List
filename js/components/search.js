@@ -28,7 +28,7 @@ function levelSearchBox() {
     const diffs = ['NA', ...DIFFICULTIES].map(d => check('gddiff', d, d == 'NA' ? 'unrated' : FACES[DIFFICULTIES.indexOf(d)], d)).join('');
     return `<fieldset class=gds><legend>${t('gdS')}</legend><label for=gdq>${t('gdQ')}</label><div class=gdq><input id=gdq type=search maxlength=40 autocomplete=off aria-describedby=gdh><button type=button class=blue data-act=gdgo>${t('gdGo')}</button></div>
 <div class=gdf><div class=gdseg role=group aria-label="${t('f_rating')}">${['all', 'rated', 'unrated'].map(opt).join('')}</div><details class=ms name=gdms data-filter=rates hidden><summary>${t('f_rates')} · ${t('f_all')}</summary><div class=msp>${rates}</div></details><details class=ms name=gdms data-filter=diffs><summary>${t('diff')} · ${t('f_all')}</summary><div class=msp>${diffs}</div></details><button type=button class="xs dg gdclr" data-act=gdclear aria-label="${t('gdClear')}" title="${t('gdClear')}" hidden>${ICONS.del}</button></div>
-<p id=gdm class=gdm role=status></p><div id=gdr class=gdr hidden></div><small id=gdh class=by>${t('gdHint')}</small></fieldset>`;
+<p id=gdm class=gdm role=status aria-atomic=true></p><div id=gdr class=gdr hidden></div><small id=gdh class=by>${t('gdHint')}</small></fieldset>`;
 }
 
 /** Quietly searches after typing pauses; clearing the box also discards any answer still in flight. */
@@ -89,15 +89,27 @@ function resultCard(l, i) {
     return `<button type=button class=gdc data-act=gdpick data-i=${i}${u ? ` style="--th:url('${u}')"` : ''}><span class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>ID ${escapeHtml(l.levelId)} · ${t('by')} ${escapeHtml(orDash(l.creator))}${l.kind == 'platform' ? ' · ' + t('platform') : ''}</span></span>${difficultyFace(l)}</button>`;
 }
 
-/** Announces results and the offline note together, with suggestions introduced last. */
+/** Status text and warning for the sources this search could cover. */
+function levelSearchMessage(s) {
+    if (s.status == 'busy')
+        return { text: t('gdBusy'), warn: false };
+    if (s.status == 'none') {
+        const key = { complete: 'gdNone', partial: 'gdNoneRated', unavailable: 'gdNoUnrated', error: 'gdDown' }[s.coverage];
+        return { text: t(key) + (s.similar.length ? ' ' + t('didYouMean') : ''), warn: s.coverage != 'complete' };
+    }
+    const count = s.results.length, partial = count > 0 && s.coverage == 'partial';
+    return { text: (count ? t(count == 1 ? 'gdN1' : 'gdN').replace('{n}', count) : '') + (partial ? ' ' + t('gdPartial') : ''), warn: partial };
+}
+
+/** Draws results and suggestions, announcing the search outcome as one message. */
 function renderLevelSearch() {
     const box = qs('#gdr'), s = levelSearch;
     if (!box)
         return;
     const tryName = n => `<button type=button class=xs-txt data-act=gdtry data-v="${escapeHtml(n)}">${escapeHtml(n)}</button>`;
-    const message = qs('#gdm'), outcome = { busy: t('gdBusy'), none: t('gdNone'), idle: s.results.length ? t(s.results.length == 1 ? 'gdN1' : 'gdN').replace('{n}', s.results.length) : '' }[s.status];
-    message.textContent = [outcome, s.coverage != 'complete' ? t('gdOff') : '', s.status == 'none' && s.similar.length ? t('didYouMean') : ''].filter(Boolean).join(' ');
-    message.classList.toggle('off', s.coverage != 'complete');
+    const message = qs('#gdm'), { text, warn } = levelSearchMessage(s);
+    message.textContent = text;
+    message.classList.toggle('warn', warn);
     box.innerHTML = s.status == 'none' ? (s.similar.length ? `<p class=gdsim>${s.similar.map(tryName).join('')}</p>` : '')
         : s.results.map(resultCard).join('') + (s.more && s.status == 'idle' ? `<button type=button class="xs-txt gdmore" data-act=gdmore>${t('gdMore')}</button>` : '');
     box.hidden = !box.innerHTML;
@@ -116,7 +128,7 @@ async function runLevelSearch(next) {
         }
         Object.assign(s, emptyLevelSearch(), { q });
     }
-    const run = ++levelSearchRun;
+    const run = ++levelSearchRun, firstNew = s.results.length;
     s.status = 'busy';
     renderLevelSearch();
     if (!s.search) {
@@ -135,14 +147,18 @@ async function runLevelSearch(next) {
         s.coverage = coverage;
     } while (!s.results.length && s.more && s.search.page < 5);
     s.status = s.results.length ? 'idle' : 'none';
-    if (!s.results.length) {
+    // Known names would mislead when the requested category could not be searched, and would retry a failed sheet download
+    if (!s.results.length && ['complete', 'partial'].includes(s.coverage)) {
         const similar = await similarLevelNames(s.q);
         if (run != levelSearchRun)
             return;
         s.similar = similar;
     }
-    if (run == levelSearchRun)
+    if (run == levelSearchRun) {
         renderLevelSearch();
+        if (next)
+            (qs(`[data-act=gdpick][data-i="${firstNew}"]`) || box).focus();
+    }
 }
 
 /** Fills the form's read-only level fields with a picked result. Picking another result replaces them; searching again leaves them as they are. */

@@ -9,7 +9,7 @@ const FACES = ['auto', 'easy', 'normal', 'hard', 'harder', 'insane', 'demon-easy
 const HALOS = ['featured', 'epic', 'legendary', 'mythic'];
 
 /** Difficulty and rating as text, like «Extreme Demon · Epic». Unrated levels show NA; a difficulty nobody knows shows a dash. */
-const difficultyLabel = l => l.rating == 'unrated' ? 'NA' : !l.diff ? '-' : l.diff + (HALOS.includes(l.rating) ? ' · ' + t('r_' + l.rating) : '');
+const difficultyLabel = l => l.rating == 'unrated' ? 'NA' : !l.diff ? '-' : l.diff + (l.rating == null ? ' · ' + t('tierUnk') : HALOS.includes(l.rating) ? ' · ' + t('r_' + l.rating) : '');
 
 /** Sprite of a level: its difficulty with its rating's halo, or the NA face when it is unrated or its difficulty is not known. */
 const faceFile = l => {

@@ -233,6 +233,7 @@ const ACTIONS = {
     gdtry(a) {
         qs('#gdq').value = a.dataset.v;
         runLevelSearch();
+        qs('#gdq').focus();
     },
     gdrated(a) {
         levelSearch.f.rated = a.dataset.v;

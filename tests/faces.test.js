@@ -31,3 +31,22 @@ test('a missing difficulty is told apart from an unrated level', () => {
     assert.equal(app('difficultyLabel')({ diff: 'Extreme Demon', rating: 'epic' }), 'Extreme Demon · Epic');
     assert.equal(app('difficultyLabel')({ rating: 'unrated' }), 'NA');
 });
+
+for (const [lang, unknown] of [['es', 'Hard · tipo de rate desconocido'], ['en', 'Hard · rate type unknown']])
+    test(`${lang}: an unknown rating tier is labelled without inventing a halo`, () => {
+        const { app } = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js'], { localStorage: {} });
+        app(`ui.lang = '${lang}'`);
+        const label = app('difficultyLabel');
+        assert.equal(label({ diff: 'Hard', rating: null }), unknown);
+        assert.equal(label({ diff: 'Hard' }), unknown);
+        assert.equal(label({ diff: 'Hard', rating: 'unrated' }), 'NA');
+        assert.equal(label({ rating: null }), '-');
+        assert.equal(label({ rating: 'rated' }), '-');
+        assert.equal(label({ diff: 'Hard', rating: 'rated' }), 'Hard');
+        assert.equal(label({ diff: 'Hard', rating: 'epic' }), 'Hard · Epic');
+        const face = app("difficultyFace({ name: 'Comb', diff: 'Hard', rating: null })");
+        assert.ok(face.includes(`alt="${unknown}"`));
+        assert.ok(face.includes(`title="${unknown}"`));
+        assert.match(face, /src="assets\/faces\/hard.webp"/);
+        assert.equal(app("faceUnknown({ name: 'Comb', diff: 'Hard', rating: null })"), false);
+    });
