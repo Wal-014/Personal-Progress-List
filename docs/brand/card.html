@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <!--
+      Promotional card and site link preview (og:image in index.html), 1200x630. Render it over HTTP, since
+      Chromium does not load the font for a file:// page; with a server at the repository root:
+        npx -y playwright@1.63.0 screenshot --viewport-size "1200,630" "http://localhost:8000/docs/brand/card.html" docs/brand/card.png
+      The screenshots in docs/brand/card/ are crops of the app at a 1440x900 viewport: the demo profile in English,
+      Classic blue theme, after the AREDL sync. Retake them when the screens they show change.
+    -->
+    <title>Personal Ranked Progress</title>
+    <style>
+      @font-face {
+        font-family: "Lilita One";
+        src: url("../../fonts/lilita-one-latin.woff2") format("woff2");
+      }
+
+      :root {
+        --bg1: #3a4cb0;
+        --bg2: #26337e;
+        --gridc: rgba(0, 0, 0, 0.28);
+        --fg: #fff;
+        --meta: #d2d9ff;
+        --go: #3cff6c;
+        --ye: #ffe84a;
+        --go1: #7be33b;
+        --go2: #3fa31b;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body,
+      #card {
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+      }
+      #card {
+        position: relative;
+        color: var(--fg);
+        font-family: Arial, Helvetica, sans-serif;
+        background:
+          linear-gradient(var(--gridc) 1px, transparent 1px) 0 0 / 40px 40px,
+          linear-gradient(90deg, var(--gridc) 1px, transparent 1px) 0 0 / 40px 40px,
+          radial-gradient(44rem 30rem at 74% 42%, rgba(120, 140, 255, 0.35), transparent 70%),
+          linear-gradient(var(--bg1), var(--bg2));
+      }
+      .gd {
+        font-family: "Lilita One", "Arial Black", sans-serif;
+        font-weight: 400;
+        text-shadow:
+          -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 3px 3px 0 #000,
+          0 -3px 0 #000, 0 3px 0 #000, -3px 0 0 #000, 3px 0 0 #000, 0 6px 0 #000;
+      }
+      .text {
+        position: absolute;
+        left: 56px;
+        top: 56px;
+        width: 534px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        height: 64px;
+      }
+      .mark {
+        width: 64px;
+        height: 64px;
+        flex-shrink: 0;
+      }
+      .name {
+        font-size: 34px;
+        line-height: 1.1;
+        white-space: nowrap;
+      }
+      .name span {
+        color: var(--ye);
+      }
+      h1 {
+        margin-top: 20px;
+        font-size: 58px;
+        line-height: 1.04;
+      }
+      h1 span {
+        color: var(--go);
+      }
+      .features {
+        display: grid;
+        grid-template-columns: 310px 212px;
+        gap: 10px 12px;
+        margin-top: 24px;
+        list-style: none;
+      }
+      .features li {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        height: 52px;
+        padding: 8px 10px;
+        background: rgba(0, 0, 0, 0.48);
+        border: 3px solid #000;
+        border-radius: 10px;
+        box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
+        font-size: 19px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .features svg {
+        width: 28px;
+        height: 28px;
+        flex-shrink: 0;
+      }
+      .cta {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 56px;
+        margin-top: 22px;
+        padding: 6px 24px 10px;
+        border: 3px solid #000;
+        border-radius: 10px;
+        background: linear-gradient(var(--go1), var(--go2));
+        box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.3), 0 5px 0 #000;
+        font-size: 30px;
+        text-shadow:
+          -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000,
+          0 -2px 0 #000, 0 2px 0 #000, -2px 0 0 #000, 2px 0 0 #000;
+      }
+      .url {
+        margin-top: 14px;
+        color: var(--meta);
+        font-size: 20px;
+        line-height: 24px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .shot {
+        position: absolute;
+        overflow: hidden;
+        border: 3px solid #000;
+        border-radius: 14px;
+        box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.65);
+        background: var(--bg2);
+      }
+      .shot img {
+        display: block;
+        height: auto;
+      }
+      .stats {
+        left: 638px;
+        top: 60px;
+        width: 322px;
+      }
+      .stats img {
+        width: 650px;
+        max-width: none;
+      }
+      .details {
+        left: 850px;
+        top: 145px;
+        width: 300px;
+      }
+      .details img,
+      .list img {
+        width: 100%;
+      }
+      .list {
+        left: 640px;
+        /* Stands on the ground line, 52px down the 92px strip */
+        bottom: 40px;
+        width: 480px;
+      }
+      .ground {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        width: 720px;
+        height: 92px;
+        mask-image: linear-gradient(90deg, transparent, #000 18%);
+      }
+    </style>
+  </head>
+  <body>
+    <main id="card">
+      <div class="text">
+        <div class="brand">
+          <svg class="mark" viewBox="0 0 48 48" aria-hidden="true">
+            <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <g stroke="#000" stroke-width="5.5"><polyline points="3,45 14,37 22,41 44,20" /><polyline points="36.5,20.5 44,20 43.5,27.5" /></g>
+              <g stroke="#fff" stroke-width="2.5"><polyline points="3,45 14,37 22,41 44,20" /><polyline points="36.5,20.5 44,20 43.5,27.5" /></g>
+              <g transform="rotate(20 19 16)">
+                <rect x="9" y="6" width="20" height="20" rx="2" stroke="#000" stroke-width="5.5" />
+                <rect x="9" y="6" width="20" height="20" rx="2" stroke="#fff" stroke-width="2.5" />
+                <g stroke="#000" stroke-width="3.6"><rect x="12.5" y="10.5" width="4" height="4" /><rect x="21.5" y="10.5" width="4" height="4" /><rect x="12.5" y="18.5" width="13" height="3" /></g>
+                <g stroke="#fff" stroke-width="1.6"><rect x="12.5" y="10.5" width="4" height="4" /><rect x="21.5" y="10.5" width="4" height="4" /><rect x="12.5" y="18.5" width="13" height="3" /></g>
+              </g>
+            </g>
+          </svg>
+          <div class="name gd">Personal <span>Ranked</span> Progress</div>
+        </div>
+        <h1 class="gd">Track your<br />Geometry Dash<br /><span>progress.</span></h1>
+        <ul class="features">
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 21 7 9l6 12zM11 21l6-12 6 12z" fill="#fff" stroke="#000" stroke-width="2" stroke-linejoin="round" /></svg>
+            Classic &amp; Platformer lists
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><g fill="#fff" stroke="#000" stroke-width="2" stroke-linejoin="round"><rect x="2" y="13" width="5" height="9" /><rect x="9.5" y="8" width="5" height="14" /><rect x="17" y="2" width="5" height="20" /></g></svg>
+            Stats &amp; timeline
+          </li>
+          <li>
+            <svg viewBox="0 0 26 26" aria-hidden="true"><path d="M2 24 13 3l11 21z" fill="#ff8a00" stroke="#000" stroke-width="2" stroke-linejoin="round" /></svg>
+            Wishlists
+          </li>
+          <li>
+            <svg viewBox="0 0 48 48" aria-hidden="true">
+              <defs><linearGradient id="profile-cube" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0" /><stop offset="1" stop-color="#000" stop-opacity=".3" /></linearGradient></defs>
+              <rect x="2.5" y="2.5" width="43" height="43" rx="3" fill="#ffe94d" stroke="#000" stroke-width="3" />
+              <rect x="2.5" y="2.5" width="43" height="43" rx="3" fill="url(#profile-cube)" />
+              <rect x="6" y="6" width="36" height="36" rx="1.5" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1.5" />
+              <g fill="#5ef0ff" stroke="#000" stroke-width="2.5"><rect x="12" y="13" width="8" height="8" /><rect x="28" y="13" width="8" height="8" /><rect x="12" y="28" width="24" height="6" /></g>
+            </svg>
+            Profiles
+          </li>
+        </ul>
+        <div class="cta gd">Start tracking</div>
+        <p class="url">wal-014.github.io/Personal-Progress-List</p>
+      </div>
+      <svg class="ground" viewBox="0 0 720 92" aria-hidden="true">
+        <rect x="0" y="52" width="720" height="40" fill="#0c1033" />
+        <line x1="0" y1="52" x2="720" y2="52" stroke="#fff" stroke-width="3" />
+        <g fill="#000" stroke="#fff" stroke-width="2.5" stroke-linejoin="round">
+          <path d="M70 52 86 22 102 52z" />
+          <path d="M102 52 118 22 134 52z" />
+          <rect x="250" y="20" width="32" height="32" />
+          <rect x="282" y="20" width="32" height="32" />
+          <path d="M420 52 436 22 452 52z" />
+          <rect x="560" y="20" width="32" height="32" />
+          <path d="M592 52 608 22 624 52z" />
+        </g>
+      </svg>
+      <div class="shot stats"><img src="card/stats.png" alt="Statistics summary and attempts timeline" /></div>
+      <div class="shot details"><img src="card/details.png" alt="Bloodbath level details with attempts and play time" /></div>
+      <div class="shot list"><img src="card/list.png" alt="Classic list with Bloodbath, Silent Clubstep, Sonic Wave Infinity and Avernus" /></div>
+    </main>
+  </body>
+</html>

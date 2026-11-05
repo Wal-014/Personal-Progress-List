@@ -27,6 +27,8 @@
 
 ## What it does
 
+<p align="center"><img alt="Personal Ranked Progress with Classic list, Bloodbath details and statistics screenshots" src="docs/brand/card.png" width="880" /></p>
+
 - **Profiles** — each profile has its own lists, wishlists and tags, and a cube icon in a primary and a secondary colour of your choice; a menu at the top of Home switches between them and creates, edits, deletes, exports and imports them.
 - **Your own ranking** — Classic and Platformer lists with drag-and-drop cards for your personal top (`#12 / 90`), the level's AREDL position, its thumbnail as the card background and its difficulty face.
 - **Difficulty faces** — the game's face for each difficulty, from NA to Extreme Demon, with the Featured, Epic, Legendary or Mythic halo of its rating, on level cards, wishlist cards, search results and the level form. The community sheet supplies rating tiers, including during a GDBrowser outage; sync fills missing tiers of saved levels and wishlist items from the sheet before asking GDBrowser for any still unknown.
@@ -81,6 +83,8 @@ Node is only used for the checks; the app itself has no dependencies to install.
 
 The banner is drawn in `docs/brand/banner.html`. Regenerate it from the repository root with
 `npx -y playwright@1.63.0 screenshot --viewport-size "1280,640" "file:///<absolute path>/docs/brand/banner.html" docs/brand/banner.png`. The favicon source is `docs/brand/favicon.svg`; render it to `favicon.png` at 64x64 with a transparent background, for example with Playwright's `page.screenshot({ omitBackground: true })`.
+
+The promotional card, also the site's link preview image, is drawn in `docs/brand/card.html` from screenshots of the app in `docs/brand/card/` (demo profile, English, Classic blue theme). With the server above running, regenerate it with `npx -y playwright@1.63.0 screenshot --viewport-size "1200,630" "http://localhost:8000/docs/brand/card.html" docs/brand/card.png`. Retake the screenshots when the screens they show change.
 
 ## Deployment
 
