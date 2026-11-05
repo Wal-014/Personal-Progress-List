@@ -49,6 +49,42 @@ It also has two old quirks:
 - a search with no matches answers HTTP 500 without CORS headers, which looks like an outage to the browser; the app tells the two apart with one request for a level that always exists;
 - a search returns 10 levels per page, and `?list` looks up at most 10 IDs.
 
+#### Why the browser reports a CORS error
+
+Re-checked on 2026-11-04 for [#159](https://github.com/Wal-014/Personal-Progress-List/issues/159), with the methods above. The requests reach gdbrowser.com, but Cloudflare answers them instead of GDBrowser:
+
+| Request | Answer |
+|---|---|
+| `fetch()` from `https://wal-014.github.io` to `/api/search/char?page=0` and `/api/level/128` | 403, `content-type: text/html`, `cf-mitigated: challenge`, no `Access-Control-Allow-Origin`. Chromium blocks it for that missing header, the console error quoted in #159, and `fetch()` rejects with `TypeError: Failed to fetch` |
+| `fetch()` from the same page to the AREDL API | 200 |
+| curl with an `Origin` header to `/api/search/char?page=0`, `/api/level/128`, `/api` and the home page, and without one to `/api/level/128` | 403, `cf-mitigated: challenge`, `server: cloudflare`. The body is Cloudflare's "Just a moment..." challenge page |
+| curl, CORS preflight (`OPTIONS`) | 403, `cf-mitigated: challenge` |
+
+A challenge page is meant for a person: it runs a script that checks the browser, then sets a cookie for gdbrowser.com. A `fetch()` from another site cannot run that page, and the page carries no CORS headers, so the browser can only report the missing `Access-Control-Allow-Origin`. The CORS message is the symptom; the challenge is the cause.
+
+Ruled out:
+- **Rate limiting.** A rate limit acts after a number of requests from the same client. Here the first request from a machine that had sent none that day is challenged too, and no answer is a 429 or carries `Retry-After`.
+- **Redirects.** No 3xx and no `Location` header.
+- **Server errors.** No 5xx. The answer comes from Cloudflare, not from GDBrowser's server, so GDBrowser's own CORS settings are never reached.
+- **The app's requests.** The home page, which the app never requests, and requests without an `Origin` header get the same 403. No order or structure of the app's requests can change that answer.
+- **Passing the challenge in another tab.** The cookie it sets belongs to gdbrowser.com, and the app's `fetch()` sends no cookies to other sites. Sending them would also need CORS headers that the challenge page does not have.
+
+**Is it intentional?** The challenge is a security setting of the site's Cloudflare account: a firewall rule, Bot Fight Mode, "I'm Under Attack" mode, or Cloudflare's DDoS protection acting for the site. Which one, and whether someone switched it on by hand, cannot be seen from outside. It has happened before and was lifted: the [Internet Archive's captures](https://web.archive.org/cdx/search/cdx?url=gdbrowser.com/&from=20260901&fl=timestamp,statuscode) of the home page got a 403 from 17 to 19 September 2026, then a 200 in every capture with a status from 22 September until 29 October 2026 at 02:40 UTC. The challenge was found on 29 October ([#146](https://github.com/Wal-014/Personal-Progress-List/issues/146)), 3 November (#151) and 4 November (this check).
+
+GDBrowser's source repository, `GDColon/GDBrowser`, is no longer on GitHub either; copies exist under other accounts. Nothing public explains either change.
+
+**What would restore it.** Only GDBrowser's side can: lifting the challenge, as in September, or exempting `/api/*` from it with a rule that skips the challenge for the API. Asking GDBrowser's developer, Colon, for the second is the only step open to this project. A proxy, or a server of our own that fetches GDBrowser for the app, would be getting around the check; it stays excluded, as decided in #146.
+
+**What the app does meanwhile.** Nothing has to change. GDBrowser is optional; after a failure the app sends it no request for five minutes, and the next search, or the next sync that needs a rating tier, tries it again, so the app uses it as soon as it answers. Each attempt still logs one or two CORS errors in the console (the search, then the request for a level that always exists). The browser prints those itself, and a page cannot silence them.
+
+**How to re-check:**
+
+```bash
+curl -s -o /dev/null -D - -H "Origin: https://wal-014.github.io" https://gdbrowser.com/api/level/128 | grep -iE '^(HTTP|cf-mitigated|access-control-allow-origin)'
+```
+
+GDBrowser is back when this prints a 200 and an `access-control-allow-origin` header, without `cf-mitigated`. Then confirm it in the browser on the app's origin, as in "How the providers were tested".
+
 ### GDHistory
 
 GDHistory has the most complete data: unrated levels, the exact tier (`cache_featured`, and `cache_epic` with 1 Epic, 2 Legendary, 3 Mythic), downloads, and a full-text search with filters (`/api/v1/search/level/advanced/`). Its responses carry no CORS headers, so a page on another origin cannot read them. Using it would need a server of our own that relays requests, which the app does not have and would have to host, secure and pay for. Its documentation also warns: "Keep in mind that this is very unfinished and that breaking changes are bound to happen". It does not say whether other sites may build on it. It also refuses some clients: Python's default user agent got a 403 from Cloudflare.
