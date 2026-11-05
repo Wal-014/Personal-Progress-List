@@ -1,4 +1,8 @@
 <p align="center">
+  <img alt="Personal Ranked Progress with Classic list, Bloodbath details and statistics screenshots" src="docs/brand/card.png" width="880" />
+</p>
+
+<p align="center">
   <a href="https://github.com/Wal-014/Personal-Progress-List/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Wal-014/Personal-Progress-List/actions/workflows/ci.yml/badge.svg" /></a>
   <a href="https://github.com/Wal-014/Personal-Progress-List/actions/workflows/security.yml"><img alt="Security" src="https://github.com/Wal-014/Personal-Progress-List/actions/workflows/security.yml/badge.svg" /></a>
   <img alt="JavaScript" src="https://img.shields.io/badge/JavaScript-no%20framework-26337e?logo=javascript&logoColor=white" />
@@ -22,8 +26,6 @@
 ---
 
 ## What it does
-
-<p align="center"><img alt="Personal Ranked Progress with Classic list, Bloodbath details and statistics screenshots" src="docs/brand/card.png" width="880" /></p>
 
 - **Profiles** — each profile has its own lists, wishlists and tags, and a cube icon in a primary and a secondary colour of your choice; a menu at the top of Home switches between them and creates, edits, deletes, exports and imports them.
 - **Your own ranking** — Classic and Platformer lists with drag-and-drop cards for your personal top (`#12 / 90`), the level's AREDL position, its thumbnail as the card background and the game's difficulty face, from NA to Extreme Demon, with the Featured, Epic, Legendary or Mythic halo of its rating. The faces also appear on wishlist cards, search results and the level form.
