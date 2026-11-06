@@ -93,3 +93,123 @@ test('card tag filters stay outside the tab order in both level lists', () => {
             assert.doesNotMatch(chip, /\b(?:role|tabindex|aria-label)=/);
     }
 });
+
+test('card renders a decorative first-child grip only when reorderable', () => {
+    const level = { id: 'grip-test', name: 'Level', kind: 'classic' };
+    for (const [lang, hint] of [['es', 'Arrastra para reordenar'], ['en', 'Drag to reorder']]) {
+        context.lang = lang;
+        app('ui.lang = lang');
+        const html = app('card')(level, 0, 1, true);
+        assert.match(html, new RegExp(`^<div[^>]*><span class=grip aria-hidden=true title="${hint}">`));
+        const grip = html.match(/<span class=grip[^>]*>(.*?)<\/span>/)[0];
+        assert.doesNotMatch(grip, /\b(?:tabindex|role)=/);
+        assert.ok(grip.includes(app('ICONS.grip')));
+        assert.match(grip, /<svg class=i\b[^>]*aria-hidden=true/);
+        assert.match(grip, /fill="?currentColor\b/);
+        assert.equal((grip.match(/<circle\b/g) || []).length, 6);
+        for (const reorderable of [false, undefined])
+            assert.doesNotMatch(app('card')(level, 0, 1, reorderable), /class=grip/);
+    }
+});
+
+for (const kind of ['classic', 'platform'])
+    test(`list gives grips only to unfiltered ranked ${kind} cards`, () => {
+        app('profile = emptyProfile(); ui.q = ""; ui.tagFilter = []');
+        context.kind = kind;
+        app(`ui.tab = kind;
+            profile.levels = [
+                { id: 'ranked', name: 'Level ranked', kind, tags: ['A'] },
+                { id: 'second', name: 'Level second', kind, tags: ['A'] },
+                { id: 'unplaced', name: 'Level unplaced', kind, tags: ['A'] },
+                { id: 'first', name: 'Level first', kind, tags: [PRE_TAG, 'A'] }
+            ];
+            profile.order[kind] = ['ranked', 'second', 'first'];`);
+        const html = app('list()');
+        const [ranked, ...groups] = html.split('</div><h2 class=grp>');
+        const outside = groups.join('');
+        assert.equal((ranked.match(/class=grip/g) || []).length, 2);
+        assert.match(outside, /data-id="unplaced"/);
+        assert.match(outside, /data-id="first"/);
+        assert.doesNotMatch(outside, /class=grip/);
+        for (const filters of ['ui.q = "level"; ui.tagFilter = []', 'ui.q = ""; ui.tagFilter = ["A"]']) {
+            app(filters);
+            const filtered = app('list()');
+            assert.match(filtered, /data-id="ranked"/);
+            assert.doesNotMatch(filtered, /class=grip/);
+        }
+    });
+
+for (const [type, pointerType] of [['pointerdown', 'mouse'], ['mousedown', undefined], ['pointerdown', 'touch'], ['pointerdown', 'pen'], ['touchstart', undefined]])
+    for (const location of ['body', 'grip', 'svg child'])
+        test(`startsAwayFromGrip handles ${pointerType || type} on the ${location}`, () => {
+            const grip = {}, target = {
+                closest(selector) {
+                    assert.equal(selector, '.grip');
+                    return location == 'body' ? null : grip;
+                }
+            };
+            const isMouse = pointerType == 'mouse' || type == 'mousedown';
+            assert.equal(app('startsAwayFromGrip')({ type, pointerType, target }), !isMouse && location == 'body');
+        });
+
+for (const [type, canceled] of [
+    ['dragend', true], ['touchcancel', true], ['pointercancel', true],
+    ['drop', false], ['pointerup', false], ['touchend', false], ['mouseup', false]
+])
+    test(`dragWasCanceled returns ${canceled} for ${type}`, () => {
+        assert.equal(app('dragWasCanceled')({ type }), canceled);
+    });
+
+for (const kind of ['classic', 'platform'])
+    for (const type of ['drop', 'pointerup', 'touchend', 'mouseup', 'dragend', 'touchcancel', 'pointercancel'])
+        test(`reorderList handles ${type} in the ${kind} list`, () => {
+            const calls = [], listNode = { children: ['third', 'first', 'second'].map(id => ({ dataset: { id } })) };
+            const fixture = loadScripts(['js/components/levels.js'], {
+                ui: { tab: kind },
+                profile: { order: { classic: ['first', 'second', 'third'], platform: ['first', 'second', 'third'] } },
+                qs(selector) {
+                    assert.equal(selector, '#lst');
+                    return listNode;
+                },
+                save: () => calls.push('save'),
+                render: () => calls.push('render')
+            });
+            const order = fixture.app('profile.order'), previous = order[kind], canceled = ['dragend', 'touchcancel', 'pointercancel'].includes(type);
+            fixture.app('reorderList')({ originalEvent: { type } });
+            assert.deepEqual(Array.from(order[kind]), canceled ? ['first', 'second', 'third'] : ['third', 'first', 'second']);
+            if (canceled)
+                assert.equal(order[kind], previous);
+            assert.deepEqual(order[kind == 'classic' ? 'platform' : 'classic'], ['first', 'second', 'third']);
+            assert.deepEqual(calls, canceled ? ['render'] : ['save', 'render']);
+        });
+
+test('initSort registers the grip filter and saves only updates on an unfiltered list', () => {
+    const created = [], listNode = {};
+    const fixture = loadScripts(['js/components/levels.js'], {
+        ui: { q: '', tagFilter: [] },
+        qs(selector) {
+            assert.equal(selector, '#lst');
+            return listNode;
+        },
+        Sortable: function (element, options) { created.push({ element, options }); }
+    });
+    fixture.app('initSort()');
+    assert.equal(created.length, 1);
+    const { element, options } = created[0];
+    assert.equal(element, listNode);
+    assert.equal(options.animation, 180);
+    assert.equal(options.filter, fixture.app('startsAwayFromGrip'));
+    assert.equal(options.preventOnFilter, false);
+    assert.equal(options.fallbackTolerance, 5);
+    assert.equal(options.onUpdate, fixture.app('reorderList'));
+    assert.equal('onEnd' in options, false);
+    for (const filters of ['ui.q = "level"; ui.tagFilter = []', 'ui.q = ""; ui.tagFilter = ["A"]']) {
+        fixture.app(filters);
+        fixture.app('initSort()');
+        assert.equal(created.length, 1);
+    }
+    fixture.app('ui.q = ""; ui.tagFilter = []');
+    fixture.context.qs = () => null;
+    fixture.app('initSort()');
+    assert.equal(created.length, 1);
+});

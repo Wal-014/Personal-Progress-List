@@ -20,11 +20,11 @@ function tagFilterChip(name, focusable) {
 }
 
 /** A level row in the list, drawn as an editor object. */
-function card(l, i, n) {
+function card(l, i, n, reorderable) {
     const u = thumbUrl(l), rank = i == 'pre' ? ICONS.classic : i != null ? i + 1 : '—';
     const podium = i === 0 ? ' top1' : i === 1 ? ' top2' : i === 2 ? ' top3' : '';
     const meta = [l.creator ? t('by') + ' ' + escapeHtml(l.creator) : '', escapeHtml(formatDate(l.date)), aredlLabel(l)].filter(Boolean).join(' · ');
-    return `<div class="obj lv${podium}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${u ? ` style="--th:url('${u}')"` : ''}><span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + (i + 1) + ' / ' + n : t('unplaced')}">${rank}</span><div class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>${meta}</span>${l.tags?.length ? `<div>${l.tags.map(name => tagFilterChip(name)).join('')}</div>` : ''}</div>${difficultyFace(l)}</div>`;
+    return `<div class="obj lv${podium}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${u ? ` style="--th:url('${u}')"` : ''}>${reorderable ? `<span class=grip aria-hidden=true title="${t('dragHint')}">${ICONS.grip}</span>` : ''}<span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + (i + 1) + ' / ' + n : t('unplaced')}">${rank}</span><div class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>${meta}</span>${l.tags?.length ? `<div>${l.tags.map(name => tagFilterChip(name)).join('')}</div>` : ''}</div>${difficultyFace(l)}</div>`;
 }
 
 /** Ids of the ranked levels of a list, in order: Pre-Extremes levels and ids of deleted levels have no rank. */
@@ -42,6 +42,11 @@ function listTagOptions(levels, selectedTags) {
     return [...new Set([...levels.flatMap(level => level.tags || []), ...selectedTags])].sort((a, b) => a.localeCompare(b));
 }
 
+/** Only the full list can be reordered: a filtered one hides levels, so its order cannot be saved. */
+function canReorder() {
+    return !ui.q && !ui.tagFilter.length;
+}
+
 /** List body grouped into ranked, unplaced and first-step levels. */
 function list() {
     const orderedIds = profile.order[ui.tab];
@@ -50,7 +55,8 @@ function list() {
     const rankedLevels = rankedIds(ui.tab).map(findLevel);
     const unplacedLevels = listLevels.filter(level => !orderedIds.includes(level.id) && !isPre(level) && isShown(level));
     const firstStepLevels = listLevels.filter(level => isPre(level) && isShown(level));
-    return `<div id=lst>${rankedLevels.map((level, index) => isShown(level) ? card(level, index, rankedLevels.length) : '').join('')}</div>${unplacedLevels.length ? `<h2 class=grp>${t('unplaced')}</h2>` + unplacedLevels.map(level => card(level)).join('') : ''}${firstStepLevels.length ? `<h2 class=grp>${t('first')}</h2>` + firstStepLevels.map(level => card(level, 'pre')).join('') : ''}${!listLevels.length ? `<p class=by>${t('empty')}</p>` : !listLevels.some(isShown) ? `<p class=by>${t('noMatch')}</p>` : ''}`;
+    const reorderable = canReorder();
+    return `<div id=lst>${rankedLevels.map((level, index) => isShown(level) ? card(level, index, rankedLevels.length, reorderable) : '').join('')}</div>${unplacedLevels.length ? `<h2 class=grp>${t('unplaced')}</h2>` + unplacedLevels.map(level => card(level)).join('') : ''}${firstStepLevels.length ? `<h2 class=grp>${t('first')}</h2>` + firstStepLevels.map(level => card(level, 'pre')).join('') : ''}${!listLevels.length ? `<p class=by>${t('empty')}</p>` : !listLevels.some(isShown) ? `<p class=by>${t('noMatch')}</p>` : ''}`;
 }
 
 function youtubeId(url) {
@@ -173,13 +179,32 @@ function panel() {
     return !l ? `<div class=ph>${t('pick')}</div>` : ui.edit ? levelForm(l) : detail(l);
 }
 
+/** Sortable filter: touch and pen drags start only from the grip, so a swipe anywhere else on a card scrolls the page. A mouse still drags the whole card. */
+function startsAwayFromGrip(evt) {
+    if (evt.pointerType == 'mouse' || evt.type == 'mousedown')
+        return false;
+    return !evt.target.closest('.grip');
+}
+
+/** A mouse drag that ends with only 'dragend' was not dropped on the list (Escape, or released outside it); touch and pen report interruptions as cancel events. */
+function dragWasCanceled(originalEvent) {
+    return ['dragend', 'touchcancel', 'pointercancel'].includes(originalEvent.type);
+}
+
+/** Saves the order Sortable left in the list. Sortable has already moved the card, so a cancelled drag redraws the saved order instead. */
+function reorderList(evt) {
+    if (dragWasCanceled(evt.originalEvent)) {
+        render();
+        return;
+    }
+    profile.order[ui.tab] = [...qs('#lst').children].map(c => c.dataset.id);
+    save();
+    render();
+}
+
 function initSort() {
-    if (qs('#lst') && !ui.q && !ui.tagFilter.length)
-        new Sortable(qs('#lst'), { animation: 180, onEnd: () => {
-                profile.order[ui.tab] = [...qs('#lst').children].map(c => c.dataset.id);
-                save();
-                render();
-            } });
+    if (qs('#lst') && canReorder())
+        new Sortable(qs('#lst'), { animation: 180, filter: startsAwayFromGrip, preventOnFilter: false, fallbackTolerance: 5, onUpdate: reorderList });
 }
 
 const scrollSel = () => document.querySelector('.lv.sel')?.scrollIntoView({ block: 'center', behavior: 'smooth' });

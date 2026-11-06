@@ -2,6 +2,7 @@
 
 const TRANSLATIONS = {
     es: {
+        dragHint: 'Arrastra para reordenar',
         rankings: 'Rankings', rankingMetric: 'Métrica del ranking', highestFirst: 'De mayor a menor', lowestFirst: 'De menor a mayor', viewAll: 'Ver todos ({n})', topTen: 'Top 10',
         rankingEmptyMode: 'No hay niveles en este modo.', rankingEmptyMetric: 'Ningún nivel tiene esta métrica registrada.', metricNotRecorded: '{metric} sin registrar',
         compare: 'Comparar', compareClose: 'Cerrar comparación', compareLevelOne: 'Nivel 1', compareLevelTwo: 'Nivel 2', compareSearch: 'Nombre o ID', compareClear: 'Quitar {level}',
@@ -27,6 +28,7 @@ const TRANSLATIONS = {
         pedit: 'Editar perfil', primaryColor: 'Color principal', secondaryColor: 'Color secundario', yellow: 'Amarillo', green: 'Verde', pink: 'Rosa', orange: 'Naranja', cyan: 'Cian', red: 'Rojo', purple: 'Morado', customColor: 'Color personalizado'
     },
     en: {
+        dragHint: 'Drag to reorder',
         rankings: 'Rankings', rankingMetric: 'Ranking metric', highestFirst: 'Highest first', lowestFirst: 'Lowest first', viewAll: 'View all ({n})', topTen: 'Top 10',
         rankingEmptyMode: 'No levels in this mode.', rankingEmptyMetric: 'No levels have this metric recorded.', metricNotRecorded: '{metric} not recorded',
         compare: 'Compare', compareClose: 'Close comparison', compareLevelOne: 'Level 1', compareLevelTwo: 'Level 2', compareSearch: 'Name or ID', compareClear: 'Clear {level}',
