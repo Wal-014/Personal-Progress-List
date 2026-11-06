@@ -56,7 +56,7 @@ function list() {
     const unplacedLevels = listLevels.filter(level => !orderedIds.includes(level.id) && !isPre(level) && isShown(level));
     const firstStepLevels = listLevels.filter(level => isPre(level) && isShown(level));
     const reorderable = canReorder();
-    return `<div id=lst>${rankedLevels.map((level, index) => isShown(level) ? card(level, index, rankedLevels.length, reorderable) : '').join('')}</div>${unplacedLevels.length ? `<h2 class=grp>${t('unplaced')}</h2>` + unplacedLevels.map(level => card(level)).join('') : ''}${firstStepLevels.length ? `<h2 class=grp>${t('first')}</h2>` + firstStepLevels.map(level => card(level, 'pre')).join('') : ''}${!listLevels.length ? `<p class=by>${t('empty')}</p>` : !listLevels.some(isShown) ? `<p class=by>${t('noMatch')}</p>` : ''}`;
+    return `<div id=lst>${rankedLevels.map((level, index) => isShown(level) ? card(level, index, rankedLevels.length, reorderable) : '').join('')}</div>${unplacedLevels.length ? `<h2 class=grp>${t('unplaced')}</h2>` + unplacedLevels.map(level => card(level)).join('') : ''}${firstStepLevels.length ? `<h2 class=grp>${t('first')}</h2>` + firstStepLevels.map(level => card(level, 'pre')).join('') : ''}${!listLevels.length ? emptyList({ icon: ICONS.add, title: t('emptyListTitle'), text: t('emptyListText'), action: 'add' }) : !listLevels.some(isShown) ? `<p class=by>${t('noMatch')}</p>` : ''}`;
 }
 
 function youtubeId(url) {
