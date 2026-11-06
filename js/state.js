@@ -86,13 +86,16 @@ function removeFromOrder(id) {
         profile.order[kind] = profile.order[kind].filter(x => x != id);
 }
 
+/** Checks an imported profile's shape and the fields the screens treat as text, so a hand-edited file cannot stop them from drawing. */
 function isValidProfileData(d) {
     const isObj = v => v != null && typeof v == 'object', isList = (a, check = isObj) => Array.isArray(a) && a.every(check);
+    const isText = v => typeof v == 'string', isNamed = x => isObj(x) && isText(x.name);
+    const isLevel = l => isNamed(l) && (l.date == null || isText(l.date)) && (l.tags == null || isList(l.tags, isText));
     return isObj(d)
-        && isList(d.levels)
+        && isList(d.levels, isLevel)
         && isObj(d.order) && Array.isArray(d.order.classic) && Array.isArray(d.order.platform)
-        && (d.wishlists == null || isList(d.wishlists, w => isObj(w) && isList(w.items)))
-        && (d.tags == null || isList(d.tags));
+        && (d.wishlists == null || isList(d.wishlists, w => isObj(w) && isList(w.items, isNamed)))
+        && (d.tags == null || isList(d.tags, isNamed));
 }
 
 /** Deaths per percent kept from saved or imported data: whole percentages from 0 to 100 with a count of zero or more. */

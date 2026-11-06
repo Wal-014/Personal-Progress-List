@@ -246,6 +246,20 @@ test('import offers an unused preset for an invalid colour and leaves cancellati
     assert.equal(writes(), 0);
 });
 
+test('an import whose level name is not text is rejected before the profile dialog opens', async () => {
+    const { app, context, setProfiles, writes, loadEvents } = createApp();
+    setProfiles({ a: { name: 'Player', color: '#ffe94d', data: app('emptyProfile()') } });
+    loadEvents();
+    const alerts = [];
+    context.showAlert = message => alerts.push(message);
+    context.askProfile = async () => assert.fail('the dialog must not open');
+    const json = JSON.stringify({ ...app('emptyProfile()'), levels: [{ id: 'x', name: 5, kind: 'classic' }] });
+    await app('importProfile')({ name: 'Broken.json', text: async () => json });
+    assert.deepEqual(alerts, ['El archivo no es un perfil exportado válido']);
+    assert.equal(app('Object.keys(store.profs).length'), 1);
+    assert.equal(writes(), 0);
+});
+
 test('importing older files or invalid secondary colours supplies the default outside data', async () => {
     for (const secondaryColor of [undefined, null, '#abc', '"><script>']) {
         const { app, context, setProfiles, loadEvents } = createApp();
