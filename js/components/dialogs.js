@@ -44,9 +44,8 @@ function showDialog({ title, msg, input, def, ok, cancel, danger, label, extra =
             }
             done(read ? read(i.value.trim()) : i ? i.value.trim() : true);
         };
-        if (i)
-            i.oninput = () => i.setCustomValidity('');
         if (i) {
+            i.oninput = () => i.setCustomValidity('');
             i.focus();
             i.select();
         }

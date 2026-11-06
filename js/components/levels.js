@@ -207,7 +207,7 @@ function initSort() {
         new Sortable(qs('#lst'), { animation: 180, filter: startsAwayFromGrip, preventOnFilter: false, fallbackTolerance: 5, onUpdate: reorderList });
 }
 
-const scrollSel = () => document.querySelector('.lv.sel')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+const scrollSel = () => qs('.lv.sel')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
 
 /** Redraws the list while preserving scroll and search text. */
 function renderList() {
@@ -227,7 +227,7 @@ function selectLevel(id) {
     ui.sel = id;
     ui.edit = 0;
     document.querySelectorAll('.lv.sel').forEach(c => c.classList.remove('sel'));
-    document.querySelector(`.lv[data-id="${CSS.escape(id)}"]`)?.classList.add('sel');
+    qs(`.lv[data-id="${CSS.escape(id)}"]`)?.classList.add('sel');
     renderPanel();
     if (innerWidth <= 560)
         scrollTo({ top: 0 });
