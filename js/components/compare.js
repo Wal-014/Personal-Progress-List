@@ -1,6 +1,5 @@
 /** Same-mode comparison selection, calculations and panel. */
-const comparisonModeLevels = () => profile.levels.filter(level => level.kind == ui.rankingMode);
-const comparisonLevels = () => ui.comparison.slots.map(id => comparisonModeLevels().find(level => level.id == id) || null);
+const comparisonLevels = () => ui.comparison.slots.map(id => rankingModeLevels().find(level => level.id == id) || null);
 const comparisonOption = level => level.name + (level.levelId != null ? ` · ID ${level.levelId}` : '');
 
 function toggleComparison() {
@@ -15,7 +14,7 @@ function closeComparison() {
 }
 
 function pickComparisonLevel(id) {
-    if (!comparisonModeLevels().some(level => level.id == id))
+    if (!rankingModeLevels().some(level => level.id == id))
         return;
     const slots = comparisonLevels().map(level => level?.id ?? null);
     const chosenIndex = slots.indexOf(id);
@@ -28,7 +27,7 @@ function pickComparisonLevel(id) {
 }
 
 function setComparisonSearch(input) {
-    const selected = comparisonModeLevels().find(level => comparisonOption(level) === input.value);
+    const selected = rankingModeLevels().find(level => comparisonOption(level) === input.value);
     if (!selected)
         return;
     const slotIndex = +input.dataset.compareSlot;
@@ -72,5 +71,5 @@ function comparisonMetricHtml(metric, firstLevel, secondLevel) {
 function comparisonHtml() {
     const selected = comparisonLevels();
     const selectedCount = selected.filter(Boolean).length;
-    return `<aside class=compare-panel aria-labelledby=compare-title><div class=compare-heading><h3 id=compare-title>${t('compare')} · ${t(ui.rankingMode)}</h3><button type=button class=xs data-act=compare-close aria-label="${t('compareClose')}">×</button></div><div class=compare-slots>${selected.map(comparisonSlotHtml).join('')}</div><datalist id=compare-options>${comparisonModeLevels().map(level => `<option value="${escapeHtml(comparisonOption(level))}"></option>`).join('')}</datalist>${selectedCount < 2 ? `<p class=by role=status>${t(selectedCount ? 'compareWaiting' : 'compareHint')}</p>` : `<div class=compare-results>${Object.values(LEVEL_METRICS).map(metric => comparisonMetricHtml(metric, ...selected)).join('')}<div class=compare-difficulty>${selected.map(level => `<div>${difficultyFace(level)}<span>${escapeHtml(difficultyLabel(level))}</span></div>`).join(`<span>${t('diff')}</span>`)}</div></div>`}</aside>`;
+    return `<aside class=compare-panel aria-labelledby=compare-title><div class=compare-heading><h3 id=compare-title>${t('compare')} · ${t(ui.rankingMode)}</h3><button type=button class=xs data-act=compare-close aria-label="${t('compareClose')}">×</button></div><div class=compare-slots>${selected.map(comparisonSlotHtml).join('')}</div><datalist id=compare-options>${rankingModeLevels().map(level => `<option value="${escapeHtml(comparisonOption(level))}"></option>`).join('')}</datalist>${selectedCount < 2 ? `<p class=by role=status>${t(selectedCount ? 'compareWaiting' : 'compareHint')}</p>` : `<div class=compare-results>${Object.values(LEVEL_METRICS).map(metric => comparisonMetricHtml(metric, ...selected)).join('')}<div class=compare-difficulty>${selected.map(level => `<div>${difficultyFace(level)}<span>${escapeHtml(difficultyLabel(level))}</span></div>`).join(`<span>${t('diff')}</span>`)}</div></div>`}</aside>`;
 }

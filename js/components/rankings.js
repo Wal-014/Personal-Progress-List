@@ -18,8 +18,11 @@ const LEVEL_METRICS = {
 
 const levelMetricText = (metric, value) => value == null ? '-' : metric.format(value);
 
+/** Levels of the mode that the rankings and the comparison show. */
+const rankingModeLevels = () => profile.levels.filter(level => level.kind == ui.rankingMode);
+
 function rankingData() {
-    const modeLevels = profile.levels.filter(level => level.kind == ui.rankingMode);
+    const modeLevels = rankingModeLevels();
     const metric = LEVEL_METRICS[ui.rankingMetric];
     const ranked = modeLevels.filter(level => metric.read(level) != null).sort((a, b) =>
         (metric.read(a) - metric.read(b)) * (ui.rankingDirection == 'asc' ? 1 : -1) || a.name.localeCompare(b.name));
