@@ -16,11 +16,12 @@ const setGlobal = (name, value) => {
     app(`${name} = __value`);
 };
 
-test('isValidProfileData accepts an empty profile and a full one', () => {
+test('isValidProfileData accepts an empty profile, a full one and the demo profile', () => {
     const isValid = app('isValidProfileData');
     assert.equal(isValid(app('emptyProfile()')), true);
-    assert.equal(isValid({ levels: [{ name: 'A' }], order: { classic: [], platform: [] }, wishlists: [{ items: [{}] }], tags: [{ name: 't' }] }), true);
+    assert.equal(isValid({ levels: [{ name: 'A', date: '2025-01-01', tags: ['t'] }, { name: 'B', date: null }], order: { classic: [], platform: [] }, wishlists: [{ items: [{ name: 'C' }] }], tags: [{ name: 't' }] }), true);
     assert.equal(isValid({ levels: [], order: { classic: [], platform: [] } }), true);
+    assert.equal(isValid(loadScripts(['data/demo-data.js'], { window: {} }).app('window.DEMO_PROFILE')), true);
 });
 
 test('isValidProfileData rejects data the app cannot render', () => {
@@ -32,6 +33,14 @@ test('isValidProfileData rejects data the app cannot render', () => {
     assert.equal(isValid({ levels: [], order: { classic: [] } }), false);
     assert.equal(isValid({ levels: [], order: { classic: [], platform: [] }, wishlists: [{}] }), false);
     assert.equal(isValid({ levels: [], order: { classic: [], platform: [] }, tags: 'a' }), false);
+});
+
+test('isValidProfileData rejects text fields of another type, which the screens would fail to draw', () => {
+    const isValid = app('isValidProfileData'), order = { classic: [], platform: [] };
+    for (const level of [{}, { name: 5 }, { name: 'A', tags: 'oops' }, { name: 'A', tags: [1] }, { name: 'A', date: 20250101 }])
+        assert.equal(isValid({ levels: [level], order }), false, JSON.stringify(level));
+    assert.equal(isValid({ levels: [], order, wishlists: [{ items: [{ name: 7 }] }] }), false);
+    assert.equal(isValid({ levels: [], order, tags: [{ name: 3, color: '#ffffff' }] }), false);
 });
 
 test('findAredlByName matches exact names first, then a single partial match', () => {

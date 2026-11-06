@@ -207,6 +207,17 @@ test('playtime timeline draws ten-hour grid lines and a solid maximum with short
     assert.doesNotMatch(app('timelineHtml()'), /NaN|Infinity/);
 });
 
+test('timeline markers sit on the grid line of their value', () => {
+    const app = statsApp();
+    app('profile.levels = [{ id: "mid", name: "Mid", kind: "classic", date: "2025-01-01", attN: 10000 }, { id: "top", name: "Top", kind: "classic", date: "2025-01-02", attN: 25000 }]');
+    const markup = app('timelineHtml()'), grid = plainStats(app('timelineData().grid'));
+    const gridLineY = [...markup.matchAll(/y1=([\d.]+) y2=[\d.]+ stroke="var\(--ln\)"/g)].map(match => +match[1]);
+    const markerCenterY = id => +markup.split(`<rect class=pt data-id="${id}"`)[1].match(/y=(-?[\d.]+)/)[1] + 6;
+    assert.deepEqual(grid, [10000, 20000, 25000]);
+    assert.equal(markerCenterY('mid'), gridLineY[grid.indexOf(10000)]);
+    assert.equal(markerCenterY('top'), gridLineY[grid.indexOf(25000)]);
+});
+
 test('timeline tooltip uses the current metric, formatted date and escaped user content', () => {
     const app = statsApp();
     app(statsFixture);

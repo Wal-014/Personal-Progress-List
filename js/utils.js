@@ -7,6 +7,9 @@ const qs = s => document.querySelector(s);
 
 const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+/** Level names are compared ignoring case, accents, spaces and symbols. */
+const normalizeName = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+
 /** Returns the link only if it is http(s), so schemes like javascript: never reach an href. */
 const safeUrl = u => /^https?:\/\//i.test(u || '') ? u : '';
 
@@ -90,7 +93,7 @@ const aredlLabel = l => {
 /** Tag colour from the active profile, falling back to the text colour. */
 const tagColor = n => {
     const c = profile.tags?.find(g => g.name == n)?.color;
-    return /^#[0-9a-f]{6}$/i.test(c) ? c : 'var(--fg)';
+    return isHexColor(c) ? c : 'var(--fg)';
 };
 
 const tagStyle = n => {

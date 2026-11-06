@@ -25,15 +25,20 @@ const cleanQuery = q => {
     return /[\p{L}\p{N}]/u.test(s) ? s : '';
 };
 
-/** Normalized name order: exact, prefix, substring, then other names returned by the game. */
-const searchMatchRank = (name, query) => name == query ? 0 : name.startsWith(query) ? 1 : name.includes(query) ? 2 : 3;
+/** Result order shared by the sheet matches and every page: the typed ID first, then names that equal the text, start with it, contain it, then other names the game returned. */
+function compareSearchMatches(query) {
+    const n = normalizeName(query), rank = l => {
+        const name = normalizeName(l.name);
+        return name == n ? 0 : name.startsWith(n) ? 1 : name.includes(n) ? 2 : 3;
+    };
+    return (a, b) => (b.levelId == query) - (a.levelId == query) || rank(a) - rank(b);
+}
 
 /** Loads and ranks the local matches once; null distinguishes a failed sheet from an empty match list. */
 async function startLevelSearch(query, f) {
-    const loaded = await loadSheetLevels(), n = normalizeName(query);
-    const rank = l => searchMatchRank(normalizeName(l.name), n);
+    const loaded = await loadSheetLevels(), byMatch = compareSearchMatches(query);
     const local = loaded ? findSheetLevels(query).filter(l => matchesSearchFilters(l, f))
-        .sort((a, b) => (b.levelId == query) - (a.levelId == query) || rank(a) - rank(b) || a.name.length - b.name.length) : null;
+        .sort((a, b) => byMatch(a, b) || a.name.length - b.name.length) : null;
     return { query, f, page: 0, local, gameMore: true, gameFailed: false };
 }
 
@@ -80,9 +85,9 @@ async function nextLevelSearchPage(search) {
     const byId = new Map(local.map(l => [l.levelId, l]));
     if (remote)
         remote.levels.forEach(l => byId.set(l.levelId, mergeLevel(l, byId.get(l.levelId))));
-    const n = normalizeName(search.query), rank = l => searchMatchRank(normalizeName(l.name), n);
+    const byMatch = compareSearchMatches(search.query);
     const levels = [...byId.values()].filter(l => matchesSearchFilters(l, search.f))
-        .sort((a, b) => (b.levelId == search.query) - (a.levelId == search.query) || rank(a) - rank(b) || (a.downloads == null) - (b.downloads == null) || b.downloads - a.downloads || a.name.length - b.name.length);
+        .sort((a, b) => byMatch(a, b) || (a.downloads == null) - (b.downloads == null) || b.downloads - a.downloads || a.name.length - b.name.length);
     search.page++;
     return { levels, more: search.gameMore || (search.local?.length || 0) > search.page * 10, coverage: searchCoverage(search) };
 }
@@ -92,11 +97,11 @@ async function similarLevelNames(query) {
     await loadSheetLevels();
     const n = normalizeName(query).slice(0, 4), names = [...similarAredlNames(query, 'd'), ...similarAredlNames(query, 'p')];
     if (n)
-        for (const x of sheetById.values()) {
+        for (const [id, name] of sheetNormalizedNames) {
             if (names.length >= 5)
                 break;
-            if (normalizeName(x[1]).includes(n))
-                names.push(x[1]);
+            if (name.includes(n))
+                names.push(sheetById.get(id)[1]);
         }
     return [...new Set(names)].slice(0, 5);
 }

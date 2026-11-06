@@ -44,9 +44,11 @@ function fromGdb(x) {
     };
 }
 
+const gdbRequest = path => fetch(GDB_API + path, { signal: AbortSignal.timeout(GDB_TIMEOUT_MS) });
+
 /** Fetches JSON with a timeout; provider entry points handle failures and cooldown. */
 async function fetchGdbJson(path) {
-    const r = await fetch(GDB_API + path, { signal: AbortSignal.timeout(GDB_TIMEOUT_MS) });
+    const r = await gdbRequest(path);
     if (!r.ok)
         throw Error('HTTP ' + r.status);
     return r.json();
@@ -59,7 +61,7 @@ async function searchGdb(query, f, page) {
     try {
         let r;
         try {
-            r = await fetch(`${GDB_API}search/${encodeURIComponent(query)}?page=${page}${searchParams(f)}`, { signal: AbortSignal.timeout(GDB_TIMEOUT_MS) });
+            r = await gdbRequest(`search/${encodeURIComponent(query)}?page=${page}${searchParams(f)}`);
         }
         catch {
             // Empty searches can fail without CORS headers; only a working known-level probe distinguishes them from an outage

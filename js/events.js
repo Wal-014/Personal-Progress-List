@@ -399,9 +399,9 @@ document.body.onclick = e => {
         ACTIONS[k]?.(a, a.dataset.id);
         return;
     }
-    if (c && !e.target.closest('form') && findLevel(c.dataset.id)) {
+    const l = c && !e.target.closest('form') && findLevel(c.dataset.id);
+    if (l) {
         if (c.classList.contains('pt')) {
-            const l = findLevel(c.dataset.id);
             ui.tab = l.kind;
             ui.sel = l.id;
             ui.edit = 0;
