@@ -22,6 +22,7 @@ const SHELL = [
   "js/gdbrowser.js",
   "js/gd.js",
   "js/components/faces.js",
+  "js/components/empty-list.js",
   "js/components/levels.js",
   "js/components/wishlists.js",
   "js/components/search.js",

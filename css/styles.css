@@ -1256,7 +1256,7 @@ dialog.modal::backdrop {
   margin: 16px 0 8px;
 }
 
-.ph {
+.ph, .empty {
   padding: 40px 20px;
   text-align: center;
   font: bold 14px Arial, Helvetica, sans-serif;
@@ -1264,6 +1264,30 @@ dialog.modal::backdrop {
   border: 2px dashed var(--objb);
   border-radius: 12px;
   background: rgba(0, 0, 0, .18);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: clamp(240px, 42vh, 360px);
+}
+
+.empty .i {
+  width: 48px;
+  height: 48px;
+}
+
+.empty h3 {
+  margin: 14px 0 6px;
+  font-size: 24px;
+}
+
+.empty p {
+  max-width: 36ch;
+  margin: 0 0 18px;
+  line-height: 1.45;
 }
 
 .lv.sortable-ghost {
