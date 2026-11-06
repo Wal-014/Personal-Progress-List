@@ -22,9 +22,6 @@ const AREDL_MAX_AGE = 12 * 3600 * 1000;
 /** Display name of an API user, or null when none is available. */
 const publisherName = x => typeof x == 'string' ? x : x && (x.global_name || x.username || x.name || x.display_name || x.discord_username || Object.values(x).find(v => typeof v == 'string' && v.length < 32 && !/^[0-9a-f-]{20,}$/i.test(v))) || null;
 
-/** Name comparison ignores case, accents, spaces and symbols. */
-const normalizeName = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
-
 /** Cached levels of one list, skipping entries whose name has no letters or digits (they would match any name). */
 const namedAredlLevels = kind => aredlCache.filter(x => x.k == kind && normalizeName(x.n));
 
