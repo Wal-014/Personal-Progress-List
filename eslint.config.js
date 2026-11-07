@@ -19,7 +19,7 @@ export const topLevelNames = appScripts
 const sharedGlobals = Object.fromEntries(topLevelNames.map(name => [name, 'writable']));
 
 export default [
-    { ignores: ['node_modules/', 'vendor/'] },
+    { ignores: ['node_modules/', 'vendor/', '_site/'] },
     js.configs.recommended,
     {
         files: appFiles,

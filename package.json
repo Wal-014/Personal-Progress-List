@@ -5,7 +5,8 @@
   "scripts": {
     "lint": "eslint .",
     "test": "node --test",
-    "levels": "node scripts/build-levels.js"
+    "levels": "node scripts/build-levels.js",
+    "site": "node scripts/build-site.js"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
