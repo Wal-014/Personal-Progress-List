@@ -253,16 +253,9 @@ const ACTIONS = {
             render();
         });
     },
-    wto(a, id) {
-        const i = currentWishlist().items.find(x => x.id == id), kd = a.dataset.v;
-        if (isInList(i, kd))
-            return showAlert(t('exists'));
-        profile.levels.push({ id: newId('n'), name: i.name, kind: kd, levelId: i.levelId || null, creator: i.creator || null, diff: i.diff || null, rating: i.rating || null, ar: { s: 'n' }, deaths: {}, tags: [], notes: '', date: todayLocal() });
-        i.added = true;
-        save();
-        showAlert(t('addedOk'));
-        render();
-    },
+    wstatus: (a, id) => setWishlistStatus(id, a.dataset.v),
+    wask: (a, id) => askTransfer(currentWishlist().items.find(i => i.id == id), false),
+    wto: (a, id) => transferWishlistItem(id, a.dataset.v),
     imp: () => qs('#fi').click(),
     exp(a, id) {
         const pr = store.profs[id || store.cur], u = URL.createObjectURL(new Blob([JSON.stringify({ ...pr.data, profileName: pr.name, profileColor: pr.color, profileSecondaryColor: pr.secondaryColor })], { type: 'application/json' })), x = document.createElement('a');
@@ -273,21 +266,6 @@ const ACTIONS = {
         setTimeout(() => URL.revokeObjectURL(u), 1000);
     }
 };
-
-function saveWishlistItem(form) {
-    const fields = Object.fromEntries(new FormData(form)), w = currentWishlist();
-    let item = w.items.find(x => x.id == form.dataset.id);
-    if (!item) {
-        item = { id: newId('i'), status: 'todo' };
-        w.items.push(item);
-    }
-    Object.assign(item, { name: fields.name.trim(), levelId: fields.lid || null, creator: fields.creator || null, diff: fields.diff || null, rating: fields.rating || null });
-    item.chk = 0;
-    save();
-    closeModal();
-    render();
-    enrichWishlistItem(item);
-}
 
 function saveLevel(form) {
     const position = form.elements.pos.value, old = findLevel(form.dataset.id), level = old || { id: newId('n') };
@@ -307,12 +285,6 @@ function saveLevel(form) {
     ui.tab = level.kind;
     render();
     scrollSel();
-}
-
-function setWishlistStatus(input) {
-    currentWishlist().items.find(item => item.id == input.dataset.wi).status = input.value;
-    save();
-    render();
 }
 
 function setTagColor(input) {
@@ -449,8 +421,8 @@ document.body.onchange = e => {
         return setListTagFilter();
     if (['gdrate', 'gddiff'].includes(input.name))
         return setLevelFilter(input);
-    if (ds.wi != null)
-        return setWishlistStatus(input);
+    if (ds.wp != null)
+        return setWishlistPercent(input);
     if (ds.tc != null)
         return setTagColor(input);
     if (ds.tn != null)

@@ -33,7 +33,7 @@ let profile = store && store.profs[store.cur].data;
 
 /** Interface state: screen, selection, search, statistics views (rankings, comparison, timeline), theme and language. */
 let ui = {
-    tab: 'home', wl: null, q: '', tagFilter: [], z: 28, lang: localStorage.gl || 'es', theme: themeOf(localStorage.gt),
+    tab: 'home', wl: null, wishFx: null, q: '', tagFilter: [], z: 28, lang: localStorage.gl || 'es', theme: themeOf(localStorage.gt),
     rankingMode: 'classic', rankingMetric: 'att', rankingDirection: 'desc', rankingAll: false,
     comparison: { open: false, slots: [null, null] }, timelineMetric: 'att'
 };
@@ -112,7 +112,13 @@ function ensureProfileDefaults() {
     fixIds(profile.wishlists, 'w');
     profile.wishlists.forEach(w => {
         fixIds(w.items, 'i');
-        w.items.forEach(i => i.status = ['todo', 'prog', 'done'].includes(i.status) ? i.status : i.done ? 'done' : 'todo');
+        w.items.forEach(i => {
+            i.status = ['todo', 'prog', 'done'].includes(i.status) ? i.status : i.done ? 'done' : 'todo';
+            if (!['classic', 'platform'].includes(i.kind))
+                delete i.kind;
+            if (!Number.isInteger(i.pct) || i.pct < 0 || i.pct > 100)
+                delete i.pct;
+        });
     });
     if (!profile.tags) {
         const pal = ['#ff2bd6', '#00e5ff', '#ffd400', '#7cff6b', '#ff7a3d', '#9d7bff'];

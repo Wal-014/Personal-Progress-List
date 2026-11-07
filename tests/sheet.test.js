@@ -34,11 +34,11 @@ test('fillFromSheet fills missing data by ID or by a name only one level of that
 
     const byName = { name: 'blood bath' };
     fill(byName, 'd');
-    assert.deepEqual(byName, { name: 'blood bath', levelId: '1', creator: 'Riot', diff: 'Extreme Demon', rating: 'epic' });
+    assert.deepEqual(byName, { name: 'blood bath', kind: 'classic', levelId: '1', creator: 'Riot', diff: 'Extreme Demon', rating: 'epic' });
 
     const byId = { name: 'Renamed', levelId: '2', creator: 'Kept', rating: 'mythic' };
     fill(byId, 'd');
-    assert.deepEqual(byId, { name: 'Renamed', levelId: '2', creator: 'Kept', diff: 'Harder', rating: 'mythic' });
+    assert.deepEqual(byId, { name: 'Renamed', kind: 'classic', levelId: '2', creator: 'Kept', diff: 'Harder', rating: 'mythic' });
 
     assert.equal(fill({ name: 'Shared' }, 'd'), null, 'two classic levels share the name');
     assert.equal(fill({ name: 'Shared' }, 'p')[0], 4, 'only one platformer has it');

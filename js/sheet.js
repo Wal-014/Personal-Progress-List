@@ -74,6 +74,7 @@ function findSheetLevel(levelId, name, kind) {
 function fillFromSheet(l, kind) {
     const x = findSheetLevel(l.levelId, l.name, kind);
     if (x) {
+        l.kind ||= x[4] ? 'platform' : 'classic';
         l.levelId ||= String(x[0]);
         l.creator ||= x[2] || null;
         l.diff ||= DIFFICULTIES[x[3]] || null;
