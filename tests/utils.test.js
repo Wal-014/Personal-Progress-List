@@ -52,8 +52,10 @@ test('death lines are summed per percent and limited to 100%', () => {
 });
 
 test('thumbnails are only requested for numeric level IDs', () => {
-    assert.equal(app('thumbUrl')({ levelId: '4125776' }), 'https://levelthumbs.prevter.me/thumbnail/4125776');
+    assert.equal(app('thumbUrl')({ levelId: '4125776' }), 'https://levelthumbs.prevter.me/thumbnail/4125776/small');
     assert.equal(app('thumbUrl')({ levelId: '../x' }), '');
+    assert.equal(app('fullThumbUrl')({ levelId: '4125776' }), 'https://levelthumbs.prevter.me/thumbnail/4125776');
+    assert.equal(app('fullThumbUrl')({ levelId: '../x' }), '');
 });
 
 test('saved themes from before the redesign map to the current ones', () => {

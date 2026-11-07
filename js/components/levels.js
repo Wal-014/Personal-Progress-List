@@ -82,7 +82,7 @@ function detail(level) {
     const percentages = Object.keys(deaths).map(Number).sort((a, b) => a - b);
     const bestPercent = percentages.at(-1);
     const statCell = (key, value, className = '') => `<div class="st ${className}"><small>${t(key)}</small><b>${escapeHtml(value)}</b></div>`;
-    const thumbnail = thumbUrl(level);
+    const thumbnail = fullThumbUrl(level);
     const section = (key, body) => `<fieldset><legend>${t(key)}</legend>${body}</fieldset>`;
     const link = safeUrl(level.link);
     const videoId = youtubeId(link);
