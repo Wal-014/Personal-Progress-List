@@ -42,7 +42,7 @@ async function startLevelSearch(query, f) {
     return { query, f, page: 0, local, gameMore: true, gameFailed: false };
 }
 
-/** The game's current values take precedence; the sheet fills a creator or difficulty GDBrowser does not know, except for a level that is now unrated. */
+/** The game's current values take precedence; the sheet fills a creator or difficulty GDHistory does not know, except for a level that is now unrated. */
 function mergeLevel(live, local) {
     return {
         levelId: live.levelId,
@@ -57,10 +57,10 @@ function mergeLevel(live, local) {
 
 /**
  * How much of the request a search could cover, cumulative over its pages:
- * - complete: GDBrowser answered every page asked for (without the sheet it only matches the start of names), or the scope is rated and the sheet lists every rated level;
- * - partial: GDBrowser failed, so an All search has rated levels from the sheet only;
- * - unavailable: GDBrowser failed and the search asks for unrated levels only;
- * - error: GDBrowser failed and the sheet did not load either.
+ * - complete: the relay answered every page asked for, or the scope is rated and the sheet lists every rated level;
+ * - partial: the relay failed, so an All search has rated levels from the sheet only;
+ * - unavailable: the relay failed and the search asks for unrated levels only;
+ * - error: the relay failed and the sheet did not load either.
  */
 function searchCoverage(search) {
     if (!search.gameFailed)
@@ -75,7 +75,7 @@ function searchCoverage(search) {
 async function nextLevelSearchPage(search) {
     const [local, remote] = await Promise.all([
         (search.local || []).slice(search.page * 10, (search.page + 1) * 10),
-        search.gameMore ? searchGdb(search.query, search.f, search.page) : null
+        search.gameMore ? searchRelay(search.query, search.f, search.page) : null
     ]);
     if (search.gameMore) {
         if (remote == null)
@@ -110,7 +110,7 @@ async function similarLevelNames(query) {
 async function fillRatings(levels) {
     const todo = levels.filter(l => /^\d+$/.test(l.levelId || '') && !l.rating);
     for (let i = 0; i < todo.length; i += 10) {
-        const batch = todo.slice(i, i + 10), fetched = await fetchGdbLevelsById(batch.map(l => l.levelId));
+        const batch = todo.slice(i, i + 10), fetched = await fetchRelayLevelsById(batch.map(l => l.levelId));
         if (fetched == null)
             break;
         const found = new Map(fetched.map(l => [l.levelId, l]));

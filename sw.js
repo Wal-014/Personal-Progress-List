@@ -1,7 +1,7 @@
 /**
  * Service worker for installation and offline use, fetching same-origin files from the network first with a cache fallback.
  */
-const CACHE = 'prp-1.4.0';
+const CACHE = 'prp-1.5.0';
 const SHELL = [
   "./",
   "index.html",
@@ -19,7 +19,7 @@ const SHELL = [
   "js/state.js",
   "js/api.js",
   "js/sheet.js",
-  "js/gdbrowser.js",
+  "js/relay.js",
   "js/gd.js",
   "js/components/faces.js",
   "js/components/empty-list.js",

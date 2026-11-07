@@ -2,7 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadScripts } from './load-scripts.js';
 
-const searchRow = (id, name) => ({ id, name, author: 'Creator', difficulty: 'Hard', stars: 5, downloads: 10 });
+const searchRow = (id, name) => ({ levelId: id, name, creator: 'Creator', diff: 'Hard', rating: 'rated', kind: 'classic', downloads: 10 });
+// A relay answer; a full page means more pages exist
+const relayPage = levels => ({ levels, more: levels.length == 10 });
+const RELAY = loadScripts(['js/config.js']).app('LEVEL_RELAY_API');
 const settleSearch = async () => {
     for (let i = 0; i < 30; i++)
         await Promise.resolve();
@@ -38,13 +41,13 @@ function searchForm() {
         return { '#gdq': input, '#gdr': results, '#gdm': message, '.gdclr': clear }[selector];
     }, querySelectorAll: () => [], addEventListener() {} };
     input.focus = () => { document.activeElement = input; };
-    const scripts = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/i18n.js', 'js/api.js', 'js/sheet.js', 'js/gdbrowser.js', 'js/gd.js', 'js/components/faces.js', 'js/components/search.js'], {
-        document, localStorage: {}, AbortSignal, Date: { now: () => now }, window: { addEventListener() {} },
+    const scripts = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/i18n.js', 'js/api.js', 'js/sheet.js', 'js/relay.js', 'js/gd.js', 'js/components/faces.js', 'js/components/search.js'], {
+        document, localStorage: {}, AbortSignal, URLSearchParams, Date: { now: () => now }, window: { addEventListener() {} },
         setTimeout(callback, delay) { timers.set(++timerId, { at: now + delay, callback }); return timerId; },
         clearTimeout(id) { timers.delete(id); },
         fetch: async url => {
             asked.push(url);
-            return { ok: true, json: async () => url == 'data/levels.json' ? [] : [searchRow('1', 'Honeycomb')] };
+            return { ok: true, json: async () => url == 'data/levels.json' ? [] : relayPage([searchRow('1', 'Honeycomb')]) };
         }
     });
     scripts.app('levelSearchBox()');
@@ -72,17 +75,17 @@ function searchForm() {
 const searchMessages = {
     es: {
         busy: 'Buscando…', one: '1 resultado.', many: '2 resultados, los más parecidos primero.', none: 'Ningún nivel coincide.', suggestion: '¿Quisiste decir:',
-        partial: 'GDBrowser no responde: solo se muestran niveles rated de la hoja de la comunidad.',
-        noneRated: 'Ningún nivel rated coincide. GDBrowser no responde, así que no se han podido buscar los niveles sin rate.',
-        unavailable: 'Ahora no se pueden buscar niveles sin rate porque GDBrowser no responde. Prueba de nuevo en unos minutos, o elige Todos o Rateados para buscar en la hoja de la comunidad.',
-        error: 'La búsqueda no está disponible: no se ha podido cargar la hoja de la comunidad y GDBrowser no responde. Prueba de nuevo en unos minutos.'
+        partial: 'GDHistory no responde: solo se muestran niveles rated de la hoja de la comunidad.',
+        noneRated: 'Ningún nivel rated coincide. GDHistory no responde, así que no se han podido buscar los niveles sin rate.',
+        unavailable: 'Ahora no se pueden buscar niveles sin rate porque GDHistory no responde. Prueba de nuevo en unos minutos, o elige Todos o Rateados para buscar en la hoja de la comunidad.',
+        error: 'La búsqueda no está disponible: no se ha podido cargar la hoja de la comunidad y GDHistory no responde. Prueba de nuevo en unos minutos.'
     },
     en: {
         busy: 'Searching…', one: '1 result.', many: '2 results, best matches first.', none: 'No levels match.', suggestion: 'Did you mean:',
-        partial: 'GDBrowser is not responding: only rated levels from the community sheet are shown.',
-        noneRated: 'No rated level matches. GDBrowser is not responding, so unrated levels could not be searched.',
-        unavailable: 'Unrated levels cannot be searched right now because GDBrowser is not responding. Try again in a few minutes, or choose All or Rated to search the community sheet.',
-        error: 'Search is not available: the community sheet could not be loaded and GDBrowser is not responding. Try again in a few minutes.'
+        partial: 'GDHistory is not responding: only rated levels from the community sheet are shown.',
+        noneRated: 'No rated level matches. GDHistory is not responding, so unrated levels could not be searched.',
+        unavailable: 'Unrated levels cannot be searched right now because GDHistory is not responding. Try again in a few minutes, or choose All or Rated to search the community sheet.',
+        error: 'Search is not available: the community sheet could not be loaded and GDHistory is not responding. Try again in a few minutes.'
     }
 };
 
@@ -157,8 +160,8 @@ for (const added of [true, false])
         form.context.fetch = async url => {
             if (url == 'data/levels.json')
                 return { ok: true, json: async () => [] };
-            if (url.includes('?page=0'))
-                return { ok: true, json: async () => Array.from({ length: 10 }, (_, i) => searchRow(String(i), 'Comb ' + i)) };
+            if (url.includes('&page=0'))
+                return { ok: true, json: async () => relayPage(Array.from({ length: 10 }, (_, i) => searchRow(String(i), 'Comb ' + i))) };
             return new Promise(resolve => { finishPage = resolve; });
         };
         form.input.value = 'comb';
@@ -167,7 +170,7 @@ for (const added of [true, false])
         const pending = form.app('ACTIONS.gdmore()');
         assert.doesNotMatch(form.results.innerHTML, /data-act=gdmore/);
         assert.equal(form.document.activeElement, form.document.body, 'redrawing removes the focused button');
-        finishPage({ ok: true, json: async () => added ? [searchRow('1', 'Comb 1'), searchRow('10', 'Comb 10'), searchRow('11', 'Comb 11')] : [searchRow('1', 'Comb 1')] });
+        finishPage({ ok: true, json: async () => relayPage(added ? [searchRow('1', 'Comb 1'), searchRow('10', 'Comb 10'), searchRow('11', 'Comb 11')] : [searchRow('1', 'Comb 1')]) });
         await pending;
         assert.equal(form.app('levelSearch.results.length'), added ? 12 : 10);
         assert.equal(form.document.activeElement, added ? form.document.querySelector('[data-act=gdpick][data-i="10"]') : form.input);
@@ -189,7 +192,7 @@ test('picking a suggestion searches its name and returns focus to the search box
     await settleSearch();
     assert.equal(form.input.value, 'Comb Breaker');
     assert.equal(form.app('levelSearch.q'), 'Comb Breaker');
-    assert.match(form.asked.at(-1), /search\/Comb%20Breaker\?page=0$/);
+    assert.match(form.asked.at(-1), /search\?q=Comb\+Breaker&page=0&scope=all$/);
 });
 
 test('typing debounces for 400 ms after the last input and searches through the event hook', async () => {
@@ -202,7 +205,7 @@ test('typing debounces for 400 ms after the last input and searches through the 
     assert.equal(form.asked.length, 0);
     await form.tick(1);
     assert.equal(form.app('levelSearch.q'), 'comb');
-    assert.match(form.asked.at(-1), /search\/comb\?page=0$/);
+    assert.match(form.asked.at(-1), /search\?q=comb&page=0&scope=all$/);
     assert.match(form.results.innerHTML, /Honeycomb/);
     assert.equal(form.app('levelSearch.status'), 'idle');
     assert.equal(form.reports(), 0);
@@ -234,7 +237,7 @@ test('typing requires three cleaned characters, stays silent for invalid text an
 
 test('emptying the box clears results and status and cancels a pending search', async () => {
     const form = searchForm();
-    form.context.fetch = async url => ({ ok: true, json: async () => url == 'data/levels.json' ? [] : Array.from({ length: 10 }, (_, i) => searchRow(String(i), 'Honeycomb')) });
+    form.context.fetch = async url => ({ ok: true, json: async () => url == 'data/levels.json' ? [] : relayPage(Array.from({ length: 10 }, (_, i) => searchRow(String(i), 'Honeycomb'))) });
     form.type('comb');
     await form.app('runLevelSearch()');
     assert.match(form.results.innerHTML, /Honeycomb/);
@@ -262,10 +265,10 @@ test('Enter and Search run short queries immediately and cancel pending timers; 
     assert.equal(form.asked.length, count);
     form.type('co');
     await form.enter();
-    assert.match(form.asked.at(-1), /search\/co\?page=0$/);
+    assert.match(form.asked.at(-1), /search\?q=co&page=0&scope=all$/);
     form.type('c');
     await form.app('ACTIONS.gdgo()');
-    assert.match(form.asked.at(-1), /search\/c\?page=0$/);
+    assert.match(form.asked.at(-1), /search\?q=c&page=0&scope=all$/);
     form.type('comb');
     await form.app('ACTIONS.gdgo()');
     const buttonCount = form.asked.length;
@@ -290,9 +293,9 @@ test('emptying the box and newer timed searches discard answers still in flight'
     await form.tick(400);
     form.type('new');
     await form.tick(400);
-    pending[1]({ ok: true, json: async () => [searchRow('2', 'New level')] });
+    pending[1]({ ok: true, json: async () => relayPage([searchRow('2', 'New level')]) });
     await settleSearch();
-    pending[0]({ ok: true, json: async () => [searchRow('1', 'Old level')] });
+    pending[0]({ ok: true, json: async () => relayPage([searchRow('1', 'Old level')]) });
     await settleSearch();
     assert.match(form.results.innerHTML, /New level/);
     assert.doesNotMatch(form.results.innerHTML, /Old level/);
@@ -300,7 +303,7 @@ test('emptying the box and newer timed searches discard answers still in flight'
     form.type('running');
     await form.tick(400);
     form.type('');
-    pending[2]({ ok: true, json: async () => [searchRow('3', 'Late level')] });
+    pending[2]({ ok: true, json: async () => relayPage([searchRow('3', 'Late level')]) });
     await settleSearch();
     assert.equal(form.results.innerHTML, '');
     assert.equal(form.message.textContent, '');
@@ -314,7 +317,7 @@ test('sheet matches are reused across pages, refreshed on query and filter chang
         asked.push(url);
         if (url == 'data/levels.json')
             return { ok: true, json: async () => Array.from({ length: 11 }, (_, i) => [i + 10, 'Comb ' + String(i).padStart(2, '0'), '', i ? 1 : 3]) };
-        return { ok: true, json: async () => [searchRow('10', 'Comb 10')] };
+        return { ok: true, json: async () => relayPage([searchRow('10', 'Comb 10')]) };
     };
     form.type('comb');
     await form.tick(400);
@@ -323,7 +326,7 @@ test('sheet matches are reused across pages, refreshed on query and filter chang
     form.app("useSheetLevels([[50, 'Comb New', '', 3]])");
     await form.app('runLevelSearch(true)');
     assert.equal(form.app("levelSearch.results.some(l => l.levelId == '20')"), true, 'page two uses the original matches');
-    assert.equal(asked.some(url => url.endsWith('?list')), false);
+    assert.equal(asked.some(url => url.includes('/levels?')), false);
     assert.equal(form.app('levelSearch.results.length'), 11);
     assert.equal(form.app('levelSearch.more'), false);
     form.app("levelSearch.f.diffs = ['Hard']; changeLevelFilters()");
@@ -341,8 +344,8 @@ test('later pages use only the sheet after the game is exhausted, and new search
         asked.push(url);
         if (url == 'data/levels.json')
             return { ok: true, json: async () => Array.from({ length: 13 }, (_, i) => [i + 1, 'Catacomb ' + i, '', 3]) };
-        if (url.includes('?page=0'))
-            return { ok: true, json: async () => Array.from({ length: 5 }, (_, i) => searchRow(String(101 + i), 'Acomb ' + i)) };
+        if (url.includes('&page=0'))
+            return { ok: true, json: async () => relayPage(Array.from({ length: 5 }, (_, i) => searchRow(String(101 + i), 'Acomb ' + i))) };
         return { ok: false, status: 500 };
     };
     form.type('acomb');
@@ -358,11 +361,11 @@ test('later pages use only the sheet after the game is exhausted, and new search
     form.app("levelSearch.f.diffs = ['Hard']; changeLevelFilters()");
     await settleSearch();
     assert.deepEqual(asked.slice(filterStart), [
-        'https://gdbrowser.com/api/search/acomb?page=0&starred&diff=3'
+        RELAY + 'search?q=acomb&page=0&scope=rated&diff=Hard'
     ]);
     form.type('other');
     await form.tick(400);
-    assert.equal(asked.at(-1), 'https://gdbrowser.com/api/search/other?page=0&starred&diff=3');
+    assert.equal(asked.at(-1), RELAY + 'search?q=other&page=0&scope=rated&diff=Hard');
     assert.equal(form.app('levelSearch.results.length'), 5, 'a new query clears old results and sheet matches');
     assert.equal(form.app('levelSearch.more'), false);
 });
@@ -371,19 +374,19 @@ test('a full game page still requests its next page when the sheet is exhausted'
     const form = searchForm();
     form.context.fetch = async url => {
         form.asked.push(url);
-        return { ok: true, json: async () => url == 'data/levels.json' ? [] : url.includes('?page=0')
-            ? Array.from({ length: 10 }, (_, i) => searchRow(String(i), 'Comb ' + i)) : [searchRow('10', 'Comb 10')] };
+        return { ok: true, json: async () => url == 'data/levels.json' ? [] : url.includes('&page=0')
+            ? relayPage(Array.from({ length: 10 }, (_, i) => searchRow(String(i), 'Comb ' + i))) : relayPage([searchRow('10', 'Comb 10')]) };
     };
     form.type('comb');
     await form.tick(400);
     assert.equal(form.app('levelSearch.more'), true);
     await form.app('runLevelSearch(true)');
-    assert.equal(form.asked.at(-1), 'https://gdbrowser.com/api/search/comb?page=1');
+    assert.equal(form.asked.at(-1), RELAY + 'search?q=comb&page=1&scope=all');
     assert.equal(form.app('levelSearch.results.length'), 11);
     assert.equal(form.app('levelSearch.more'), false);
 });
 
-test('a GDBrowser outage renders sheet results and a note that a new online search clears', async () => {
+test('a relay outage renders sheet results and a note that a new online search clears', async () => {
     const form = searchForm();
     form.context.fetch = async url => {
         if (url == 'data/levels.json')
@@ -398,7 +401,7 @@ test('a GDBrowser outage renders sheet results and a note that a new online sear
     assert.equal(form.app('levelSearch.coverage'), 'partial');
     assert.equal(form.message.textContent, '1 resultado. ' + searchMessages.es.partial);
     assert.equal(form.message.classList.contains('warn'), true);
-    form.context.fetch = async () => ({ ok: true, json: async () => [searchRow('2', 'Other')] });
+    form.context.fetch = async () => ({ ok: true, json: async () => relayPage([searchRow('2', 'Other')]) });
     await form.tick(300000);
     form.type('other');
     await form.tick(400);
@@ -433,7 +436,7 @@ test('an incomplete search keeps the note through later local pages', async () =
     form.type('comb');
     await form.tick(400);
     assert.equal(form.app('levelSearch.more'), true);
-    form.context.fetch = async () => ({ ok: true, json: async () => [searchRow('11', 'Comb 10')] });
+    form.context.fetch = async () => ({ ok: true, json: async () => relayPage([searchRow('11', 'Comb 10')]) });
     await form.app('runLevelSearch(true)');
     assert.equal(form.app('levelSearch.results.length'), 11);
     assert.equal(form.app('levelSearch.coverage'), 'partial');
@@ -445,11 +448,11 @@ test('a missing sheet leaves the game search working with no ID lookup', async (
     const form = searchForm();
     form.context.fetch = async url => {
         form.asked.push(url);
-        return { ok: url != 'data/levels.json', status: 404, json: async () => [searchRow('1', 'Comb Breaker')] };
+        return { ok: url != 'data/levels.json', status: 404, json: async () => relayPage([searchRow('1', 'Comb Breaker')]) };
     };
     form.type('comb');
     await form.tick(400);
-    assert.deepEqual(form.asked, ['data/levels.json', 'https://gdbrowser.com/api/search/comb?page=0']);
+    assert.deepEqual(form.asked, ['data/levels.json', RELAY + 'search?q=comb&page=0&scope=all']);
     assert.match(form.results.innerHTML, /Comb Breaker/);
     assert.equal(form.app('levelSearch.status'), 'idle');
 });
@@ -493,7 +496,7 @@ test('a newer search during sheet loading drops the old coordinator answer', asy
         form.asked.push(url);
         if (url == 'data/levels.json')
             return new Promise(resolve => { finishSheet = resolve; });
-        return { ok: true, json: async () => [searchRow('2', 'New level')] };
+        return { ok: true, json: async () => relayPage([searchRow('2', 'New level')]) };
     };
     form.type('old');
     await form.tick(400);
@@ -501,7 +504,7 @@ test('a newer search during sheet loading drops the old coordinator answer', asy
     await form.tick(400);
     finishSheet({ ok: true, json: async () => [] });
     await settleSearch();
-    assert.deepEqual(form.asked, ['data/levels.json', 'https://gdbrowser.com/api/search/new?page=0']);
+    assert.deepEqual(form.asked, ['data/levels.json', RELAY + 'search?q=new&page=0&scope=all']);
     assert.match(form.results.innerHTML, /New level/);
 });
 
@@ -509,20 +512,20 @@ test('at most five empty filtered pages are tried before suggesting names', asyn
     const form = searchForm();
     form.context.fetch = async url => {
         form.asked.push(url);
-        return { ok: true, json: async () => url == 'data/levels.json' ? [] : Array.from({ length: 10 }, (_, i) => ({ ...searchRow(String(i), 'Comb'), stars: 0 })) };
+        return { ok: true, json: async () => url == 'data/levels.json' ? [] : relayPage(Array.from({ length: 10 }, (_, i) => ({ ...searchRow(String(i), 'Comb'), rating: 'unrated', diff: null }))) };
     };
     form.app("levelSearch.f.rated = 'rated'");
     form.input.value = 'comb';
     await form.app('runLevelSearch()');
-    assert.equal(form.asked.filter(url => url.includes('?page=')).length, 5);
+    assert.equal(form.asked.filter(url => url.includes('&page=')).length, 5);
     assert.equal(form.app('levelSearch.status'), 'none');
     assert.equal(form.app('levelSearch.more'), true);
 });
 
 test('load more deduplicates levels already shown on earlier game pages', async () => {
     const form = searchForm();
-    form.context.fetch = async url => ({ ok: true, json: async () => url == 'data/levels.json' ? [] : url.includes('?page=0')
-        ? Array.from({ length: 10 }, (_, i) => searchRow(String(i), 'Comb ' + i)) : [searchRow('1', 'Comb 1'), searchRow('10', 'Comb 10')] });
+    form.context.fetch = async url => ({ ok: true, json: async () => url == 'data/levels.json' ? [] : url.includes('&page=0')
+        ? relayPage(Array.from({ length: 10 }, (_, i) => searchRow(String(i), 'Comb ' + i))) : relayPage([searchRow('1', 'Comb 1'), searchRow('10', 'Comb 10')]) });
     form.input.value = 'comb';
     await form.app('runLevelSearch()');
     await form.app('runLevelSearch(true)');
@@ -539,7 +542,7 @@ test('a newer search discards suggestions delayed by a sheet retry', async () =>
                 return { ok: false, status: 404 };
             return new Promise(resolve => { finishSheet = resolve; });
         }
-        return { ok: true, json: async () => url.includes('/oldx?') ? [] : [searchRow('2', 'New level')] };
+        return { ok: true, json: async () => relayPage(url.includes('q=oldx&') ? [] : [searchRow('2', 'New level')]) };
     };
     form.type('oldx');
     await form.tick(400);

@@ -121,7 +121,7 @@ function matchWithAredl(levels) {
     });
 }
 
-/** Downloads AREDL positions and fills missing creators, difficulties and rating tiers of saved levels and wishlist items from the sheet, then asks GDBrowser for ratings still missing. Only a manual update reports a failure. */
+/** Downloads AREDL positions and fills missing creators, difficulties and rating tiers of saved levels and wishlist items from the sheet, then asks GDHistory for ratings still missing. Only a manual update reports a failure. */
 async function syncWithAredl(manual) {
     if (ui.sync)
         return;
