@@ -41,6 +41,10 @@ export default [
         languageOptions: { sourceType: 'script', globals: globals.serviceworker }
     },
     {
+        files: ['relay/src/**/*.js'],
+        languageOptions: { globals: globals.serviceworker }
+    },
+    {
         files: ['eslint.config.js', 'tests/**/*.js', 'scripts/**/*.js'],
         languageOptions: { globals: globals.node }
     }
