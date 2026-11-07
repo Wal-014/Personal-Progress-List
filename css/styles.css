@@ -1140,12 +1140,20 @@ dialog.modal::backdrop {
   cursor: pointer;
 }
 
-/* The level thumbnail shows faintly on the right, behind the text */
-.lv::before {
-  content: "";
+/* Off-screen cards skip this layer, so their thumbnails are not downloaded until they come near the viewport. */
+.lv > .th, .wi > .th {
   position: absolute;
   inset: 0;
   z-index: -1;
+  content-visibility: auto;
+  pointer-events: none;
+}
+
+/* The level thumbnail shows faintly on the right, behind the text */
+.lv > .th::before {
+  content: "";
+  position: absolute;
+  inset: 0;
   background: var(--th, none) right center / 55% auto no-repeat;
   opacity: .35;
   -webkit-mask-image: linear-gradient(90deg, transparent 40%, #000);
@@ -2365,11 +2373,10 @@ input.ro {
   overflow: hidden;
 }
 
-.wi::before {
+.wi > .th::before {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: -1;
   background: var(--th, none) right center / 45% auto no-repeat;
   opacity: .3;
   -webkit-mask-image: linear-gradient(90deg, transparent 50%, #000);
@@ -2380,7 +2387,7 @@ input.ro {
   border-color: var(--ln);
 }
 
-.wi.s-todo::before {
+.wi.s-todo > .th::before {
   filter: grayscale(1);
   opacity: .15;
 }

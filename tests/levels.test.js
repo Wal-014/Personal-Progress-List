@@ -96,12 +96,14 @@ test('card tag filters stay outside the tab order in both level lists', () => {
     }
 });
 
-test('card renders a decorative first-child grip only when reorderable', () => {
+test('card renders optional decorative grips and thumbnail layers', () => {
     const level = { id: 'grip-test', name: 'Level', kind: 'classic' };
     for (const [lang, hint] of [['es', 'Arrastra para reordenar'], ['en', 'Drag to reorder']]) {
         context.lang = lang;
         app('ui.lang = lang');
         const html = app('card')(level, 0, 1, true);
+        assert.doesNotMatch(html, /<i class=th\b/);
+        assert.match(app('card')({ ...level, levelId: '42' }, 0, 1, true), /<i class=th aria-hidden=true><\/i>/);
         assert.match(html, new RegExp(`^<div[^>]*><span class=grip aria-hidden=true title="${hint}">`));
         const grip = html.match(/<span class=grip[^>]*>(.*?)<\/span>/)[0];
         assert.doesNotMatch(grip, /\b(?:tabindex|role)=/);

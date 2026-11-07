@@ -290,6 +290,8 @@ test('wishView renders fixed card structure and state specific accessible contro
         assert.match(html, new RegExp(`data-v=${status} aria-pressed=true`));
         assert.match(html, /role=group aria-label="Status · A \$&amp; &lt;level&gt;"/);
         assert.match(html, /class=grip aria-hidden=true/);
+        assert.match(html, /<i class=th aria-hidden=true><\/i>/);
+        assert.doesNotMatch(f.app('wishlistCard')({ ...f.item, levelId: null }), /<i class=th\b/);
         assert.match(html, /class=wprog/);
         assert.equal(html.includes('data-wp='), status == 'prog');
         assert.equal(html.includes('data-act=wto'), status == 'done');
