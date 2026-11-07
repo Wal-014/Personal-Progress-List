@@ -274,7 +274,7 @@ test('sync fills saved levels and wishlist tiers from the sheet before asking GD
     search.app("profile = { levels: [{ name: 'Saved', levelId: '1' }], wishlists: [{ items: [{ name: 'Wish' }, { name: 'Kept', rating: 'epic' }] }] }");
     await search.app('syncWithAredl()');
     assert.equal(search.app('profile.levels[0].rating'), 'epic');
-    assert.deepEqual({ ...search.app('profile.wishlists[0].items[0]') }, { name: 'Wish', levelId: '2', creator: 'Other', diff: 'Easy', rating: 'mythic' });
+    assert.deepEqual({ ...search.app('profile.wishlists[0].items[0]') }, { name: 'Wish', kind: 'platform', levelId: '2', creator: 'Other', diff: 'Easy', rating: 'mythic' });
     assert.equal(search.app('profile.wishlists[0].items[1].rating'), 'epic');
     assert.equal(search.asked.some(url => url.includes('gdbrowser')), false);
 });

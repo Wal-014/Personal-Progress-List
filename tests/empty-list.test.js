@@ -24,10 +24,10 @@ for (const [lang, addLabel, wishTitle, wishText, listTitle, listText, noMatch] o
                 app("profile.wishlists[0].items.push({ id: 'wanted', name: 'Wanted level', status: 'todo' })");
             const html = app('wishView()');
             const header = html.split(hasItems ? '<div class=wl>' : '<div class=empty>')[0];
-            assert.ok(header.startsWith('<div class=wh>'));
+            assert.ok(header.startsWith('<div class="wh">'));
             assert.ok(header.includes(`<button class=pri data-act=wadd>${addLabel}</button>`));
             if (hasItems) {
-                assert.match(html, /<div class=wl><div class="obj wi" data-id="wanted"/);
+                assert.match(html, /<div class=wl><div class="obj wi s-todo" data-id="wanted"/);
                 assert.ok(html.includes('<span class=nm>Wanted level</span>'));
                 assert.doesNotMatch(html, /class=empty/);
             }

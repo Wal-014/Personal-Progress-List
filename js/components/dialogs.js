@@ -9,7 +9,7 @@ function alerts() {
         if (u.length)
             A.push(`${escapeHtml(t('aUnp'))} (${escapeHtml(t(k))}): ${u.map(lk).join(', ')}`);
     });
-    profile.wishlists.forEach(w => w.items.filter(i => i.status == 'done' && !i.added && !isInList(i, 'classic') && !isInList(i, 'platform')).forEach(i => A.push(`${escapeHtml(t('aWish'))}: ${escapeHtml(i.name)} (${escapeHtml(w.name)})`)));
+    profile.wishlists.forEach(w => w.items.filter(i => i.status == 'done' && !wishlistTransferred(i)).forEach(i => A.push(`${escapeHtml(t('aWish'))}: ${escapeHtml(i.name)} (${escapeHtml(w.name)})`)));
     const ni = profile.levels.filter(l => !l.levelId);
     if (ni.length)
         A.push(`${escapeHtml(t('aNoId'))} (${ni.length}): ${ni.map(lk).join(', ')}`);
@@ -117,4 +117,17 @@ const closeModal = () => {
 
 function tagsUI() {
     return `<div class=box><h2>${ICONS.tag} ${t('tagsT')}</h2>${profile.tags.map((g, i) => `<p class=trow><input type=color data-tc=${i} value="${escapeHtml(g.color)}" aria-label="${t('color')} · ${escapeHtml(g.name)}"><input data-tn=${i} value="${escapeHtml(g.name)}" aria-label="${t('name')}"${g.name == PRE_TAG ? ' aria-describedby=tg-pre' : ''}><button class="xs dg" data-act=tdel data-i=${i} aria-label="${t('del')} · ${escapeHtml(g.name)}">${ICONS.del}</button></p>${g.name == PRE_TAG ? `<small id=tg-pre class=by style="display:block;margin:-4px 0 8px 54px">${t('preTagHint')}</small>` : ''}`).join('')}<p class=trow><input type=color id=nc value="#00e5ff" aria-label="${t('color')}"><input id=nn placeholder="${t('newTag')}" aria-label="${t('newTag')}"><button class=pri data-act=tadd>${t('add')}</button></p><p class=dgb><button data-act=close>${t('close')}</button></p></div>`;
+}
+
+let toastTimer = null;
+
+/** Announces brief feedback outside the app so redraws preserve it. */
+function showToast(text) {
+    const toast = qs('#toast');
+    if (!toast)
+        return;
+    clearTimeout(toastTimer);
+    toast.textContent = text;
+    toast.classList.add('show');
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 4000);
 }
