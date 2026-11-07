@@ -222,7 +222,7 @@ test('timeline tooltip uses the current metric, formatted date and escaped user 
     const app = statsApp();
     app(statsFixture);
     app('profile.levels[0].name = "<b>Beta</b>"');
-    assert.equal(app('timelineTooltip(findLevel("b"))'), '<img src="https://levelthumbs.prevter.me/thumbnail/123" alt=""><b>&lt;b&gt;Beta&lt;/b&gt;</b><br>10 attempts · 01/01/2025');
+    assert.equal(app('timelineTooltip(findLevel("b"))'), '<img src="https://levelthumbs.prevter.me/thumbnail/123/small" alt=""><b>&lt;b&gt;Beta&lt;/b&gt;</b><br>10 attempts · 01/01/2025');
     app('ui.timelineMetric = "time"');
     assert.match(app('timelineTooltip(findLevel("b"))'), /10h 0m 0s · 01\/01\/2025/);
     assert.doesNotMatch(app('timelineTooltip(findLevel("a"))'), /<img/);

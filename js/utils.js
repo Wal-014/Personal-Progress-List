@@ -74,7 +74,14 @@ const totalSeconds = l => {
     return a.length ? a.reduce((x, y) => x + y) : null;
 };
 
-const thumbUrl = l => /^\d+$/.test(l.levelId) ? `https://levelthumbs.prevter.me/thumbnail/${l.levelId}` : '';
+/** Returns the 1920x1080 thumbnail for the level detail header. */
+const fullThumbUrl = l => /^\d+$/.test(l.levelId) ? `https://levelthumbs.prevter.me/thumbnail/${l.levelId}` : '';
+
+/** Returns the 640x360 thumbnail for cards and other small previews. */
+const thumbUrl = l => {
+    const url = fullThumbUrl(l);
+    return url ? url + '/small' : '';
+};
 
 const aredlLabel = l => {
     const listName = l.kind == 'platform' ? 'AREPL' : 'AREDL';
