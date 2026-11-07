@@ -16,14 +16,26 @@ function readAredlCache() {
 /** Locally stored AREDL and AREPL lists, refreshed after AREDL_MAX_AGE. */
 let aredlCache = readAredlCache();
 
+/** Normalized names per cached array: keyed by the array, so replacing aredlCache drops them without extra code. */
+const aredlNameIndexes = new WeakMap();
+
 /** After this long the lists are downloaded again on their own. */
 const AREDL_MAX_AGE = 12 * 3600 * 1000;
 
 /** Display name of an API user, or null when none is available. */
 const publisherName = x => typeof x == 'string' ? x : x && (x.global_name || x.username || x.name || x.display_name || x.discord_username || Object.values(x).find(v => typeof v == 'string' && v.length < 32 && !/^[0-9a-f-]{20,}$/i.test(v))) || null;
 
-/** Cached levels of one list, skipping entries whose name has no letters or digits (they would match any name). */
-const namedAredlLevels = kind => aredlCache.filter(x => x.k == kind && normalizeName(x.n));
+/** Cached levels of one list with their normalized names, built once per cached array; entries of an unknown list are left out. */
+function indexedAredlNames(kind) {
+    let index = aredlNameIndexes.get(aredlCache);
+    if (!index) {
+        index = { d: [], p: [] };
+        for (const level of aredlCache)
+            index[level.k]?.push({ level, name: normalizeName(level.n) });
+        aredlNameIndexes.set(aredlCache, index);
+    }
+    return index[kind];
+}
 
 /**
  * Searches cached AREDL names (kind: 'd' classic, 'p' platformer).
@@ -34,18 +46,18 @@ function findAredlByName(name, kind) {
     const n = normalizeName(name);
     if (!n)
         return null;
-    const pool = namedAredlLevels(kind);
-    const exact = pool.find(x => normalizeName(x.n) == n);
+    const pool = indexedAredlNames(kind);
+    const exact = pool.find(x => x.name == n);
     if (exact)
-        return exact;
-    const partial = n.length < 4 ? [] : pool.filter(x => normalizeName(x.n).includes(n));
-    return partial.length == 1 ? partial[0] : null;
+        return exact.level;
+    const partial = n.length < 4 ? [] : pool.filter(x => x.name.includes(n));
+    return partial.length == 1 ? partial[0].level : null;
 }
 
 /** Up to three similar AREDL names for suggestions. */
 function similarAredlNames(name, kind) {
     const n = normalizeName(name).slice(0, 4);
-    return n ? namedAredlLevels(kind).filter(x => normalizeName(x.n).includes(n)).slice(0, 3).map(x => x.n) : [];
+    return n ? indexedAredlNames(kind).filter(x => x.name.includes(n)).slice(0, 3).map(x => x.level.n) : [];
 }
 
 /** Downloads uncached AREDL and AREPL lists (always with force); returns true when fresh lists arrive. */
