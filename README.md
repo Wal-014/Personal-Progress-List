@@ -1,5 +1,5 @@
 <p align="center">
-  <img alt="Personal Ranked Progress with Classic list, Bloodbath details and statistics screenshots" src="docs/brand/card.png" width="880" />
+  <img alt="Personal Ranked Progress - track and rank your hardest Geometry Dash levels" src="docs/brand/banner.png" width="880" />
 </p>
 
 <p align="center">
