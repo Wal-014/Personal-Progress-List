@@ -4,6 +4,8 @@ Research for [#151](https://github.com/Wal-014/Personal-Progress-List/issues/151
 
 **Recommendation in short:** add no new API. Make the community sheet the main source for searches: it already lists every rated level **with its rating tier**, which `scripts/build-levels.js` was dropping. Keep GDBrowser as an optional extra for unrated levels, levels rated after the last sheet update and download counts, and stop asking it for data the sheet already has.
 
+**Update, 2026-11-10 ([#159](https://github.com/Wal-014/Personal-Progress-List/issues/159)):** GDHistory replaces GDBrowser as the extra source, through a relay of the project's own: the Cloudflare Worker in [`relay/`](../relay/README.md), on the site owner's account. GDHistory answers servers normally and only lacks CORS headers, so the relay adds them for the site's origin and gets around nothing. GDBrowser lifted its challenge again on 2026-11-10, but it had already put one up twice, so the app no longer depends on it. See [The level relay](#the-level-relay).
+
 ## What the app needs
 
 | Field | Used for | Sheet copy before this research | Needed from elsewhere |
@@ -83,13 +85,13 @@ GDBrowser's source repository, `GDColon/GDBrowser`, is no longer on GitHub eithe
 curl -s -o /dev/null -D - -H "Origin: https://wal-014.github.io" https://gdbrowser.com/api/level/128 | grep -iE '^(HTTP|cf-mitigated|access-control-allow-origin)'
 ```
 
-GDBrowser is back when this prints a 200 and an `access-control-allow-origin` header, without `cf-mitigated`. Then confirm it in the browser on the app's origin, as in "How the providers were tested".
+GDBrowser is back when this prints a 200 and an `access-control-allow-origin` header, without `cf-mitigated`. Then confirm it in the browser on the app's origin, as in "How the providers were tested". On 2026-11-10 it printed `200` and `access-control-allow-origin: *` for `/api/level/128` and `/api/search`, and a `fetch()` from the app's origin succeeded.
 
 ### GDHistory
 
 GDHistory has the most complete data: unrated levels, the exact tier (`cache_featured`, and `cache_epic` with 1 Epic, 2 Legendary, 3 Mythic), downloads, and a full-text search with filters (`/api/v1/search/level/advanced/`). Its responses carry no CORS headers, so a page on another origin cannot read them. Using it would need a server of our own that relays requests, which the app does not have and would have to host, secure and pay for. Its documentation also warns: "Keep in mind that this is very unfinished and that breaking changes are bound to happen". It does not say whether other sites may build on it. It also refuses some clients: Python's default user agent got a 403 from Cloudflare.
 
-Its data was still useful to check the sheet. The sheet's tiers matched GDHistory on all six levels compared:
+Since #159 the app reads it through the level relay below. Its data was also useful to check the sheet. The sheet's tiers matched GDHistory on all six levels compared:
 
 | ID | Level | Sheet | GDHistory |
 |---|---|---|---|
@@ -109,16 +111,34 @@ What the sheet cannot give:
 - **Levels rated after the last update.** The sheet is maintained by volunteers, and the app's copy is rebuilt once a day.
 - **Download counts.** Results that match the text equally well are ordered by downloads only when GDBrowser has supplied them, otherwise by the shorter name.
 
+### The level relay
+
+How gdbrowser.com itself avoids CORS, found for #159: its page only calls its own server (`/api/search/...`), which asks the game servers (`boomlings.com`), so the browser never makes a cross-origin request. A server of ours could not copy that against gdbrowser.com or the game servers without getting around their Cloudflare protection. GDHistory has no such protection against servers, so a relay in front of it is enough.
+
+The relay (`relay/`, deployed at `https://ppl-level-relay.waquermaster.workers.dev`) takes `GET /search` and `GET /levels`, checks every parameter against an allowlist, builds GDHistory's filter only from validated values, and returns levels in the app's shape. It answers only `https://wal-014.github.io`, limits each IP, and caches GDHistory's answers for 10 minutes. [relay/README.md](../relay/README.md) has the API and how to deploy a change.
+
+Checked when it was deployed on 2026-11-10:
+
+| Check | Result |
+|---|---|
+| `fetch()` from `https://wal-014.github.io` to `/search` and `/levels` | 200, with `Access-Control-Allow-Origin: https://wal-014.github.io` |
+| "sonic wave", Unrated | 10 unrated levels and more pages |
+| Another origin, no `Origin`, an unknown parameter, `page=500`, `POST`, another path | 403, 403, 400, 400, 405, 404 |
+| 300 requests, 50 at a time, from one IP | 38 got 429 |
+| GDHistory's fields against the sheet (132 levels, 2026-11-06) | Difficulty 131/132 (one outdated GDHistory record), platformer 66/66, tier 132/132 |
+
+GDHistory's fields: `cache_filter_difficulty` 1-6 is Auto to Insane and 8-12 Easy to Extreme Demon; `cache_length` 5 is a platformer; `cache_featured > 0` with `cache_epic` 1, 2 or 3 is featured, epic, legendary or mythic.
+
 ## Recommendation
 
 1. **Keep the sheet's rating tier** in `data/levels.json` and treat the sheet as the source for rated levels: search, filters, faces, and filling the tier of saved levels during sync.
-2. **Keep GDBrowser as an optional provider** for unrated levels, freshly rated levels and downloads. When both sources return the same level, GDBrowser's fields take precedence, because they describe the game's current state, and the sheet fills the fields GDBrowser leaves unknown.
+2. **Use GDHistory, through the level relay, as the optional provider** for unrated levels, freshly rated levels and downloads (GDBrowser until #159). When both sources return the same level, GDHistory's fields take precedence, and the sheet fills the fields GDHistory leaves unknown.
 3. **Ask GDBrowser only when it can add something,** and stop after a failure: a short cooldown avoids sending every search to a service that is known to be blocked, and recovery is automatic once the cooldown ends.
 4. **Say what could not be searched** instead of reporting "no levels". With GDBrowser down:
    - a Rated search is complete;
    - an All search covers rated levels only;
    - an Unrated search cannot run.
-5. **Add no new API and no backend.** No candidate is both reachable from the browser and broad enough. The only one with full coverage, GDHistory, would need a relay server for an API that calls itself unfinished.
+5. **Keep the backend to the relay.** No candidate is both reachable from the browser and broad enough; GDHistory needed the relay (#159). Its owner should know about it, since its API calls itself unfinished.
 
 Reconsider when one of these changes:
 - GDBrowser or GDHistory starts sending CORS headers to other sites;
@@ -127,6 +147,8 @@ Reconsider when one of these changes:
 
 ## What stays limited
 
-- With GDBrowser blocked, unrated levels cannot be searched, and levels rated after the last sheet update do not appear until the sheet lists them.
-- Saved levels that are not in the sheet (unrated ones) keep an unknown tier until GDBrowser answers again.
-- Without GDBrowser, results that match equally well are ordered by name length rather than by downloads.
+- GDHistory's copy of a level can be behind the game until it fetches that level again.
+- With the relay or GDHistory down, unrated levels cannot be searched, and levels rated after the last sheet update do not appear until the sheet lists them.
+- Saved levels that are not in the sheet (unrated ones) keep an unknown tier until the relay answers again.
+- Without the relay, results that match equally well are ordered by name length rather than by downloads.
+- The relay's rate limit is approximate: Cloudflare counts per location and syncs late, so it slows abuse but is not a hard cap.

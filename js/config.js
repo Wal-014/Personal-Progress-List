@@ -42,5 +42,5 @@ const FLAGS = { es: '<svg class=fl viewBox="0 0 60 40"><rect width=60 height=40 
 const DIFFICULTIES = ['Auto', 'Easy', 'Normal', 'Hard', 'Harder', 'Insane', 'Easy Demon', 'Medium Demon', 'Hard Demon', 'Insane Demon', 'Extreme Demon'];
 const RATING_TIERS = ['rated', 'featured', 'epic', 'legendary', 'mythic'];
 const AREDL_API = 'https://api.aredl.net/v2/api/';
-// GDHistory sends no CORS headers, so the app reads it through the project's relay (relay/README.md); SUBDOMAIN is the deploying account's workers.dev subdomain
-const LEVEL_RELAY_API = 'https://ppl-level-relay.SUBDOMAIN.workers.dev/';
+// GDHistory sends no CORS headers, so the app reads it through the project's relay (relay/README.md)
+const LEVEL_RELAY_API = 'https://ppl-level-relay.waquermaster.workers.dev/';
