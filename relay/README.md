@@ -25,15 +25,19 @@ GDHistory answers are cached for 10 minutes. The relay identifies itself to GDHi
 
 ## Deploy a change
 
-Changes under `relay/` do not go out with the site; deploy them by hand once the pull request is merged.
+A change deploys itself: when a pull request that touches `relay/` is merged, the `Relay` workflow (`.github/workflows/relay.yml`) runs the tests and `wrangler deploy` with the Wrangler version pinned in `package.json`. **Actions → Relay → Run workflow** deploys `main` again without a change.
 
-1. The site owner invites the developer once: in the Cloudflare dashboard, **Manage Account → Members → Invite members**, with the **Admin** role on **Workers**. No API token changes hands.
-2. Log in with your own Cloudflare user: `npx wrangler login`. `npx wrangler whoami` then lists the owner's account and its ID.
-3. From this folder: `CLOUDFLARE_ACCOUNT_ID=<owner's account ID> npx wrangler deploy`.
-4. Check it from the site's origin: open `https://wal-014.github.io/Personal-Progress-List/favicon.png` and run `fetch('https://ppl-level-relay.waquermaster.workers.dev/levels?ids=128').then(r => r.json())` in the console.
+The workflow needs one repository secret, `CLOUDFLARE_API_TOKEN`. To set it up or replace it:
+
+1. A member of the owner's Cloudflare account creates a token: **My Profile → API Tokens → Create Token → Custom token**, with the permission **Account · Workers Scripts · Edit** and, under account resources, only the owner's account.
+2. The repository owner adds it in GitHub: **Settings → Secrets and variables → Actions → New repository secret**, named `CLOUDFLARE_API_TOKEN`. Only the owner of a personal repository can add secrets.
+
+The account ID is in `wrangler.jsonc`. The token is tied to its creator's Cloudflare membership; if that person leaves the account, create a new one.
+
+To deploy by hand, a member of the account runs `npm ci` and `npx wrangler login`, then `npx wrangler deploy`, in this folder. To check the relay from the site's origin, open `https://wal-014.github.io/Personal-Progress-List/favicon.png` and run `fetch('https://ppl-level-relay.waquermaster.workers.dev/levels?ids=128').then(r => r.json())` in the console.
 
 If the relay ever moves to another account or name, its URL changes: update `LEVEL_RELAY_API` in `js/config.js` and the `connect-src` of the Content Security Policy in `index.html`. `npm test` fails if the two differ.
 
-To try it against a local copy of the site, run `npx wrangler dev --var ALLOWED_ORIGINS:http://127.0.0.1:8790` and serve the site on that port.
+To try it against a local copy of the site, run `npm install` here (it allows workerd's install script, which `wrangler dev` needs), then `npx wrangler dev --var ALLOWED_ORIGINS:http://127.0.0.1:8790`, and serve the site on that port.
 
 Before relying on it, tell GDHistory's owner about the relay: its API documentation calls it unfinished and says nothing about use by other sites.

@@ -45,6 +45,7 @@ flowchart LR
     GH["🚀 GitHub Pages"] -->|static files| B["🖥️ Browser app<br/>index.html + js/"]
     B <--> LS[("💾 localStorage<br/>profiles")]
     B --> SW["⚙️ Service worker<br/>sw.js"]
+    CI -->|relay/ changes| R
     B --> R["🔀 Level relay<br/>Cloudflare Worker"]
     R --> G["🔎 GDHistory API<br/>unrated · newly rated · downloads"]
     B --> A["🏆 AREDL / AREPL API"]
@@ -85,18 +86,19 @@ The promotional card, also the site's link preview image, is drawn in `docs/bran
 
 ## Deployment
 
-The `CI` workflow (`.github/workflows/ci.yml`) runs lint and tests on every pull request and on every push to `main`. On `main`, a second job deploys the site to GitHub Pages only after those checks pass, so a merge goes live at <https://wal-014.github.io/Personal-Progress-List/> only when CI is green. The deploy job has two build steps. `npm run levels` publishes a fresh copy of the community sheet; a schedule also runs the workflow every day at 05:23 UTC for that reason. `npm run site` (`scripts/build-site.js`) then copies only the files the site serves into `_site/`, the folder that is published, so tests, docs and tooling stay off the live site; `tests/site.test.js` fails if the page, the service worker or a script needs a file outside that list. If the sheet cannot be downloaded or has far fewer levels than expected, a push to `main` still deploys with the `data/levels.json` that is live, under a warning on the run, so a sheet outage does not hold back code changes; the scheduled and manual runs fail instead and the previous version stays live. No secrets are needed. Dependabot (`.github/dependabot.yml`) proposes weekly updates for the npm dev tools and the pinned actions.
+The `CI` workflow (`.github/workflows/ci.yml`) runs lint and tests on every pull request and on every push to `main`. On `main`, a second job deploys the site to GitHub Pages only after those checks pass, so a merge goes live at <https://wal-014.github.io/Personal-Progress-List/> only when CI is green. The deploy job has two build steps. `npm run levels` publishes a fresh copy of the community sheet; a schedule also runs the workflow every day at 05:23 UTC for that reason. `npm run site` (`scripts/build-site.js`) then copies only the files the site serves into `_site/`, the folder that is published, so tests, docs and tooling stay off the live site; `tests/site.test.js` fails if the page, the service worker or a script needs a file outside that list. If the sheet cannot be downloaded or has far fewer levels than expected, a push to `main` still deploys with the `data/levels.json` that is live, under a warning on the run, so a sheet outage does not hold back code changes; the scheduled and manual runs fail instead and the previous version stays live. The site needs no secrets. The level relay deploys on its own: the `Relay` workflow (`.github/workflows/relay.yml`) runs the tests and deploys the Worker to Cloudflare when a push to `main` changes `relay/`, with the repository secret `CLOUDFLARE_API_TOKEN` ([relay/README.md](relay/README.md)). Dependabot (`.github/dependabot.yml`) proposes weekly updates for the npm dev tools, the relay's Wrangler and the pinned actions.
 
 The `Security` workflow (`.github/workflows/security.yml`) runs on every pull request and every push to `main`, but not on the daily schedule, with one job per scanner: gitleaks (secrets, including git history), semgrep (vulnerable code), osv-scanner (vulnerable dependencies in `package-lock.json`) and zizmor (unsafe workflow configuration).
 
 First-time setup, done once by a repository admin:
 
 1. **Settings → Pages → Build and deployment → Source:** choose **GitHub Actions**, so Pages stops publishing every push and waits for the CI deploy job.
-2. **Settings → Rules → Rulesets:** add a ruleset for `main` that requires a pull request and the **ci**, **gitleaks**, **semgrep**, **osv-scanner** and **zizmor** status checks, and blocks deletions and force pushes, so a failing PR cannot be merged.
+2. **Settings → Secrets and variables → Actions:** add `CLOUDFLARE_API_TOKEN`, the Cloudflare token the `Relay` workflow deploys with ([how to create it](relay/README.md#deploy-a-change)).
+3. **Settings → Rules → Rulesets:** add a ruleset for `main` that requires a pull request and the **ci**, **gitleaks**, **semgrep**, **osv-scanner** and **zizmor** status checks, and blocks deletions and force pushes, so a failing PR cannot be merged.
 
 ## Security
 
-- **No secrets** — there is no API key; neither the site nor the relay holds anything secret.
+- **No secrets in the code** — there is no API key; neither the site nor the relay holds anything secret. The only secret, the Cloudflare token that deploys the relay, lives in GitHub's repository secrets and can only edit Workers.
 - **Level relay** — the Worker in `relay/` sends CORS headers only to `https://wal-014.github.io`, answers 403 to any other origin, rejects every parameter outside its allowlist with a 400, limits each IP to about 30 requests per 10 seconds, and sends its own Content Security Policy, HSTS, `nosniff` and `no-referrer` headers ([relay/README.md](relay/README.md)).
 - **Content Security Policy** — a `<meta>` policy in `index.html` sets `default-src 'self'`, allows scripts only from the app itself, network requests only to `api.aredl.net` and the level relay, images only from the thumbnail hosts, and sets `object-src 'none'`, `base-uri 'self'` and `form-action 'none'`. `style-src` allows `'unsafe-inline'` because the UI renders inline `style` attributes. A `<meta name="referrer">` tag sets `strict-origin-when-cross-origin`. `frame-ancestors` and `X-Content-Type-Options` need HTTP headers, which GitHub Pages does not let a site set; it does send HSTS on its own.
 - **Output escaping** — user text such as level names, notes and links goes through `escapeHtml` (`js/utils.js`) before it is rendered.
