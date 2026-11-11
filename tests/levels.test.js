@@ -64,11 +64,12 @@ test('listTagOptions sorts names with locale collation rather than character cod
 
 test('detail renders keyboard-accessible tag filters with escaped translated labels', () => {
     app('profile = emptyProfile()');
-    const level = { id: 'tag-test', name: 'Tagged level', kind: 'classic', tags: ['safe', 'a"><img src=x>'] };
+    const level = { id: 'tag-test', levelId: '4125776', name: 'Tagged level', kind: 'classic', tags: ['safe', 'a"><img src=x>'] };
     for (const [lang, label] of [['es', 'Filtrar por tag: '], ['en', 'Filter by tag: ']]) {
         context.lang = lang;
         app('ui.lang = lang');
         const html = app('detail')(level);
+        assert.ok(html.includes(`<div class=hero style="background-image:url('https://levelthumbs.prevter.me/thumbnail/4125776')"></div>`));
         const chips = html.match(/<span class=chip\b[^>]*>/g);
         assert.equal(chips.length, 2);
         for (const chip of chips) {
@@ -85,7 +86,8 @@ test('detail renders keyboard-accessible tag filters with escaped translated lab
 test('card tag filters stay outside the tab order in both level lists', () => {
     app('profile = emptyProfile()');
     for (const kind of ['classic', 'platform']) {
-        const html = app('card')({ id: 'tag-test', name: 'Tagged level', kind, tags: ['first', 'second'] });
+        const html = app('card')({ id: 'tag-test', levelId: '4125776', name: 'Tagged level', kind, tags: ['first', 'second'] });
+        assert.ok(html.includes("--th:url('https://levelthumbs.prevter.me/thumbnail/4125776/small')"));
         assert.match(html, /role=button tabindex=0/);
         const chips = html.match(/<span class=chip\b[^>]*>/g);
         assert.equal(chips.length, 2);
@@ -94,12 +96,14 @@ test('card tag filters stay outside the tab order in both level lists', () => {
     }
 });
 
-test('card renders a decorative first-child grip only when reorderable', () => {
+test('card renders optional decorative grips and thumbnail layers', () => {
     const level = { id: 'grip-test', name: 'Level', kind: 'classic' };
     for (const [lang, hint] of [['es', 'Arrastra para reordenar'], ['en', 'Drag to reorder']]) {
         context.lang = lang;
         app('ui.lang = lang');
         const html = app('card')(level, 0, 1, true);
+        assert.doesNotMatch(html, /<i class=th\b/);
+        assert.match(app('card')({ ...level, levelId: '42' }, 0, 1, true), /<i class=th aria-hidden=true><\/i>/);
         assert.match(html, new RegExp(`^<div[^>]*><span class=grip aria-hidden=true title="${hint}">`));
         const grip = html.match(/<span class=grip[^>]*>(.*?)<\/span>/)[0];
         assert.doesNotMatch(grip, /\b(?:tabindex|role)=/);

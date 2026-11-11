@@ -1,5 +1,5 @@
 <p align="center">
-  <img alt="Personal Ranked Progress with Classic list, Bloodbath details and statistics screenshots" src="docs/brand/card.png" width="880" />
+  <img alt="Personal Ranked Progress - track and rank your hardest Geometry Dash levels" src="docs/brand/banner.png" width="880" />
 </p>
 
 <p align="center">
@@ -70,6 +70,7 @@ npm ci                        # install the dev tools (ESLint)
 npm run lint                  # ESLint over the app, the service worker and the tests
 npm test                      # unit tests with node:test (tests/)
 npm run levels                # download the community sheet into data/levels.json (git-ignored)
+npm run site                  # copy the files the site serves into _site/ (git-ignored), as the deploy does
 ```
 
 On Windows, `iniciar.bat` starts the same server and opens the browser; on macOS and Linux, `iniciar.command` does the same with `python3`. There are no environment variables: the app has no backend and none of the external services needs an API key. The first visit loads the demo profile from `data/demo-data.js`, which contains fictional data. Without `data/levels.json` the app still works; it just cannot fill creators and difficulties from the sheet.
@@ -83,7 +84,7 @@ The promotional card, also the site's link preview image, is drawn in `docs/bran
 
 ## Deployment
 
-The `CI` workflow (`.github/workflows/ci.yml`) runs lint and tests on every pull request and on every push to `main`. On `main`, a second job deploys the repository root to GitHub Pages only after those checks pass, so a merge goes live at <https://wal-014.github.io/Personal-Progress-List/> only when CI is green. The only build step is `npm run levels`, which the deploy job runs to publish a fresh copy of the community sheet; a schedule also runs the workflow every day at 05:23 UTC for that reason. If the sheet cannot be downloaded or has far fewer levels than expected, the deploy fails and the previous version stays live. No secrets are needed. Dependabot (`.github/dependabot.yml`) proposes weekly updates for the npm dev tools and the pinned actions.
+The `CI` workflow (`.github/workflows/ci.yml`) runs lint and tests on every pull request and on every push to `main`. On `main`, a second job deploys the site to GitHub Pages only after those checks pass, so a merge goes live at <https://wal-014.github.io/Personal-Progress-List/> only when CI is green. The deploy job has two build steps. `npm run levels` publishes a fresh copy of the community sheet; a schedule also runs the workflow every day at 05:23 UTC for that reason. `npm run site` (`scripts/build-site.js`) then copies only the files the site serves into `_site/`, the folder that is published, so tests, docs and tooling stay off the live site; `tests/site.test.js` fails if the page, the service worker or a script needs a file outside that list. If the sheet cannot be downloaded or has far fewer levels than expected, a push to `main` still deploys with the `data/levels.json` that is live, under a warning on the run, so a sheet outage does not hold back code changes; the scheduled and manual runs fail instead and the previous version stays live. No secrets are needed. Dependabot (`.github/dependabot.yml`) proposes weekly updates for the npm dev tools and the pinned actions.
 
 The `Security` workflow (`.github/workflows/security.yml`) runs on every pull request and every push to `main`, but not on the daily schedule, with one job per scanner: gitleaks (secrets, including git history), semgrep (vulnerable code), osv-scanner (vulnerable dependencies in `package-lock.json`) and zizmor (unsafe workflow configuration).
 

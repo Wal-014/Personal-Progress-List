@@ -22,8 +22,8 @@
   <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
   <meta name="theme-color" content="#26337e">
   <link rel="stylesheet" href="css/styles.css">
-  <script src="vendor/Sortable.min.js"></script>
-  <script src="data/demo-data.js"></script>
+  <script src="vendor/Sortable.min.js" defer></script>
+  <script src="data/demo-data.js" defer></script>
 </head>
 <body>
   <div id="app"></div>
@@ -32,29 +32,30 @@
   <div id="tip"></div>
   <input type="file" id="fi" accept=".json" hidden>
 
-  <!-- Load order matters: each classic script uses names defined by earlier scripts -->
-  <script src="js/config.js"></script>
-  <script src="js/i18n.js"></script>
-  <script src="js/utils.js"></script>
-  <script src="js/state.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/sheet.js"></script>
-  <script src="js/relay.js"></script>
-  <script src="js/gd.js"></script>
-  <script src="js/components/faces.js"></script>
-  <script src="js/components/empty-list.js"></script>
-  <script src="js/components/levels.js"></script>
-  <script src="js/components/wishlists.js"></script>
-  <script src="js/components/search.js"></script>
-  <script src="js/components/timeline.js"></script>
-  <script src="js/components/rankings.js"></script>
-  <script src="js/components/compare.js"></script>
-  <script src="js/components/stats.js"></script>
-  <script src="js/components/home.js"></script>
-  <script src="js/components/dialogs.js"></script>
-  <script src="js/components/shell.js"></script>
-  <script src="js/render.js"></script>
-  <script src="js/events.js"></script>
-  <script src="js/main.js"></script>
+  <!-- Load order matters: each classic script uses names defined by earlier scripts.
+       Every script is deferred: the CSP meta tag stops Chrome from fetching ahead, so blocking scripts would download one at a time. -->
+  <script src="js/config.js" defer></script>
+  <script src="js/i18n.js" defer></script>
+  <script src="js/utils.js" defer></script>
+  <script src="js/state.js" defer></script>
+  <script src="js/api.js" defer></script>
+  <script src="js/sheet.js" defer></script>
+  <script src="js/relay.js" defer></script>
+  <script src="js/gd.js" defer></script>
+  <script src="js/components/faces.js" defer></script>
+  <script src="js/components/empty-list.js" defer></script>
+  <script src="js/components/levels.js" defer></script>
+  <script src="js/components/wishlists.js" defer></script>
+  <script src="js/components/search.js" defer></script>
+  <script src="js/components/timeline.js" defer></script>
+  <script src="js/components/rankings.js" defer></script>
+  <script src="js/components/compare.js" defer></script>
+  <script src="js/components/stats.js" defer></script>
+  <script src="js/components/home.js" defer></script>
+  <script src="js/components/dialogs.js" defer></script>
+  <script src="js/components/shell.js" defer></script>
+  <script src="js/render.js" defer></script>
+  <script src="js/events.js" defer></script>
+  <script src="js/main.js" defer></script>
 </body>
 </html>
