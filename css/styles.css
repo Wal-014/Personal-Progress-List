@@ -2779,6 +2779,201 @@ input.ro {
   text-shadow: 2px 0 #000, -2px 0 #000, 0 2px #000, 0 -2px #000, 1.5px 1.5px #000, -1.5px 1.5px #000, 1.5px -1.5px #000, -1.5px -1.5px #000, 0 3px 0 rgba(0, 0, 0, .5);
 }
 
+/* ===== Cloud account screens ===== */
+.account-button {
+  flex: none;
+  width: 44px;
+  height: 44px;
+}
+
+.account-button .i {
+  width: 32px;
+  height: 32px;
+}
+
+.account-button[aria-busy=true] .i {
+  animation: account-pulse 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes account-pulse {
+  to { opacity: .45; }
+}
+
+.account-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--pal);
+}
+
+.account-head > .i {
+  flex: none;
+  width: 38px;
+  height: 38px;
+}
+
+.account-head .info {
+  min-width: 0;
+  flex: 1;
+}
+
+.account-head .nm, .account-head .by {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.beta-chip {
+  padding: 3px 6px;
+  color: var(--meta);
+  background: var(--pal);
+  border: 1px solid var(--meta);
+  border-radius: 6px;
+  font: bold 12px Arial, Helvetica, sans-serif;
+}
+
+.amenu {
+  overflow-y: auto;
+}
+
+.amenu .pma {
+  justify-content: flex-start;
+  gap: 10px;
+  background: var(--pal);
+}
+
+.account-dialog {
+  overflow-wrap: anywhere;
+}
+
+.modal .account-dialog.sm {
+  max-width: 460px;
+}
+
+.account-dialog button, .account-dialog input, .account-dialog select {
+  min-height: 44px;
+}
+
+.account-dialog input:not([type=radio]):not([type=color]), .account-dialog textarea, .account-dialog select {
+  width: 100%;
+  min-width: 0;
+}
+
+.account-dialog form > label {
+  margin-top: 12px;
+}
+
+.account-dialog .gdseg {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.account-dialog .gdseg button {
+  flex: 1;
+}
+
+.account-dialog .gbtn {
+  width: 100%;
+  background: #fff;
+  color: #20232d;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+  font: bold 15px Arial, Helvetica, sans-serif;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+  color: var(--plab);
+}
+
+.auth-divider::before, .auth-divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid currentColor;
+}
+
+.password-field, .username-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.password-field input, .username-field input {
+  flex: 1;
+}
+
+.password-field button {
+  flex: none;
+  min-width: 44px;
+  padding: 4px 8px;
+}
+
+.password-field .i {
+  width: 20px;
+  height: 20px;
+}
+
+.account-link {
+  width: 100%;
+}
+
+.profile-card > .i {
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 12px;
+}
+
+.profile-card h2 {
+  justify-content: center;
+}
+
+.profile-card {
+  text-align: center;
+}
+
+.profile-bio {
+  white-space: pre-wrap;
+  text-align: left;
+}
+
+.account-counter {
+  text-align: right;
+  margin-top: 4px;
+}
+
+.account-danger {
+  margin-top: 20px;
+  padding: 14px 0 0;
+  border-top: 3px solid var(--rd);
+}
+
+.account-dialog [role=alert]:empty {
+  display: none;
+}
+
+@media (max-width: 560px) {
+  .top:has(.account-button) {
+    gap: 6px;
+  }
+
+  .top:has(.account-button) h1 {
+    min-width: 0;
+    font-size: 17px;
+    overflow-wrap: anywhere;
+  }
+
+  .top:has(.account-button) > .sq {
+    flex: none;
+    width: 44px;
+    height: 44px;
+  }
+}
+
 /* ===== AREDL update status ===== */
 .syncst {
   display: inline-flex;

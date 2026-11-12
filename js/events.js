@@ -20,6 +20,17 @@ function zoomTimeline(factor) {
 
 /** What each data-act value does when clicked. Handlers get the clicked element and its data-id. */
 const ACTIONS = {
+    asignin: () => openAuthDialog(),
+    amode: a => openAuthDialog(a.dataset.v),
+    agoogle: a => continueWithGoogle(a),
+    aresend: a => resendAccountEmail(a),
+    apw: a => toggleAccountPassword(a),
+    aprofile: () => openModal(profileCard()),
+    aedit: () => openProfileForm(),
+    asettings: () => settingsDialog(),
+    apassword: () => passwordDialog(),
+    adelete: a => confirmAccountDeletion(a),
+    asignout: a => signOutFromMenu(a),
     tab(a) {
         ui.tab = a.dataset.v;
         resetListFilters();
@@ -387,6 +398,14 @@ document.body.onclick = e => {
 };
 document.body.onsubmit = e => {
     e.preventDefault();
+    if (e.target.id == 'af')
+        return submitAuth(e.target);
+    if (e.target.id == 'pf')
+        return submitAccountProfile(e.target);
+    if (e.target.id == 'pwf')
+        return submitAccountPassword(e.target);
+    if (e.target.id == 'ef')
+        return submitAccountEmail(e.target);
     // The level fields are read-only, so the browser does not check them: a level must be picked from the search
     if (!e.target.elements.name.value) {
         qs('#gdq').setCustomValidity(t('gdPick'));
@@ -398,6 +417,8 @@ document.body.onsubmit = e => {
         saveLevel(e.target);
 };
 document.body.oninput = e => {
+    if (['pf', 'pwf'].includes(e.target.form?.id))
+        return accountFormInput(e.target);
     if (e.target.dataset.compareSlot != null)
         return setComparisonSearch(e.target);
     if (['fm', 'wf'].includes(e.target.form?.id))
@@ -436,14 +457,28 @@ document.body.onchange = e => {
         input.value = '';
     }
 };
-// Popovers open in the top layer, away from their button; place the profile menu under it, inside the viewport
+// Popovers open in the top layer, away from their button; place each menu under its own button, inside the viewport
 document.addEventListener('beforetoggle', e => {
-    if (e.target.id != 'pmenu' || e.newState != 'open')
+    if (!['pmenu', 'amenu'].includes(e.target.id) || e.newState != 'open')
         return;
-    const r = qs('[popovertarget=pmenu]').getBoundingClientRect(), w = Math.min(360, innerWidth - 24);
+    const r = qs(`[popovertarget=${e.target.id}]`).getBoundingClientRect(), w = Math.min(360, innerWidth - 24);
     // Only the profile rows scroll, so the menu never runs past the bottom of the screen
     Object.assign(e.target.style, { width: w + 'px', top: r.bottom + 6 + 'px', left: Math.max(12, Math.min(r.left, innerWidth - w - 12)) + 'px', maxHeight: Math.max(200, innerHeight - r.bottom - 18) + 'px' });
 }, true);
+
+let recoveryDialogOpened = false;
+
+function accountRendered() {
+    finishAccountSignIn();
+    if (!account.recovering)
+        recoveryDialogOpened = false;
+    if (account.status == 'signed-in' && account.recovering && !recoveryDialogOpened && !qs('dialog[open]')) {
+        recoveryDialogOpened = true;
+        passwordDialog();
+    }
+}
+
+document.addEventListener('close', () => queueMicrotask(accountRendered), true);
 /** Fits an open dropdown panel inside the viewport. */
 document.addEventListener('toggle', e => {
     if (e.target.matches('.ms[open]')) {

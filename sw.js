@@ -1,7 +1,7 @@
 /**
  * Service worker for installation and offline use, fetching same-origin files from the network first with a cache fallback.
  */
-const CACHE = 'prp-1.6.0';
+const CACHE = 'prp-1.7.0';
 // vendor/supabase.js is intentionally omitted so visitors who never sign in never download it.
 const SHELL = [
   "./",
@@ -35,6 +35,7 @@ const SHELL = [
   "js/components/stats.js",
   "js/components/home.js",
   "js/components/dialogs.js",
+  "js/components/account-ui.js",
   "js/components/shell.js",
   "js/render.js",
   "js/events.js",
