@@ -9,7 +9,7 @@ function topBar() {
     const left = onHome
         ? `<span class=logo data-act=tab data-v=home role=button tabindex=0 aria-label="${t('home')}">${ICONS.app}</span><h1>Personal Ranked Progress</h1>`
         : `<button class="sq pri" data-act=tab data-v=home aria-label="${t('back2')}">${ICONS.back}</button><h1>${escapeHtml(screenTitle())}</h1>`;
-    return `<header class=top>${left}<span class=sp></span><span id=syncst class=syncst role=status>${syncStatus()}</span><button class=sq data-act=bell aria-label="${t('bell')}${A ? ` (${A})` : ''}">${ICONS.bell}${A ? `<b class=bdg aria-hidden=true>${A}</b>` : ''}</button><button class=sq data-act=pause aria-label="${t('pause')}">${ICONS.pause}</button></header>`;
+    return `<header class=top>${left}<span class=sp></span><span id=syncst class=syncst role=status>${syncStatus()}</span>${accountButton()}<button class=sq data-act=bell aria-label="${t('bell')}${A ? ` (${A})` : ''}">${ICONS.bell}${A ? `<b class=bdg aria-hidden=true>${A}</b>` : ''}</button><button class=sq data-act=pause aria-label="${t('pause')}">${ICONS.pause}</button></header>`;
 }
 
 const syncStatus = () => ui.sync ? `${ICONS.sync}<span>${t('syncing')}</span>` : '';

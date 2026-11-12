@@ -137,7 +137,7 @@ npm run test:db                    # integration tests through the real Data API
 npx supabase@2.122.0 stop
 ```
 
-CI runs the same tests in the `db` job on every pull request. The local stack also catches every email in Mailpit (`http://127.0.0.1:54324`), so sign-up and recovery can be tested without a mail provider.
+CI runs the same tests in the `db` job on every pull request. The local stack also catches every email in Mailpit (`http://127.0.0.1:54324`), so sign-up and recovery can be tested without a mail provider. Google sign-in only works on the hosted project: locally the provider is declared without credentials, so its button appears but Google refuses the request.
 
 ## Platform limits
 

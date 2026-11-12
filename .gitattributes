@@ -1,0 +1,2 @@
+# Vendored builds must stay byte-identical to their npm packages (tests/vendor.test.js)
+vendor/** -text
