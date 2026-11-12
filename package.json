@@ -5,7 +5,7 @@
   "scripts": {
     "lint": "eslint .",
     "test": "node --test",
-    "test:db": "node scripts/test-db.js",
+    "test:db": "node scripts/db-tests.js",
     "levels": "node scripts/build-levels.js",
     "site": "node scripts/build-site.js"
   },
