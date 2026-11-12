@@ -12,6 +12,8 @@
     ensureProfileColors();
     ensureProfileDefaults();
     render();
+    if (cloudBeta())
+        initAccount();
     if (storeWasUnreadable)
         showAlert(t('dataUnreadable'));
     autoSyncIfStale();

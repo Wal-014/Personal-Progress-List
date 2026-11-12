@@ -29,4 +29,5 @@ function render() {
     // Rebuilding #app drops keyboard focus to <body>; put it back on the same control when it still exists
     if (focused)
         qs(focused)?.focus({ preventScroll: true });
+    accountRendered();
 }
