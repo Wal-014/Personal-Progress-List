@@ -33,14 +33,14 @@ test('profileRows maps every level field and keeps private notes in their own ro
     const { app } = createApp(), convert = app('profileRows');
     const input = { ...empty(), levels: [{ ...level(), legacy: 'discard', user_id: 'discard', version: 99 }] };
     const before = structuredClone(input), rows = convert(input);
-    assert.deepEqual([...rows.keys()], ['levels:n1', 'level_notes:n1', 'list_orders:classic', 'list_orders:platform']);
+    assert.deepEqual([...rows.keys()], ['levels:n1', 'level_notes:n1', 'level_tags:n1/Focus', 'level_tags:n1/星', 'list_orders:classic', 'list_orders:platform']);
     assert.deepEqual(plain(rows.get('levels:n1')), {
         table: 'levels', row: {
-            id: 'n1', name: 'Étoile 星 🎮', kind: 'classic', level_id: '123456', creator: 'Creator',
+            id: 'n1', name: 'Étoile 星 🎮', kind: 'classic', level_id: 123456, creator: 'Creator',
             difficulty: 'Extreme Demon', rating: 'mythic', attempts_normal: 0, attempts_copy: 123,
             time_normal: 456, time_practice: 789, time_practice_copy: 10, completed_on: '2026-11-11',
             video_url: 'https://example.com/video', enjoyment: -10, liking: 0,
-            tags: ['Focus', '星'], deaths: { 0: 0, 43: 7, 100: 1 }, aredl_status: 'r', aredl_position: 42
+            deaths: { 0: 0, 43: 7, 100: 1 }, aredl_status: 'r', aredl_position: 42
         }
     });
     assert.deepEqual(plain(rows.get('level_notes:n1')), { table: 'level_notes', row: { level_id: 'n1', notes: '  Private notes\n第二行  ' } });
@@ -57,7 +57,7 @@ test('profileRows normalizes missing and empty level values without losing zeroe
             id: 'empty', name: null, kind: null, level_id: null, creator: null, difficulty: null,
             rating: null, attempts_normal: null, attempts_copy: null, time_normal: null,
             time_practice: null, time_practice_copy: null, completed_on: null, video_url: null,
-            enjoyment: null, liking: null, tags: [], deaths: {}, aredl_status: null, aredl_position: null
+            enjoyment: null, liking: null, deaths: {}, aredl_status: null, aredl_position: null
         });
         assert.equal(rows.has('level_notes:empty'), false);
     }
@@ -89,7 +89,7 @@ test('profileRows maps orders, wishlist positions and items, tag positions and o
     assert.deepEqual(plain(rows.get('wishlists:w1').row), { id: 'w1', name: 'Now', position: 1, item_ids: [] });
     assert.deepEqual(plain(rows.get('wishlist_items:i1')), {
         table: 'wishlist_items', row: {
-            id: 'i1', wishlist_id: 'w2', name: 'Wishlist 星', level_id: '789', creator: 'Maker',
+            id: 'i1', wishlist_id: 'w2', name: 'Wishlist 星', level_id: 789, creator: 'Maker',
             difficulty: 'Hard', rating: 'featured', kind: 'platform', status: 'prog', progress: 0, enrich_checked: true
         }
     });
@@ -110,6 +110,38 @@ test('profileRows defaults optional wishlist fields to null and enrichment to a 
             id: 'i', wishlist_id: 'w', name: 'Sparse', level_id: null, creator: null, difficulty: null,
             rating: null, kind: null, status: 'todo', progress: null, enrich_checked: false
         });
+    }
+});
+
+test('profileRows emits unique level_tags at their first positions, including names containing slashes', () => {
+    const convert = createApp().app('profileRows');
+    const source = { ...empty(), levels: [level({ tags: ['Z', 'Z', 'Focus/Next', 'A', 'Z'] }), level({ id: 'n2', tags: ['Z'] })] };
+    const before = structuredClone(source), rows = convert(source);
+    assert.deepEqual(plain([...rows].filter(([, entry]) => entry.table == 'level_tags')), [
+        ['level_tags:n1/Z', { table: 'level_tags', row: { level_id: 'n1', tag_name: 'Z', position: 0 } }],
+        ['level_tags:n1/Focus/Next', { table: 'level_tags', row: { level_id: 'n1', tag_name: 'Focus/Next', position: 2 } }],
+        ['level_tags:n1/A', { table: 'level_tags', row: { level_id: 'n1', tag_name: 'A', position: 3 } }],
+        ['level_tags:n2/Z', { table: 'level_tags', row: { level_id: 'n2', tag_name: 'Z', position: 0 } }]
+    ]);
+    assert.equal(Object.hasOwn(rows.get('levels:n1').row, 'tags'), false);
+    assert.deepEqual(source, before);
+});
+
+test('level IDs become numeric rows only for all-digit values, then return as app strings', () => {
+    const { app } = createApp(), encode = app('profileRows'), decode = app('rowsProfile');
+    const cases = [
+        ['123', 123], ['00042', 42], [42, 42], ['999999999999', 999999999999], ['0', 0],
+        [null, null], [undefined, null], ['', null], [' ', null], ['12.3', null], ['-1', null],
+        ['+1', null], ['0x10', null], ['1e3', null], ['123x', null], ['123\n', null], ['１２', null]
+    ];
+    for (const [levelId, expected] of cases) {
+        const source = { ...empty(), levels: [level({ levelId })], wishlists: [{ id: 'w', name: 'List', items: [item({ levelId })] }] };
+        const rows = encode(source);
+        assert.equal(rows.get('levels:n1').row.level_id, expected, String(levelId));
+        assert.equal(rows.get('wishlist_items:i1').row.level_id, expected, String(levelId));
+        const rebuilt = decode(rows).profile, restored = expected === null ? null : String(expected);
+        assert.equal(rebuilt.levels[0].levelId, restored);
+        assert.equal(rebuilt.wishlists[0].items[0].levelId, restored);
     }
 });
 
@@ -162,6 +194,23 @@ test('rowsProfile orders levels by creation time with id ties, or by id without 
     assert.deepEqual([...convert(rows.map(({ table, row: { id } }) => ({ table, row: { id } }))).profile.levels].map(entry => entry.id), ['a', 'b', 'c', 'z']);
 });
 
+test('rowsProfile rebuilds tags by position then name and drops assignments for unknown levels', () => {
+    const convert = createApp().app('rowsProfile');
+    const rows = [
+        { table: 'level_tags', row: { level_id: 'n1', tag_name: 'Z', position: 2 } },
+        { table: 'level_tags', row: { level_id: 'unknown', tag_name: 'Orphan', position: 0 } },
+        { table: 'levels', row: { id: 'n2', tags: ['Ignored legacy column'] } },
+        { table: 'level_tags', row: { level_id: 'n1', tag_name: 'Focus/Next', position: 0 } },
+        { table: 'levels', row: { id: 'n1' } },
+        { table: 'level_tags', row: { level_id: 'n1', tag_name: 'A', position: 2 } }
+    ];
+    const before = structuredClone(rows), result = convert(rows).profile;
+    assert.deepEqual([...result.levels].map(entry => ({ id: entry.id, tags: [...entry.tags] })), [
+        { id: 'n1', tags: ['Focus/Next', 'A', 'Z'] }, { id: 'n2', tags: [] }
+    ]);
+    assert.deepEqual(rows, before);
+});
+
 test('rowsProfile orders wishlists and tags by position and identity, and items by item_ids then stray ids', () => {
     const convert = createApp().app('rowsProfile');
     const rows = [
@@ -195,16 +244,17 @@ test('250 seeded profiles round-trip after defaults and normalize randomly missi
     const { app, context } = createApp(), random = seededRandom(0xc10d), choose = values => values[Math.floor(random() * values.length)];
     for (let sample = 0; sample < 250; sample++) {
         const source = empty(), settings = { lang: choose(['es', 'en']), theme: choose(['blue', 'night', 'synth']) };
-        source.tags = ['Focus', '星 🎮', 'Éxito'].slice(0, Math.floor(random() * 4)).map(name => ({ name, color: choose(['#123456', '#abcdef', '#00ff00']) }));
+        const tagNames = ['Focus', '星 🎮', 'Éxito', 'Next/Goal'];
+        source.tags = tagNames.slice(0, Math.floor(random() * 5)).map(name => ({ name, color: choose(['#123456', '#abcdef', '#00ff00']) }));
         source.levels = Array.from({ length: Math.floor(random() * 8) }, (_, index) => level({
             id: `n${index}`, name: choose(['星 🎮', 'Étoile', 'Level', 'ñ']), kind: choose(['classic', 'platform']),
-            levelId: choose([null, '123', '987654321']), creator: choose([null, 'Creator 星']),
+            levelId: choose([null, String(1 + Math.floor(random() * 999999999999))]), creator: choose([null, 'Creator 星']),
             diff: choose([null, 'Auto', 'Extreme Demon']), rating: choose([null, 'unrated', 'mythic']),
             attN: choose([null, 0, 1000000000]), attC: choose([null, 0, 17]),
             tN: choose([null, 0, 12345]), tP: choose([null, 0, 42]), tPC: choose([null, 0, 60]),
             date: choose([null, '2026-11-11']), link: choose([null, 'https://example.com/🎮']),
             enj: choose([null, -10, 0, 10]), lik: choose([null, -10, 0, 10]), notes: choose(['', '星\n  Notes  ']),
-            tags: source.tags.filter(() => random() < 0.5).map(tag => tag.name),
+            tags: Array.from({ length: Math.floor(random() * 7) }, () => choose(tagNames)),
             deaths: random() < 0.5 ? {} : { 0: 0, [Math.floor(random() * 100) + 1]: Math.floor(random() * 100) },
             ar: choose([{ s: null, p: null }, { s: 'n', p: null }, { s: 'p', p: null }, { s: 'r', p: 1 }])
         }));
@@ -215,7 +265,7 @@ test('250 seeded profiles round-trip after defaults and normalize randomly missi
             items: ['todo', 'prog', 'done'].map((status, index) => {
                 const entry = item({
                     id: `i${listIndex}_${index}`, status, name: choose(['星 🎮', 'Soon', 'é']),
-                    levelId: choose([null, '42']), creator: choose([null, 'Maker']), diff: choose([null, 'Hard']),
+                    levelId: choose([null, String(1 + Math.floor(random() * 999999999999))]), creator: choose([null, 'Maker']), diff: choose([null, 'Hard']),
                     rating: choose([null, 'epic']), chk: choose([0, 1])
                 });
                 if (random() < 0.5) delete entry.kind;
@@ -281,9 +331,10 @@ test('rowChanges emits added, changed and deleted rows with snapshot versions an
     assert.deepEqual([...changes(new Map(), new Map())], []);
 });
 
-test('rowChanges puts parent upserts before children and all deletes after upserts', () => {
+test('rowChanges upserts parents before children, then deletes children before parents', () => {
     const changes = createApp().app('rowChanges');
     const current = new Map([
+        ['level_tags:n/new', { table: 'level_tags', row: { level_id: 'n', tag_name: 'new', position: 0 } }],
         ['wishlist_items:i', { table: 'wishlist_items', row: { id: 'i', wishlist_id: 'w' } }],
         ['level_notes:n', { table: 'level_notes', row: { level_id: 'n', notes: 'New' } }],
         ['tags:new', { table: 'tags', row: { name: 'new', color: '#123456' } }],
@@ -295,16 +346,39 @@ test('rowChanges puts parent upserts before children and all deletes after upser
         ['wishlists:removed', { version: 1, row: { id: 'removed' } }],
         ['wishlists:w', { version: 3, row: { id: 'w', name: 'Before' } }],
         ['levels:removed', { version: 8, row: { id: 'removed' } }],
+        ['tags:removed', { version: 4, row: { name: 'removed' } }],
+        ['level_tags:removed/removed', { version: 6, row: { level_id: 'removed', tag_name: 'removed', position: 0 } }],
+        ['level_notes:removed', { version: 7, row: { level_id: 'removed', notes: 'Old' } }],
         ['wishlist_items:removed', { version: 5, row: { id: 'removed' } }]
     ]);
     const result = [...changes(current, snapshot)], keys = result.map(entry => entry.key);
     assert.ok(keys.indexOf('wishlists:w') < keys.indexOf('wishlist_items:i'));
     assert.ok(keys.indexOf('levels:n') < keys.indexOf('level_notes:n'));
-    assert.equal(result.length, 9);
-    assert.ok(result.slice(0, 6).every(entry => entry.row !== null));
-    assert.ok(result.slice(6).every(entry => entry.row === null));
+    assert.ok(keys.indexOf('tags:new') < keys.indexOf('level_notes:n'));
+    assert.ok(keys.indexOf('levels:n') < keys.indexOf('level_tags:n/new'));
+    assert.ok(keys.indexOf('tags:new') < keys.indexOf('level_tags:n/new'));
+    assert.equal(result.length, 13);
+    assert.ok(result.slice(0, 7).every(entry => entry.row !== null));
+    assert.ok(result.slice(7).every(entry => entry.row === null));
+    for (const child of ['level_tags:removed/removed', 'level_notes:removed', 'wishlist_items:removed']) {
+        for (const parent of ['levels:removed', 'tags:removed', 'wishlists:removed'])
+            assert.ok(keys.indexOf(child) < keys.indexOf(parent), `${child} before ${parent}`);
+    }
     assert.equal(result.find(entry => entry.key == 'wishlists:w').version, 3);
     assert.equal(result.find(entry => entry.key == 'wishlist_items:removed').version, 5);
+});
+
+test('rowChanges compares tag assignments by position and keeps composite keys intact on deletion', () => {
+    const changes = createApp().app('rowChanges');
+    assert.deepEqual(plain(changes(new Map([
+        ['level_tags:n/Focus/Next', { table: 'level_tags', row: { level_id: 'n', tag_name: 'Focus/Next', position: 2 } }]
+    ]), new Map([
+        ['level_tags:n/Focus/Next', { version: 4, row: { level_id: 'n', tag_name: 'Focus/Next', position: 0 } }],
+        ['level_tags:n/Old/Tag', { version: 5, row: { level_id: 'n', tag_name: 'Old/Tag', position: 1 } }]
+    ]))), [
+        { key: 'level_tags:n/Focus/Next', table: 'level_tags', version: 4, row: { level_id: 'n', tag_name: 'Focus/Next', position: 2 } },
+        { key: 'level_tags:n/Old/Tag', table: 'level_tags', version: 5, row: null }
+    ]);
 });
 
 test('rowChanges treats array reorders as changes and handles the fixed settings key on deletion', () => {

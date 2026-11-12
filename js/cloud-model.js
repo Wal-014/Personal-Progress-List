@@ -3,7 +3,7 @@
  */
 
 const CLOUD_LEVEL_FIELDS = {
-    id: 'id', name: 'name', kind: 'kind', levelId: 'level_id', creator: 'creator',
+    id: 'id', name: 'name', kind: 'kind', creator: 'creator',
     diff: 'difficulty', rating: 'rating', attN: 'attempts_normal', attC: 'attempts_copy',
     tN: 'time_normal', tP: 'time_practice', tPC: 'time_practice_copy', date: 'completed_on',
     link: 'video_url', enj: 'enjoyment', lik: 'liking'
@@ -11,15 +11,22 @@ const CLOUD_LEVEL_FIELDS = {
 
 function profileRows(data, settings) {
     const rows = new Map(), nullable = value => value === '' || value == null ? null : value;
+    const numericId = value => value != null && String(value) !== '' && !/\D/.test(value) ? Number(value) : null;
     const add = (table, id, row) => rows.set(`${table}:${id}`, { table, row });
     for (const entry of data.levels) {
         add('levels', entry.id, {
             ...Object.fromEntries(Object.entries(CLOUD_LEVEL_FIELDS).map(([field, column]) => [column, nullable(entry[field])])),
+            level_id: numericId(entry.levelId),
             aredl_status: nullable(entry.ar?.s), aredl_position: nullable(entry.ar?.p),
-            tags: entry.tags || [], deaths: entry.deaths || {}
+            deaths: entry.deaths || {}
         });
         if (entry.notes?.trim())
             add('level_notes', entry.id, { level_id: entry.id, notes: entry.notes });
+        (entry.tags || []).forEach((name, position) => {
+            const key = `${entry.id}/${name}`;
+            if (!rows.has(`level_tags:${key}`))
+                add('level_tags', key, { level_id: entry.id, tag_name: name, position });
+        });
     }
     for (const kind of ['classic', 'platform'])
         add('list_orders', kind, { kind, level_ids: data.order[kind] || [] });
@@ -27,7 +34,7 @@ function profileRows(data, settings) {
         add('wishlists', wishlist.id, { id: wishlist.id, name: wishlist.name, position, item_ids: wishlist.items.map(entry => entry.id) });
         for (const entry of wishlist.items) {
             add('wishlist_items', entry.id, {
-                id: entry.id, wishlist_id: wishlist.id, name: entry.name, level_id: nullable(entry.levelId),
+                id: entry.id, wishlist_id: wishlist.id, name: entry.name, level_id: numericId(entry.levelId),
                 creator: nullable(entry.creator), difficulty: nullable(entry.diff), rating: nullable(entry.rating),
                 kind: nullable(entry.kind), status: entry.status, progress: entry.pct ?? null, enrich_checked: !!entry.chk
             });
@@ -48,13 +55,20 @@ function rowsProfile(rows) {
     }
     const get = table => tables.get(table) || [], compare = (a, b) => a < b ? -1 : a > b ? 1 : 0;
     const notes = new Map(get('level_notes').map(row => [row.level_id, row.notes]));
+    const levelTags = new Map();
+    for (const row of get('level_tags').sort((a, b) => a.position - b.position || compare(a.tag_name, b.tag_name))) {
+        if (!levelTags.has(row.level_id))
+            levelTags.set(row.level_id, []);
+        levelTags.get(row.level_id).push(row.tag_name);
+    }
     const data = emptyProfile();
     data.levels = get('levels').sort((a, b) =>
         (a.created_at ? Date.parse(a.created_at) : 0) - (b.created_at ? Date.parse(b.created_at) : 0) || compare(a.id, b.id)
     ).map(row => ({
         ...Object.fromEntries(Object.entries(CLOUD_LEVEL_FIELDS).map(([field, column]) => [field, row[column] ?? null])),
+        levelId: row.level_id == null ? null : String(row.level_id),
         ar: { s: row.aredl_status ?? null, p: row.aredl_position ?? null },
-        notes: notes.get(row.id) ?? '', tags: row.tags ?? [], deaths: row.deaths ?? {}
+        notes: notes.get(row.id) ?? '', tags: levelTags.get(row.id) || [], deaths: row.deaths ?? {}
     }));
     for (const row of get('list_orders')) {
         if (row.kind == 'classic' || row.kind == 'platform')
@@ -73,7 +87,7 @@ function rowsProfile(rows) {
             items: (items.get(row.id) || []).sort((a, b) =>
                 (positions.get(a.id) ?? Infinity) - (positions.get(b.id) ?? Infinity) || compare(a.id, b.id)
             ).map(entry => ({
-                id: entry.id, name: entry.name, levelId: entry.level_id ?? null, creator: entry.creator ?? null,
+                id: entry.id, name: entry.name, levelId: entry.level_id == null ? null : String(entry.level_id), creator: entry.creator ?? null,
                 diff: entry.difficulty ?? null, rating: entry.rating ?? null, status: entry.status,
                 ...(entry.kind == null ? {} : { kind: entry.kind }),
                 ...(entry.progress == null ? {} : { pct: entry.progress }), chk: entry.enrich_checked ? 1 : 0
@@ -98,14 +112,16 @@ function rowChanges(current, snapshot) {
         if (!previous || canonicalJson(row) !== canonicalJson(previous.row))
             changes.push({ key, table, version: previous ? previous.version : null, row });
     }
-    // Parent rows must exist before their notes or wishlist items are written.
-    const priority = table => table == 'level_notes' || table == 'wishlist_items' ? 1 : 0;
-    changes.sort((a, b) => priority(a.table) - priority(b.table));
     for (const [key, previous] of snapshot) {
         if (!current.has(key))
             changes.push({ key, table: key.slice(0, key.indexOf(':')), version: previous.version, row: null });
     }
-    return changes;
+    // Dependency order keeps batches readable even when foreign keys are deferred.
+    const priority = ({ table, row }) => {
+        const child = ['level_tags', 'level_notes', 'wishlist_items'].includes(table);
+        return row === null ? (child ? 2 : 3) : (child ? 1 : 0);
+    };
+    return changes.sort((a, b) => priority(a) - priority(b));
 }
 
 function mergeRow(base, local, remote) {

@@ -120,11 +120,26 @@ function ensureProfileDefaults() {
                 delete i.pct;
         });
     });
-    if (!profile.tags) {
-        const pal = ['#ff2bd6', '#00e5ff', '#ffd400', '#7cff6b', '#ff7a3d', '#9d7bff'];
-        profile.tags = [...new Set(profile.levels.flatMap(l => l.tags || []))].map((n, i) => ({ name: n, color: pal[i % pal.length] }));
-        save();
+    let tagsChanged = !profile.tags;
+    profile.tags = profile.tags || [];
+    const pal = ['#ff2bd6', '#00e5ff', '#ffd400', '#7cff6b', '#ff7a3d', '#9d7bff'];
+    const names = new Set(profile.tags.map(tag => tag.name));
+    for (const level of profile.levels) {
+        const tags = [...new Set(level.tags || [])];
+        if (tags.length != (level.tags || []).length) {
+            level.tags = tags;
+            tagsChanged = true;
+        }
+        for (const name of tags) {
+            if (!names.has(name)) {
+                profile.tags.push({ name, color: pal[profile.tags.length % pal.length] });
+                names.add(name);
+                tagsChanged = true;
+            }
+        }
     }
+    if (tagsChanged)
+        save();
 }
 
 /** Gives a new id to every entry that has none or repeats an earlier one. */
