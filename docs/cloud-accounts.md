@@ -29,28 +29,120 @@ How Personal Ranked Progress moves from profiles kept in the browser to Supabase
 
 All tables live in the `public` schema, which the Data API exposes, and every one of them has Row Level Security. Helper functions and the internal counters live in a `private` schema that the API does not expose. Each user's rows are keyed by `(user_id, id)`: IDs are the ones the app already generates, so they only need to be unique per account and move unchanged from local storage.
 
+Every data table also has `version`, `created_at` and `updated_at`, left out of the diagram. Primary keys start with `user_id`, so every query of one account's rows uses the primary key index.
+
 ```mermaid
 erDiagram
   AUTH_USERS ||--|| PROFILES : "one profile"
   PROFILES ||--o| USER_SETTINGS : has
   PROFILES ||--o{ LEVELS : owns
   LEVELS ||--o| LEVEL_NOTES : "private notes"
-  PROFILES ||--o{ LIST_ORDERS : "classic, platform"
+  LEVELS ||--o{ LEVEL_TAGS : "tagged with"
+  TAGS ||--o{ LEVEL_TAGS : "applied to"
+  PROFILES ||--o{ TAGS : owns
+  PROFILES ||--|{ LIST_ORDERS : "classic, platform"
   PROFILES ||--o{ WISHLISTS : owns
   WISHLISTS ||--o{ WISHLIST_ITEMS : contains
-  PROFILES ||--o{ TAGS : owns
+
+  AUTH_USERS {
+    uuid id PK
+    text email
+  }
+  PROFILES {
+    uuid id PK, FK "auth.users"
+    text username UK "null until chosen"
+    text display_name
+    text color
+    text secondary_color
+    text bio
+    text country
+    boolean is_public
+  }
+  USER_SETTINGS {
+    uuid user_id PK, FK
+    text lang
+    text theme
+  }
+  LEVELS {
+    uuid user_id PK, FK
+    text id PK
+    text kind
+    text name
+    bigint level_id "Geometry Dash ID"
+    text creator
+    text difficulty
+    text rating
+    text aredl_status
+    integer aredl_position
+    integer attempts_normal
+    integer attempts_copy
+    integer time_normal "seconds"
+    integer time_practice
+    integer time_practice_copy
+    date completed_on
+    text video_url
+    smallint enjoyment
+    smallint liking
+    jsonb deaths "percent to count"
+  }
+  LEVEL_NOTES {
+    uuid user_id PK, FK
+    text level_id PK, FK
+    text notes
+  }
+  TAGS {
+    uuid user_id PK, FK
+    text name PK
+    text color
+    integer position
+  }
+  LEVEL_TAGS {
+    uuid user_id PK, FK
+    text level_id PK, FK
+    text tag_name PK, FK
+    smallint position
+  }
+  LIST_ORDERS {
+    uuid user_id PK, FK
+    text kind PK
+    text_array level_ids
+  }
+  WISHLISTS {
+    uuid user_id PK, FK
+    text id PK
+    text name
+    integer position
+    text_array item_ids
+  }
+  WISHLIST_ITEMS {
+    uuid user_id PK, FK
+    text id PK
+    text wishlist_id FK
+    text name
+    bigint level_id
+    text creator
+    text difficulty
+    text rating
+    text kind
+    text status
+    smallint progress
+    boolean enrich_checked
+  }
 ```
 
-| Table | Rows | Columns (besides `user_id`, `version`, `created_at`, `updated_at`) |
-|---|---|---|
-| `profiles` | One per account, created by a trigger when the account is created | `id` (= `auth.users.id`), `username`, `display_name`, `color`, `secondary_color`, `bio`, `country`, `is_public` |
-| `user_settings` | At most one per account | `lang`, `theme` |
-| `levels` | One per saved level | `id`, `kind`, `name`, `level_id`, `creator`, `difficulty`, `rating`, `aredl_status`, `aredl_position`, `attempts_normal`, `attempts_copy`, `time_normal`, `time_practice`, `time_practice_copy`, `completed_on`, `video_url`, `enjoyment`, `liking`, `tags`, `deaths` |
-| `level_notes` | One per level that has notes | `level_id`, `notes` |
-| `list_orders` | One per ranked list | `kind`, `level_ids` |
-| `wishlists` | One per wishlist | `id`, `name`, `position`, `item_ids` |
-| `wishlist_items` | One per wishlist entry | `id`, `wishlist_id`, `name`, `level_id`, `creator`, `difficulty`, `rating`, `kind`, `status`, `progress`, `enrich_checked` |
-| `tags` | One per tag | `name`, `color`, `position` |
+| Table | Rows |
+|---|---|
+| `profiles` | One per account, created by a trigger when the account is created. |
+| `user_settings` | At most one per account. |
+| `levels` | One per saved level. |
+| `level_notes` | One per level that has notes. |
+| `tags` | One per tag. |
+| `level_tags` | One per tag on a level. Renaming a tag cascades to these rows, and deleting a tag or a level removes them. |
+| `list_orders` | One per ranked list. |
+| `wishlists` | One per wishlist. |
+| `wishlist_items` | One per wishlist entry. |
+
+Every foreign key is `on delete cascade`: deleting a level removes its notes and tags, deleting a wishlist removes its entries, and deleting the account removes everything. The foreign keys from `level_tags` and `wishlist_items` are deferrable, so one sync batch can write a child before its parent.
 
 How the app's fields map to columns:
 
@@ -60,14 +152,44 @@ How the app's fields map to columns:
 | level `attN`, `attC`, `tN`, `tP`, `tPC` | `attempts_normal`, `attempts_copy`, `time_normal`, `time_practice`, `time_practice_copy` | Times are seconds. |
 | level `date`, `link`, `enj`, `lik` | `completed_on` (date), `video_url`, `enjoyment`, `liking` | |
 | level `notes` | `level_notes.notes` | A separate table so public profiles can be served by RLS without ever exposing notes. |
-| level `tags` | `tags` (text array) | A tag is identified by its name, as in the app; renaming a tag rewrites the levels that carry it. |
+| level `tags` | `level_tags` rows, `position` = index in the array | A tag is identified by its name, as in the app. |
 | `order.classic`, `order.platform` | `list_orders.level_ids` | |
 | wishlist `items` order | `wishlists.item_ids` | |
 | wishlist item `pct`, `chk` | `progress`, `enrich_checked` | |
 
-Every column has a check constraint: allowed values for `kind`, `difficulty`, `rating`, `status`, `aredl_status`, `lang` and `theme`; `#rrggbb` colours; `http(s)` video links; numeric level IDs; lengths (names 100, creators 100, notes 5,000, display names 40, biographies 300, tag names 40, 50 tags per level); ranges (attempts and seconds 0-1,000,000,000, enjoyment and liking -10 to 10, wishlist progress 0-100); deaths as an object of percentages 0-100 with whole, non-negative counts; usernames `^[a-z0-9_]{3,20}$`; countries as two capital letters.
+Every column has a check constraint:
 
-Triggers on every table assign `version` (1 on insert, +1 on each update) and `updated_at`, whatever the client sends. Statement triggers enforce per-account row caps (5,000 levels, 200 wishlists, 5,000 wishlist entries, 300 tags) and a write budget of 20,000 written rows per minute per account; both apply to every way of writing, not only to the app's own requests.
+- allowed values for `kind`, `difficulty`, `rating`, `status`, `aredl_status`, `lang` and `theme`, written as `check (… in (…))` rather than enum types, so a new value is a one-line migration;
+- `#rrggbb` colours, `http(s)` video links, positive Geometry Dash level IDs, and IDs in the order arrays matching the app's ID format;
+- lengths: names and creators 100, notes 5,000, display names 40, biographies 300, tag names 40;
+- ranges: attempts and seconds 0-1,000,000,000, enjoyment and liking -10 to 10, wishlist progress 0-100, tag position on a level 0-49;
+- deaths as an object of percentages 0-100 with whole, non-negative counts;
+- usernames `^[a-z0-9_]{3,20}$`, unique, and countries as two capital letters.
+
+Triggers on every table assign `version` (1 on insert, +1 on each update), `created_at` and `updated_at`, whatever the client sends. Statement triggers enforce:
+
+- per-account row caps: 5,000 levels, 50,000 level tags, 200 wishlists, 5,000 wishlist entries and 300 tags;
+- a write budget of 50,000 written rows per minute per account.
+
+Both apply to every way of writing, not only to the app's own requests. Deletes are not charged, so an account can always be deleted.
+
+### Design choices
+
+The schema is in third normal form except where noted below.
+
+- **Ranked order as one array per list** (`list_orders.level_ids`, `wishlists.item_ids`). The ranking is a single value that the app edits as a whole. Storing it in one row makes a reorder one atomic write, and lets the version check reject a stale reorder whole. A rank column on every level would turn two devices reordering at the same time into a mix of both orders with duplicate positions. The cost is that an array element is not a foreign key: an ID left behind by a deleted level is ignored by the app, exactly as it is today, and the next save drops it.
+- **Deaths as JSON** (`levels.deaths`). A sparse map of at most 101 percentages that is always read and written whole, for one chart. A row per percentage would multiply the rows by up to 100 with nothing gained. A check function validates its shape.
+- **Geometry Dash metadata on each user's rows** (name, ID, creator, difficulty, rating and AREDL status on `levels` and `wishlist_items`). The app looks these up from GDHistory, the AREDL and the community sheet. A shared table of levels that every account could write would let one account change the data shown to everyone. A per-user cache keeps each account's data isolated.
+- **Notes in their own table** (`level_notes`). It is a one-to-one split, not a denormalization: public profiles (#197) are served by RLS on whole rows, and notes must never be public.
+- **No `updated_by` column.** RLS lets only the owner write their rows, so the author of every change is `user_id`. Administrative changes go through versioned migrations in Git.
+
+### Data handling
+
+- `null` means unknown or not recorded (attempts, times, dates, ratings). Collections are never null: an empty order array is `{}` and empty deaths are `{}`.
+- Statuses are closed lists checked by the database: wishlist entries are `todo`, `prog` or `done`, and AREDL status is `r`, `n` or `p`.
+- **Deletion is physical, with an archive.** Rows are deleted, not flagged, so every query, policy and row cap sees only live data. An AFTER DELETE trigger copies each deleted row of `levels`, `level_notes`, `level_tags`, `list_orders`, `wishlists`, `wishlist_items` and `tags` into `private.deleted_rows`. That archive keeps the newest 60,000 rows per account and a daily `pg_cron` job purges rows older than 30 days. An administrator lists an account's archived rows with `public.archived_rows(user)`, which only the service role can call, to restore an accidental delete or the effects of a sync bug.
+- **Deleting an account removes everything**, the archive included. It covers the profile, every row and the archived rows.
+- Earlier versions of updated rows are not kept. Overwrites are covered by the backups (#198).
 
 ### Access rules
 
@@ -77,7 +199,7 @@ Triggers on every table assign `version` (1 on insert, +1 on each update) and `u
 | Another signed-in user | Nothing of a private account; once #197 lands, read the public tables of public profiles. |
 | An anonymous visitor (`anon`) | Nothing until #197; then read the public tables of public profiles. Never write. |
 
-Public profiles (#197) add `select` policies for rows whose owner's profile has `is_public`, on `profiles`, `levels`, `list_orders`, `wishlists`, `wishlist_items` and `tags`. `level_notes` and `user_settings` never get one.
+Public profiles (#197) add `select` policies for rows whose owner's profile has `is_public`, on `profiles`, `levels`, `level_tags`, `list_orders`, `wishlists`, `wishlist_items` and `tags`. `level_notes` and `user_settings` never get one.
 
 ### Functions
 
@@ -89,6 +211,7 @@ Public profiles (#197) add `select` policies for rows whose owner's profile has 
 | `public.sync_revision()` | #195 | invoker | A short fingerprint of the caller's data, so checking for changes made on another device costs one tiny request. |
 | `public.delete_account()` | #194 | definer, limited to `auth.uid()` | Deletes the caller's account and, by cascade, all of their data. |
 | `public.public_profile(username)` | #197 | invoker | The public view of a profile as one JSON value; RLS decides what it can see. |
+| `public.archived_rows(user)` | #203 | definer, service role only | Lists an account's archived deleted rows, newest first, for an administrator restoring data. |
 
 ## The app
 
@@ -145,11 +268,11 @@ The free plan was checked on 2026-11-11.
 
 | Limit | Free plan | Expected use |
 |---|---|---|
-| Database size | 500 MB, then read-only | About 1 KB per level with its deaths; 1,000 users with 300 levels each use about 300 MB. The per-account caps keep one account under 15 MB. |
+| Database size | 500 MB, then read-only | About 1 KB per level with its deaths; 1,000 users with 300 levels each use about 300 MB. The per-account caps keep one account under about 30 MB, its deleted-row archive included. |
 | Egress | 5 GB uncached per month | A full download is the account's size (about 300 KB for 300 levels, less with gzip); the revision check makes most visits cost a few hundred bytes. |
 | Monthly active users | 50,000 | Far above the community's size. |
 | Auth emails | About 2 per hour with the built-in mailer, only to members of the Supabase organization | A custom SMTP provider must be configured before #198 opens sign-up to everyone. |
-| Backups | None on the free plan | #198 sets up periodic `supabase db dump` exports kept outside the public repository. |
+| Backups | None on the free plan | Deleted rows stay in the 30-day archive. #198 sets up periodic `supabase db dump` exports, encrypted and kept outside the public repository. |
 | Inactivity | Free projects pause after a week without requests | An active site keeps it awake; #198 documents how to resume it. |
 | Projects | 2 per free organization | One project, for production. Development and CI use the local stack. |
 
