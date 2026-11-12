@@ -126,12 +126,14 @@ async function initAccount() {
         return;
     }
     let linkError = get('error') || get('error_code') || get('error_description')
-        ? { code: get('error_code') || get('error') } : null;
+        ? { code: get('error_code') || get('error') } : null, codeWithoutSession = false;
     try {
         const client = await startAccount();
         const restored = await client.auth.getSession();
         if (restored.error)
             linkError = linkError || restored.error;
+        // A code from an email link can only be exchanged in the browser that asked for it; elsewhere the client drops it silently
+        codeWithoutSession = !!get('code') && !restored.data?.session;
         const token = get('token_hash'), type = get('type');
         if (!linkError && token && ['email', 'signup', 'recovery', 'email_change'].includes(type)) {
             const { data, error } = await client.auth.verifyOtp({ token_hash: token, type });
@@ -152,6 +154,8 @@ async function initAccount() {
     }
     if (linkError)
         showAlert(t(authErrorKey(linkError)));
+    else if (codeWithoutSession)
+        openAuthDialog('signin', t('authLinkElsewhere'));
 }
 
 /** Reads the owner's row, recreating it if the signup trigger has not supplied it. */

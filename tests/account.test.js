@@ -7,7 +7,7 @@ const ownProfile = { id: 'user-a', display_name: 'Player A', username: null, is_
 const plain = value => JSON.parse(JSON.stringify(value));
 
 function accounts({ url = 'https://example.com/app/?keep=yes#section', saved = false, beta = true } = {}) {
-    const calls = [], timers = [], alerts = [], toasts = [], renders = [], scripts = [];
+    const calls = [], timers = [], alerts = [], toasts = [], dialogs = [], renders = [], scripts = [];
     const answers = new Map();
     const location = new URL(url);
     let callback;
@@ -60,10 +60,11 @@ function accounts({ url = 'https://example.com/app/?keep=yes#section', saved = f
         setTimeout(work, delay) { assert.equal(delay, 0); timers.push(work); },
         render() { renders.push(plain(loaded.app('account'))); },
         showAlert(text) { alerts.push(text); },
-        showToast(text) { toasts.push(text); }
+        showToast(text) { toasts.push(text); },
+        openAuthDialog(mode, note) { dialogs.push([mode, note]); }
     });
     return {
-        ...loaded, calls, timers, alerts, toasts, renders, scripts, location, respond,
+        ...loaded, calls, timers, alerts, toasts, dialogs, renders, scripts, location, respond,
         state: () => plain(loaded.app('account')),
         emit: (event, session) => callback(event, session),
         async flush() { while (timers.length) await timers.shift()(); },
@@ -283,6 +284,17 @@ test('an email change link says whether the other address still has to confirm',
         await page.app('initAccount()');
         assert.deepEqual(page.toasts, [page.app('t("' + key + '")')]);
         assert.deepEqual(page.alerts, []);
+    }
+});
+
+test('a code that brings no session opens sign-in with an explanation, and a working code does not', async () => {
+    for (const session of [null, { user }]) {
+        const page = accounts({ url: 'https://example.com/app/?code=from-email' });
+        page.respond('getSession', { data: { session }, error: null });
+        await page.app('initAccount()');
+        assert.deepEqual(page.dialogs, session ? [] : [['signin', page.app('t("authLinkElsewhere")')]]);
+        assert.deepEqual(page.alerts, []);
+        assert.equal(page.location.href, 'https://example.com/app/');
     }
 });
 
