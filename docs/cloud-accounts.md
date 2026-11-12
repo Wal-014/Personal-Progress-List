@@ -236,7 +236,7 @@ The device keeps, per row, the version and contents it last received from the se
 
 - Supabase Auth with the PKCE flow and the session in localStorage, restored and refreshed by the client.
 - **Google:** `signInWithOAuth` returns to the page that started it.
-- **Email and password:** sign-up sends a confirmation email; recovery sends a reset email. Both emails link to the app with a `token_hash` that the app verifies with `verifyOtp`, so a link also works when it is opened on another device or browser. The app removes auth parameters from the address bar as soon as it has used them.
+- **Email and password:** sign-up sends a confirmation email and recovery sends a reset email. The templates in `supabase/templates/` link to the app with a `token_hash` that the app verifies with `verifyOtp`, so a link also works when it is opened on another device or browser. The free plan accepts custom templates only with a custom SMTP provider, which #198 configures. Until then the hosted project sends Supabase's default emails: their PKCE link signs in only in the browser that asked for it, and anywhere else the app opens sign-in and explains that the email is confirmed. The app removes auth parameters from the address bar as soon as it has used them.
 - The account menu in the top bar offers My profile, Edit profile, Account settings (password, email, delete account) and Sign out. Until #196 it sits next to the old profile menu.
 
 ### Beta switch
