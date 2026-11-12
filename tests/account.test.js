@@ -7,7 +7,7 @@ const ownProfile = { id: 'user-a', display_name: 'Player A', username: null, is_
 const plain = value => JSON.parse(JSON.stringify(value));
 
 function accounts({ url = 'https://example.com/app/?keep=yes#section', saved = false, beta = true } = {}) {
-    const calls = [], timers = [], alerts = [], renders = [], scripts = [];
+    const calls = [], timers = [], alerts = [], toasts = [], renders = [], scripts = [];
     const answers = new Map();
     const location = new URL(url);
     let callback;
@@ -59,10 +59,11 @@ function accounts({ url = 'https://example.com/app/?keep=yes#section', saved = f
         supabase: { createClient() { calls.push(['createClient']); return client; } },
         setTimeout(work, delay) { assert.equal(delay, 0); timers.push(work); },
         render() { renders.push(plain(loaded.app('account'))); },
-        showAlert(text) { alerts.push(text); }
+        showAlert(text) { alerts.push(text); },
+        showToast(text) { toasts.push(text); }
     });
     return {
-        ...loaded, calls, timers, alerts, renders, scripts, location, respond,
+        ...loaded, calls, timers, alerts, toasts, renders, scripts, location, respond,
         state: () => plain(loaded.app('account')),
         emit: (event, session) => callback(event, session),
         async flush() { while (timers.length) await timers.shift()(); },
@@ -273,6 +274,16 @@ test('email links verify supported types, set recovery and remove auth parameter
     assert.equal(page.calls.some(call => call[0] == 'verifyOtp'), false);
     assert.equal(page.location.href, 'https://example.com/app/?keep=yes#section=stats');
     assert.deepEqual(page.alerts, [page.app('t("authLinkExpired")')]);
+});
+
+test('an email change link says whether the other address still has to confirm', async () => {
+    for (const [newEmail, key] of [['new@example.test', 'accountEmailOtherLink'], [null, 'accountEmailUpdated']]) {
+        const page = accounts({ url: 'https://example.com/app/?token_hash=secret&type=email_change' });
+        page.respond('verifyOtp', { data: { user: { ...user, new_email: newEmail } }, error: null });
+        await page.app('initAccount()');
+        assert.deepEqual(page.toasts, [page.app('t("' + key + '")')]);
+        assert.deepEqual(page.alerts, []);
+    }
 });
 
 test('verification failures and URL errors are shown once with translated messages', async () => {

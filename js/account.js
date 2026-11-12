@@ -134,11 +134,14 @@ async function initAccount() {
             linkError = linkError || restored.error;
         const token = get('token_hash'), type = get('type');
         if (!linkError && token && ['email', 'signup', 'recovery', 'email_change'].includes(type)) {
-            const { error } = await client.auth.verifyOtp({ token_hash: token, type });
+            const { data, error } = await client.auth.verifyOtp({ token_hash: token, type });
             if (error)
                 linkError = error;
             else if (type == 'recovery')
                 setAccount({ recovering: true });
+            // An email change needs both addresses to confirm; until then the user still has a pending new_email
+            else if (type == 'email_change')
+                showToast(t(data?.user?.new_email ? 'accountEmailOtherLink' : 'accountEmailUpdated'));
         }
     }
     catch (error) {
