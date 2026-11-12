@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 import { createTestContext, enabled, ok } from './helpers.js';
 
-const tables = ['profiles', 'user_settings', 'levels', 'level_notes', 'list_orders', 'wishlists', 'wishlist_items', 'tags'];
+const tables = ['profiles', 'user_settings', 'levels', 'level_notes', 'list_orders', 'wishlists', 'wishlist_items', 'tags', 'level_tags'];
 const context = enabled ? createTestContext() : null;
 after(async () => context?.cleanup());
 
@@ -15,7 +15,8 @@ function fixtures(userId) {
         { table: 'list_orders', key: { user_id: userId, kind: 'classic' }, row: { kind: 'classic', level_ids: ['level'] }, patch: { level_ids: [] } },
         { table: 'wishlists', key: { user_id: userId, id: 'wishlist' }, row: { id: 'wishlist', name: 'Wishlist' }, patch: { name: 'Updated wishlist' } },
         { table: 'wishlist_items', key: { user_id: userId, id: 'item' }, row: { id: 'item', wishlist_id: 'wishlist', name: 'Item' }, patch: { status: 'prog' } },
-        { table: 'tags', key: { user_id: userId, name: 'Focus' }, row: { name: 'Focus', color: '#abcdef' }, patch: { color: '#123456' } }
+        { table: 'tags', key: { user_id: userId, name: 'Focus' }, row: { name: 'Focus', color: '#abcdef' }, patch: { color: '#123456' } },
+        { table: 'level_tags', key: { user_id: userId, level_id: 'level', tag_name: 'Focus' }, row: { level_id: 'level', tag_name: 'Focus' }, patch: { position: 1 } }
     ];
 }
 
@@ -131,10 +132,11 @@ describe('account access through the Data API', { skip: !enabled }, () => {
 
     test('private helpers and counters are not exposed through the Data API', async () => {
         for (const client of [owner.client, context.anon]) {
-            for (const name of ['charge_write_budget', 'handle_new_user', 'track_writes', 'stamp_row']) {
+            for (const name of ['charge_write_budget', 'handle_new_user', 'track_writes', 'stamp_row', 'archive_deleted_rows', 'purge_user_deleted_rows']) {
                 assert.equal((await client.rpc(name, name === 'charge_write_budget' ? { rows: 0 } : {})).error?.code, 'PGRST202');
             }
             assert.equal((await client.schema('private').from('write_budget').select('*')).error?.code, 'PGRST106');
+            assert.equal((await client.schema('private').from('deleted_rows').select('*')).error?.code, 'PGRST106');
         }
     });
 
@@ -157,7 +159,7 @@ describe('account access through the Data API', { skip: !enabled }, () => {
             const fixture = fixtures(owner.id).find(item => item.table === table);
             assert.equal(ok(await owner.client.from(table).delete().match(fixture.key).select()).length, 1);
         }
-        for (const table of ['level_notes', 'wishlist_items']) {
+        for (const table of ['level_notes', 'wishlist_items', 'level_tags']) {
             assert.deepEqual(ok(await owner.client.from(table).select('*')), []);
             const fixture = fixtures(other.id).find(item => item.table === table);
             assert.equal(ok(await other.client.from(table).delete().match(fixture.key).select()).length, 1);

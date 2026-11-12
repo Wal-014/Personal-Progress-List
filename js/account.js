@@ -2,7 +2,20 @@
 
 let account = { status: 'off', user: null, profile: null, recovering: false };
 let accountClientPromise, accountInitialized = false;
+let googleSettingsPromise;
 const AUTH_PARAMS = ['code', 'token_hash', 'type', 'error', 'error_code', 'error_description', 'access_token', 'refresh_token', 'expires_in', 'expires_at', 'token_type', 'provider_token', 'provider_refresh_token'];
+
+function googleSignInAvailable() {
+    if (!googleSettingsPromise)
+        googleSettingsPromise = Promise.resolve().then(() => fetch(SUPABASE_URL + '/auth/v1/settings', { headers: { apikey: SUPABASE_KEY } }))
+            .then(response => response.ok ? response.json() : null)
+            .then(settings => settings?.external?.google === true).catch(() => false);
+    return googleSettingsPromise;
+}
+
+function hasPasswordIdentity() {
+    return account.status == 'signed-in' && !!account.user?.identities?.some(identity => identity.provider == 'email');
+}
 
 /** Updates account state and renders only when its values change. */
 function setAccount(changes) {
@@ -121,11 +134,14 @@ async function initAccount() {
             linkError = linkError || restored.error;
         const token = get('token_hash'), type = get('type');
         if (!linkError && token && ['email', 'signup', 'recovery', 'email_change'].includes(type)) {
-            const { error } = await client.auth.verifyOtp({ token_hash: token, type });
+            const { data, error } = await client.auth.verifyOtp({ token_hash: token, type });
             if (error)
                 linkError = error;
             else if (type == 'recovery')
                 setAccount({ recovering: true });
+            // An email change needs both addresses to confirm; until then the user still has a pending new_email
+            else if (type == 'email_change')
+                showToast(t(data?.user?.new_email ? 'accountEmailOtherLink' : 'accountEmailUpdated'));
         }
     }
     catch (error) {

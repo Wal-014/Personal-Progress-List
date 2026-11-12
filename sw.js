@@ -36,6 +36,7 @@ const SHELL = [
   "js/components/stats.js",
   "js/components/home.js",
   "js/components/dialogs.js",
+  "js/components/account-ui.js",
   "js/components/shell.js",
   "js/render.js",
   "js/events.js",

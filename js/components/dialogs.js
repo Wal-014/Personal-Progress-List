@@ -71,24 +71,31 @@ function showDialog({ title, msg, input, def, ok, cancel, danger, label, extra =
 
 const askText = (title, def) => showDialog({ title, input: 1, def });
 
-/** Asks for a profile name and colours, sharing the prompt's validation and keyboard handling. */
-function askProfile(title, { name, color, secondaryColor }) {
-    const selected = { color: isHexColor(color) ? color : PROFILE_COLORS[0], secondaryColor: isHexColor(secondaryColor) ? secondaryColor : DEFAULT_SECONDARY_COLOR };
+function profileColorFields(selected) {
     const colorGroup = (key, labelKey) => {
         const current = selected[key].toLowerCase(), labelId = 'profile-' + key;
         const swatch = ([presetKey, c]) => `<label class=profile-swatch style="--swatch:${c}"><input type=radio name="profile-${key}" value="${c}" aria-label="${t(presetKey)}"${c == current ? ' checked' : ''}><span class=profile-color aria-hidden=true>${ICONS.check}</span></label>`;
         return `<div><span class=lab id="${labelId}">${t(labelKey)}</span><div class=profile-swatches role=radiogroup aria-labelledby="${labelId}" data-color=${key}>${Object.entries(PROFILE_PRESETS).map(swatch).join('')}<span class="profile-swatch profile-custom" data-selected=${!PROFILE_COLORS.includes(current)}><input type=color value="${current}" aria-label="${t('customColor')}"><span class=profile-color aria-hidden=true>${ICONS.check}</span></span></div></div>`;
     };
-    const extra = `<fieldset class=profile-colors><legend>${t('color')}</legend><div class=profile-colors-row><span class=profile-preview>${cubeIcon(selected.color, selected.secondaryColor)}</span><div class=profile-color-groups>${colorGroup('color', 'primaryColor')}${colorGroup('secondaryColor', 'secondaryColor')}</div></div></fieldset>`;
-    return showDialog({ title, input: 1, def: name, label: t('pname'), extra, enhance: m => {
-        const fieldset = m.querySelector('.profile-colors');
-        fieldset.oninput = e => {
-            const group = e.target.closest('.profile-swatches'), custom = group.querySelector('[type=color]'), isCustom = e.target == custom;
-            selected[group.dataset.color] = e.target.value;
-            group.querySelectorAll('[type=radio]').forEach(radio => radio.checked = !isCustom && radio.value == e.target.value);
-            custom.parentNode.dataset.selected = isCustom;
-            fieldset.querySelector('.profile-preview').innerHTML = cubeIcon(selected.color, selected.secondaryColor);
-        };
+    return `<fieldset class=profile-colors><legend>${t('color')}</legend><div class=profile-colors-row><span class=profile-preview>${cubeIcon(selected.color, selected.secondaryColor)}</span><div class=profile-color-groups>${colorGroup('color', 'primaryColor')}${colorGroup('secondaryColor', 'secondaryColor')}</div></div></fieldset>`;
+}
+
+function bindProfileColors(root, selected) {
+    const fieldset = root.querySelector('.profile-colors');
+    fieldset.oninput = e => {
+        const group = e.target.closest('.profile-swatches'), custom = group.querySelector('[type=color]'), isCustom = e.target == custom;
+        selected[group.dataset.color] = e.target.value;
+        group.querySelectorAll('[type=radio]').forEach(radio => radio.checked = !isCustom && radio.value == e.target.value);
+        custom.parentNode.dataset.selected = isCustom;
+        fieldset.querySelector('.profile-preview').innerHTML = cubeIcon(selected.color, selected.secondaryColor);
+    };
+}
+
+/** Asks for a profile name and colours, sharing the prompt's validation and keyboard handling. */
+function askProfile(title, { name, color, secondaryColor }) {
+    const selected = { color: isHexColor(color) ? color : PROFILE_COLORS[0], secondaryColor: isHexColor(secondaryColor) ? secondaryColor : DEFAULT_SECONDARY_COLOR };
+    return showDialog({ title, input: 1, def: name, label: t('pname'), extra: profileColorFields(selected), enhance: m => {
+        bindProfileColors(m, selected);
         return name => ({ name, ...selected });
     } });
 }
