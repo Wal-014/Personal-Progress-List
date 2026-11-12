@@ -44,3 +44,6 @@ const RATING_TIERS = ['rated', 'featured', 'epic', 'legendary', 'mythic'];
 const AREDL_API = 'https://api.aredl.net/v2/api/';
 // GDHistory sends no CORS headers, so the app reads it through the project's relay (relay/README.md)
 const LEVEL_RELAY_API = 'https://ppl-level-relay.waquermaster.workers.dev/';
+const SUPABASE_URL = 'https://mjgklvdnuhbnyucytaji.supabase.co';
+// This is the publishable key; RLS protects the data.
+const SUPABASE_KEY = 'sb_publishable_k3LU7r-8Ut5FGczl0vTkGw_N8DDBFkI';
