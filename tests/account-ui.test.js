@@ -3,14 +3,20 @@ import assert from 'node:assert/strict';
 import { loadScripts } from './load-scripts.js';
 import { readFileSync } from 'node:fs';
 
-function createApp(globals = {}) {
+// Email sign-in is switched off in production; the email flows keep their tests with the switch on.
+const withEmailAuth = enabled => ({ transform: { 'js/config.js': code => {
+    assert.ok(code.includes('const EMAIL_AUTH = false;'));
+    return code.replace('const EMAIL_AUTH = false;', `const EMAIL_AUTH = ${enabled};`);
+} } });
+
+function createApp(globals = {}, { emailAuth = true } = {}) {
     const nodes = {}, listeners = {};
     const document = { body: {}, addEventListener: (name, handler) => { (listeners[name] ||= []).push(handler); }, querySelector: selector => nodes[selector] || null };
     nodes['#md'] = element({ innerHTML: '' });
     nodes['#md dialog'] = element({ querySelector: () => null, addEventListener() {}, showModal() {}, close() {} });
     const env = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/account.js', 'js/components/dialogs.js', 'js/components/account-ui.js', 'js/events.js'], {
         document, window: { addEventListener() {} }, renderTagSuggestions() {}, ui: { lang: 'en' }, cloudSync: { pending: 0 }, cloudUser: null, queueMicrotask: () => {}, ...globals
-    });
+    }, withEmailAuth(emailAuth));
     return { ...env, document, nodes, listeners };
 }
 
@@ -48,7 +54,7 @@ function signedIn(app, extra = '') {
     app(`account = { status: 'signed-in', user: { id: 'owner', email: 'owner@example.test', identities: [{ provider: 'email' }] }, profile: { display_name: 'Player', username: 'player', color: '#123456', secondary_color: '#abcdef', bio: 'Hello', country: 'CR', created_at: '2026-10-10T12:00:00Z', ${extra} } }`);
 }
 
-test('account button stays hidden off beta and reflects every account status', () => {
+test('account button reflects startup and every account status', () => {
     const { app } = createApp();
     assert.equal(app('accountButton()'), '');
     for (const status of ['idle', 'signed-out', 'loading']) {
@@ -61,6 +67,7 @@ test('account button stays hidden off beta and reflects every account status', (
     app(`account = { status: 'signed-in', profile: { display_name: 'Player', username: 'player', color: '#123456', secondary_color: '#abcdef' } }`);
     const html = app('accountButton()');
     assert.match(html, /popovertarget=amenu/);
+    assert.doesNotMatch(html, /beta-chip|>Beta</);
     assert.match(html, /Account \u00b7 Player/);
     for (const action of ['aprofile', 'aedit', 'asettings', 'asignout']) assert.ok(html.includes('data-act=' + action));
 });
@@ -458,18 +465,14 @@ test('profile, password and email failures keep the form open and focus their al
     }
 });
 
-test('both popovers anchor to their own trigger and stay within the viewport', () => {
-    const { context, nodes, listeners } = createApp({ innerWidth: 360, innerHeight: 800 });
-    const anchors = { pmenu: { left: 12, bottom: 150 }, amenu: { left: 250, bottom: 60 } };
-    for (const id of ['pmenu', 'amenu']) {
-        nodes[`[popovertarget=${id}]`] = { getBoundingClientRect: () => anchors[id] };
-        const popover = { id, style: {} };
-        listeners.beforetoggle[0]({ target: popover, newState: 'open' });
-        assert.equal(popover.style.top, anchors[id].bottom + 6 + 'px');
-        assert.equal(popover.style.width, '336px');
-        assert.equal(popover.style.left, '12px');
-    }
-    assert.ok(context.document);
+test('the account popover anchors to its trigger and stays within the viewport', () => {
+    const { nodes, listeners } = createApp({ innerWidth: 360, innerHeight: 800 });
+    nodes['[popovertarget=amenu]'] = { getBoundingClientRect: () => ({ left: 250, bottom: 60 }) };
+    const popover = { id: 'amenu', style: {} };
+    listeners.beforetoggle[0]({ target: popover, newState: 'open' });
+    assert.equal(popover.style.top, '66px');
+    assert.equal(popover.style.width, '336px');
+    assert.equal(popover.style.left, '12px');
 });
 
 test('email templates are bilingual, configured and carry app-verifiable links or a code', () => {
@@ -490,14 +493,22 @@ test('email templates are bilingual, configured and carry app-verifiable links o
 test('privacy starts with the specified account disclosure in both languages', () => {
     const { app } = createApp();
     const paragraphs = {
-        es: 'Puedes usar la aplicación sin cuenta: entonces tus datos (niveles, perfiles y wishlists) se guardan solo en el almacenamiento local de tu navegador y únicamente salen de él si exportas un perfil. Si creas una cuenta (en pruebas), tu correo y el progreso que guardes en ella se almacenan en Supabase, el proveedor de base de datos del proyecto, en servidores de Estados Unidos; puedes borrar la cuenta y sus datos cuando quieras desde Ajustes de la cuenta. Si entras con Google, Google comparte con la aplicación tu nombre y tu correo. El único servidor propio del proyecto es el intermediario de la búsqueda de niveles, que no guarda tus datos.',
-        en: "You can use the app without an account: your data (levels, profiles and wishlists) is then stored only in your browser's local storage and leaves it only if you export a profile. If you create an account (in testing), your email address and the progress you save in it are stored with Supabase, the project's database provider, on servers in the United States; you can delete the account and its data at any time from Account settings. If you sign in with Google, Google shares your name and email address with the app. The project's only server of its own is the level search relay, which does not store your data."
+        es: 'Puedes usar la aplicación sin cuenta: entonces tus datos (niveles, perfiles y wishlists) se guardan solo en el almacenamiento local de tu navegador y puedes descargar una copia de seguridad desde Datos locales. Si creas una cuenta, tu correo y el progreso que guardes en ella se almacenan en Supabase, el proveedor de base de datos del proyecto, en servidores de Estados Unidos; puedes borrar la cuenta y sus datos cuando quieras desde Ajustes de la cuenta. Si entras con Google, Google comparte con la aplicación tu nombre y tu correo. El único servidor propio del proyecto es el intermediario de la búsqueda de niveles, que no guarda tus datos.',
+        en: "You can use the app without an account: your data (levels, profiles and wishlists) is then stored only in your browser's local storage and you can download a backup from Local data. If you create an account, your email address and the progress you save in it are stored with Supabase, the project's database provider, on servers in the United States; you can delete the account and its data at any time from Account settings. If you sign in with Google, Google shares your name and email address with the app. The project's only server of its own is the level search relay, which does not store your data."
     };
-    for (const lang of ['es', 'en']) assert.equal(app(`TRANSLATIONS.${lang}.privacyTxt`).split('\n\n')[0], paragraphs[lang]);
+    const publicProfiles = {
+        es: 'Los perfiles son privados por defecto; si haces público el tuyo, cualquiera con su enlace puede ver tu nombre para mostrar, nombre de usuario, colores del icono, biografía, país, listas, estadísticas, wishlists y etiquetas, pero nunca tus notas ni tu correo, y puedes volver a hacerlo privado en cualquier momento desde Compartir perfil.',
+        en: 'Profiles are private by default; if you make yours public, anyone with its link can see your display name, username, icon colours, biography, country, lists, statistics, wishlists and tags, but never your notes or email, and you can make it private again at any time from Share profile.'
+    };
+    for (const lang of ['es', 'en']) {
+        const privacy = app(`TRANSLATIONS.${lang}.privacyTxt`).split('\n\n');
+        assert.equal(privacy[0], paragraphs[lang]);
+        assert.equal(privacy[1], publicProfiles[lang]);
+    }
 });
 
 test('share dialog covers username setup, private and public profiles', () => {
-    const { app, nodes } = createApp({ location: new URL('https://example.test/app/?beta=cloud') });
+    const { app, nodes } = createApp({ location: new URL('https://example.test/app/?keep=yes') });
     signedIn(app);
     app('account.profile.username = null; shareDialog()');
     assert.match(nodes['#md'].innerHTML, /Choose a username/);
@@ -554,4 +565,49 @@ test('share visibility saves once with pending controls and inline errors', asyn
     assert.match(nodes['#md'].innerHTML, /id=share-link/);
     await app('setProfileVisibility')(buttons[0]);
     assert.match(nodes['#md'].innerHTML, /Only you can see your progress/);
+});
+
+test('with email sign-in off, the sign-in dialog offers only Google and explains why', async () => {
+    for (const available of [true, false]) {
+        let resolve;
+        const { app, context, nodes } = createApp({}, { emailAuth: false });
+        const message = element(), button = element(), dialog = element({ querySelector: selector => selector === '#amsg' ? message : null });
+        const slot = nodes['#agoogle-slot'] = element({ innerHTML: '', closest: () => dialog, querySelector: () => button });
+        context.googleSignInAvailable = () => new Promise(done => resolve = done);
+        app('openAuthDialog()');
+        const html = nodes['#md'].innerHTML;
+        for (const absent of ['id=aemail', 'id=apassword', 'id=adisplay', 'data-act=amode', 'id=af', 'data-act=aresend'])
+            assert.equal(html.includes(absent), false, absent);
+        assert.ok(html.includes(app("t('accountGoogleHint')")));
+        assert.ok(html.includes(app("t('accountEmailLater')")));
+        resolve(available);
+        await flush();
+        assert.equal(slot.innerHTML.includes('data-act=agoogle'), available);
+        assert.equal(slot.innerHTML.includes('auth-divider'), false);
+        assert.equal(button.focused === true, available);
+        assert.equal(message.textContent, available ? '' : app("t('authOffline')"));
+    }
+});
+
+test('with email sign-in on, the Google button keeps its divider before the email form', async () => {
+    const { app, context, nodes } = createApp();
+    nodes['#af'] = fakeForm().form;
+    const slot = nodes['#agoogle-slot'] = element({ innerHTML: '' });
+    context.googleSignInAvailable = async () => true;
+    app('openAuthDialog()');
+    await flush();
+    assert.match(slot.innerHTML, /data-act=agoogle[\s\S]*auth-divider/);
+});
+
+test('with email sign-in off, account settings offer no email or password changes', () => {
+    const { app, nodes } = createApp({}, { emailAuth: false });
+    const close = nodes['#settings-close'] = element();
+    signedIn(app);
+    app('settingsDialog()');
+    assert.equal(close.focused, true);
+    const html = nodes['#md'].innerHTML;
+    for (const absent of ['id=ef', 'id=enew', 'data-act=apassword'])
+        assert.equal(html.includes(absent), false, absent);
+    assert.ok(html.includes('data-act=adelete'));
+    assert.ok(html.includes('owner@example.test'));
 });

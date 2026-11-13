@@ -25,6 +25,20 @@ const ACTIONS = {
     asharestate: a => setProfileVisibility(a),
     acopy: () => copyProfileLink(),
     localdata: () => openModal(localDataDialog()),
+    localuse(a, id) {
+        if (cloudUser || !store.profs[id] || store.cur == id)
+            return;
+        activateProfile(id);
+        matchWithAredl(profile.levels);
+        ui.sel = ui.wl = null;
+        localStorage.gdp = JSON.stringify(store);
+        closeModal();
+        render();
+    },
+    localimport() {
+        closeModal();
+        qs('#fi').click();
+    },
     localbackup: (a, id) => downloadLocalBackup(id),
     localbring: (a, id) => openLocalMigration(id),
     localdelete: (a, id) => deleteLocalProfile(id),
@@ -174,50 +188,6 @@ const ACTIONS = {
         openModal(tagsUI());
     },
     sync: () => syncWithAredl(true),
-    pnew() {
-        askProfile(t('pnew'), { name: '', color: nextProfileColor(), secondaryColor: DEFAULT_SECONDARY_COLOR }).then(p => {
-            if (!p)
-                return;
-            const i = newId('p');
-            store.profs[i] = { name: p.name, color: p.color, secondaryColor: p.secondaryColor, data: emptyProfile() };
-            activateProfile(i);
-            ui.tab = 'home';
-            save();
-            render();
-        });
-    },
-    psel(a, id) {
-        activateProfile(id);
-        matchWithAredl(profile.levels);
-        ui.wl = null;
-        save();
-        render();
-    },
-    pedit(a, id) {
-        askProfile(t('pedit'), store.profs[id]).then(p => {
-            if (!p)
-                return;
-            store.profs[id].name = p.name;
-            store.profs[id].color = p.color;
-            store.profs[id].secondaryColor = p.secondaryColor;
-            save();
-            render();
-        });
-    },
-    pdelid(a, id) {
-        if (Object.keys(store.profs).length < 2)
-            return showAlert(t('lastP'));
-        // The menu can delete any profile, not just the active one, so the dialog names it
-        showDialog({ title: t('pdel'), msg: store.profs[id].name, danger: 1 }).then(ok => {
-            if (!ok)
-                return;
-            delete store.profs[id];
-            if (store.cur == id)
-                activateProfile(Object.keys(store.profs)[0]);
-            save();
-            render();
-        });
-    },
     wnew() {
         askText(t('wname'), '').then(n => {
             if (!n)
@@ -289,9 +259,7 @@ const ACTIONS = {
     },
     wstatus: (a, id) => setWishlistStatus(id, a.dataset.v),
     wask: (a, id) => askTransfer(currentWishlist().items.find(i => i.id == id), false),
-    wto: (a, id) => transferWishlistItem(id, a.dataset.v),
-    imp: () => qs('#fi').click(),
-    exp: (a, id) => downloadLocalBackup(id || store.cur)
+    wto: (a, id) => transferWishlistItem(id, a.dataset.v)
 };
 
 function downloadLocalBackup(id) {
@@ -378,10 +346,15 @@ async function importProfile(file) {
     delete data.profileColor;
     delete data.profileSecondaryColor;
     store.profs[id] = { name: selected.name, color: selected.color, secondaryColor: selected.secondaryColor, data };
-    activateProfile(id);
-    matchWithAredl(profile.levels);
-    save();
+    if (!cloudUser) {
+        activateProfile(id);
+        ui.sel = ui.wl = null;
+        matchWithAredl(profile.levels);
+    }
+    localStorage.gdp = JSON.stringify(store);
     render();
+    if (cloudUser)
+        openModal(localDataDialog());
 }
 
 document.body.onclick = e => {
@@ -401,7 +374,7 @@ document.body.onclick = e => {
     }
     if (a) {
         const k = a.dataset.act;
-        if (a.closest('.pause') && ['wnew', 'tags', 'exp', 'imp', 'legal'].includes(k))
+        if (a.closest('.pause') && ['wnew', 'tags', 'legal'].includes(k))
             closeModal();
         a.closest(':popover-open')?.hidePopover();
         ACTIONS[k]?.(a, a.dataset.id);
@@ -484,10 +457,9 @@ document.body.onchange = e => {
 };
 // Popovers open in the top layer, away from their button; place each menu under its own button, inside the viewport
 document.addEventListener('beforetoggle', e => {
-    if (!['pmenu', 'amenu'].includes(e.target.id) || e.newState != 'open')
+    if (e.target.id != 'amenu' || e.newState != 'open')
         return;
     const r = qs(`[popovertarget=${e.target.id}]`).getBoundingClientRect(), w = Math.min(360, innerWidth - 24);
-    // Only the profile rows scroll, so the menu never runs past the bottom of the screen
     Object.assign(e.target.style, { width: w + 'px', top: r.bottom + 6 + 'px', left: Math.max(12, Math.min(r.left, innerWidth - w - 12)) + 'px', maxHeight: Math.max(200, innerHeight - r.bottom - 18) + 'px' });
 }, true);
 
@@ -584,7 +556,7 @@ window.addEventListener('storage', e => {
 });
 
 function openLocalMigration(id) {
-    if (cloudBeta() && cloudUser && cloudSession?.pulled && store.profs[id] && !(migratedLocalProfiles()[cloudUser] || []).includes(id))
+    if (cloudUser && cloudSession?.pulled && store.profs[id] && !(migratedLocalProfiles()[cloudUser] || []).includes(id))
         openModal(migrationDialog(id));
 }
 
@@ -612,7 +584,7 @@ function canDeleteLocalProfile(id) {
 }
 
 async function deleteLocalProfile(id) {
-    if (!cloudBeta() || !canDeleteLocalProfile(id))
+    if (!canDeleteLocalProfile(id))
         return;
     const ok = await showDialog({ title: t('localDeleteConfirm'), msg: store.profs[id].name, danger: 1 });
     if (!ok || !canDeleteLocalProfile(id))

@@ -14,7 +14,7 @@ const fixture = () => ({
     tags: [{ name: 'Tag', color: '#abcdef', position: 0 }]
 });
 
-function page(query = '?user=player', response = { data: fixture() }, beta = false, saved = {}) {
+function page(query = '?user=player', response = { data: fixture() }, saved = {}) {
     const calls = [], writes = [], listeners = {};
     const storage = new Proxy({ gl: 'en', ...saved }, { set(target, key, value) { writes.push(key); target[key] = value; return true; } });
     const appNode = { innerHTML: '', contains: () => false };
@@ -26,7 +26,6 @@ function page(query = '?user=player', response = { data: fixture() }, beta = fal
         location: new URL('https://example.test/app/' + query), URL, URLSearchParams,
         navigator: { onLine: true }, history: { replaceState() {} }, setTimeout, clearTimeout, queueMicrotask
     });
-    env.context.cloudBeta = () => beta;
     env.context.loadCloud = async () => ({ rpc: async (name, args) => { calls.push([name, plain(args)]); if (response instanceof Error) throw response; return response; } });
     env.context.autoSyncIfStale = () => calls.push('auto-sync');
     env.context.initAccount = () => calls.push('account');
@@ -61,9 +60,9 @@ test('offline and RPC failures show the connection screen', async () => {
     }
 });
 
-test('startup uses public rows independently of beta, never syncs or writes storage', async () => {
-    for (const beta of [false, true]) {
-        const p = page('?user=player', { data: fixture() }, beta);
+test('startup uses public rows with accounts available, never syncs or writes storage', async () => {
+    for (const query of ['?user=player', '?user=player&beta=off']) {
+        const p = page(query);
         p.load(['js/main.js']);
         await new Promise(resolve => setImmediate(resolve));
         assert.equal(p.app('profile.levels.length'), 2);
@@ -210,3 +209,15 @@ for (const [language, publicHeading, ownHeading] of [['en', 'Lists', 'My lists']
         assert.ok(p.html().includes(`<h2 class=sec>${ownHeading}</h2>`));
     });
 }
+
+test('a first-time signed-out visitor sees the demo guest card and local data', () => {
+    const p = page('');
+    p.load(['js/main.js']);
+    assert.equal(p.app('cloudUser'), null);
+    assert.equal(p.app('profile'), p.context.window.DEMO_PROFILE);
+    assert.equal(p.app('store.cur'), 'p1');
+    assert.match(p.html(), /class=guest-account/);
+    assert.match(p.html(), /data-act=asignin/);
+    assert.match(p.html(), /data-act=localdata/);
+    assert.doesNotMatch(p.html(), /id=pmenu|popovertarget=pmenu/);
+});

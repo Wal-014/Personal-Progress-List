@@ -5,8 +5,7 @@
 (() => {
     if (!canEdit()) {
         initPublicView();
-        if (cloudBeta())
-            initAccount();
+        initAccount();
     }
     else {
         if (!store) {
@@ -17,11 +16,9 @@
         }
         ensureProfileColors();
         ensureProfileDefaults();
-        if (cloudBeta())
-            restoreCloudSync();
+        restoreCloudSync();
         render();
-        if (cloudBeta())
-            initAccount();
+        initAccount();
         if (storeWasUnreadable)
             showAlert(t('dataUnreadable'));
         autoSyncIfStale();

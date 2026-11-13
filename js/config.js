@@ -54,3 +54,5 @@ const LEVEL_RELAY_API = 'https://ppl-level-relay.waquermaster.workers.dev/';
 const SUPABASE_URL = 'https://mjgklvdnuhbnyucytaji.supabase.co';
 // The publishable key is public by design: RLS protects the data, so secret scanners are told to skip it
 const SUPABASE_KEY = 'sb_publishable_k3LU7r-8Ut5FGczl0vTkGw_N8DDBFkI'; // gitleaks:allow
+// Email and password sign-in wait for an SMTP provider; until then the hosted project has its email provider turned off
+const EMAIL_AUTH = false;

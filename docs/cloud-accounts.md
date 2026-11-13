@@ -19,6 +19,7 @@ How Personal Ranked Progress moves from profiles kept in the browser to Supabase
 | Several local profiles? (#196) | When someone signs in for the first time on a device that has local profiles, they pick the one that becomes their account's data, see what will be copied and confirm. Nothing is merged automatically. The local profiles stay on the device as a backup that can be downloaded until the user deletes it. |
 | What if the account already has data? (#196) | The app says so and asks before adding the local levels to it; it never overwrites cloud data. |
 | Mandatory account fields? (#194) | Only a display name. The username is chosen later and is required only to share a public profile. Biography and country are optional; the country is picked from a list of ISO country codes. |
+| Sign-in methods at launch? (#198) | Google only, until an SMTP provider is chosen; email and password stay implemented behind `EMAIL_AUTH`. |
 | Linking Google and email sign-in? (#194) | Supabase links identities that share a verified email address, so one person keeps one account and one profile. |
 | Public by default? (#197) | No. Profiles are private until their owner makes them public, which also requires a username. |
 | What is public? (#197) | Display name, icon colours, biography, country, both ranked lists with their statistics, wishlists and tags. Personal notes are never public. |
@@ -243,28 +244,29 @@ The device keeps, per row, the version and contents it last received from the se
   - wishlists are added, and a wishlist whose id already exists (every profile made from the demo has `w1`) receives only the items it does not have;
   - every row is cleaned to the database limits first (lengths, control characters, ranges, links, ids), and the result toast says how many entries were already there and how many fields were adjusted.
 - **Safe to retry.** The rows keep their ids and go through the normal sync queue, so a second run finds them all as existing. The local profile is never modified or deleted by bringing it.
-- **Local data** (beta) lists every local profile with *Download backup* (today's export format), *Bring to my account* and *Delete from this device*, confirmed. While signed out, the active profile and the last profile cannot be deleted.
-- With the beta switch on, Home shows the account card when signed in and a guest card (the local profile, *Sign in*, *Local data*) when signed out, instead of the old profile menu; Import and Export move into *Local data*. Without the switch nothing changes until #198.
+- **Local data** lists every local profile with *Download backup* (the existing export format), *Bring to my account* when signed in, and *Delete from this device*, confirmed. While signed out, *Use on this device* activates another backup; the active profile and the last profile cannot be deleted. *Import backup* always adds a local profile: it becomes active while signed out, or stays a backup that can be brought into the account while signed in.
+- Home shows the account card when signed in and a guest card (the local profile, *Sign in*, *Local data*) when signed out. *Local data* always appears for guests and appears on the account card when the device has real local progress. The legacy profile menu is removed; backup downloads and imports live in *Local data*.
 
 The cache holds the profile and the snapshot, roughly twice the account's data. Browsers allow about 5 MB of localStorage per site, which covers accounts of a couple of thousand levels; beyond that the cache write fails, the app keeps syncing while online and the status says the copy cannot be kept on the device.
 
 ### Authentication
 
 - Supabase Auth with the PKCE flow and the session in localStorage, restored and refreshed by the client.
+- **Launch: Google only.** Supabase's built-in mailer only emails members of the Supabase organization, and no SMTP provider is configured yet, so a stranger signing up with email would never get the confirmation email. `EMAIL_AUTH = false` in `js/config.js` shows a Google-only sign-in dialog and hides the change-email and change-password settings, and the hosted project has its email provider turned off. Email sign-in is fully implemented and tested with the switch on; turning it back on means configuring SMTP (`[auth.email.smtp]` in `supabase/config.toml`, which also allows the custom templates), enabling the email provider on the hosted project and setting the switch to `true`. `supabase/config.toml` keeps email on for the local stack, which the database tests sign in with.
 - **Google:** `signInWithOAuth` returns to the page that started it.
 - **Email and password:** sign-up sends a confirmation email and recovery sends a reset email. The templates in `supabase/templates/` link to the app with a `token_hash` that the app verifies with `verifyOtp`, so a link also works when it is opened on another device or browser. The free plan accepts custom templates only with a custom SMTP provider, which #198 configures. Until then the hosted project sends Supabase's default emails: their PKCE link signs in only in the browser that asked for it, and anywhere else the app opens sign-in and explains that the email is confirmed. The app removes auth parameters from the address bar as soon as it has used them.
 - The account menu in the top bar offers My profile, Edit profile, Account settings (password, email, delete account) and Sign out.
 
 ### Public profiles (#197)
 
-- **Viewing.** `?user=<username>` opens that profile read-only for anyone, with or without an account and whatever the beta switch says. The app calls `public_profile()` once and builds the profile from its rows; notes are never part of it. While viewing, `save()` does nothing, cloud sync, the local-profile offer and the AREDL refresh do not run, and nothing is written to localStorage. A signed-in visitor's session still restores, so the account button shows their own account.
+- **Viewing.** `?user=<username>` opens that profile read-only for anyone, with or without an account. The app calls `public_profile()` once and builds the profile from its rows; notes are never part of it. While viewing, `save()` does nothing, cloud sync, the local-profile offer and the AREDL refresh do not run, and nothing is written to localStorage. A signed-in visitor's session still restores, so the account button shows their own account.
 - **Read-only screens.** Home shows the owner's identity card (cube, display name, `@username`, country, biography) and the lists, wishlists and statistics; no control that edits is rendered (no add, edit, delete, reorder, status, progress, tags, import or export). *Back to my progress* reloads the app without `user`. An invalid, missing or private username shows "This profile does not exist or is private", and a network failure says so.
 - **Escaping.** Every value comes from someone else's account and goes through the same escaping and colour and URL checks as imported files; `tests/public-view.test.js` renders a profile made of payloads on every screen.
 - **Sharing.** *Share profile* (account menu and My profile) asks for a username first, then switches between Private and Public with one sentence on what becomes public, and when public shows the link with *Copy link* (falling back to selecting the text) and *Open*.
 
-### Beta switch
+### Accounts for everyone (#198)
 
-Until #198 turns accounts on for everyone, the account features appear only after opening the site once with `?beta=cloud` (and disappear again with `?beta=off`). Everyone else keeps the current app while the pieces are merged.
+Accounts are available to every visitor. The old `beta` query parameter is removed from the address bar without affecting account availability, and startup defensively removes any stored `gbeta` opt-in. Using the app without signing in keeps the active profile on this device.
 
 ## Configuration
 
@@ -309,6 +311,12 @@ psql --single-transaction --variable ON_ERROR_STOP=1   --file backup/history_sch
 ```
 
 `session_replication_role = replica` turns triggers off during the import, so the archive, version and row-limit triggers do not fire for restored rows. A single account's deleted rows are recovered from the archive instead (`public.archived_rows(user)` with the service role).
+
+**Restore check (2026-11-13).** The first backup was decrypted and restored into the local stack:
+- the backup's `schema.sql` matched a dump of the repository's migrations line for line;
+- the app's data (`auth.users`, `auth.identities`, `private` and `public` tables) restored with the same row counts as production.
+
+The local stack runs an older Auth version than the hosted project, so a local restore loads only those `COPY` blocks from `data.sql`. A restore into a new hosted project takes every file as shown above. Delete decrypted files and reset the local database afterwards, since they hold real accounts.
 
 ### Rollback
 

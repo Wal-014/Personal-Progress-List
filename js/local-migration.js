@@ -160,7 +160,7 @@ const migrationText = (value, limit) => Array.from(String(value ?? '')).filter(c
 }).slice(0, limit).join('');
 
 async function bringLocalProfile(localId, useIdentity) {
-    if (!cloudBeta() || !cloudUser || !cloudSession?.pulled)
+    if (!cloudUser || !cloudSession?.pulled)
         return;
     const local = store.profs[localId], userId = cloudUser;
     let cleaned;
@@ -250,7 +250,7 @@ async function bringLocalProfile(localId, useIdentity) {
 const migrationDeferred = new Set();
 
 function maybeOfferMigration() {
-    if (!canEdit() || !cloudUser || !cloudBeta() || !cloudSession?.pulled || account.recovering || migrationDeferred.has(cloudUser)
+    if (!canEdit() || !cloudUser || !cloudSession?.pulled || account.recovering || migrationDeferred.has(cloudUser)
         || cloudFormOpen() || !localProfilesToOffer(cloudUser).length)
         return;
     migrationDeferred.add(cloudUser);

@@ -15,7 +15,7 @@ function accountButton() {
 function accountMenu() {
     const own = account.profile;
     const row = (act, icon, key) => `<button class=pma data-act=${act}>${icon}<span>${t(key)}</span></button>`;
-    return `<div id=amenu class="pmenu amenu" popover><div class=account-head>${cubeIcon(own.color, own.secondary_color)}<div class=info><span class=nm>${escapeHtml(own.display_name)}</span><span class=by>${own.username ? '@' + escapeHtml(own.username) : t('accountChooseUsername')}</span></div><span class=beta-chip>${t('accountBeta')}</span></div>${row('aprofile', ICONS.person, 'accountProfile')}${row('aedit', ICONS.edit, 'pedit')}${row('ashare', ICONS.exp, 'shareProfile')}${row('asettings', ICONS.settings, 'accountSettings')}${row('asignout', ICONS.logout, 'accountSignOut')}</div>`;
+    return `<div id=amenu class="pmenu amenu" popover><div class=account-head>${cubeIcon(own.color, own.secondary_color)}<div class=info><span class=nm>${escapeHtml(own.display_name)}</span><span class=by>${own.username ? '@' + escapeHtml(own.username) : t('accountChooseUsername')}</span></div></div>${row('aprofile', ICONS.person, 'accountProfile')}${row('aedit', ICONS.edit, 'pedit')}${row('ashare', ICONS.exp, 'shareProfile')}${row('asettings', ICONS.settings, 'accountSettings')}${row('asignout', ICONS.logout, 'accountSignOut')}</div>`;
 }
 
 function passwordField(id, labelKey, autocomplete) {
@@ -28,18 +28,30 @@ function authDialog(mode, note = '') {
     return `<div class="box sm account-dialog"><h2>${t(titleKey)}</h2>${switcher}<form id=af data-mode=${mode}>${mode == 'signup' ? `<label for=adisplay>${t('accountDisplayName')}</label><input id=adisplay name=adisplay required maxlength=40 autocomplete=nickname>` : ''}<label for=aemail>${t('accountEmail')}</label><input id=aemail name=aemail type=email required autocomplete=email>${mode == 'reset' ? '' : passwordField('apassword', 'accountPassword', mode == 'signin' ? 'current-password' : 'new-password')}${mode == 'signup' ? `<p class=by>${t('accountPasswordHint')}</p>` : ''}<p id=amsg class="gdm warn" role=alert tabindex=-1>${escapeHtml(note)}</p><div id=auth-forward></div><p class=dgb><button type=button data-act=close>${t('close')}</button><button class=pri type=submit>${t(titleKey)}</button></p></form><p><button type=button class=account-link data-act=amode data-v=${mode == 'signin' ? 'reset' : 'signin'}>${t(mode == 'signin' ? 'accountForgot' : 'accountBackSignIn')}</button></p></div>`;
 }
 
+function googleAuthDialog(note) {
+    return `<div class="box sm account-dialog"><h2>${t('accountSignIn')}</h2><p class=by>${t('accountGoogleHint')}</p><div id=agoogle-slot></div><p id=amsg class="gdm warn" role=alert tabindex=-1>${escapeHtml(note)}</p><p class=by>${t('accountEmailLater')}</p><p class=dgb><button type=button data-act=close>${t('close')}</button></p></div>`;
+}
+
 function googleButton() {
-    return `<button type=button class=gbtn data-act=agoogle><svg class=i viewBox="0 0 48 48" aria-hidden=true><path fill="#4285F4" d="M43.61 24.46c0-1.36-.12-2.66-.35-3.92H24v7.43h11a9.4 9.4 0 0 1-4.08 6.17v5h6.61c3.87-3.56 6.08-8.8 6.08-14.68Z"/><path fill="#34A853" d="M24 44c5.51 0 10.13-1.83 13.51-4.96l-6.61-5c-1.83 1.23-4.17 1.97-6.9 1.97-5.32 0-9.85-3.59-11.47-8.43H5.71v5.15A20.4 20.4 0 0 0 24 44Z"/><path fill="#FBBC05" d="M12.53 27.58A12 12 0 0 1 11.9 24c0-1.24.22-2.45.63-3.58v-5.15H5.71A20 20 0 0 0 3.5 24c0 3.22.77 6.27 2.21 8.73Z"/><path fill="#EA4335" d="M24 12c3 0 5.69 1.04 7.81 3.08l5.86-5.86C34.12 5.91 29.5 4 24 4A20.4 20.4 0 0 0 5.71 15.27l6.82 5.15C14.15 15.59 18.68 12 24 12Z"/></svg>${t('accountGoogle')}</button><div class=auth-divider>${t('accountOr')}</div>`;
+    return `<button type=button class=gbtn data-act=agoogle><svg class=i viewBox="0 0 48 48" aria-hidden=true><path fill="#4285F4" d="M43.61 24.46c0-1.36-.12-2.66-.35-3.92H24v7.43h11a9.4 9.4 0 0 1-4.08 6.17v5h6.61c3.87-3.56 6.08-8.8 6.08-14.68Z"/><path fill="#34A853" d="M24 44c5.51 0 10.13-1.83 13.51-4.96l-6.61-5c-1.83 1.23-4.17 1.97-6.9 1.97-5.32 0-9.85-3.59-11.47-8.43H5.71v5.15A20.4 20.4 0 0 0 24 44Z"/><path fill="#FBBC05" d="M12.53 27.58A12 12 0 0 1 11.9 24c0-1.24.22-2.45.63-3.58v-5.15H5.71A20 20 0 0 0 3.5 24c0 3.22.77 6.27 2.21 8.73Z"/><path fill="#EA4335" d="M24 12c3 0 5.69 1.04 7.81 3.08l5.86-5.86C34.12 5.91 29.5 4 24 4A20.4 20.4 0 0 0 5.71 15.27l6.82 5.15C14.15 15.59 18.68 12 24 12Z"/></svg>${t('accountGoogle')}</button>`;
 }
 
 function openAuthDialog(mode = 'signin', note = '') {
-    openModal(authDialog(mode, note));
-    const form = qs('#af'), slot = qs('#agoogle-slot');
-    form.querySelector('input').focus();
+    openModal(EMAIL_AUTH ? authDialog(mode, note) : googleAuthDialog(note));
+    const slot = qs('#agoogle-slot');
+    if (EMAIL_AUTH)
+        qs('#af').querySelector('input').focus();
     if (slot)
         googleSignInAvailable().then(available => {
-            if (available && slot.isConnected)
-                slot.innerHTML = googleButton();
+            if (!slot.isConnected)
+                return;
+            if (available) {
+                slot.innerHTML = googleButton() + (EMAIL_AUTH ? `<div class=auth-divider>${t('accountOr')}</div>` : '');
+                if (!EMAIL_AUTH)
+                    slot.querySelector('button').focus();
+            }
+            else if (!EMAIL_AUTH)
+                accountMessage(slot.closest('.account-dialog'), '#amsg', t('authOffline'));
         });
 }
 
@@ -222,8 +234,13 @@ async function submitAccountProfile(form) {
 }
 
 function settingsDialog() {
-    openModal(`<div class="box sm account-dialog"><h2>${t('accountSettings')}</h2><p class=account-email>${escapeHtml(account.user.email || '')}</p><form id=ef><h3>${t('accountChangeEmail')}</h3><label for=enew>${t('accountNewEmail')}</label><input id=enew name=enew type=email required autocomplete=email><p id=emsg class="gdm warn" role=alert tabindex=-1></p><p class=dgb><button class=blue type=submit>${t('accountChangeEmail')}</button></p></form><h3>${t('accountPassword')}</h3><button data-act=apassword>${t(hasPasswordIdentity() ? 'accountChangePassword' : 'accountAddPassword')}</button><section class=account-danger><h3>${t('accountDelete')}</h3><p>${t('accountDeleteHint')}</p><button class=dg data-act=adelete>${ICONS.del}${t('accountDelete')}</button></section><p id=settings-msg class="gdm warn" role=alert tabindex=-1></p><p class=dgb><button data-act=close>${t('close')}</button></p></div>`);
-    qs('#enew').focus();
+    openModal(`<div class="box sm account-dialog"><h2>${t('accountSettings')}</h2><p class=account-email>${escapeHtml(account.user.email || '')}</p>${EMAIL_AUTH ? emailSettings() : ''}<section class=account-danger><h3>${t('accountDelete')}</h3><p>${t('accountDeleteHint')}</p><button class=dg data-act=adelete>${ICONS.del}${t('accountDelete')}</button></section><p id=settings-msg class="gdm warn" role=alert tabindex=-1></p><p class=dgb><button id=settings-close data-act=close>${t('close')}</button></p></div>`);
+    // Without the email form the first control would be Delete account, which must never take the initial focus
+    qs(EMAIL_AUTH ? '#enew' : '#settings-close').focus();
+}
+
+function emailSettings() {
+    return `<form id=ef><h3>${t('accountChangeEmail')}</h3><label for=enew>${t('accountNewEmail')}</label><input id=enew name=enew type=email required autocomplete=email><p id=emsg class="gdm warn" role=alert tabindex=-1></p><p class=dgb><button class=blue type=submit>${t('accountChangeEmail')}</button></p></form><h3>${t('accountPassword')}</h3><button data-act=apassword>${t(hasPasswordIdentity() ? 'accountChangePassword' : 'accountAddPassword')}</button>`;
 }
 
 async function submitAccountEmail(form) {

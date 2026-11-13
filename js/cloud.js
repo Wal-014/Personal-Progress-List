@@ -1,28 +1,6 @@
-/** Beta opt-in and on-demand loading of the Supabase client. */
+/** On-demand loading of the Supabase client. */
 
-let cloudBetaEnabled, cloudPromise;
-
-/** Applies the URL's beta switch once and caches the stored opt-in for this page. */
-function cloudBeta() {
-    if (cloudBetaEnabled !== undefined)
-        return cloudBetaEnabled;
-    const url = new URL(location.href), beta = url.searchParams.get('beta');
-    try {
-        if (beta == 'cloud')
-            localStorage.gbeta = 'cloud';
-        else if (beta == 'off')
-            localStorage.removeItem('gbeta');
-        cloudBetaEnabled = localStorage.gbeta == 'cloud';
-    }
-    catch {
-        cloudBetaEnabled = false;
-    }
-    if (url.searchParams.has('beta')) {
-        url.searchParams.delete('beta');
-        history.replaceState(history.state, '', url.pathname + url.search + url.hash);
-    }
-    return cloudBetaEnabled;
-}
+let cloudPromise;
 
 /** Shares one client-loading promise, allowing a fresh attempt after a failed load. */
 function loadCloud() {

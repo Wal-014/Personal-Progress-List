@@ -6,7 +6,7 @@ const user = { id: 'user-a', user_metadata: { display_name: ' Player A ' } };
 const ownProfile = { id: 'user-a', display_name: 'Player A', username: null, is_public: false };
 const plain = value => JSON.parse(JSON.stringify(value));
 
-function accounts({ url = 'https://example.com/app/?keep=yes#section', saved = false, beta = true } = {}) {
+function accounts({ url = 'https://example.com/app/?keep=yes#section', saved = false } = {}) {
     const calls = [], timers = [], alerts = [], toasts = [], dialogs = [], renders = [], scripts = [];
     const answers = new Map();
     const location = new URL(url);
@@ -49,7 +49,7 @@ function accounts({ url = 'https://example.com/app/?keep=yes#section', saved = f
         callback = handler;
         return { data: { subscription: { unsubscribe() {} } } };
     };
-    const localStorage = { gbeta: beta ? 'cloud' : '', removeItem(key) { delete this[key]; } };
+    const localStorage = { removeItem(key) { delete this[key]; } };
     if (saved)
         localStorage['sb-mjgklvdnuhbnyucytaji-auth-token'] = 'saved';
     const loaded = loadScripts(['js/config.js', 'js/cloud.js', 'js/account.js', 'js/i18n.js'], {
@@ -65,7 +65,7 @@ function accounts({ url = 'https://example.com/app/?keep=yes#section', saved = f
         openAuthDialog(mode, note) { dialogs.push([mode, note]); }
     });
     return {
-        ...loaded, calls, timers, alerts, toasts, dialogs, renders, scripts, location, respond,
+        ...loaded, calls, timers, alerts, toasts, dialogs, renders, scripts, location, localStorage, respond,
         state: () => plain(loaded.app('account')),
         emit: (event, session) => callback(event, session),
         async flush() { while (timers.length) await timers.shift()(); },
@@ -78,15 +78,36 @@ function accounts({ url = 'https://example.com/app/?keep=yes#section', saved = f
     };
 }
 
-test('beta off stays off and beta on without a session stays idle without loading the client', async () => {
-    for (const beta of [false, true]) {
-        const page = accounts({ beta });
-        assert.deepEqual(page.state(), { status: 'off', user: null, profile: null, recovering: false });
-        await page.app('initAccount()');
-        assert.equal(page.state().status, beta ? 'idle' : 'off');
-        assert.equal(page.scripts.length, 0);
-        assert.equal(page.renders.length, beta ? 1 : 0);
-    }
+for (const beta of ['', '?beta=cloud', '?beta=off']) test('accounts are available without a session ' + beta, async () => {
+    const page = accounts({ url: 'https://example.com/app/' + beta });
+    page.localStorage.gbeta = 'cloud';
+    await page.app('initAccount()');
+    assert.equal(page.state().status, 'idle');
+    assert.equal(page.scripts.length, 0);
+    assert.equal(page.renders.length, 1);
+    assert.equal(page.localStorage.gbeta, undefined);
+    assert.equal(page.location.search, '');
+});
+
+test('startup removes only the beta query and leaves auth links available to the client', async () => {
+    const page = accounts({ url: 'https://example.com/app/?beta=off&keep=yes&code=secret#section=stats' });
+    page.context.document.head.appendChild = script => {
+        assert.equal(page.location.search, '?keep=yes&code=secret');
+        page.scripts.push(script);
+        script.onload();
+    };
+    await page.app('initAccount()');
+    assert.equal(page.location.search, '?keep=yes');
+    assert.equal(page.location.hash, '#section=stats');
+});
+
+test('blocked storage cannot prevent accounts or beta URL cleanup', async () => {
+    const page = accounts({ url: 'https://example.com/app/?beta=off&keep=yes#section' });
+    Object.defineProperty(page.context, 'localStorage', { get() { throw Error('Blocked'); } });
+    await page.app('initAccount()');
+    assert.equal(page.state().status, 'idle');
+    assert.equal(page.location.search, '?keep=yes');
+    assert.equal(page.location.hash, '#section');
 });
 
 test('a saved session or any auth parameter in query or hash loads the client once', async () => {
@@ -417,12 +438,10 @@ test('auth cleanup preserves unrelated query and hash parameters and removes an 
     }
 });
 
-test('beta off refuses account actions without loading the vendor', async () => {
-    const page = accounts({ beta: false });
-    for (const [expression] of actionCases)
-        assert.deepEqual(plain(await page.app(expression)), { error: 'authFailed' });
-    assert.deepEqual(plain(await page.app('saveOwnProfile({ display_name: "Player" })')), { error: 'authFailed' });
-    assert.equal(page.scripts.length, 0);
+test('beta off cannot block sign-in actions', async () => {
+    const page = accounts({ url: 'https://example.com/app/?beta=off' });
+    assert.deepEqual(plain(await page.app('signInWithEmail("a@example.com", "password")')), {});
+    assert.equal(page.scripts.length, 1);
 });
 
 test('a failed vendor load returns an offline error and the next action retries', async () => {
