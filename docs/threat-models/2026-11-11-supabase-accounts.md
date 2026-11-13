@@ -51,8 +51,8 @@ flowchart LR
 
 - [ ] RLS owner policies on every table, default deny — verified by the A/B/anonymous integration test (#193)
 - [ ] Server-assigned `user_id`, `version` and `updated_at` — verified by the mass-assignment test (#193, #195)
-- [ ] Notes in `level_notes`, public rows through RLS only — verified by the anonymous public-profile test (#193, #197)
-- [ ] Private by default, public only with a username — verified by the new-account test (#193, #197)
+- [x] Notes in `level_notes`, public rows through RLS only — verified by the anonymous public-profile test (#193, #197; `tests/db/public.test.js`)
+- [x] Private by default, public only with a username — verified by the new-account test (#193, #197; `tests/db/public.test.js`)
 - [ ] Column check constraints and client cleaning of cloud data — verified by the constraint tests and the hostile render test (#193, #197)
 - [ ] Auth parameters removed from the URL — verified in the browser (#194)
 - [ ] Password policy, email confirmation and redirect allow list in `supabase/config.toml` — verified on the local stack (#193, #194)

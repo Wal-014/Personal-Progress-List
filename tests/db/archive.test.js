@@ -25,10 +25,10 @@ async function archived(userId) {
     return ok(await context.admin.rpc('archived_rows', { target_user: userId }));
 }
 
-async function snapshots(client, tables) {
+async function snapshots(user, tables) {
     const rows = [];
     for (const table of tables) {
-        for (const row of ok(await client.from(table).select('*'))) {
+        for (const row of ok(await user.client.from(table).select('*').eq('user_id', user.id))) {
             rows.push({ table_name: table, row_data: row });
         }
     }
@@ -54,16 +54,16 @@ describe('private deleted-row archive', { skip: !enabled }, () => {
         await seed(owner);
         await seed(other);
         const tables = ['levels', 'level_notes', 'level_tags'];
-        const expected = await snapshots(owner.client, tables);
-        const otherExpected = await snapshots(other.client, tables);
+        const expected = await snapshots(owner, tables);
+        const otherExpected = await snapshots(other, tables);
         assert.equal(expected.length, 4);
         assert.deepEqual(await archived(owner.id), []);
         ok(await owner.client.from('levels').delete().eq('id', 'level'));
         ok(await other.client.from('levels').delete().eq('id', 'level'));
         assertArchive(await archived(owner.id), expected, owner.id);
         assertArchive(await archived(other.id), otherExpected, other.id);
-        for (const table of tables) assert.deepEqual(ok(await owner.client.from(table).select('*')), []);
-        assert.equal(ok(await owner.client.from('tags').select('*')).length, 2);
+        for (const table of tables) assert.deepEqual(ok(await owner.client.from(table).select('*').eq('user_id', owner.id)), []);
+        assert.equal(ok(await owner.client.from('tags').select('*').eq('user_id', owner.id)).length, 2);
         ok(await owner.client.from('levels').delete().eq('id', 'level'));
         assert.equal((await archived(owner.id)).length, 4);
     });
@@ -71,25 +71,25 @@ describe('private deleted-row archive', { skip: !enabled }, () => {
     test('deleting a wishlist archives it and every cascaded item', async () => {
         const owner = await context.createUser();
         await seed(owner);
-        const expected = await snapshots(owner.client, ['wishlists', 'wishlist_items']);
+        const expected = await snapshots(owner, ['wishlists', 'wishlist_items']);
         assert.equal(expected.length, 3);
         ok(await owner.client.from('wishlists').delete().eq('id', 'wishlist'));
         assertArchive(await archived(owner.id), expected, owner.id);
-        assert.deepEqual(ok(await owner.client.from('wishlists').select('*')), []);
-        assert.deepEqual(ok(await owner.client.from('wishlist_items').select('*')), []);
+        assert.deepEqual(ok(await owner.client.from('wishlists').select('*').eq('user_id', owner.id)), []);
+        assert.deepEqual(ok(await owner.client.from('wishlist_items').select('*').eq('user_id', owner.id)), []);
     });
 
     test('deleting a tag archives it and its level tags, and list-order deletes are archived', async () => {
         const owner = await context.createUser();
         await seed(owner);
-        const expected = (await snapshots(owner.client, ['tags', 'level_tags', 'list_orders']))
+        const expected = (await snapshots(owner, ['tags', 'level_tags', 'list_orders']))
             .filter(row => row.table_name === 'list_orders' || (row.row_data.name ?? row.row_data.tag_name) === 'Focus');
         assert.equal(expected.length, 3);
         ok(await owner.client.from('tags').delete().eq('name', 'Focus'));
         ok(await owner.client.from('list_orders').delete().eq('kind', 'classic'));
         assertArchive(await archived(owner.id), expected, owner.id);
-        assert.deepEqual(ok(await owner.client.from('level_tags').select('tag_name')), [{ tag_name: 'Practice' }]);
-        assert.equal(ok(await owner.client.from('levels').select('id').single()).id, 'level');
+        assert.deepEqual(ok(await owner.client.from('level_tags').select('tag_name').eq('user_id', owner.id)), [{ tag_name: 'Practice' }]);
+        assert.equal(ok(await owner.client.from('levels').select('id').eq('user_id', owner.id).single()).id, 'level');
     });
 
     test('deleting an auth user with live data purges prior archives without archiving account cascades', async () => {

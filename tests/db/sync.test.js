@@ -92,14 +92,14 @@ describe('versioned database sync', { skip: !enabled }, () => {
     });
 
     test('stale updates and duplicate inserts return the current row unchanged', async () => {
-        const { client } = await context.createUser();
+        const { id, client } = await context.createUser();
         const inserted = ok(await client.rpc('sync_push', { changes: [initialChanges[0]] }));
         assert.deepEqual(inserted.applied, [{ table: 'levels', key: { id: 'level' }, version: 1 }]);
         const updated = ok(await client.rpc('sync_push', { changes: [
             { table: 'levels', key: { id: 'level' }, version: 1, row: { id: 'level', name: 'Current', attempts_normal: null } }
         ] }));
         assert.deepEqual(updated.applied, [{ table: 'levels', key: { id: 'level' }, version: 2 }]);
-        const current = ok(await client.from('levels').select('*').eq('id', 'level').single());
+        const current = ok(await client.from('levels').select('*').eq('user_id', id).eq('id', 'level').single());
         assert.equal(current.name, 'Current');
         assert.equal(current.attempts_normal, null);
         for (const version of [1, null]) {
@@ -110,31 +110,31 @@ describe('versioned database sync', { skip: !enabled }, () => {
             assert.deepEqual(result.rejected, []);
             assert.deepEqual(result.conflicts, [{ table: 'levels', key: { id: 'level' }, row: current }]);
             assert.equal(result.revision, updated.revision);
-            assert.deepEqual(ok(await client.from('levels').select('*').eq('id', 'level').single()), current);
+            assert.deepEqual(ok(await client.from('levels').select('*').eq('user_id', id).eq('id', 'level').single()), current);
         }
     });
 
     test('deletes require the current version and are idempotent once the row is gone', async () => {
-        const { client } = await context.createUser();
+        const { id, client } = await context.createUser();
         ok(await client.rpc('sync_push', { changes: [initialChanges[0]] }));
         ok(await client.rpc('sync_push', { changes: [
             { table: 'levels', key: { id: 'level' }, version: 1, row: { id: 'level', name: 'Current' } }
         ] }));
-        const current = ok(await client.from('levels').select('*').eq('id', 'level').single());
+        const current = ok(await client.from('levels').select('*').eq('user_id', id).eq('id', 'level').single());
         const stale = ok(await client.rpc('sync_push', { changes: [
             { table: 'levels', key: { id: 'level' }, version: 1, row: null }
         ] }));
         assert.deepEqual(stale.applied, []);
         assert.deepEqual(stale.rejected, []);
         assert.deepEqual(stale.conflicts, [{ table: 'levels', key: { id: 'level' }, row: current }]);
-        assert.deepEqual(ok(await client.from('levels').select('*').eq('id', 'level').single()), current);
+        assert.deepEqual(ok(await client.from('levels').select('*').eq('user_id', id).eq('id', 'level').single()), current);
         const deleted = ok(await client.rpc('sync_push', { changes: [
             { table: 'levels', key: { id: 'level' }, version: 2, row: null }
         ] }));
         assert.deepEqual(deleted.applied, [{ table: 'levels', key: { id: 'level' }, version: null }]);
         assert.deepEqual(deleted.conflicts, []);
         assert.deepEqual(deleted.rejected, []);
-        assert.deepEqual(ok(await client.from('levels').select('*')), []);
+        assert.deepEqual(ok(await client.from('levels').select('*').eq('user_id', id)), []);
         const repeated = ok(await client.rpc('sync_push', { changes: [
             { table: 'levels', key: { id: 'level' }, version: 2, row: null }
         ] }));
@@ -148,7 +148,7 @@ describe('versioned database sync', { skip: !enabled }, () => {
     });
 
     test('changes in a batch observe earlier writes to the same key', async () => {
-        const { client } = await context.createUser();
+        const { id, client } = await context.createUser();
         const result = ok(await client.rpc('sync_push', { changes: [
             initialChanges[0],
             { table: 'levels', key: { id: 'level' }, version: 1, row: { id: 'level', name: 'Second' } },
@@ -161,7 +161,7 @@ describe('versioned database sync', { skip: !enabled }, () => {
         ]);
         assert.deepEqual(result.conflicts, []);
         assert.deepEqual(result.rejected, []);
-        assert.deepEqual(ok(await client.from('levels').select('*')), []);
+        assert.deepEqual(ok(await client.from('levels').select('*').eq('user_id', id)), []);
     });
 
     test('user_settings accepts empty rows without inventing a key or losing defaults', async () => {
@@ -190,7 +190,7 @@ describe('versioned database sync', { skip: !enabled }, () => {
     });
 
     test('a constraint failure rejects only its change and preserves valid neighbors', async () => {
-        const { client } = await context.createUser();
+        const { id, client } = await context.createUser();
         const result = ok(await client.rpc('sync_push', { changes: [
             { table: 'tags', key: { name: 'Before' }, version: null, row: { name: 'Before', color: '#abcdef' } },
             { table: 'tags', key: { name: 'Invalid' }, version: null, row: { name: 'Invalid', color: 'red' } },
@@ -206,7 +206,7 @@ describe('versioned database sync', { skip: !enabled }, () => {
             table: 'tags', key: { name: 'Invalid' }, code: '23514', message: undefined
         });
         assert.match(result.rejected[0].message, /check constraint/);
-        assert.deepEqual(ok(await client.from('tags').select('name').order('name')), [{ name: 'After' }, { name: 'Before' }]);
+        assert.deepEqual(ok(await client.from('tags').select('name').eq('user_id', id).order('name')), [{ name: 'After' }, { name: 'Before' }]);
         assert.equal(result.revision, ok(await client.rpc('sync_revision')));
     });
 
@@ -252,11 +252,11 @@ describe('versioned database sync', { skip: !enabled }, () => {
         }
         assert.equal(result.revision, before);
         assert.equal(ok(await client.rpc('sync_revision')), before);
-        for (const table of tables) assert.deepEqual(ok(await client.from(table).select('*')), []);
+        for (const table of tables) assert.deepEqual(ok(await client.from(table).select('*').eq('user_id', id)), []);
     });
 
     test('value conversion reports its SQLSTATE and does not discard valid changes', async () => {
-        const { client } = await context.createUser();
+        const { id, client } = await context.createUser();
         const result = ok(await client.rpc('sync_push', { changes: [
             { table: 'levels', key: { id: 'bad' }, version: null, row: { id: 'bad', kind: 'classic', name: 'Invalid type', attempts_normal: 'many' } },
             initialChanges[0],
@@ -269,7 +269,7 @@ describe('versioned database sync', { skip: !enabled }, () => {
             { table: 'levels', key: { id: 'level' }, code: '22P02' }
         ]);
         for (const rejection of result.rejected) assert.match(rejection.message, /invalid input syntax/);
-        const rows = ok(await client.from('levels').select('id,attempts_normal,version'));
+        const rows = ok(await client.from('levels').select('id,attempts_normal,version').eq('user_id', id));
         assert.deepEqual(rows, [{ id: 'level', attempts_normal: 10, version: 1 }]);
     });
 
@@ -306,7 +306,7 @@ describe('versioned database sync', { skip: !enabled }, () => {
     });
 
     test('non-arrays and 501 changes fail atomically while 500 changes are allowed', async () => {
-        const { client } = await context.createUser();
+        const { id, client } = await context.createUser();
         const before = ok(await client.rpc('sync_revision'));
         const changes = Array.from({ length: 501 }, (_, index) => ({
             table: 'levels', key: { id: `batch-${index}` }, version: null,
@@ -317,14 +317,14 @@ describe('versioned database sync', { skip: !enabled }, () => {
             assert.equal(result.error?.code, '22023');
             assert.equal(result.error?.message, 'batch_too_large');
             assert.equal(ok(await client.rpc('sync_revision')), before);
-            assert.deepEqual(ok(await client.from('levels').select('*')), []);
+            assert.deepEqual(ok(await client.from('levels').select('*').eq('user_id', id)), []);
         }
         const result = ok(await client.rpc('sync_push', { changes: changes.slice(0, 500) }));
         assert.equal(result.applied.length, 500);
         assert.ok(result.applied.every(change => change.version === 1));
         assert.deepEqual(result.conflicts, []);
         assert.deepEqual(result.rejected, []);
-        const counted = await client.from('levels').select('*', { count: 'exact', head: true });
+        const counted = await client.from('levels').select('*', { count: 'exact', head: true }).eq('user_id', id);
         ok(counted);
         assert.equal(counted.count, 500);
     });
@@ -458,9 +458,9 @@ describe('versioned database sync', { skip: !enabled }, () => {
         assert.equal(result.error?.code, 'PT429');
         assert.equal(result.error?.message, 'write_budget_exceeded');
         assert.equal(ok(await client.rpc('sync_revision')), before);
-        assert.deepEqual(ok(await client.from('tags').select('*').eq('name', 'Rollback')), []);
-        assert.deepEqual(ok(await client.from('level_notes').select('*')), []);
-        const counted = await client.from('level_tags').select('*', { count: 'exact', head: true });
+        assert.deepEqual(ok(await client.from('tags').select('*').eq('user_id', id).eq('name', 'Rollback')), []);
+        assert.deepEqual(ok(await client.from('level_notes').select('*').eq('user_id', id)), []);
+        const counted = await client.from('level_tags').select('*', { count: 'exact', head: true }).eq('user_id', id);
         ok(counted);
         assert.equal(counted.count, 49999);
         assert.ok(Date.now() - started < 60000, 'The budget test must finish within one window.');
