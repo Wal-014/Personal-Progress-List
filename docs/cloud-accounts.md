@@ -233,6 +233,19 @@ The device keeps, per row, the version and contents it last received from the se
 4. **Status:** the top bar shows the sentence with an icon on wide screens; on phones only the sync icon while saving, or one Retry button with a warning icon when offline or failing, with the sentence still announced to screen readers. The sentences are *Saving…*, *Saved*, *Offline · N changes waiting* or *Not saved: reason*, with Retry when it applies. The Home account card always shows the sentence. Network failures retry after 5 s, 15 s, 1 min and then every 5 min; the write budget's HTTP 429 waits a minute.
 5. **Signing out** deletes the account's cache, after warning when changes are still waiting. A session that ends on its own (an expired refresh token) keeps the cache, so the waiting changes are sent when the same user signs in again. Signing in as someone else deletes any other account's cache.
 
+### Local profiles (#196)
+
+- **Offer.** After the first pull of a page session, if the device holds local profiles with real data that were not brought into this account yet, the app opens *Bring your progress to your account* once. Real data means a level, wishlist item or tag that is not part of the bundled demo; brought profiles are recorded per account in `localStorage.gmigrated`. "Not now" or closing the dialog waits until the next page load; *Local data* on Home offers it any time.
+- **Preview.** The dialog lists the offered profiles with their counts, warns when the account already has levels or wishlists, and can also copy the profile's name and colours to the account.
+- **Bringing** adds to the account and never replaces anything:
+  - levels whose id, or the same Geometry Dash level (same `levelId` and kind, or else the same normalized name and kind), already exist are skipped, and the added ones are appended to each ranked list;
+  - tags the account lacks are added, and the account's colour wins;
+  - wishlists are added, and a wishlist whose id already exists (every profile made from the demo has `w1`) receives only the items it does not have;
+  - every row is cleaned to the database limits first (lengths, control characters, ranges, links, ids), and the result toast says how many entries were already there and how many fields were adjusted.
+- **Safe to retry.** The rows keep their ids and go through the normal sync queue, so a second run finds them all as existing. The local profile is never modified or deleted by bringing it.
+- **Local data** (beta) lists every local profile with *Download backup* (today's export format), *Bring to my account* and *Delete from this device*, confirmed. While signed out, the active profile and the last profile cannot be deleted.
+- With the beta switch on, Home shows the account card when signed in and a guest card (the local profile, *Sign in*, *Local data*) when signed out, instead of the old profile menu; Import and Export move into *Local data*. Without the switch nothing changes until #198.
+
 The cache holds the profile and the snapshot, roughly twice the account's data. Browsers allow about 5 MB of localStorage per site, which covers accounts of a couple of thousand levels; beyond that the cache write fails, the app keeps syncing while online and the status says the copy cannot be kept on the device.
 
 ### Authentication
@@ -240,7 +253,7 @@ The cache holds the profile and the snapshot, roughly twice the account's data. 
 - Supabase Auth with the PKCE flow and the session in localStorage, restored and refreshed by the client.
 - **Google:** `signInWithOAuth` returns to the page that started it.
 - **Email and password:** sign-up sends a confirmation email and recovery sends a reset email. The templates in `supabase/templates/` link to the app with a `token_hash` that the app verifies with `verifyOtp`, so a link also works when it is opened on another device or browser. The free plan accepts custom templates only with a custom SMTP provider, which #198 configures. Until then the hosted project sends Supabase's default emails: their PKCE link signs in only in the browser that asked for it, and anywhere else the app opens sign-in and explains that the email is confirmed. The app removes auth parameters from the address bar as soon as it has used them.
-- The account menu in the top bar offers My profile, Edit profile, Account settings (password, email, delete account) and Sign out. Until #196 it sits next to the old profile menu.
+- The account menu in the top bar offers My profile, Edit profile, Account settings (password, email, delete account) and Sign out.
 
 ### Beta switch
 

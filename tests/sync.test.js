@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { loadScripts } from './load-scripts.js';
+import { loadScripts, syncScripts } from './load-scripts.js';
 import { FakeSyncServer } from './fake-sync-server.js';
 
 const plain = value => JSON.parse(JSON.stringify(value));
@@ -10,6 +10,7 @@ const level = (id = 'n1') => ({ id, name: 'Level ' + id, kind: 'classic', attN: 
 function device(server = new FakeSyncServer(), storage = {}) {
     const timers = new Map(), listeners = { window: {}, document: {} }, toasts = [], nodes = {}, errors = [];
     let timerId = 0, draws = 0, blocked = false, now = 0;
+    const migrationPrompts = [];
     storage.gdp ||= JSON.stringify(local);
     storage.gl ||= 'en';
     storage.removeItem ||= function(key) { delete this[key]; };
@@ -26,10 +27,11 @@ function device(server = new FakeSyncServer(), storage = {}) {
         clearTimeout(id) { timers.delete(id); },
         console: { error(error) { errors.push(error); } },
         render() { draws++; }, showToast(text) { toasts.push(text); }, showAlert(text) { toasts.push(text); },
-        loadCloud: async () => server, cloudBeta: () => true, queueMicrotask
+        loadCloud: async () => server, cloudBeta: () => true, queueMicrotask,
+        migrationDialog: () => 'Migration preview', openModal: html => migrationPrompts.push(html)
     });
-    return { ...env, server, storage, timers, listeners, toasts, document, nodes, errors,
-        load(files = ['js/sync.js']) { env.load(files); },
+    return { ...env, server, storage, timers, listeners, toasts, document, nodes, errors, migrationPrompts,
+        load(files = syncScripts) { env.load(files); },
         start: () => env.app(`startCloudSync({ id: 'owner' }, ${JSON.stringify(server.profile)})`),
         data: () => plain(env.app('profile')),
         status: () => plain(env.app('cloudSync')),
@@ -351,6 +353,10 @@ test('account Home and shell hide local file actions and show the account colour
     assert.match(html, /Offline · 1 change waiting/); assert.match(html, /data-act=csync/);
     assert.doesNotMatch(html, /<button[^>]*data-act=aprofile[^>]*>(?:(?!<\/button>)[\s\S])*<button/);
     page.app(`account.status = 'signed-out'; stopCloudSync(true)`);
+    page.context.localProfileSummary = () => 'Local';
+    assert.match(page.app('profileSwitcher()'), /data-act=localdata/);
+    assert.doesNotMatch(page.app('profileSwitcher()'), /data-act=imp/); assert.doesNotMatch(page.app('paletteButtons()'), /data-act=exp/);
+    page.context.cloudBeta = () => false;
     assert.match(page.app('profileSwitcher()'), /data-act=imp/); assert.match(page.app('paletteButtons()'), /data-act=exp/);
 });
 
@@ -597,4 +603,58 @@ test('a programming error cancels an earlier network retry', async () => {
     assert.equal(page.status().status, 'error');
     assert.equal([...page.timers.values()].some(task => task.work === page.app('retryCloudSync')), false);
     assert.equal(page.errors.length, 1);
+});
+
+
+test('migration waits for the first successful pull and resumes after a blocked form closes', async () => {
+    const page = device(); page.load(); page.server.failure = 'offline';
+    await page.start(); assert.equal(page.migrationPrompts.length, 0); assert.equal(page.app('cloudSession.pulled'), false);
+    page.server.failure = null; page.blocked = true;
+    await page.app('pullCloud()'); assert.equal(page.migrationPrompts.length, 0); assert.equal(page.app('cloudSession.pulled'), true);
+    page.blocked = false; page.app('maybeOfferMigration()'); assert.equal(page.migrationPrompts.length, 1);
+});
+
+test('bringing queues durably before a failed push and a reload retries without modifying local backups', async () => {
+    const page = await ready();
+    page.context.closeModal = () => {};
+    const backup = page.storage.gdp;
+    await page.app("bringLocalProfile('p1', false)");
+    assert.equal(JSON.parse(page.storage['gcloud:owner']).profile.levels[0].id, 'local');
+    page.server.failure = 'offline'; await page.app('pushCloud()');
+    assert.equal(page.status().status, 'offline'); assert.equal(page.storage.gdp, backup);
+    const restored = await ready(page.server, page.storage);
+    restored.context.closeModal = () => {};
+    restored.server.failure = null; await restored.app('pullCloud()');
+    await restored.app("bringLocalProfile('p1', false)"); await restored.app('pushCloud()');
+    assert.equal(restored.server.rows('levels').length, 1); assert.equal(restored.server.rows('levels')[0].id, 'local');
+    assert.equal(restored.storage.gdp, backup); assert.equal(restored.status().status, 'saved');
+});
+
+
+test('first sign-in pulls populated lists silently and later pull conflicts still notify', async () => {
+    const a = await ready();
+    a.app(`profile.levels.push(${JSON.stringify(level('classic'))}, ${JSON.stringify(level('platform'))});
+        profile.levels[1].kind = 'platform';
+        profile.order = { classic: ['classic'], platform: ['platform'] }; save();`);
+    await a.app('pushCloud()');
+    const b = await ready(a.server);
+    assert.deepEqual(b.toasts, []);
+    assert.deepEqual(b.data().order, { classic: ['classic'], platform: ['platform'] });
+    assert.deepEqual(b.data().levels.map(entry => entry.id), ['classic', 'platform']);
+    a.app('profile.levels[0].attN = 20; save()');
+    b.app('profile.levels[0].attN = 30; save()');
+    await a.app('pushCloud()');
+    await b.app('pullCloud()');
+    assert.equal(b.data().levels[0].attN, 20);
+    assert.deepEqual(b.toasts, ['Changed on another device: Level classic']);
+});
+
+test('the first pull after a cached restart still reports conflicts when a revision exists', async () => {
+    const [a, b] = await pair();
+    b.app('profile.levels[0].attN = 30; save()');
+    a.app('profile.levels[0].attN = 20; save()');
+    await a.app('pushCloud()');
+    const restored = await ready(a.server, b.storage);
+    assert.equal(restored.data().levels[0].attN, 20);
+    assert.deepEqual(restored.toasts, ['Changed on another device: Level n1']);
 });

@@ -20,6 +20,13 @@ function zoomTimeline(factor) {
 
 /** What each data-act value does when clicked. Handlers get the clicked element and its data-id. */
 const ACTIONS = {
+    localdata: () => openModal(localDataDialog()),
+    localbackup: (a, id) => downloadLocalBackup(id),
+    localbring: (a, id) => openLocalMigration(id),
+    localdelete: (a, id) => deleteLocalProfile(id),
+    migrationbackup: () => downloadMigrationBackup(),
+    migrationlater: () => deferMigration(),
+    migrationconfirm: a => submitMigration(a),
     asignin: () => openAuthDialog(),
     amode: a => openAuthDialog(a.dataset.v),
     agoogle: a => continueWithGoogle(a),
@@ -279,15 +286,17 @@ const ACTIONS = {
     wask: (a, id) => askTransfer(currentWishlist().items.find(i => i.id == id), false),
     wto: (a, id) => transferWishlistItem(id, a.dataset.v),
     imp: () => qs('#fi').click(),
-    exp(a, id) {
-        const pr = store.profs[id || store.cur], u = URL.createObjectURL(new Blob([JSON.stringify({ ...pr.data, profileName: pr.name, profileColor: pr.color, profileSecondaryColor: pr.secondaryColor })], { type: 'application/json' })), x = document.createElement('a');
-        x.href = u;
-        // Only characters that file systems reject are replaced, so accents and non-Latin names survive
-        x.download = (pr.name.trim().replace(/[/:*?"<>|\s]+/g, '-') || 'profile') + '.json';
-        x.click();
-        setTimeout(() => URL.revokeObjectURL(u), 1000);
-    }
+    exp: (a, id) => downloadLocalBackup(id || store.cur)
 };
+
+function downloadLocalBackup(id) {
+    const pr = store.profs[id], u = URL.createObjectURL(new Blob([JSON.stringify({ ...pr.data, profileName: pr.name, profileColor: pr.color, profileSecondaryColor: pr.secondaryColor })], { type: 'application/json' })), x = document.createElement('a');
+    x.href = u;
+    // Only characters that file systems reject are replaced, so accents and non-Latin names survive
+    x.download = (pr.name.trim().replace(/[/:*?"<>|\s]+/g, '-') || 'profile') + '.json';
+    x.click();
+    setTimeout(() => URL.revokeObjectURL(u), 1000);
+}
 
 function saveLevel(form) {
     const position = form.elements.pos.value, old = findLevel(form.dataset.id), level = old || { id: newId('n') };
@@ -487,6 +496,8 @@ function accountRendered() {
         recoveryDialogOpened = true;
         passwordDialog();
     }
+    if (cloudUser)
+        queueMicrotask(maybeOfferMigration);
 }
 
 document.addEventListener('close', () => queueMicrotask(accountRendered), true);
@@ -564,3 +575,53 @@ window.addEventListener('storage', e => {
     if (!qs('form, .modal'))
         render();
 });
+
+function openLocalMigration(id) {
+    if (cloudBeta() && cloudUser && cloudSession?.pulled && store.profs[id] && !(migratedLocalProfiles()[cloudUser] || []).includes(id))
+        openModal(migrationDialog(id));
+}
+
+function downloadMigrationBackup() {
+    const selected = qs('#migration [name=local-profile]:checked');
+    if (selected)
+        downloadLocalBackup(selected.value);
+}
+
+async function submitMigration(button) {
+    const selected = qs('#migration [name=local-profile]:checked');
+    if (!selected || button.disabled)
+        return;
+    button.disabled = true;
+    try {
+        await bringLocalProfile(selected.value, qs('#migration-identity').checked);
+    }
+    finally {
+        button.disabled = false;
+    }
+}
+
+function canDeleteLocalProfile(id) {
+    return !!store.profs[id] && Object.keys(store.profs).length > 1 && (!!cloudUser || store.cur != id);
+}
+
+async function deleteLocalProfile(id) {
+    if (!cloudBeta() || !canDeleteLocalProfile(id))
+        return;
+    const ok = await showDialog({ title: t('localDeleteConfirm'), msg: store.profs[id].name, danger: 1 });
+    if (!ok || !canDeleteLocalProfile(id))
+        return;
+    const next = { ...store, profs: { ...store.profs } };
+    delete next.profs[id];
+    if (next.cur == id)
+        next.cur = Object.keys(next.profs)[0];
+    try {
+        localStorage.gdp = JSON.stringify(next);
+    }
+    catch {
+        return showAlert(t('cloudStorage'));
+    }
+    store = next;
+    render();
+    openModal(localDataDialog());
+    showToast(t('localDeleted'));
+}

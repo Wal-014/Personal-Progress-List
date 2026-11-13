@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
+export const syncScripts = ['js/sync.js', 'js/local-migration.js'];
+
 /**
  * Runs app scripts in order in a new context, the way the page shares one global scope between its classic scripts.
  * Returns the context, an evaluator for code in it, and a loader for scripts added after stubs are in place.
