@@ -3,14 +3,20 @@ import assert from 'node:assert/strict';
 import { loadScripts } from './load-scripts.js';
 import { readFileSync } from 'node:fs';
 
-function createApp(globals = {}) {
+// Email sign-in is switched off in production; the email flows keep their tests with the switch on.
+const withEmailAuth = enabled => ({ transform: { 'js/config.js': code => {
+    assert.ok(code.includes('const EMAIL_AUTH = false;'));
+    return code.replace('const EMAIL_AUTH = false;', `const EMAIL_AUTH = ${enabled};`);
+} } });
+
+function createApp(globals = {}, { emailAuth = true } = {}) {
     const nodes = {}, listeners = {};
     const document = { body: {}, addEventListener: (name, handler) => { (listeners[name] ||= []).push(handler); }, querySelector: selector => nodes[selector] || null };
     nodes['#md'] = element({ innerHTML: '' });
     nodes['#md dialog'] = element({ querySelector: () => null, addEventListener() {}, showModal() {}, close() {} });
     const env = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/account.js', 'js/components/dialogs.js', 'js/components/account-ui.js', 'js/events.js'], {
         document, window: { addEventListener() {} }, renderTagSuggestions() {}, ui: { lang: 'en' }, cloudSync: { pending: 0 }, cloudUser: null, queueMicrotask: () => {}, ...globals
-    });
+    }, withEmailAuth(emailAuth));
     return { ...env, document, nodes, listeners };
 }
 
@@ -559,4 +565,49 @@ test('share visibility saves once with pending controls and inline errors', asyn
     assert.match(nodes['#md'].innerHTML, /id=share-link/);
     await app('setProfileVisibility')(buttons[0]);
     assert.match(nodes['#md'].innerHTML, /Only you can see your progress/);
+});
+
+test('with email sign-in off, the sign-in dialog offers only Google and explains why', async () => {
+    for (const available of [true, false]) {
+        let resolve;
+        const { app, context, nodes } = createApp({}, { emailAuth: false });
+        const message = element(), button = element(), dialog = element({ querySelector: selector => selector === '#amsg' ? message : null });
+        const slot = nodes['#agoogle-slot'] = element({ innerHTML: '', closest: () => dialog, querySelector: () => button });
+        context.googleSignInAvailable = () => new Promise(done => resolve = done);
+        app('openAuthDialog()');
+        const html = nodes['#md'].innerHTML;
+        for (const absent of ['id=aemail', 'id=apassword', 'id=adisplay', 'data-act=amode', 'id=af', 'data-act=aresend'])
+            assert.equal(html.includes(absent), false, absent);
+        assert.ok(html.includes(app("t('accountGoogleHint')")));
+        assert.ok(html.includes(app("t('accountEmailLater')")));
+        resolve(available);
+        await flush();
+        assert.equal(slot.innerHTML.includes('data-act=agoogle'), available);
+        assert.equal(slot.innerHTML.includes('auth-divider'), false);
+        assert.equal(button.focused === true, available);
+        assert.equal(message.textContent, available ? '' : app("t('authOffline')"));
+    }
+});
+
+test('with email sign-in on, the Google button keeps its divider before the email form', async () => {
+    const { app, context, nodes } = createApp();
+    nodes['#af'] = fakeForm().form;
+    const slot = nodes['#agoogle-slot'] = element({ innerHTML: '' });
+    context.googleSignInAvailable = async () => true;
+    app('openAuthDialog()');
+    await flush();
+    assert.match(slot.innerHTML, /data-act=agoogle[\s\S]*auth-divider/);
+});
+
+test('with email sign-in off, account settings offer no email or password changes', () => {
+    const { app, nodes } = createApp({}, { emailAuth: false });
+    const close = nodes['#settings-close'] = element();
+    signedIn(app);
+    app('settingsDialog()');
+    assert.equal(close.focused, true);
+    const html = nodes['#md'].innerHTML;
+    for (const absent of ['id=ef', 'id=enew', 'data-act=apassword'])
+        assert.equal(html.includes(absent), false, absent);
+    assert.ok(html.includes('data-act=adelete'));
+    assert.ok(html.includes('owner@example.test'));
 });
