@@ -15,7 +15,7 @@ function accountButton() {
 function accountMenu() {
     const own = account.profile;
     const row = (act, icon, key) => `<button class=pma data-act=${act}>${icon}<span>${t(key)}</span></button>`;
-    return `<div id=amenu class="pmenu amenu" popover><div class=account-head>${cubeIcon(own.color, own.secondary_color)}<div class=info><span class=nm>${escapeHtml(own.display_name)}</span><span class=by>${own.username ? '@' + escapeHtml(own.username) : t('accountChooseUsername')}</span></div><span class=beta-chip>${t('accountBeta')}</span></div>${row('aprofile', ICONS.person, 'accountProfile')}${row('aedit', ICONS.edit, 'pedit')}${row('ashare', ICONS.exp, 'shareProfile')}${row('asettings', ICONS.settings, 'accountSettings')}${row('asignout', ICONS.logout, 'accountSignOut')}</div>`;
+    return `<div id=amenu class="pmenu amenu" popover><div class=account-head>${cubeIcon(own.color, own.secondary_color)}<div class=info><span class=nm>${escapeHtml(own.display_name)}</span><span class=by>${own.username ? '@' + escapeHtml(own.username) : t('accountChooseUsername')}</span></div></div>${row('aprofile', ICONS.person, 'accountProfile')}${row('aedit', ICONS.edit, 'pedit')}${row('ashare', ICONS.exp, 'shareProfile')}${row('asettings', ICONS.settings, 'accountSettings')}${row('asignout', ICONS.logout, 'accountSignOut')}</div>`;
 }
 
 function passwordField(id, labelKey, autocomplete) {

@@ -48,7 +48,7 @@ function signedIn(app, extra = '') {
     app(`account = { status: 'signed-in', user: { id: 'owner', email: 'owner@example.test', identities: [{ provider: 'email' }] }, profile: { display_name: 'Player', username: 'player', color: '#123456', secondary_color: '#abcdef', bio: 'Hello', country: 'CR', created_at: '2026-10-10T12:00:00Z', ${extra} } }`);
 }
 
-test('account button stays hidden off beta and reflects every account status', () => {
+test('account button reflects startup and every account status', () => {
     const { app } = createApp();
     assert.equal(app('accountButton()'), '');
     for (const status of ['idle', 'signed-out', 'loading']) {
@@ -61,6 +61,7 @@ test('account button stays hidden off beta and reflects every account status', (
     app(`account = { status: 'signed-in', profile: { display_name: 'Player', username: 'player', color: '#123456', secondary_color: '#abcdef' } }`);
     const html = app('accountButton()');
     assert.match(html, /popovertarget=amenu/);
+    assert.doesNotMatch(html, /beta-chip|>Beta</);
     assert.match(html, /Account \u00b7 Player/);
     for (const action of ['aprofile', 'aedit', 'asettings', 'asignout']) assert.ok(html.includes('data-act=' + action));
 });
@@ -458,18 +459,14 @@ test('profile, password and email failures keep the form open and focus their al
     }
 });
 
-test('both popovers anchor to their own trigger and stay within the viewport', () => {
-    const { context, nodes, listeners } = createApp({ innerWidth: 360, innerHeight: 800 });
-    const anchors = { pmenu: { left: 12, bottom: 150 }, amenu: { left: 250, bottom: 60 } };
-    for (const id of ['pmenu', 'amenu']) {
-        nodes[`[popovertarget=${id}]`] = { getBoundingClientRect: () => anchors[id] };
-        const popover = { id, style: {} };
-        listeners.beforetoggle[0]({ target: popover, newState: 'open' });
-        assert.equal(popover.style.top, anchors[id].bottom + 6 + 'px');
-        assert.equal(popover.style.width, '336px');
-        assert.equal(popover.style.left, '12px');
-    }
-    assert.ok(context.document);
+test('the account popover anchors to its trigger and stays within the viewport', () => {
+    const { nodes, listeners } = createApp({ innerWidth: 360, innerHeight: 800 });
+    nodes['[popovertarget=amenu]'] = { getBoundingClientRect: () => ({ left: 250, bottom: 60 }) };
+    const popover = { id: 'amenu', style: {} };
+    listeners.beforetoggle[0]({ target: popover, newState: 'open' });
+    assert.equal(popover.style.top, '66px');
+    assert.equal(popover.style.width, '336px');
+    assert.equal(popover.style.left, '12px');
 });
 
 test('email templates are bilingual, configured and carry app-verifiable links or a code', () => {
@@ -490,14 +487,22 @@ test('email templates are bilingual, configured and carry app-verifiable links o
 test('privacy starts with the specified account disclosure in both languages', () => {
     const { app } = createApp();
     const paragraphs = {
-        es: 'Puedes usar la aplicación sin cuenta: entonces tus datos (niveles, perfiles y wishlists) se guardan solo en el almacenamiento local de tu navegador y únicamente salen de él si exportas un perfil. Si creas una cuenta (en pruebas), tu correo y el progreso que guardes en ella se almacenan en Supabase, el proveedor de base de datos del proyecto, en servidores de Estados Unidos; puedes borrar la cuenta y sus datos cuando quieras desde Ajustes de la cuenta. Si entras con Google, Google comparte con la aplicación tu nombre y tu correo. El único servidor propio del proyecto es el intermediario de la búsqueda de niveles, que no guarda tus datos.',
-        en: "You can use the app without an account: your data (levels, profiles and wishlists) is then stored only in your browser's local storage and leaves it only if you export a profile. If you create an account (in testing), your email address and the progress you save in it are stored with Supabase, the project's database provider, on servers in the United States; you can delete the account and its data at any time from Account settings. If you sign in with Google, Google shares your name and email address with the app. The project's only server of its own is the level search relay, which does not store your data."
+        es: 'Puedes usar la aplicación sin cuenta: entonces tus datos (niveles, perfiles y wishlists) se guardan solo en el almacenamiento local de tu navegador y puedes descargar una copia de seguridad desde Datos locales. Si creas una cuenta, tu correo y el progreso que guardes en ella se almacenan en Supabase, el proveedor de base de datos del proyecto, en servidores de Estados Unidos; puedes borrar la cuenta y sus datos cuando quieras desde Ajustes de la cuenta. Si entras con Google, Google comparte con la aplicación tu nombre y tu correo. El único servidor propio del proyecto es el intermediario de la búsqueda de niveles, que no guarda tus datos.',
+        en: "You can use the app without an account: your data (levels, profiles and wishlists) is then stored only in your browser's local storage and you can download a backup from Local data. If you create an account, your email address and the progress you save in it are stored with Supabase, the project's database provider, on servers in the United States; you can delete the account and its data at any time from Account settings. If you sign in with Google, Google shares your name and email address with the app. The project's only server of its own is the level search relay, which does not store your data."
     };
-    for (const lang of ['es', 'en']) assert.equal(app(`TRANSLATIONS.${lang}.privacyTxt`).split('\n\n')[0], paragraphs[lang]);
+    const publicProfiles = {
+        es: 'Los perfiles son privados por defecto; si haces público el tuyo, cualquiera con su enlace puede ver tu nombre para mostrar, nombre de usuario, colores del icono, biografía, país, listas, estadísticas, wishlists y etiquetas, pero nunca tus notas ni tu correo, y puedes volver a hacerlo privado en cualquier momento desde Compartir perfil.',
+        en: 'Profiles are private by default; if you make yours public, anyone with its link can see your display name, username, icon colours, biography, country, lists, statistics, wishlists and tags, but never your notes or email, and you can make it private again at any time from Share profile.'
+    };
+    for (const lang of ['es', 'en']) {
+        const privacy = app(`TRANSLATIONS.${lang}.privacyTxt`).split('\n\n');
+        assert.equal(privacy[0], paragraphs[lang]);
+        assert.equal(privacy[1], publicProfiles[lang]);
+    }
 });
 
 test('share dialog covers username setup, private and public profiles', () => {
-    const { app, nodes } = createApp({ location: new URL('https://example.test/app/?beta=cloud') });
+    const { app, nodes } = createApp({ location: new URL('https://example.test/app/?keep=yes') });
     signedIn(app);
     app('account.profile.username = null; shareDialog()');
     assert.match(nodes['#md'].innerHTML, /Choose a username/);

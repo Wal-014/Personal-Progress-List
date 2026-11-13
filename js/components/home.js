@@ -1,5 +1,5 @@
 /**
- * Home screen: the profile switcher, the profile's lists as blocks and wishlists as triggers.
+ * Home screen: the account card, the profile's lists as blocks and wishlists as triggers.
  */
 
 /** Chart line drawn on the statistics block; the list blocks show their #1 level's thumbnail instead. */
@@ -28,20 +28,10 @@ function home() {
 function profileSwitcher() {
     if (!canEdit())
         return publicIdentityCard();
-    const beta = cloudBeta(), localButton = `<button data-act=localdata>${t('localData')}</button>`;
+    const localButton = `<button data-act=localdata>${t('localData')}</button>`;
     if (account.status == 'signed-in') {
         const own = account.profile;
-        return `<div class="psw cloud-account"><button class="obj pbtn" data-act=aprofile>${cubeIcon(own.color, own.secondary_color)}<span class=info><span class=nm>${escapeHtml(own.display_name)}</span>${own.username ? `<span class=by>@${escapeHtml(own.username)}</span>` : ''}<span class=by data-cloud-status>${escapeHtml(cloudStatusSentence())}</span></span></button><span data-cloud-retry>${cloudRetryButton()}</span>${beta && Object.values(store.profs).some(hasRealLocalData) ? localButton : ''}</div>`;
+        return `<div class="psw cloud-account"><button class="obj pbtn" data-act=aprofile>${cubeIcon(own.color, own.secondary_color)}<span class=info><span class=nm>${escapeHtml(own.display_name)}</span>${own.username ? `<span class=by>@${escapeHtml(own.username)}</span>` : ''}<span class=by data-cloud-status>${escapeHtml(cloudStatusSentence())}</span></span></button><span data-cloud-retry>${cloudRetryButton()}</span>${Object.values(store.profs).some(hasRealLocalData) ? localButton : ''}</div>`;
     }
-    const ids = Object.keys(store.profs), cur = store.profs[store.cur];
-    if (beta)
-        return `<div class=guest-account><div class=guest-row><div class="obj pbtn">${localProfileSummary(store.cur, false)}</div><button class=pri data-act=asignin>${t('accountSignIn')}</button>${localButton}</div><p class=by>${t('localGuestHint')}</p></div>`;
-    const row = id => {
-        const p = store.profs[id], on = id == store.cur, eid = escapeHtml(id), name = escapeHtml(p.name);
-        return `<div class="prow${on ? ' act' : ''}"><button class=psel data-act=psel data-id="${eid}"${on ? ' aria-current=true' : ''}>${cubeIcon(p.color, p.secondaryColor)}<span class=info><span class=nm>${name}</span><span class=by>${p.data.levels.length} ${t('lv')}</span></span>${on ? ICONS.check : ''}</button><button class=xs data-act=pedit data-id="${eid}" aria-label="${t('edit')} · ${name}">${ICONS.edit}</button><button class="xs dg" data-act=pdelid data-id="${eid}" aria-label="${t('del')} · ${name}">${ICONS.del}</button></div>`;
-    };
-    const io = (a, icon, label, aria) => `<button class=pio data-act=${a} aria-label="${aria}">${icon}<span>${label}</span></button>`;
-    return `<div class=psw><button class="obj pbtn" popovertarget=pmenu aria-label="${t('profs')}: ${escapeHtml(cur.name)}">${cubeIcon(cur.color, cur.secondaryColor)}<span class=info><span class=nm>${escapeHtml(cur.name)}</span><span class=by>${profile.levels.length} ${t('lv')}</span></span><svg class="i car" viewBox="0 0 24 24" aria-hidden=true><path d="M6 9l6 6 6-6" fill=none stroke="#fff" stroke-width=3 stroke-linecap=round stroke-linejoin=round /></svg></button>${io('exp', ICONS.exp, t('palExp'), `${t('expP')} · ${escapeHtml(cur.name)}`)}${io('imp', ICONS.imp, t('imp'), t('impP'))}
-<div id=pmenu class=pmenu popover><h3>${t('profs')}</h3><div class=prows>${ids.map(row).join('')}</div>
-<button class=pma data-act=pnew>${ICONS.add}<span>${t('pnew')}</span></button></div></div>`;
+    return `<div class=guest-account><div class=guest-row><div class="obj pbtn">${localProfileSummary(store.cur, false)}</div><button class=pri data-act=asignin>${t('accountSignIn')}</button>${localButton}</div><p class=by>${t('localGuestHint')}</p></div>`;
 }

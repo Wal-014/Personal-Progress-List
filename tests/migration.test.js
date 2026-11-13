@@ -17,9 +17,9 @@ function device() {
         showModal() {}, close() { closed++; for (const work of closeListeners.splice(0)) work(); }, remove() {} };
     const document = { body: {}, querySelector: selector => nodes[selector] || null, addEventListener() {} };
     const env = loadScripts(['data/demo-data.js', 'js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/account.js', 'js/cloud-model.js', ...syncScripts, 'js/components/dialogs.js', 'js/components/local-data.js', 'js/components/home.js', 'js/components/shell.js', 'js/events.js'], {
-        document, window: { addEventListener() {} }, localStorage: storage, cloudBeta: () => true,
+        document, window: { addEventListener() {} }, localStorage: storage,
         queueMicrotask: task => tasks.push(task), setTimeout: task => tasks.push(task), clearTimeout() {},
-        navigator: { onLine: true }, render() {}, renderTagSuggestions() {}, URL, Blob
+        navigator: { onLine: true }, render() {}, matchWithAredl() {}, renderTagSuggestions() {}, URL, Blob
     });
     Object.assign(env.context, {
         saveCloud() { saves++; }, showToast: message => toasts.push(message),
@@ -154,17 +154,92 @@ test('local data cards escape names, expose backup actions and disable recorded 
     assert.match(html, /data-act=localdelete data-id="a" disabled/);
 });
 
-for (const beta of [true, false]) for (const signed of [true, false]) test(`home and menus respect beta=${beta}, signed-in=${signed}`, () => {
-    const d = device(); d.context.cloudBeta = () => beta;
+for (const signed of [true, false]) test('home and menus expose accounts, signed-in=' + signed, () => {
+    const d = device();
     d.setup({ a: localProfile({ data: { ...data(), levels: [level('n1')] } }) });
-    d.app(`account.status = '${signed ? 'signed-in' : 'signed-out'}'; cloudUser = ${signed ? "'owner'" : 'null'}; account.profile = { display_name: 'Account', color: '#123456', secondary_color: '#abcdef' }`);
+    d.app(`account.status = '${signed ? 'signed-in' : 'signed-out'}'; cloudUser = ${signed ? "'owner'" : 'null'}`);
     const card = d.app('profileSwitcher()');
-    assert.equal(card.includes('data-act=localdata'), beta);
-    assert.equal(card.includes('popovertarget=pmenu'), !beta && !signed);
-    assert.equal(card.includes('data-act=asignin'), beta && !signed);
-    assert.equal(d.app('paletteButtons()').includes('data-act=exp'), !beta && !signed);
+    assert.ok(card.includes('data-act=localdata'));
+    assert.equal(card.includes('data-act=asignin'), !signed);
+    assert.equal(card.includes('cloud-account'), signed);
+    assert.doesNotMatch(card, /pmenu|data-act=(?:pnew|psel|pedit|pdelid)/);
+    assert.doesNotMatch(d.app('paletteButtons()'), /data-act=exp/);
     d.context.aredlLine = () => '';
-    assert.equal(d.app('pauseUI()').includes('data-act=imp'), !beta && !signed);
+    assert.doesNotMatch(d.app('pauseUI()'), /data-act=imp/);
+    for (const action of ['pnew', 'psel', 'pedit', 'pdelid', 'imp', 'exp'])
+        assert.equal(d.app('ACTIONS')[action], undefined);
+});
+
+test('account Home hides local data for demo-only backups and guests always see it', () => {
+    const d = device();
+    d.setup({ a: localProfile({ data: d.context.window.DEMO_PROFILE }) });
+    assert.doesNotMatch(d.app('profileSwitcher()'), /data-act=localdata/);
+    d.app("account.status = 'signed-out'; cloudUser = null; activateProfile('a')");
+    assert.match(d.app('profileSwitcher()'), /guest-account/);
+    assert.match(d.app('profileSwitcher()'), /data-act=localdata/);
+});
+
+test('use on this device is available only signed out for inactive backups and persists the switch', () => {
+    const d = device();
+    d.setup({ a: localProfile(), b: localProfile({ name: 'Other', data: { ...data(), levels: [level('n2'), level('n3', { kind: 'platform' })] } }) });
+    d.load(['js/api.js']);
+    d.app("aredlCache = [{ k: 'd', n: 'n2', i: 123, p: 42 }, { k: 'p', n: 'n3', i: 456, p: 84 }]");
+    assert.doesNotMatch(d.app('localDataDialog()'), /data-act=localuse/);
+    const cloud = d.app('profile');
+    d.app("ACTIONS.localuse(null, 'b')");
+    assert.equal(d.app('profile'), cloud);
+    assert.equal(d.app('store.cur'), 'a');
+    d.app("cloudUser = null; account.status = 'signed-out'; activateProfile('a'); ui.sel = 'old'; ui.wl = 'old'");
+    const html = d.app('localDataDialog()');
+    assert.doesNotMatch(html, /data-act=localuse data-id="a"/);
+    assert.match(html, /data-act=localuse data-id="b">Use on this device/);
+    d.app("ACTIONS.localuse(null, 'missing')");
+    assert.equal(d.app('store.cur'), 'a');
+    d.app("ACTIONS.localuse(null, 'b')");
+    assert.equal(d.app('store.cur'), 'b');
+    assert.equal(d.app('profile'), d.app('store.profs.b.data'));
+    assert.equal(d.app('ui.sel'), null);
+    assert.equal(d.app('ui.wl'), null);
+    assert.equal(JSON.parse(d.storage.gdp).cur, 'b');
+    assert.equal(d.app('profile.levels[0].ar?.p'), 42);
+    assert.equal(d.app('profile.levels[1].ar?.p'), 84);
+    assert.deepEqual(JSON.parse(d.storage.gdp).profs.b.data.levels.map(entry => entry.ar?.p), [42, 84]);
+    assert.equal(d.closed(), 1);
+    assert.equal(d.saves(), 0);
+});
+
+for (const signed of [false, true]) test('import backup adds a local profile, signed-in=' + signed, async () => {
+    const d = device(), originalCloud = d.app('profile');
+    d.app(`cloudUser = ${signed ? "'owner'" : 'null'}; account.status = '${signed ? 'signed-in' : 'signed-out'}'; ui.sel = 'old'; ui.wl = 'old'`);
+    if (!signed) d.app("activateProfile('a')");
+    const before = plain(d.app('profile'));
+    let picked = 0;
+    d.nodes['#fi'] = { click() { picked++; } };
+    assert.match(d.app('localDataDialog()'), /data-act=localimport>Import backup/);
+    d.app('ACTIONS.localimport()');
+    assert.equal(picked, 1);
+    d.context.askProfile = async (title, values) => values;
+    const imported = { ...data(), levels: [level('imported')], profileName: 'Backup', profileColor: '#123456', profileSecondaryColor: '#abcdef' };
+    await d.app('importProfile')({ name: 'Backup.json', text: async () => JSON.stringify(imported) });
+    const id = d.app("Object.keys(store.profs).find(id => id != 'a')");
+    assert.ok(id);
+    assert.equal(d.app('store.profs')[id].name, 'Backup');
+    assert.equal(JSON.parse(d.storage.gdp).profs[id].data.levels[0].id, 'imported');
+    assert.equal(d.saves(), 0, 'import must never queue an account save');
+    if (signed) {
+        assert.equal(d.app('profile'), originalCloud);
+        assert.deepEqual(plain(d.app('profile')), before);
+        assert.equal(d.app('store.cur'), 'a');
+        assert.equal(d.app('cloudSession.pulled'), true);
+        assert.match(d.nodes['#md'].innerHTML, new RegExp('data-act=localbring data-id="' + id + '">'));
+        d.app('cloudSession.pulled = false');
+        assert.match(d.app('localDataDialog()'), new RegExp('data-act=localbring data-id="' + id + '" disabled'));
+    } else {
+        assert.equal(d.app('store.cur'), id);
+        assert.equal(d.app('profile'), d.app('store.profs')[id].data);
+        assert.equal(d.app('ui.sel'), null);
+        assert.equal(d.app('ui.wl'), null);
+    }
 });
 
 test('automatic migration waits for a successful pull and unblocked UI, and Not now lasts this page session', () => {

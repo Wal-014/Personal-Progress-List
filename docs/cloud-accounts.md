@@ -243,8 +243,8 @@ The device keeps, per row, the version and contents it last received from the se
   - wishlists are added, and a wishlist whose id already exists (every profile made from the demo has `w1`) receives only the items it does not have;
   - every row is cleaned to the database limits first (lengths, control characters, ranges, links, ids), and the result toast says how many entries were already there and how many fields were adjusted.
 - **Safe to retry.** The rows keep their ids and go through the normal sync queue, so a second run finds them all as existing. The local profile is never modified or deleted by bringing it.
-- **Local data** (beta) lists every local profile with *Download backup* (today's export format), *Bring to my account* and *Delete from this device*, confirmed. While signed out, the active profile and the last profile cannot be deleted.
-- With the beta switch on, Home shows the account card when signed in and a guest card (the local profile, *Sign in*, *Local data*) when signed out, instead of the old profile menu; Import and Export move into *Local data*. Without the switch nothing changes until #198.
+- **Local data** lists every local profile with *Download backup* (the existing export format), *Bring to my account* when signed in, and *Delete from this device*, confirmed. While signed out, *Use on this device* activates another backup; the active profile and the last profile cannot be deleted. *Import backup* always adds a local profile: it becomes active while signed out, or stays a backup that can be brought into the account while signed in.
+- Home shows the account card when signed in and a guest card (the local profile, *Sign in*, *Local data*) when signed out. *Local data* always appears for guests and appears on the account card when the device has real local progress. The legacy profile menu is removed; backup downloads and imports live in *Local data*.
 
 The cache holds the profile and the snapshot, roughly twice the account's data. Browsers allow about 5 MB of localStorage per site, which covers accounts of a couple of thousand levels; beyond that the cache write fails, the app keeps syncing while online and the status says the copy cannot be kept on the device.
 
@@ -257,14 +257,14 @@ The cache holds the profile and the snapshot, roughly twice the account's data. 
 
 ### Public profiles (#197)
 
-- **Viewing.** `?user=<username>` opens that profile read-only for anyone, with or without an account and whatever the beta switch says. The app calls `public_profile()` once and builds the profile from its rows; notes are never part of it. While viewing, `save()` does nothing, cloud sync, the local-profile offer and the AREDL refresh do not run, and nothing is written to localStorage. A signed-in visitor's session still restores, so the account button shows their own account.
+- **Viewing.** `?user=<username>` opens that profile read-only for anyone, with or without an account. The app calls `public_profile()` once and builds the profile from its rows; notes are never part of it. While viewing, `save()` does nothing, cloud sync, the local-profile offer and the AREDL refresh do not run, and nothing is written to localStorage. A signed-in visitor's session still restores, so the account button shows their own account.
 - **Read-only screens.** Home shows the owner's identity card (cube, display name, `@username`, country, biography) and the lists, wishlists and statistics; no control that edits is rendered (no add, edit, delete, reorder, status, progress, tags, import or export). *Back to my progress* reloads the app without `user`. An invalid, missing or private username shows "This profile does not exist or is private", and a network failure says so.
 - **Escaping.** Every value comes from someone else's account and goes through the same escaping and colour and URL checks as imported files; `tests/public-view.test.js` renders a profile made of payloads on every screen.
 - **Sharing.** *Share profile* (account menu and My profile) asks for a username first, then switches between Private and Public with one sentence on what becomes public, and when public shows the link with *Copy link* (falling back to selecting the text) and *Open*.
 
-### Beta switch
+### Accounts for everyone (#198)
 
-Until #198 turns accounts on for everyone, the account features appear only after opening the site once with `?beta=cloud` (and disappear again with `?beta=off`). Everyone else keeps the current app while the pieces are merged.
+Accounts are available to every visitor. The old `beta` query parameter is removed from the address bar without affecting account availability, and startup defensively removes any stored `gbeta` opt-in. Using the app without signing in keeps the active profile on this device.
 
 ## Configuration
 

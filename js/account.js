@@ -170,10 +170,19 @@ function cleanAccountUrl() {
 
 /** Restores a saved session or handles an auth link; otherwise leaves the client unloaded. */
 async function initAccount() {
-    if (accountInitialized || !cloudBeta())
+    if (accountInitialized)
         return;
     accountInitialized = true;
+    try {
+        localStorage.removeItem('gbeta');
+    }
+    catch {
+    }
     const { url, fragment } = accountUrlParams();
+    if (url.searchParams.has('beta')) {
+        url.searchParams.delete('beta');
+        history.replaceState(history.state, '', url.pathname + url.search + url.hash);
+    }
     const get = key => url.searchParams.get(key) || fragment.get(key);
     const hasAuth = ['code', 'token_hash', 'error', 'error_code', 'error_description'].some(key => url.searchParams.has(key) || fragment.has(key));
     if (!hasAuth && !hasCloudSession()) {
@@ -239,11 +248,9 @@ async function ensureOwnProfile() {
     return result.data;
 }
 
-/** Runs a beta account action and converts expected failures into translation keys. */
+/** Runs an account action and converts expected failures into translation keys. */
 async function accountAction(action) {
     try {
-        if (!cloudBeta())
-            return { error: 'authFailed' };
         const result = await action(await startAccount());
         if (result.error && typeof result.error != 'string')
             return { error: authErrorKey(result.error) };

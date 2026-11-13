@@ -17,37 +17,6 @@ function cloud(url = 'https://example.com/app/', storage = {}) {
     return { ...loaded, scripts, replacements, clients, instance, localStorage };
 }
 
-test('the beta switch persists opt-in and removes only its query parameter', () => {
-    const page = cloud('https://example.com/app/?other=one&beta=cloud#keep');
-    assert.equal(page.app('cloudBeta()'), true);
-    assert.equal(page.localStorage.gbeta, 'cloud');
-    assert.deepEqual(page.replacements, [[{ keep: true }, '', '/app/?other=one#keep']]);
-    delete page.localStorage.gbeta;
-    assert.equal(page.app('cloudBeta()'), true);
-    assert.equal(page.replacements.length, 1);
-});
-
-test('the beta switch reads saved opt-in, defaults off and persists opt-out', () => {
-    assert.equal(cloud().app('cloudBeta()'), false);
-    assert.equal(cloud(undefined, { gbeta: 'cloud' }).app('cloudBeta()'), true);
-    const page = cloud('https://example.com/app/?beta=off&other=one#keep', { gbeta: 'cloud' });
-    assert.equal(page.app('cloudBeta()'), false);
-    assert.equal(page.localStorage.gbeta, undefined);
-    assert.equal(page.replacements[0][2], '/app/?other=one#keep');
-    page.localStorage.gbeta = 'cloud';
-    assert.equal(page.app('cloudBeta()'), false);
-});
-
-test('blocked storage disables beta and session detection without keeping the beta parameter', () => {
-    for (const beta of ['cloud', 'off']) {
-        const page = cloud('https://example.com/app/?beta=' + beta);
-        Object.defineProperty(page.context, 'localStorage', { get() { throw Error('Blocked'); } });
-        assert.equal(page.app('cloudBeta()'), false);
-        assert.equal(page.app('hasCloudSession()'), false);
-        assert.equal(page.replacements[0][2], '/app/');
-    }
-});
-
 test('cloud loading shares a script and a client configured for persistent PKCE', async () => {
     const page = cloud();
     const first = page.app('loadCloud()'), second = page.app('loadCloud()');
@@ -135,16 +104,14 @@ test('the service worker caches the cloud vendor on demand and serves it offline
     assert.equal(await result, response);
 });
 
-test('startup restores the cache before rendering and initializes auth afterwards only in beta', () => {
-    for (const beta of [false, true]) {
-        const calls = [];
-        loadScripts(['js/main.js'], {
-            store: {}, storeWasUnreadable: false,
-            ensureProfileColors() {}, ensureProfileDefaults() {}, autoSyncIfStale() {},
-            render() { calls.push('render'); }, cloudBeta: () => beta,
-            restoreCloudSync() { calls.push('cache'); },
-            initAccount() { calls.push('init'); }, document: { addEventListener() {} }, navigator: {}
-        });
-        assert.deepEqual(calls, beta ? ['cache', 'render', 'init'] : ['render']);
-    }
+test('startup always restores the cache before rendering and initializes auth afterwards', () => {
+    const calls = [];
+    loadScripts(['js/main.js'], {
+        store: {}, storeWasUnreadable: false,
+        ensureProfileColors() {}, ensureProfileDefaults() {}, autoSyncIfStale() {},
+        render() { calls.push('render'); },
+        restoreCloudSync() { calls.push('cache'); },
+        initAccount() { calls.push('init'); }, document: { addEventListener() {} }, navigator: {}
+    });
+    assert.deepEqual(calls, ['cache', 'render', 'init']);
 });

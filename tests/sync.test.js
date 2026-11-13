@@ -27,7 +27,7 @@ function device(server = new FakeSyncServer(), storage = {}) {
         clearTimeout(id) { timers.delete(id); },
         console: { error(error) { errors.push(error); } },
         render() { draws++; }, showToast(text) { toasts.push(text); }, showAlert(text) { toasts.push(text); },
-        loadCloud: async () => server, cloudBeta: () => true, queueMicrotask,
+        loadCloud: async () => server, queueMicrotask,
         migrationDialog: () => 'Migration preview', openModal: html => migrationPrompts.push(html)
     });
     return { ...env, server, storage, timers, listeners, toasts, document, nodes, errors, migrationPrompts,
@@ -356,8 +356,6 @@ test('account Home and shell hide local file actions and show the account colour
     page.context.localProfileSummary = () => 'Local';
     assert.match(page.app('profileSwitcher()'), /data-act=localdata/);
     assert.doesNotMatch(page.app('profileSwitcher()'), /data-act=imp/); assert.doesNotMatch(page.app('paletteButtons()'), /data-act=exp/);
-    page.context.cloudBeta = () => false;
-    assert.match(page.app('profileSwitcher()'), /data-act=imp/); assert.match(page.app('paletteButtons()'), /data-act=exp/);
 });
 
 test('conflict notices name at most three entries and keep valid selections', async () => {
@@ -470,7 +468,7 @@ for (const online of [false, true]) test(`cached startup precedes the first rend
     assert.equal(a.server.calls[calls].name, 'sync_pull');
 });
 
-test('cached startup parses stored sessions defensively and respects the beta flag', async () => {
+test('cached startup parses stored sessions defensively and always restores accounts', async () => {
     const a = await ready();
     for (const value of ['{', 'null', '{}', '{"user":null}', '{"user":{"id":7}}']) {
         const page = device(a.server, { ...a.storage }); page.load();
@@ -479,10 +477,10 @@ test('cached startup parses stored sessions defensively and respects the beta fl
         assert.doesNotThrow(() => page.app('restoreCloudSync()'));
         assert.equal(page.app('cloudUser'), null);
     }
-    const page = device(a.server, a.storage); page.load(); page.context.cloudBeta = () => false;
+    const page = device(a.server, a.storage); page.load();
     const frames = boot(page);
-    assert.equal(frames[0].profile.levels[0].id, 'local');
-    assert.equal(page.app('cloudUser'), null);
+    assert.deepEqual(frames[0].profile.levels, []);
+    assert.equal(page.app('cloudUser'), 'owner');
     page.context.localStorage = new Proxy({}, { get() { throw Error('Blocked'); } });
     assert.doesNotThrow(() => page.app('restoreCloudSync()'));
 });

@@ -27,9 +27,10 @@ function localDataDialog() {
     const row = id => {
         const migrated = recorded.includes(id), eid = escapeHtml(id);
         return `<div class=local-profile><div class=obj>${localProfileSummary(id)}</div><div class=local-actions>
+${!cloudUser && id != store.cur ? `<button data-act=localuse data-id="${eid}">${t('localUse')}</button>` : ''}
 <button data-act=localbackup data-id="${eid}">${t('localBackup')}</button>
 ${cloudUser ? `<button data-act=localbring data-id="${eid}"${migrated || !cloudSession?.pulled ? ' disabled' : ''}>${t(migrated ? 'localAlready' : 'migrationBring')}</button>` : ''}
 <button class=dg data-act=localdelete data-id="${eid}"${canDeleteLocalProfile(id) ? '' : ' disabled'}>${t('localDelete')}</button></div></div>`;
     };
-    return `<div class="box sm local-data"><h2>${t('localData')}</h2><p class=by>${t('localBackupHint')}</p>${Object.keys(store.profs).map(row).join('')}<p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
+    return `<div class="box sm local-data"><h2>${t('localData')}</h2><p class=by>${t('localBackupHint')}</p>${Object.keys(store.profs).map(row).join('')}<p class=dgb><button data-act=localimport>${t('localImport')}</button><button class=pri data-act=close>${t('close')}</button></p></div>`;
 }
