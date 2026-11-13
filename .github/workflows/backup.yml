@@ -1,0 +1,86 @@
+name: Backup
+
+on:
+  schedule:
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check database secret
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_DB_URL:-}" ]; then
+            echo "::error::SUPABASE_DB_URL must contain the session pooler connection string."
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check encryption recipients
+        run: |
+          set -euo pipefail
+          if [ ! -f supabase/backup-recipients.txt ] || ! grep -q '^age1' supabase/backup-recipients.txt; then
+            echo "::error::Add at least one age public key starting with age1 to supabase/backup-recipients.txt."
+            exit 1
+          fi
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: 2.122.0
+      - name: Install age
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends age
+      - name: Dump and encrypt database
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          password="${SUPABASE_DB_URL#*://}"
+          password="${password#*:}"
+          password="${password%@*}"
+          echo "::add-mask::$password"
+          umask 077
+          backup_dir=$(mktemp -d "$RUNNER_TEMP/backup.XXXXXX")
+          trap 'rm -rf -- "$backup_dir"' EXIT
+          plaintext_dir="$backup_dir/plaintext"
+          archive="$backup_dir/backup.tar.gz"
+          encrypted="$RUNNER_TEMP/out/prp-backup-$(date -u +%Y-%m-%dT%H-%M-%SZ).tar.gz.age"
+          mkdir -p "$plaintext_dir" "$RUNNER_TEMP/out"
+          echo "::group::roles.sql"
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f "$plaintext_dir/roles.sql" --role-only > /dev/null
+          echo "::endgroup::"
+          echo "::group::schema.sql"
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f "$plaintext_dir/schema.sql" > /dev/null
+          echo "::endgroup::"
+          echo "::group::data.sql"
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f "$plaintext_dir/data.sql" --use-copy --data-only -x "storage.buckets_vectors" -x "storage.vector_indexes" > /dev/null
+          echo "::endgroup::"
+          echo "::group::history_schema.sql"
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f "$plaintext_dir/history_schema.sql" --schema supabase_migrations > /dev/null
+          echo "::endgroup::"
+          echo "::group::history_data.sql"
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f "$plaintext_dir/history_data.sql" --use-copy --data-only --schema supabase_migrations > /dev/null
+          echo "::endgroup::"
+          tar -czf "$archive" -C "$plaintext_dir" .
+          age -R supabase/backup-recipients.txt -o "$encrypted" "$archive"
+          stat --printf='%n %s bytes\n' "$encrypted"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: prp-backup
+          path: ${{ runner.temp }}/out/*.age
+          retention-days: 90
+          if-no-files-found: error

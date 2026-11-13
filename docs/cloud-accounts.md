@@ -285,6 +285,44 @@ npx supabase@2.122.0 stop
 
 CI runs the same tests in the `db` job on every pull request. The local stack also catches every email in Mailpit (`http://127.0.0.1:54324`), so sign-up and recovery can be tested without a mail provider. Google sign-in only works on the hosted project: locally the provider is declared without credentials, so its button appears but Google refuses the request.
 
+## Operations
+
+### Backups
+
+`.github/workflows/backup.yml` runs every Monday at 05:17 UTC and on demand (Actions → Backup → Run workflow).
+- It dumps roles, schema, data (including `auth.users`) and the migration history with `supabase db dump` through the session pooler, then packs them into one archive.
+- It encrypts the archive with [age](https://age-encryption.org) for the public keys in `supabase/backup-recipients.txt`, and uploads only the encrypted file as the `prp-backup` artifact, kept 90 days. The plaintext never leaves the runner and is deleted when the step ends.
+- It needs the `SUPABASE_DB_URL` Actions secret: `postgresql://postgres.<ref>:<password>@aws-0-us-east-1.pooler.supabase.com:5432/postgres`. Resetting the database password in the dashboard means updating that secret.
+- The private keys matching the recipients are kept offline by the maintainers. Losing every one of them makes the existing backups unreadable; adding a maintainer means adding a line to the recipients file.
+- GitHub emails a failed scheduled run to whoever last changed the workflow's schedule; the step log names the dump that failed, with the password masked.
+
+### Restoring
+
+Restore into the local stack first, to check the backup, and into the hosted project only when data was really lost.
+
+```sh
+age -d -i <private key file> -o backup.tar.gz prp-backup-<date>.tar.gz.age
+mkdir backup && tar -xzf backup.tar.gz -C backup
+# Into a fresh project or the local stack:
+psql --single-transaction --variable ON_ERROR_STOP=1   --file backup/roles.sql --file backup/schema.sql   --command 'SET session_replication_role = replica'   --file backup/data.sql --dbname "<connection string>"
+psql --single-transaction --variable ON_ERROR_STOP=1   --file backup/history_schema.sql --file backup/history_data.sql --dbname "<connection string>"
+```
+
+`session_replication_role = replica` turns triggers off during the import, so the archive, version and row-limit triggers do not fire for restored rows. A single account's deleted rows are recovered from the archive instead (`public.archived_rows(user)` with the service role).
+
+### Rollback
+
+Accounts reached everyone in #198 by removing the beta switch, and every device keeps its local profiles as backups.
+- **The app:** reverting that pull request brings back the switch and the old profile menu; cloud data stays where it is, and beta users keep syncing.
+- **A schema change:** write a new migration that undoes it, test it on the local stack and apply it like any other. Migrations already applied are never edited.
+- **Lost or corrupted data:** restore the latest good backup as above.
+
+### Monitoring
+
+- **Usage** (database size, egress, auth users): the project's Usage page. The free plan's limits are below; the per-account caps keep a single account from exhausting them.
+- **Security and performance advisors:** after every migration. The accepted findings are listed in the threat model.
+- **Errors:** the API and Auth logs in the dashboard. In the app, the sync status names failures to the user, who can retry; nothing is sent to a third-party tracker.
+
 ## Platform limits
 
 The free plan was checked on 2026-11-11.
@@ -295,8 +333,8 @@ The free plan was checked on 2026-11-11.
 | Egress | 5 GB uncached per month | A full download is the account's size (about 300 KB for 300 levels, less with gzip); the revision check makes most visits cost a few hundred bytes. |
 | Monthly active users | 50,000 | Far above the community's size. |
 | Auth emails | About 2 per hour with the built-in mailer, only to members of the Supabase organization | A custom SMTP provider must be configured before #198 opens sign-up to everyone. |
-| Backups | None on the free plan | Deleted rows stay in the 30-day archive. #198 sets up periodic `supabase db dump` exports, encrypted and kept outside the public repository. |
-| Inactivity | Free projects pause after a week without requests | An active site keeps it awake; #198 documents how to resume it. |
+| Backups | None you can download on the free plan | Deleted rows stay in the 30-day archive, and the weekly encrypted dump (see Operations) keeps 90 days of full copies. |
+| Inactivity | Free projects pause after a week without requests | An active site and the weekly backup keep it awake; a paused project is restored from the dashboard (Restore project), which keeps its data. |
 | Projects | 2 per free organization | One project, for production. Development and CI use the local stack. |
 
 If the community outgrows the free plan, the Pro plan ($25/month) raises the database to 8 GB, adds daily backups and removes pausing.

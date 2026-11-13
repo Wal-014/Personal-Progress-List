@@ -1,0 +1,2 @@
+# Each non-comment line is an age public key (age1...) allowed to decrypt backups.
+# Maintainers keep the matching private keys offline, never in this repository.
