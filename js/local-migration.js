@@ -250,7 +250,7 @@ async function bringLocalProfile(localId, useIdentity) {
 const migrationDeferred = new Set();
 
 function maybeOfferMigration() {
-    if (!cloudUser || !cloudBeta() || !cloudSession?.pulled || account.recovering || migrationDeferred.has(cloudUser)
+    if (!canEdit() || !cloudUser || !cloudBeta() || !cloudSession?.pulled || account.recovering || migrationDeferred.has(cloudUser)
         || cloudFormOpen() || !localProfilesToOffer(cloudUser).length)
         return;
     migrationDeferred.add(cloudUser);

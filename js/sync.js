@@ -117,6 +117,8 @@ function settleCloudStatus() {
 
 /** Cached data is usable before auth finishes, but cannot reach the server yet. */
 function restoreCloudSync() {
+    if (!canEdit())
+        return;
     const user = readStoredCloudUser();
     if (!user)
         return;
@@ -146,6 +148,8 @@ function useCloudCache(user, accountProfile, cached) {
 
 /** Timers belong to a confirmed session so late responses cannot revive a signed-out cache. */
 async function startCloudSync(user, accountProfile) {
+    if (!canEdit())
+        return;
     if (cloudUser && cloudUser != user.id)
         stopCloudSync(true);
     if (!cloudSession) {
@@ -163,6 +167,8 @@ async function startCloudSync(user, accountProfile) {
 }
 
 function stopCloudSync(clearCache) {
+    if (!canEdit())
+        return;
     if (clearCache)
         clearCloudCaches();
     if (!cloudSession)

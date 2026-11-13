@@ -8,7 +8,7 @@ export const syncScripts = ['js/sync.js', 'js/local-migration.js'];
  * Returns the context, an evaluator for code in it, and a loader for scripts added after stubs are in place.
  */
 export function loadScripts(files, globals = {}) {
-    const context = vm.createContext(globals);
+    const context = vm.createContext({ canEdit: () => true, ...globals });
     const load = more => more.forEach(file => vm.runInContext(readFileSync(file, 'utf8'), context, { filename: file }));
     load(files);
     return { context, app: code => vm.runInContext(code, context), load };

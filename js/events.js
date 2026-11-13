@@ -20,6 +20,10 @@ function zoomTimeline(factor) {
 
 /** What each data-act value does when clicked. Handlers get the clicked element and its data-id. */
 const ACTIONS = {
+    myprogress: () => backToMyProgress(),
+    ashare: () => shareDialog(),
+    asharestate: a => setProfileVisibility(a),
+    acopy: () => copyProfileLink(),
     localdata: () => openModal(localDataDialog()),
     localbackup: (a, id) => downloadLocalBackup(id),
     localbring: (a, id) => openLocalMigration(id),
@@ -229,7 +233,8 @@ const ACTIONS = {
     wopen(a, id) {
         ui.tab = 'wish';
         ui.wl = id;
-        enrichWishlist(profile.wishlists.find(w => w.id == id));
+        if (canEdit())
+            enrichWishlist(profile.wishlists.find(w => w.id == id));
         render();
     },
     wren() {
@@ -496,7 +501,7 @@ function accountRendered() {
         recoveryDialogOpened = true;
         passwordDialog();
     }
-    if (cloudUser)
+    if (canEdit() && cloudUser)
         queueMicrotask(maybeOfferMigration);
 }
 
@@ -557,6 +562,8 @@ document.body.onmousemove = e => {
 };
 /** Another tab saved: load its data so this tab's next save does not overwrite it. Open forms are left alone. */
 window.addEventListener('storage', e => {
+    if (!canEdit())
+        return;
     if (cloudUser) {
         if (e.key == 'gcloud:' + cloudUser && e.newValue)
             reloadCloudCache();

@@ -3,26 +3,33 @@
  */
 
 (() => {
-    if (!store) {
-        const demo = window.DEMO_PROFILE || emptyProfile();
-        store = { cur: 'p1', profs: { p1: { name: demo.profileName || 'Demo', data: demo } } };
-        profile = demo;
-        save();
+    if (!canEdit()) {
+        initPublicView();
+        if (cloudBeta())
+            initAccount();
     }
-    ensureProfileColors();
-    ensureProfileDefaults();
-    if (cloudBeta())
-        restoreCloudSync();
-    render();
-    if (cloudBeta())
-        initAccount();
-    if (storeWasUnreadable)
-        showAlert(t('dataUnreadable'));
-    autoSyncIfStale();
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState == 'visible')
-            autoSyncIfStale();
-    });
+    else {
+        if (!store) {
+            const demo = window.DEMO_PROFILE || emptyProfile();
+            store = { cur: 'p1', profs: { p1: { name: demo.profileName || 'Demo', data: demo } } };
+            profile = demo;
+            save();
+        }
+        ensureProfileColors();
+        ensureProfileDefaults();
+        if (cloudBeta())
+            restoreCloudSync();
+        render();
+        if (cloudBeta())
+            initAccount();
+        if (storeWasUnreadable)
+            showAlert(t('dataUnreadable'));
+        autoSyncIfStale();
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState == 'visible')
+                autoSyncIfStale();
+        });
+    }
     if ('serviceWorker' in navigator) {
         // Reload only when a new version replaces the one serving this page, not when the first install takes control
         let reloadOnUpdate = !!navigator.serviceWorker.controller;

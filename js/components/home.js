@@ -19,13 +19,15 @@ function home() {
         const p = wishlistProgress(w);
         return `<div class="obj trig" data-act=wopen data-id="${escapeHtml(w.id)}" role=button tabindex=0><span class="tg s-${p.s}">${ICONS.wish}</span><div class=info><span class=nm>${escapeHtml(w.name)}</span>${progressBar(w)}<span class=by>${p.d} / ${p.n} · ${t('st_' + p.s)}</span></div></div>`;
     }).join('');
-    return `${profileSwitcher()}<h2 class=sec>${t('lists')}</h2>
+    return `${profileSwitcher()}<h2 class=sec>${t(canEdit() ? 'lists' : 'publicLists')}</h2>
 <div class=blocks>${block('classic', listSub('classic'))}${block('platform', listSub('platform'))}${block('stats', t('statsSub'))}</div>
 <h2 class=sec>${t('wish')}</h2>
-<div class=trigs>${wishes}<div class=slot data-act=wnew role=button tabindex=0>${t('wnew')}</div></div>${profile.wishlists.length ? '' : `<p class=by>${t('noWL')}</p>`}`;
+<div class=trigs>${wishes}${canEdit() ? `<div class=slot data-act=wnew role=button tabindex=0>${t('wnew')}</div>` : ''}</div>${profile.wishlists.length ? '' : `<p class=by>${t('noWL')}</p>`}`;
 }
 
 function profileSwitcher() {
+    if (!canEdit())
+        return publicIdentityCard();
     const beta = cloudBeta(), localButton = `<button data-act=localdata>${t('localData')}</button>`;
     if (account.status == 'signed-in') {
         const own = account.profile;
