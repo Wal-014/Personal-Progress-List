@@ -310,6 +310,12 @@ psql --single-transaction --variable ON_ERROR_STOP=1   --file backup/history_sch
 
 `session_replication_role = replica` turns triggers off during the import, so the archive, version and row-limit triggers do not fire for restored rows. A single account's deleted rows are recovered from the archive instead (`public.archived_rows(user)` with the service role).
 
+**Restore check (2026-11-13).** The first backup was decrypted and restored into the local stack:
+- the backup's `schema.sql` matched a dump of the repository's migrations line for line;
+- the app's data (`auth.users`, `auth.identities`, `private` and `public` tables) restored with the same row counts as production.
+
+The local stack runs an older Auth version than the hosted project, so a local restore loads only those `COPY` blocks from `data.sql`. A restore into a new hosted project takes every file as shown above. Delete decrypted files and reset the local database afterwards, since they hold real accounts.
+
 ### Rollback
 
 Accounts reached everyone in #198 by removing the beta switch, and every device keeps its local profiles as backups.
