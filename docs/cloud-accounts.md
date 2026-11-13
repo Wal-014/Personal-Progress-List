@@ -196,10 +196,10 @@ The schema is in third normal form except where noted below.
 | Who | Can |
 |---|---|
 | The owner (`authenticated`, `user_id = auth.uid()`) | Read and write their own rows in every table. |
-| Another signed-in user | Nothing of a private account; once #197 lands, read the public tables of public profiles. |
-| An anonymous visitor (`anon`) | Nothing until #197; then read the public tables of public profiles. Never write. |
+| Another signed-in user | Nothing of a private account; the public tables of public profiles, read only. |
+| An anonymous visitor (`anon`) | The public tables of public profiles, read only. Never writes. |
 
-Public profiles (#197) add `select` policies for rows whose owner's profile has `is_public`, on `profiles`, `levels`, `level_tags`, `list_orders`, `wishlists`, `wishlist_items` and `tags`. `level_notes` and `user_settings` never get one.
+Public profiles (#197) add `select` policies for rows whose owner's profile has `is_public`, on `profiles`, `levels`, `level_tags`, `list_orders`, `wishlists`, `wishlist_items` and `tags`: `select_own_or_public` for `authenticated` and `public_select` for `anon`, one policy per role so each query evaluates a single policy. `anon` gets `select` on those seven tables and nothing else; `level_notes` and `user_settings` never get a public policy. Two consequences are intended: anyone can list the public profiles and read their rows through the Data API, and a signed-in user's own query must filter by `user_id` (or use `sync_pull`, which does) because row ids are unique only per user. `public_profile()` returns null for a private and for a missing username alike, so it does not reveal which usernames exist.
 
 ### Functions
 

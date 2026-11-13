@@ -38,18 +38,18 @@ describe('account access through the Data API', { skip: !enabled }, () => {
     });
 
     test('signup creates one private profile from metadata or Player', async () => {
-        const profile = ok(await owner.client.from('profiles').select('*').single());
+        const profile = ok(await owner.client.from('profiles').select('*').eq('id', owner.id).single());
         assert.equal(profile.id, owner.id);
         assert.equal(profile.display_name, 'Alice');
         assert.equal(profile.is_public, false);
         assert.equal(profile.username, null);
         assert.equal(profile.color, '#ffe94d');
         assert.equal(profile.secondary_color, '#5ef0ff');
-        assert.equal(ok(await other.client.from('profiles').select('display_name').single()).display_name, 'Player');
+        assert.equal(ok(await other.client.from('profiles').select('display_name').eq('id', other.id).single()).display_name, 'Player');
 
         const duplicate = await owner.client.from('profiles').insert({ id: owner.id, display_name: 'Duplicate' });
         assert.equal(duplicate.error?.code, '23505');
-        assert.deepEqual(ok(await owner.client.from('profiles').select('display_name')), [{ display_name: 'Alice' }]);
+        assert.deepEqual(ok(await owner.client.from('profiles').select('display_name').eq('id', owner.id)), [{ display_name: 'Alice' }]);
     });
 
     test('metadata falls back after sanitizing each candidate and limits the name to 40 characters', async () => {
@@ -60,7 +60,7 @@ describe('account access through the Data API', { skip: !enabled }, () => {
             [{ display_name: '\n', full_name: ' ', name: '\t' }, 'Player']
         ]) {
             const user = await context.createUser(metadata);
-            assert.equal(ok(await user.client.from('profiles').select('display_name').single()).display_name, expected);
+            assert.equal(ok(await user.client.from('profiles').select('display_name').eq('id', user.id).single()).display_name, expected);
         }
     });
 
@@ -113,11 +113,17 @@ describe('account access through the Data API', { skip: !enabled }, () => {
         }
     });
 
-    test('anonymous clients have no read or write access to any table', async () => {
+    test('anonymous clients cannot read private account rows or write any table', async () => {
         for (const { table, key, row, patch } of fixtures(owner.id)) {
             const original = ok(await owner.client.from(table).select('*').match(key).single());
+            const selection = await context.anon.from(table).select('*').match(key);
+            if (['level_notes', 'user_settings'].includes(table)) {
+                assert.equal(selection.error?.code, '42501', table);
+                assert.equal(selection.data, null);
+            } else {
+                assert.deepEqual(ok(selection), [], table);
+            }
             for (const query of [
-                context.anon.from(table).select('*'),
                 context.anon.from(table).insert({ ...row, ...key }),
                 context.anon.from(table).update(patch).match(key),
                 context.anon.from(table).delete().match(key)
@@ -160,7 +166,7 @@ describe('account access through the Data API', { skip: !enabled }, () => {
             assert.equal(ok(await owner.client.from(table).delete().match(fixture.key).select()).length, 1);
         }
         for (const table of ['level_notes', 'wishlist_items', 'level_tags']) {
-            assert.deepEqual(ok(await owner.client.from(table).select('*')), []);
+            assert.deepEqual(ok(await owner.client.from(table).select('*').eq('user_id', owner.id)), []);
             const fixture = fixtures(other.id).find(item => item.table === table);
             assert.equal(ok(await other.client.from(table).delete().match(fixture.key).select()).length, 1);
         }

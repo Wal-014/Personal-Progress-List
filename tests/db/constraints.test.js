@@ -55,9 +55,10 @@ for (const field of ['attempts_normal', 'attempts_copy', 'time_normal', 'time_pr
 
 describe('database constraints through the Data API', { skip: !enabled }, () => {
     let client;
+    let userId;
 
     before(async () => {
-        ({ client } = await context.createUser());
+        ({ id: userId, client } = await context.createUser());
         for (const [table, row] of [
             ['user_settings', { lang: 'en', theme: 'blue' }],
             ['levels', { id: 'level', kind: 'classic', name: 'Level' }],
@@ -73,10 +74,10 @@ describe('database constraints through the Data API', { skip: !enabled }, () => 
     test('invalid field values are rejected without changing the row', async t => {
         for (const [index, [table, field, value]] of invalid.entries()) {
             await t.test(`${table}.${field} rejects case ${index + 1}`, async () => {
-                const original = ok(await client.from(table).select('*').single());
+                const original = ok(await client.from(table).select('*').eq(table === 'profiles' ? 'id' : 'user_id', userId).single());
                 const result = await client.from(table).update({ [field]: value }).eq(table === 'profiles' ? 'id' : 'user_id', original[table === 'profiles' ? 'id' : 'user_id']);
                 assert.equal(result.error?.code, value === null ? '23502' : '23514', result.error?.message);
-                assert.deepEqual(ok(await client.from(table).select('*').single()), original);
+                assert.deepEqual(ok(await client.from(table).select('*').eq(table === 'profiles' ? 'id' : 'user_id', userId).single()), original);
             });
         }
     });
@@ -104,17 +105,17 @@ describe('database constraints through the Data API', { skip: !enabled }, () => 
             assert.equal(ok(await client.from('level_tags').update({ position }).eq('level_id', 'level').select().single()).position, position);
         }
         ok(await client.from('tags').update({ name: 'x'.repeat(40), color: '#ABCDEF' }).eq('name', 'Tag'));
-        const anonymous = await context.anon.from('levels').select('*');
-        assert.equal(anonymous.error?.code, '42501');
-        assert.equal(anonymous.data, null);
+        const anonymous = ok(await context.anon.from('levels').select('*').eq('user_id', userId));
+        assert.deepEqual(anonymous, ok(await client.from('levels').select('*').eq('user_id', userId)));
+        assert.equal(anonymous.length, 1);
     });
 
     test('nonnumeric Geometry Dash IDs are rejected on both tables without changing the row', async () => {
         for (const table of ['levels', 'wishlist_items']) {
-            const original = ok(await client.from(table).select('*').single());
+            const original = ok(await client.from(table).select('*').eq('user_id', userId).single());
             const result = await client.from(table).update({ level_id: 'abc' }).eq('id', original.id);
             assert.equal(result.error?.code, '22P02');
-            assert.deepEqual(ok(await client.from(table).select('*').single()), original);
+            assert.deepEqual(ok(await client.from(table).select('*').eq('user_id', userId).single()), original);
         }
     });
 
@@ -133,12 +134,12 @@ describe('database constraints through the Data API', { skip: !enabled }, () => 
         ]) {
             const result = await owner.client.from('level_tags').insert(row);
             assert.equal(result.error?.code, '23503', result.error?.message);
-            assert.deepEqual(ok(await owner.client.from('level_tags').select('*')), []);
+            assert.deepEqual(ok(await owner.client.from('level_tags').select('*').eq('user_id', owner.id)), []);
         }
     });
 
     test('renaming tags moves their level tags and deleting either parent cascades', async () => {
-        const { client: owner } = await context.createUser();
+        const { id: ownerId, client: owner } = await context.createUser();
         ok(await owner.from('levels').insert([
             { id: 'first', kind: 'classic', name: 'First' },
             { id: 'second', kind: 'classic', name: 'Second' }
@@ -149,14 +150,14 @@ describe('database constraints through the Data API', { skip: !enabled }, () => 
             { level_id: 'second', tag_name: 'Before', position: 49 }
         ]));
         ok(await owner.from('tags').update({ name: 'After' }).eq('name', 'Before'));
-        assert.deepEqual(ok(await owner.from('level_tags').select('level_id,tag_name,position').order('level_id')), [
+        assert.deepEqual(ok(await owner.from('level_tags').select('level_id,tag_name,position').eq('user_id', ownerId).order('level_id')), [
             { level_id: 'first', tag_name: 'After', position: 0 },
             { level_id: 'second', tag_name: 'After', position: 49 }
         ]);
         ok(await owner.from('levels').delete().eq('id', 'first'));
-        assert.deepEqual(ok(await owner.from('level_tags').select('level_id')), [{ level_id: 'second' }]);
+        assert.deepEqual(ok(await owner.from('level_tags').select('level_id').eq('user_id', ownerId)), [{ level_id: 'second' }]);
         ok(await owner.from('tags').delete().eq('name', 'After'));
-        assert.deepEqual(ok(await owner.from('level_tags').select('*')), []);
-        assert.equal(ok(await owner.from('levels').select('id').single()).id, 'second');
+        assert.deepEqual(ok(await owner.from('level_tags').select('*').eq('user_id', ownerId)), []);
+        assert.equal(ok(await owner.from('levels').select('id').eq('user_id', ownerId).single()).id, 'second');
     });
 });
