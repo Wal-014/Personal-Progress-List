@@ -69,4 +69,7 @@ flowchart LR
 - **Usernames can be squatted or impersonate someone.** Names are first come, first served; renaming is allowed and breaks old links, and the profile editor warns about it.
 - **Local development redirect URLs stay on the allow list.** A stolen PKCE code is useless without the verifier, and redirecting to the victim's own loopback address needs a program already running on their machine.
 - **Clickjacking of account actions.** GitHub Pages cannot send `frame-ancestors` (browsers ignore it in a CSP meta tag), but browsers partition storage for third-party frames, so a framed copy of the app has no session.
+- **Leaked-password protection is off.** Supabase checks passwords against HaveIBeenPwned only on the Pro plan. The free project requires 8 characters with letters and digits, and Google sign-in avoids passwords altogether.
+- **No multi-factor authentication.** The app has no screen to enroll a second factor, so TOTP enrollment is turned off rather than left reachable through the API, where a stolen session could enroll a factor and lock the owner out.
+- **A signed-in user's data is cached in localStorage** until they sign out, so the app opens offline. Another account signing in on the same browser deletes it; a session that expires on its own keeps it, so unsent changes are not lost.
 - **Anyone who opens the browser has the local legacy profiles,** exactly as before accounts existed; the move into an account does not widen that.

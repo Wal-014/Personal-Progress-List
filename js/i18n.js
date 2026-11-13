@@ -2,6 +2,11 @@
 
 const TRANSLATIONS = {
     es: {
+        cloudSaving: 'Guardando…', cloudSaved: 'Guardado', cloudOfflineOne: 'Sin conexión · 1 cambio pendiente', cloudOffline: 'Sin conexión · {n} cambios pendientes',
+        cloudError: 'No guardado: {reason}', cloudRetry: 'Reintentar', cloudChanged: 'Cambió en otro dispositivo: {names}', cloudMore: ' y {n} más',
+        cloudWait: 'Demasiados cambios. Se reintentará en un minuto.', cloudFailed: 'No se pudieron guardar los cambios. Vuelve a intentarlo.',
+        cloudLimit: 'Se alcanzó el límite de datos de la cuenta.', cloudReference: 'Una entrada relacionada ya no existe.', cloudInvalid: 'Una entrada no cumple los requisitos de guardado.',
+        cloudStorage: 'El navegador no permite guardar la copia en este dispositivo.', cloudSignOut: '{n} cambios aún no están guardados. ¿Cerrar sesión y perderlos?', cloudSignOutOne: '1 cambio aún no está guardado. ¿Cerrar sesión y perderlo?',
         account: 'Cuenta', accountLoading: 'Cargando cuenta…', accountSignIn: 'Iniciar sesión', accountSignUp: 'Crear cuenta',
         accountChooseUsername: 'Elige un nombre de usuario', accountBeta: 'Beta', accountProfile: 'Mi perfil', accountSettings: 'Ajustes de la cuenta', accountSignOut: 'Cerrar sesión',
         accountDisplayName: 'Nombre para mostrar', accountEmail: 'Correo electrónico', accountPassword: 'Contraseña', accountReset: 'Restablecer contraseña',
@@ -59,6 +64,11 @@ const TRANSLATIONS = {
         pedit: 'Editar perfil', primaryColor: 'Color principal', secondaryColor: 'Color secundario', yellow: 'Amarillo', green: 'Verde', pink: 'Rosa', orange: 'Naranja', cyan: 'Cian', red: 'Rojo', purple: 'Morado', customColor: 'Color personalizado'
     },
     en: {
+        cloudSaving: 'Saving…', cloudSaved: 'Saved', cloudOfflineOne: 'Offline · 1 change waiting', cloudOffline: 'Offline · {n} changes waiting',
+        cloudError: 'Not saved: {reason}', cloudRetry: 'Retry', cloudChanged: 'Changed on another device: {names}', cloudMore: ' and {n} more',
+        cloudWait: 'Too many changes. Retrying in one minute.', cloudFailed: 'Could not save changes. Try again.',
+        cloudLimit: 'The account has reached its data limit.', cloudReference: 'A related entry no longer exists.', cloudInvalid: 'An entry does not meet the save requirements.',
+        cloudStorage: 'The browser cannot save the copy on this device.', cloudSignOut: '{n} changes are not saved yet. Sign out and lose them?', cloudSignOutOne: '1 change is not saved yet. Sign out and lose it?',
         account: 'Account', accountLoading: 'Loading account…', accountSignIn: 'Sign in', accountSignUp: 'Create account',
         accountChooseUsername: 'Choose a username', accountBeta: 'Beta', accountProfile: 'My profile', accountSettings: 'Account settings', accountSignOut: 'Sign out',
         accountDisplayName: 'Display name', accountEmail: 'Email', accountPassword: 'Password', accountReset: 'Reset password',

@@ -63,7 +63,7 @@ function rowsProfile(rows) {
     }
     const data = emptyProfile();
     data.levels = get('levels').sort((a, b) =>
-        (a.created_at ? Date.parse(a.created_at) : 0) - (b.created_at ? Date.parse(b.created_at) : 0) || compare(a.id, b.id)
+        (a.created_at ? Date.parse(a.created_at) : Infinity) - (b.created_at ? Date.parse(b.created_at) : Infinity) || compare(a.id, b.id)
     ).map(row => ({
         ...Object.fromEntries(Object.entries(CLOUD_LEVEL_FIELDS).map(([field, column]) => [field, row[column] ?? null])),
         levelId: row.level_id == null ? null : String(row.level_id),

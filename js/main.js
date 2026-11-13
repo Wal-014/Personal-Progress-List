@@ -11,6 +11,8 @@
     }
     ensureProfileColors();
     ensureProfileDefaults();
+    if (cloudBeta())
+        restoreCloudSync();
     render();
     if (cloudBeta())
         initAccount();

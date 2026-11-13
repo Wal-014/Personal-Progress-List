@@ -549,6 +549,51 @@ dialog.modal::backdrop {
   flex: 1;
 }
 
+.top:has(.cloudst) h1 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cloudst {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font: bold 12px Arial, Helvetica, sans-serif;
+}
+
+.cloudst > .i, .cloudretry .i {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+.cloudtxt {
+  overflow-wrap: anywhere;
+}
+
+.cloudretry.xs-txt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 4px 8px;
+}
+
+.cloudwarn {
+  display: none;
+}
+
+.cloud-account {
+  align-items: center;
+}
+
+.cloud-account .by {
+  overflow-wrap: anywhere;
+}
+
 .bdg {
   position: absolute;
   top: -10px;
@@ -3007,13 +3052,40 @@ input.ro {
 }
 
 @media (max-width: 560px) {
-  /* Only the spinning orb on phones; the text stays for screen readers */
-  .syncst span {
+  /* Status sentences remain available to screen readers on narrow headers. */
+  .syncst span, .cloudst .cloudtxt, .cloudst .retrytxt, .top.home-top:has(.cloudst) h1 {
     position: absolute;
     width: 1px;
     height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+  }
+
+  .cloudst {
+    flex: none;
+  }
+
+  .top:has(.cloudst) h1 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .cloudst.saved > .i, .cloudst.offline > .i, .cloudst.error > .i, .cloudst .cloudretry > .i {
+    display: none;
+  }
+
+  .cloudst .cloudwarn {
+    display: inline-flex;
+  }
+
+  .cloudst .cloudretry {
+    width: 44px;
+    height: 44px;
+    padding: 0;
   }
 }

@@ -257,6 +257,8 @@ async function confirmAccountDeletion(button) {
 }
 
 async function signOutFromMenu(button) {
+    if (cloudSync.pending && !await showDialog({ title: t('accountSignOut'), msg: t(cloudSync.pending == 1 ? 'cloudSignOutOne' : 'cloudSignOut').replace('{n}', cloudSync.pending), danger: 1 }))
+        return;
     const result = await accountPending(button, 'accountSigningOut', () => signOutAccount());
     if (!result)
         return;

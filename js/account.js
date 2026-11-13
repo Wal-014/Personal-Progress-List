@@ -28,6 +28,17 @@ function setAccount(changes) {
 /** Return target for auth redirects, without query parameters or fragments. */
 const appUrl = () => location.origin + location.pathname;
 
+function readStoredCloudUser() {
+    try {
+        const ref = new URL(SUPABASE_URL).hostname.split('.')[0];
+        const user = JSON.parse(localStorage['sb-' + ref + '-auth-token'] || 'null')?.user;
+        return typeof user?.id == 'string' && user.id ? user : null;
+    }
+    catch {
+        return null;
+    }
+}
+
 /** Maps auth failures to translation keys, preferring known codes over HTTP status. */
 function authErrorKey(error) {
     const keys = {
@@ -41,6 +52,7 @@ function authErrorKey(error) {
     if (error?.status == 429)
         return 'authTooMany';
     if (error?.name == 'AuthRetryableFetchError' || error?.status === 0
+        || /failed to fetch|networkerror|load failed/i.test(error?.message || '')
         || (error?.name == 'TypeError' && /fetch|network|load failed/i.test(error.message)))
         return 'authOffline';
     return 'authFailed';
@@ -49,7 +61,8 @@ function authErrorKey(error) {
 /** Loads the client and subscribes to auth events once, sharing concurrent attempts. */
 function startAccount() {
     if (!accountClientPromise) {
-        setAccount({ status: 'loading' });
+        if (!cloudUser)
+            setAccount({ status: 'loading' });
         accountClientPromise = loadCloud().then(client => {
             client.auth.onAuthStateChange((event, session) => {
                 // Auth holds its session lock during this callback; profile queries must run after it returns.
@@ -58,7 +71,8 @@ function startAccount() {
             return client;
         }).catch(error => {
             accountClientPromise = null;
-            setAccount({ status: 'idle' });
+            if (!cloudUser)
+                setAccount({ status: 'idle' });
             throw error;
         });
     }
@@ -67,13 +81,28 @@ function startAccount() {
 
 /** Applies deferred auth events and loads the current user's profile, ignoring stale results. */
 async function applyAccountSession(event, session) {
+    // A failed token refresh leaves the stored session for the next online attempt.
+    if (event == 'INITIAL_SESSION' && !session?.user && cloudUser && readStoredCloudUser()?.id == cloudUser) {
+        setCloudStatus('offline');
+        return;
+    }
     if (event == 'SIGNED_OUT' || !session?.user) {
         setAccount({ status: 'signed-out', user: null, profile: null, recovering: false });
+        stopCloudSync(false);
         return;
     }
     if (!['INITIAL_SESSION', 'SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED', 'PASSWORD_RECOVERY'].includes(event))
         return;
     const nextUser = session.user, changedUser = account.user?.id != nextUser.id;
+    if (!changedUser && account.status == 'signed-in' && cloudUser == nextUser.id) {
+        account.user = nextUser;
+        if (event == 'PASSWORD_RECOVERY')
+            setAccount({ recovering: true });
+        await startCloudSync(nextUser, account.profile);
+        return;
+    }
+    if (changedUser && cloudUser)
+        stopCloudSync(true);
     setAccount({
         user: nextUser,
         ...(changedUser ? { status: 'loading', profile: null, recovering: false } : {}),
@@ -82,12 +111,21 @@ async function applyAccountSession(event, session) {
     if (changedUser || (!account.profile && account.status != 'loading')) {
         try {
             const own = await ensureOwnProfile();
-            if (account.user?.id == nextUser.id)
+            if (account.user?.id == nextUser.id) {
                 setAccount({ profile: own, status: 'signed-in' });
+                await startCloudSync(nextUser, own);
+            }
         }
         catch (error) {
             if (account.user?.id == nextUser.id) {
+                const cached = authErrorKey(error) == 'authOffline' ? readCloudCache(nextUser.id) : null;
+                if (cached?.accountProfile) {
+                    setAccount({ profile: cached.accountProfile, status: 'signed-in' });
+                    await startCloudSync(nextUser, cached.accountProfile);
+                    return;
+                }
                 setAccount({ status: 'signed-out', user: null, profile: null, recovering: false });
+                stopCloudSync(false);
                 showAlert(t(authErrorKey(error)));
             }
         }
@@ -150,7 +188,9 @@ async function initAccount() {
     finally {
         cleanAccountUrl();
     }
-    if (linkError)
+    if (linkError && cloudUser && authErrorKey(linkError) == 'authOffline')
+        setCloudStatus('offline');
+    else if (linkError)
         showAlert(t(authErrorKey(linkError)));
 }
 
@@ -275,6 +315,7 @@ async function signOutAccount() {
         if (error)
             return { error };
         setAccount({ status: 'signed-out', user: null, profile: null, recovering: false });
+        stopCloudSync(true);
         return {};
     });
 }
@@ -282,6 +323,10 @@ async function signOutAccount() {
 async function deleteAccount() {
     return accountAction(async client => {
         const { error } = await client.rpc('delete_account');
-        return error ? { error } : signOutAccount();
+        if (error)
+            return { error };
+        setAccount({ status: 'signed-out', user: null, profile: null, recovering: false });
+        stopCloudSync(true);
+        return signOutAccount();
     });
 }

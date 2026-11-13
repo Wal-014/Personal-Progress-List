@@ -32,7 +32,7 @@ describe('versioned database sync', { skip: !enabled }, () => {
         assert.equal(pulled.revision, revision);
         assert.equal(ok(await client.rpc('sync_revision')), revision);
         const pushed = ok(await client.rpc('sync_push', { changes: [] }));
-        assert.deepEqual(pushed, { applied: [], conflicts: [], rejected: [], revision });
+        assert.deepEqual(pushed, { applied: [], conflicts: [], rejected: [], previous_revision: revision, revision });
     });
 
     test('every table round-trips with server versions, defaults and all columns', async () => {
@@ -43,6 +43,7 @@ describe('versioned database sync', { skip: !enabled }, () => {
         assert.deepEqual(pushed.conflicts, []);
         assert.deepEqual(pushed.rejected, []);
         assert.notEqual(pushed.revision, before);
+        assert.equal(pushed.previous_revision, before);
         assert.equal(pushed.revision, ok(await client.rpc('sync_revision')));
         const pulled = ok(await client.rpc('sync_pull'));
         assert.equal(pulled.revision, pushed.revision);
@@ -76,6 +77,7 @@ describe('versioned database sync', { skip: !enabled }, () => {
         assert.deepEqual(updated.conflicts, []);
         assert.deepEqual(updated.rejected, []);
         assert.notEqual(updated.revision, pushed.revision);
+        assert.equal(updated.previous_revision, pushed.revision);
         const after = ok(await client.rpc('sync_pull'));
         assert.equal(after.revision, updated.revision);
         for (const { table, row } of edits) {
@@ -136,7 +138,7 @@ describe('versioned database sync', { skip: !enabled }, () => {
         const repeated = ok(await client.rpc('sync_push', { changes: [
             { table: 'levels', key: { id: 'level' }, version: 2, row: null }
         ] }));
-        assert.deepEqual(repeated, deleted);
+        assert.deepEqual(repeated, { ...deleted, previous_revision: deleted.revision });
         const missing = ok(await client.rpc('sync_push', { changes: [
             { table: 'levels', key: { id: 'level' }, version: 2, row: { id: 'level', name: 'Missing' } }
         ] }));

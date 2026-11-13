@@ -206,7 +206,7 @@ Public profiles (#197) add `select` policies for rows whose owner's profile has 
 | Function | Issue | Security | Purpose |
 |---|---|---|---|
 | `private.handle_new_user()` | #193 | definer, trigger on `auth.users` | Creates the profile row of a new account, with a display name from the sign-up data or Google (or "Player"). Safe to retry. |
-| `public.sync_push(changes)` | #195 | invoker | Applies a batch of up to 500 versioned changes in one transaction and returns the new versions, the conflicts (with the current row) and the rejected changes. |
+| `public.sync_push(changes)` | #195 | invoker | Applies a batch of up to 500 versioned changes in one transaction and returns the new versions, the conflicts (with the current row), the rejected changes, and the account's revision before and after the batch. |
 | `public.sync_pull()` | #195 | invoker | Returns all of the caller's rows as one JSON value, so a full download is one request whatever the row limit. |
 | `public.sync_revision()` | #195 | invoker | A short fingerprint of the caller's data, so checking for changes made on another device costs one tiny request. |
 | `public.delete_account()` | #194 | definer, limited to `auth.uid()` | Deletes the caller's account and, by cascade, all of their data. |
@@ -225,12 +225,15 @@ The app's data model does not change: every screen keeps reading and writing the
 
 ### Sync
 
-The device keeps, per row, the version and contents it last received from the server. The changes still to send are always the difference between the current profile and that snapshot, so they survive reloads and offline periods without a separate queue.
+The device keeps, per row, the version and contents it last received from the server (the snapshot). The changes still to send are always the difference between the current profile and that snapshot, so they survive reloads and offline periods without a separate queue. Everything lives in one per-account cache, `localStorage["gcloud:<user id>"]`, next to the profile being edited.
 
-1. **Push:** after a save (debounced), the device sends the changed, added and deleted rows with the versions it last saw. Applied changes update the snapshot. A conflict returns the server's row: fields changed only on this device are kept, fields changed only on the other device are taken, and a field changed on both takes the server's value and is listed in a notice.
-2. **Pull:** on start, when the tab becomes visible and when the connection returns, the device asks for `sync_revision()`. Only when it changed does it download everything with `sync_pull()` and merge it the same way.
-3. **Status:** the top bar shows *Saving…*, *Saved*, *Offline: N changes waiting* or *Not saved* with a retry action.
-4. **Signing out** deletes the account's cache from the device, after warning when changes are still waiting.
+1. **Start:** when the page loads with a saved session and a cache for that user, the app draws the cached account data before any request, so a signed-in user never sees the local profile first and the app also opens offline. Auth then confirms the session and the first pull brings the device up to date. If the access token expired while the device is offline, auth cannot confirm it yet but keeps the stored session: the app stays on the cached account and shows *Offline*, and the session is confirmed as soon as a token refresh succeeds (the auth client waits a minute after a failed refresh).
+2. **Push:** a save writes the cache and, a second later, sends the changed, added and deleted rows in batches of up to 500 with the versions the device last saw. Applied changes update the snapshot. A conflict returns the server's row: fields changed only on this device are kept, fields changed only on the other device are taken, and a field changed on both takes the server's value; the app names what changed in a notice. A row the server rejects stays on the device and is not resent until it changes. Each batch also returns the revision from before it, so the device downloads everything again only when another device wrote in between.
+3. **Pull:** on start, when the tab becomes visible, when the connection returns and every minute while the tab is visible, the device asks for `sync_revision()`. Only when it changed does it download everything with `sync_pull()` and merge it the same way.
+4. **Status:** the top bar shows the sentence with an icon on wide screens; on phones only the sync icon while saving, or one Retry button with a warning icon when offline or failing, with the sentence still announced to screen readers. The sentences are *Saving…*, *Saved*, *Offline · N changes waiting* or *Not saved: reason*, with Retry when it applies. The Home account card always shows the sentence. Network failures retry after 5 s, 15 s, 1 min and then every 5 min; the write budget's HTTP 429 waits a minute.
+5. **Signing out** deletes the account's cache, after warning when changes are still waiting. A session that ends on its own (an expired refresh token) keeps the cache, so the waiting changes are sent when the same user signs in again. Signing in as someone else deletes any other account's cache.
+
+The cache holds the profile and the snapshot, roughly twice the account's data. Browsers allow about 5 MB of localStorage per site, which covers accounts of a couple of thousand levels; beyond that the cache write fails, the app keeps syncing while online and the status says the copy cannot be kept on the device.
 
 ### Authentication
 

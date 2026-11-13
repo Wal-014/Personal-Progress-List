@@ -31,6 +31,8 @@ let store = loadStore();
 /** Active profile data: levels, order, wishlists and tags. */
 let profile = store && store.profs[store.cur].data;
 
+let cloudUser = null;
+
 /** Interface state: screen, selection, search, statistics views (rankings, comparison, timeline), theme and language. */
 let ui = {
     tab: 'home', wl: null, wishFx: null, q: '', tagFilter: [], z: 28, lang: localStorage.gl || 'es', theme: themeOf(localStorage.gt),
@@ -48,7 +50,7 @@ function resetListFilters() {
 
 const emptyProfile = () => ({ levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
 
-const save = () => localStorage.gdp = JSON.stringify(store);
+const save = () => cloudUser ? saveCloud() : localStorage.gdp = JSON.stringify(store);
 
 /** Migrates profile colours by their original position, saving only when needed. */
 function ensureProfileColors() {

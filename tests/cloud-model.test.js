@@ -29,6 +29,17 @@ test('the cloud model exposes the five pure data functions', () => {
         assert.equal(app(`typeof ${name}`), 'function', name);
 });
 
+test('rowsProfile puts unsynced levels after confirmed levels and orders ties by id', () => {
+    const convert = createApp().app('rowsProfile');
+    const rows = [
+        { table: 'levels', row: { id: 'a-new', name: 'Pending' } },
+        { table: 'levels', row: { id: 'z-old', name: 'Old', created_at: '2026-01-01T00:00:00Z' } },
+        { table: 'levels', row: { id: 'b-new', name: 'Pending too' } },
+        { table: 'levels', row: { id: 'a-old', name: 'Old too', created_at: '2026-01-01T00:00:00Z' } }
+    ];
+    assert.deepEqual(plain(convert(rows).profile.levels.map(entry => entry.id)), ['a-old', 'z-old', 'a-new', 'b-new']);
+});
+
 test('profileRows maps every level field and keeps private notes in their own row', () => {
     const { app } = createApp(), convert = app('profileRows');
     const input = { ...empty(), levels: [{ ...level(), legacy: 'discard', user_id: 'discard', version: 99 }] };

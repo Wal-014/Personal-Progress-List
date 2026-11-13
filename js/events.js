@@ -31,6 +31,7 @@ const ACTIONS = {
     apassword: () => passwordDialog(),
     adelete: a => confirmAccountDeletion(a),
     asignout: a => signOutFromMenu(a),
+    csync: () => retryCloudSync(),
     tab(a) {
         ui.tab = a.dataset.v;
         resetListFilters();
@@ -41,7 +42,12 @@ const ACTIONS = {
     },
     pause: () => openModal(pauseUI()),
     theme(a) {
-        ui.theme = localStorage.gt = a.dataset.v;
+        if (cloudUser) {
+            applyCloudSettings({ theme: a.dataset.v });
+            save();
+        }
+        else
+            ui.theme = localStorage.gt = a.dataset.v;
         reopenPause(`[data-act=theme][data-v=${a.dataset.v}]`);
     },
     bell: () => openModal(bellUI()),
@@ -58,7 +64,12 @@ const ACTIONS = {
         i.dispatchEvent(new Event('input', { bubbles: true }));
     },
     lang(a) {
-        ui.lang = localStorage.gl = a.dataset.v;
+        if (cloudUser) {
+            applyCloudSettings({ lang: a.dataset.v });
+            save();
+        }
+        else
+            ui.lang = localStorage.gl = a.dataset.v;
         if (a.closest('.pause'))
             reopenPause(`[data-act=lang][data-v=${a.dataset.v}]`);
         else
@@ -535,6 +546,11 @@ document.body.onmousemove = e => {
 };
 /** Another tab saved: load its data so this tab's next save does not overwrite it. Open forms are left alone. */
 window.addEventListener('storage', e => {
+    if (cloudUser) {
+        if (e.key == 'gcloud:' + cloudUser && e.newValue)
+            reloadCloudCache();
+        return;
+    }
     if (e.key != 'gdp' || !e.newValue)
         return;
     const cur = store.cur;

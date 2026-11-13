@@ -135,15 +135,16 @@ test('the service worker caches the cloud vendor on demand and serves it offline
     assert.equal(await result, response);
 });
 
-test('startup initializes accounts after the first render only when beta is on', () => {
+test('startup restores the cache before rendering and initializes auth afterwards only in beta', () => {
     for (const beta of [false, true]) {
         const calls = [];
         loadScripts(['js/main.js'], {
             store: {}, storeWasUnreadable: false,
             ensureProfileColors() {}, ensureProfileDefaults() {}, autoSyncIfStale() {},
             render() { calls.push('render'); }, cloudBeta: () => beta,
+            restoreCloudSync() { calls.push('cache'); },
             initAccount() { calls.push('init'); }, document: { addEventListener() {} }, navigator: {}
         });
-        assert.deepEqual(calls, beta ? ['render', 'init'] : ['render']);
+        assert.deepEqual(calls, beta ? ['cache', 'render', 'init'] : ['render']);
     }
 });
