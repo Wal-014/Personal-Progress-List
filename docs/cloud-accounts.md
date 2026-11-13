@@ -292,7 +292,7 @@ CI runs the same tests in the `db` job on every pull request. The local stack al
 `.github/workflows/backup.yml` runs every Monday at 05:17 UTC and on demand (Actions → Backup → Run workflow).
 - It dumps roles, schema, data (including `auth.users`) and the migration history with `supabase db dump` through the session pooler, then packs them into one archive.
 - It encrypts the archive with [age](https://age-encryption.org) for the public keys in `supabase/backup-recipients.txt`, and uploads only the encrypted file as the `prp-backup` artifact, kept 90 days. The plaintext never leaves the runner and is deleted when the step ends.
-- It needs the `SUPABASE_DB_URL` Actions secret: `postgresql://postgres.<ref>:<password>@aws-0-us-east-1.pooler.supabase.com:5432/postgres`. Resetting the database password in the dashboard means updating that secret.
+- It needs the `SUPABASE_DB_URL` Actions secret: `postgresql://postgres.<ref>:<password>@aws-0-us-east-1.pooler.supabase.com:5432/postgres`. Resetting the database password in the dashboard means updating that secret. Special characters in the password must be percent-encoded; the workflow says which part of the secret is wrong without revealing its value.
 - The private keys matching the recipients are kept offline by the maintainers. Losing every one of them makes the existing backups unreadable; adding a maintainer means adding a line to the recipients file.
 - GitHub emails a failed scheduled run to whoever last changed the workflow's schedule; the step log names the dump that failed, with the password masked.
 

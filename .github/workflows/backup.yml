@@ -17,18 +17,16 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Check database secret
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           set -euo pipefail
-          if [ -z "${SUPABASE_DB_URL:-}" ]; then
-            echo "::error::SUPABASE_DB_URL must contain the session pooler connection string."
-            exit 1
-          fi
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
+          source scripts/backup-db-url.sh
+          prepare_backup_db_url
       - name: Check encryption recipients
         run: |
           set -euo pipefail
@@ -49,10 +47,10 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           set -euo pipefail
-          password="${SUPABASE_DB_URL#*://}"
-          password="${password#*:}"
-          password="${password%@*}"
-          echo "::add-mask::$password"
+          source scripts/backup-db-url.sh
+          prepare_backup_db_url
+          printf '::add-mask::%s\n' "${BACKUP_DB_PASSWORD//%/%25}"
+          printf '::add-mask::%s\n' "${SUPABASE_DB_URL//%/%25}"
           umask 077
           backup_dir=$(mktemp -d "$RUNNER_TEMP/backup.XXXXXX")
           trap 'rm -rf -- "$backup_dir"' EXIT
