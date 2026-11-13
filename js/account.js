@@ -93,6 +93,23 @@ async function applyAccountSession(event, session) {
     }
     if (!['INITIAL_SESSION', 'SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED', 'PASSWORD_RECOVERY'].includes(event))
         return;
+    if (!canEdit()) {
+        const owner = session.user;
+        setAccount({ user: owner, status: 'loading' });
+        try {
+            const client = await startAccount();
+            const { data, error } = await client.from('profiles').select('*').eq('id', owner.id).maybeSingle();
+            if (error)
+                throw error;
+            if (account.user?.id == owner.id)
+                setAccount({ profile: data, status: data ? 'signed-in' : 'signed-out' });
+        }
+        catch {
+            if (account.user?.id == owner.id)
+                setAccount({ profile: null, status: 'signed-out' });
+        }
+        return;
+    }
     const nextUser = session.user, changedUser = account.user?.id != nextUser.id;
     if (!changedUser && account.status == 'signed-in' && cloudUser == nextUser.id) {
         account.user = nextUser;

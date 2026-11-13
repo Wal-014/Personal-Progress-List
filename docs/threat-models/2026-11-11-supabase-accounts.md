@@ -53,7 +53,7 @@ flowchart LR
 - [ ] Server-assigned `user_id`, `version` and `updated_at` — verified by the mass-assignment test (#193, #195)
 - [x] Notes in `level_notes`, public rows through RLS only — verified by the anonymous public-profile test (#193, #197; `tests/db/public.test.js`)
 - [x] Private by default, public only with a username — verified by the new-account test (#193, #197; `tests/db/public.test.js`)
-- [ ] Column check constraints and client cleaning of cloud data — verified by the constraint tests and the hostile render test (#193, #197)
+- [x] Column check constraints and client cleaning of cloud data — verified by the constraint tests and the hostile render test (#193, #197; `tests/db/constraints.test.js`, `tests/public-view.test.js`)
 - [ ] Auth parameters removed from the URL — verified in the browser (#194)
 - [ ] Password policy, email confirmation and redirect allow list in `supabase/config.toml` — verified on the local stack (#193, #194)
 - [ ] Row caps, write budget and batch limit — verified by the limit tests (#193, #195)

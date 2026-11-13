@@ -495,3 +495,63 @@ test('privacy starts with the specified account disclosure in both languages', (
     };
     for (const lang of ['es', 'en']) assert.equal(app(`TRANSLATIONS.${lang}.privacyTxt`).split('\n\n')[0], paragraphs[lang]);
 });
+
+test('share dialog covers username setup, private and public profiles', () => {
+    const { app, nodes } = createApp({ location: new URL('https://example.test/app/?beta=cloud') });
+    signedIn(app);
+    app('account.profile.username = null; shareDialog()');
+    assert.match(nodes['#md'].innerHTML, /Choose a username/);
+    assert.doesNotMatch(nodes['#md'].innerHTML, /data-act=asharestate/);
+    app('account.profile.username = "player"; account.profile.is_public = false; shareDialog()');
+    assert.match(nodes['#md'].innerHTML, /Only you can see your progress/);
+    assert.match(nodes['#md'].innerHTML, /data-v=false aria-pressed=true/);
+    assert.doesNotMatch(nodes['#md'].innerHTML, /id=share-link/);
+    app('account.profile.is_public = true; shareDialog()');
+    assert.match(nodes['#md'].innerHTML, /data-v=true aria-pressed=true/);
+    assert.match(nodes['#md'].innerHTML, /readonly/);
+    assert.match(nodes['#md'].innerHTML, /https:\/\/example.test\/app\/\?user=player/);
+    assert.match(app('profileCard()'), /Public/);
+    assert.match(app('profileCard()'), /data-act=ashare/);
+    assert.match(app('accountMenu()'), /data-act=ashare/);
+});
+
+test('share copy reports success and selects the link after clipboard failure', async () => {
+    const toasts = [], copies = [];
+    const { app, context, nodes } = createApp({ navigator: { clipboard: { writeText: async value => copies.push(value) } }, location: new URL('https://example.test/app/'), showToast: value => toasts.push(value) });
+    context.showToast = value => toasts.push(value);
+    signedIn(app, 'is_public: true');
+    const input = nodes['#share-link'] = element({ value: 'https://example.test/app/?user=player', select() { this.selected = true; } });
+    await app('copyProfileLink()');
+    assert.deepEqual(copies, [input.value]);
+    assert.deepEqual(toasts, ['Link copied']);
+    app('navigator.clipboard.writeText = async () => { throw Error("denied"); }');
+    await app('copyProfileLink()');
+    assert.equal(input.selected, true);
+    assert.equal(input.focused, true);
+    assert.equal(toasts.at(-1), 'Press Ctrl+C to copy');
+});
+
+test('share visibility saves once with pending controls and inline errors', async () => {
+    const { app, context, nodes } = createApp({ location: new URL('https://example.test/app/') });
+    signedIn(app, 'is_public: false');
+    let resolve, fields, calls = 0;
+    context.saveOwnProfile = values => { calls++; fields = values; return new Promise(done => resolve = done); };
+    const buttons = [element({ dataset: { v: 'false' } }), element({ dataset: { v: 'true' } })], message = element();
+    const root = element({ querySelector: () => message, querySelectorAll: () => buttons });
+    buttons.forEach(button => button.closest = () => root);
+    nodes['#share-dialog'] = root;
+    const pending = app('setProfileVisibility')(buttons[1]);
+    assert.deepEqual({ ...fields }, { is_public: true });
+    assert.ok(buttons.every(button => button.disabled));
+    await app('setProfileVisibility')(buttons[0]);
+    assert.equal(calls, 1);
+    resolve({ error: 'authOffline' });
+    await pending;
+    assert.ok(buttons.every(button => !button.disabled));
+    assert.equal(message.textContent, app('t("authOffline")'));
+    context.saveOwnProfile = async values => { app(`account.profile.is_public = ${values.is_public}`); return {}; };
+    await app('setProfileVisibility')(buttons[1]);
+    assert.match(nodes['#md'].innerHTML, /id=share-link/);
+    await app('setProfileVisibility')(buttons[0]);
+    assert.match(nodes['#md'].innerHTML, /Only you can see your progress/);
+});

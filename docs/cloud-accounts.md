@@ -255,6 +255,13 @@ The cache holds the profile and the snapshot, roughly twice the account's data. 
 - **Email and password:** sign-up sends a confirmation email and recovery sends a reset email. The templates in `supabase/templates/` link to the app with a `token_hash` that the app verifies with `verifyOtp`, so a link also works when it is opened on another device or browser. The free plan accepts custom templates only with a custom SMTP provider, which #198 configures. Until then the hosted project sends Supabase's default emails: their PKCE link signs in only in the browser that asked for it, and anywhere else the app opens sign-in and explains that the email is confirmed. The app removes auth parameters from the address bar as soon as it has used them.
 - The account menu in the top bar offers My profile, Edit profile, Account settings (password, email, delete account) and Sign out.
 
+### Public profiles (#197)
+
+- **Viewing.** `?user=<username>` opens that profile read-only for anyone, with or without an account and whatever the beta switch says. The app calls `public_profile()` once and builds the profile from its rows; notes are never part of it. While viewing, `save()` does nothing, cloud sync, the local-profile offer and the AREDL refresh do not run, and nothing is written to localStorage. A signed-in visitor's session still restores, so the account button shows their own account.
+- **Read-only screens.** Home shows the owner's identity card (cube, display name, `@username`, country, biography) and the lists, wishlists and statistics; no control that edits is rendered (no add, edit, delete, reorder, status, progress, tags, import or export). *Back to my progress* reloads the app without `user`. An invalid, missing or private username shows "This profile does not exist or is private", and a network failure says so.
+- **Escaping.** Every value comes from someone else's account and goes through the same escaping and colour and URL checks as imported files; `tests/public-view.test.js` renders a profile made of payloads on every screen.
+- **Sharing.** *Share profile* (account menu and My profile) asks for a username first, then switches between Private and Public with one sentence on what becomes public, and when public shows the link with *Copy link* (falling back to selecting the text) and *Open*.
+
 ### Beta switch
 
 Until #198 turns accounts on for everyone, the account features appear only after opening the site once with `?beta=cloud` (and disappear again with `?beta=off`). Everyone else keeps the current app while the pieces are merged.

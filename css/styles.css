@@ -2486,6 +2486,23 @@ input.ro {
   min-width: 0;
 }
 
+.wi:not(:has(> .grip)) {
+  grid-template-columns: 42px minmax(0, 1fr) 64px auto;
+  grid-template-areas:
+    "tile info face status"
+    "tile prog face status";
+}
+
+.wi > span.wseg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wi:not(:has(> .grip)) .wslot {
+  min-width: 0;
+}
+
 .wseg button {
   min-width: 0;
   min-height: 36px;
@@ -2663,6 +2680,14 @@ input.ro {
       "status status status status"
       "prog prog prog tools";
     row-gap: 8px;
+  }
+
+  .wi:not(:has(> .grip)) {
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "tile info face"
+      "status status status"
+      "prog prog prog";
   }
 
   .wslot {
@@ -2978,6 +3003,7 @@ input.ro {
 }
 
 .profile-card {
+  overflow-wrap: anywhere;
   text-align: center;
 }
 
@@ -3180,4 +3206,11 @@ input.ro {
   .local-actions {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+.share-open {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  min-width: 44px;
 }

@@ -3,6 +3,8 @@
  */
 
 function alerts() {
+    if (!canEdit())
+        return [];
     const A = [], lk = l => `<a class=lk data-act=edit data-id="${escapeHtml(l.id)}" role=button tabindex=0>${escapeHtml(l.name)}</a>`;
     ['classic', 'platform'].forEach(k => {
         const u = profile.levels.filter(l => l.kind == k && !isPre(l) && !profile.order[k].includes(l.id));

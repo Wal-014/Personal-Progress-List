@@ -15,7 +15,7 @@ function accountButton() {
 function accountMenu() {
     const own = account.profile;
     const row = (act, icon, key) => `<button class=pma data-act=${act}>${icon}<span>${t(key)}</span></button>`;
-    return `<div id=amenu class="pmenu amenu" popover><div class=account-head>${cubeIcon(own.color, own.secondary_color)}<div class=info><span class=nm>${escapeHtml(own.display_name)}</span><span class=by>${own.username ? '@' + escapeHtml(own.username) : t('accountChooseUsername')}</span></div><span class=beta-chip>${t('accountBeta')}</span></div>${row('aprofile', ICONS.person, 'accountProfile')}${row('aedit', ICONS.edit, 'pedit')}${row('asettings', ICONS.settings, 'accountSettings')}${row('asignout', ICONS.logout, 'accountSignOut')}</div>`;
+    return `<div id=amenu class="pmenu amenu" popover><div class=account-head>${cubeIcon(own.color, own.secondary_color)}<div class=info><span class=nm>${escapeHtml(own.display_name)}</span><span class=by>${own.username ? '@' + escapeHtml(own.username) : t('accountChooseUsername')}</span></div><span class=beta-chip>${t('accountBeta')}</span></div>${row('aprofile', ICONS.person, 'accountProfile')}${row('aedit', ICONS.edit, 'pedit')}${row('ashare', ICONS.exp, 'shareProfile')}${row('asettings', ICONS.settings, 'accountSettings')}${row('asignout', ICONS.logout, 'accountSignOut')}</div>`;
 }
 
 function passwordField(id, labelKey, autocomplete) {
@@ -165,7 +165,7 @@ async function submitAccountPassword(form) {
 function profileCard() {
     const own = account.profile, country = COUNTRY_CODES.includes(own.country) ? new Intl.DisplayNames([ui.lang], { type: 'region' }).of(own.country) : '';
     const date = new Date(own.created_at);
-    return `<div class="box sm account-dialog profile-card">${cubeIcon(own.color, own.secondary_color)}<h2>${escapeHtml(own.display_name)}</h2><p class=by>${own.username ? '@' + escapeHtml(own.username) : t('accountNoUsername')}</p>${country ? `<p>${escapeHtml(country)}</p>` : ''}<p class=profile-bio>${escapeHtml(own.bio || '')}</p>${Number.isNaN(date.getTime()) ? '' : `<p class=by>${escapeHtml(t('accountMemberSince').replace('{date}', () => date.toLocaleDateString(ui.lang)))}</p>`}<p class=dgb><button class=pri data-act=aedit>${ICONS.edit}${t('pedit')}</button><button data-act=close>${t('close')}</button></p></div>`;
+    return `<div class="box sm account-dialog profile-card">${cubeIcon(own.color, own.secondary_color)}<h2>${escapeHtml(own.display_name)}</h2><p class=by>${own.username ? '@' + escapeHtml(own.username) : t('accountNoUsername')}</p>${country ? `<p>${escapeHtml(country)}</p>` : ''}<p class=profile-bio>${escapeHtml(own.bio || '')}</p>${Number.isNaN(date.getTime()) ? '' : `<p class=by>${escapeHtml(t('accountMemberSince').replace('{date}', () => date.toLocaleDateString(ui.lang)))}</p>`}<p class=by>${t(own.is_public ? 'profilePublic' : 'profilePrivate')}${own.is_public && publicProfileLink(own.username) ? ` · <a href="${escapeHtml(publicProfileLink(own.username))}">${escapeHtml(publicProfileLink(own.username))}</a>` : ''}</p><p class=dgb><button data-act=ashare>${t('share')}</button><button class=pri data-act=aedit>${ICONS.edit}${t('pedit')}</button><button data-act=close>${t('close')}</button></p></div>`;
 }
 
 function accountProfileColors() {
@@ -265,4 +265,57 @@ async function signOutFromMenu(button) {
     if (result.error)
         return showAlert(t(result.error));
     showToast(t('accountSignedOut'));
+}
+
+function publicProfileLink(username) {
+    return typeof username == 'string' && username.length >= 3 && username.length <= 20 && !/[^a-z0-9_]/.test(username)
+        ? location.origin + location.pathname + '?user=' + username : '';
+}
+
+function shareDialog() {
+    const own = account.profile, link = publicProfileLink(own.username);
+    const body = !link
+        ? `<p>${t('shareNeedsUsername')}</p><p class=dgb><button class=pri data-act=aedit>${t('shareChooseUsername')}</button></p>`
+        : `<p id=share-hint>${t('sharePublicHint')}</p><div class=gdseg role=group aria-label="${t('shareProfile')}" aria-describedby=share-hint>${[false, true].map(value => `<button type=button data-act=asharestate data-v=${value} aria-pressed=${!!own.is_public == value}>${t(value ? 'profilePublic' : 'profilePrivate')}</button>`).join('')}</div><p id=share-message class="gdm warn" role=alert tabindex=-1></p>${own.is_public ? `<label for=share-link>${t('shareProfileLink')}</label><input id=share-link readonly value="${escapeHtml(link)}"><p class=dgb><button data-act=acopy>${t('shareCopy')}</button><a class="lk share-open" href="${escapeHtml(link)}" target=_blank rel=noopener>${t('shareOpen')}</a></p>` : `<p>${t('sharePrivateHint')}</p>`}`;
+    openModal(`<div id=share-dialog class="box sm account-dialog"><h2>${t('shareProfile')}</h2>${body}<p class=dgb><button data-act=close>${t('close')}</button></p></div>`);
+}
+
+async function setProfileVisibility(button) {
+    const root = button.closest('#share-dialog'), buttons = [...root.querySelectorAll('[data-act=asharestate]')];
+    if (buttons.some(control => control.disabled))
+        return;
+    const isPublic = button.dataset.v == 'true';
+    buttons.forEach(control => control.disabled = true);
+    root.setAttribute('aria-busy', 'true');
+    root.querySelector('#share-message').textContent = t('accountSaving');
+    try {
+        const result = await saveOwnProfile({ is_public: isPublic });
+        if (!root.isConnected)
+            return;
+        if (result.error) {
+            accountMessage(root, '#share-message', t(result.error));
+            return;
+        }
+        shareDialog();
+        qs(`#share-dialog [data-v=${isPublic}]`)?.focus();
+    }
+    finally {
+        buttons.forEach(control => control.disabled = false);
+        root.removeAttribute('aria-busy');
+    }
+}
+
+async function copyProfileLink() {
+    const input = qs('#share-link');
+    if (!input)
+        return;
+    try {
+        await navigator.clipboard.writeText(input.value);
+        showToast(t('shareCopied'));
+    }
+    catch {
+        input.focus();
+        input.select();
+        showToast(t('shareCopyManual'));
+    }
 }

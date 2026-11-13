@@ -32,6 +32,9 @@ let store = loadStore();
 let profile = store && store.profs[store.cur].data;
 
 let cloudUser = null;
+let viewing = null;
+
+const canEdit = () => !viewing;
 
 /** Interface state: screen, selection, search, statistics views (rankings, comparison, timeline), theme and language. */
 let ui = {
@@ -50,7 +53,11 @@ function resetListFilters() {
 
 const emptyProfile = () => ({ levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
 
-const save = () => cloudUser ? saveCloud() : localStorage.gdp = JSON.stringify(store);
+const save = () => {
+    if (!canEdit())
+        return;
+    return cloudUser ? saveCloud() : localStorage.gdp = JSON.stringify(store);
+};
 
 /** Migrates profile colours by their original position, saving only when needed. */
 function ensureProfileColors() {
