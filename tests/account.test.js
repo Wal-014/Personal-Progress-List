@@ -59,6 +59,7 @@ function accounts({ url = 'https://example.com/app/?keep=yes#section', saved = f
         supabase: { createClient() { calls.push(['createClient']); return client; } },
         setTimeout(work, delay) { assert.equal(delay, 0); timers.push(work); },
         render() { renders.push(plain(loaded.app('account'))); },
+        cloudUser: null, startCloudSync() {}, stopCloudSync() {}, readCloudCache: () => null,
         showAlert(text) { alerts.push(text); },
         showToast(text) { toasts.push(text); },
         openAuthDialog(mode, note) { dialogs.push([mode, note]); }
@@ -98,6 +99,23 @@ test('a saved session or any auth parameter in query or hash loads the client on
         assert.equal(page.scripts.length, 1, JSON.stringify(option));
         assert.equal(page.calls.filter(call => call[0] == 'subscribe').length, 1);
     }
+});
+
+test('auth restoration keeps cached signed-in state while getSession is pending or offline', async () => {
+    const page = accounts({ saved: true });
+    page.context.cloudUser = user.id;
+    page.app(`Object.assign(account, { user: ${JSON.stringify(user)}, profile: ${JSON.stringify(ownProfile)}, status: 'signed-in' })`);
+    let finish;
+    page.respond('getSession', new Promise(resolve => { finish = resolve; }));
+    const initialization = page.app('initAccount()');
+    await new Promise(setImmediate);
+    assert.equal(page.state().status, 'signed-in'); assert.equal(page.renders.length, 0);
+    let status;
+    page.context.setCloudStatus = value => { status = value; };
+    finish({ data: null, error: { message: 'TypeError: Failed to fetch' } });
+    await initialization;
+    assert.equal(page.state().status, 'signed-in'); assert.equal(status, 'offline');
+    assert.deepEqual(page.alerts, []);
 });
 
 test('the auth callback defers profile calls and redraws only changed state', async () => {
@@ -260,6 +278,13 @@ test('deletion stops on RPC error and reports local sign-out errors', async () =
     assert.deepEqual(plain(await page.app('deleteAccount()')), { error: 'authOffline' });
 });
 
+test('successful deletion clears the account even if local auth sign-out fails', async () => {
+    const page = accounts({ saved: true }); await page.signedIn();
+    page.respond('signOut', { error: { status: 0 } });
+    assert.deepEqual(plain(await page.app('deleteAccount()')), { error: 'authOffline' });
+    assert.equal(page.state().status, 'signed-out'); assert.equal(page.state().profile, null);
+});
+
 test('email links verify supported types, set recovery and remove auth parameters from query and hash', async () => {
     for (const type of ['email', 'signup', 'recovery', 'email_change']) {
         for (const separator of ['?', '#']) {
@@ -320,7 +345,8 @@ test('auth errors prefer known codes before status and include fetch failures', 
         assert.equal(page.app('authErrorKey')({ code, status: 429 }), key);
         assert.notEqual(page.app(`t('${key}')`), key);
     }
-    for (const failure of [{ name: 'AuthRetryableFetchError' }, { status: 0 }, new TypeError('Failed to fetch')])
+    for (const failure of [{ name: 'AuthRetryableFetchError' }, { status: 0 }, new TypeError('Failed to fetch'),
+        { message: 'TypeError: Failed to fetch' }, { message: 'NetworkError when attempting to fetch resource.' }, { message: 'Load failed' }])
         assert.equal(page.app('authErrorKey')(failure), 'authOffline');
     assert.equal(page.app('authErrorKey')({ status: 429 }), 'authTooMany');
     assert.equal(page.app('authErrorKey')({ code: 'unknown', status: 500 }), 'authFailed');

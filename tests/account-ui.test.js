@@ -9,7 +9,7 @@ function createApp(globals = {}) {
     nodes['#md'] = element({ innerHTML: '' });
     nodes['#md dialog'] = element({ querySelector: () => null, addEventListener() {}, showModal() {}, close() {} });
     const env = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/account.js', 'js/components/dialogs.js', 'js/components/account-ui.js', 'js/events.js'], {
-        document, window: { addEventListener() {} }, renderTagSuggestions() {}, ui: { lang: 'en' }, queueMicrotask: () => {}, ...globals
+        document, window: { addEventListener() {} }, renderTagSuggestions() {}, ui: { lang: 'en' }, cloudSync: { pending: 0 }, cloudUser: null, queueMicrotask: () => {}, ...globals
     });
     return { ...env, document, nodes, listeners };
 }
@@ -420,6 +420,31 @@ test('sign-out shows success or a retryable error and restores its pending butto
     assert.deepEqual(alerts, [app('t("authOffline")')]);
     assert.equal(button.disabled, false);
     assert.equal(button.textContent, 'Sign out');
+});
+
+test('sign-out warns about pending changes and only proceeds after confirmation', async () => {
+    const { app, context } = createApp({ cloudSync: { pending: 3 } }), button = element({ textContent: 'Sign out' });
+    let calls = 0;
+    context.signOutAccount = async () => { calls++; return {}; };
+    context.showToast = () => {};
+    for (const answer of [false, true]) {
+        context.showDialog = async options => {
+            assert.equal(options.danger, 1);
+            assert.equal(options.msg, '3 changes are not saved yet. Sign out and lose them?');
+            return answer;
+        };
+        await app('signOutFromMenu')(button);
+        assert.equal(calls, answer ? 1 : 0);
+    }
+});
+
+test('sign-out uses the singular warning for one pending change in both languages', async () => {
+    const { app, context } = createApp({ cloudSync: { pending: 1 } }), button = element({ textContent: 'Sign out' });
+    for (const [lang, message] of [['en', '1 change is not saved yet. Sign out and lose it?'], ['es', '1 cambio aún no está guardado. ¿Cerrar sesión y perderlo?']]) {
+        app(`ui.lang = '${lang}'`);
+        context.showDialog = async options => { assert.equal(options.msg, message); return false; };
+        await app('signOutFromMenu')(button);
+    }
 });
 
 test('profile, password and email failures keep the form open and focus their alerts', async () => {

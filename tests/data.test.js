@@ -157,3 +157,60 @@ test('ensureProfileDefaults drops imported wishlist statuses and deaths the app 
     assert.deepEqual({ ...data.levels[1].deaths }, {});
     assert.deepEqual(data.wishlists[0].items.map(i => i.status), ['prog', 'todo', 'done']);
 });
+
+test('ensureProfileDefaults appends missing level tags with the next palette colours and saves once', () => {
+    let writes = 0;
+    const localStorage = {};
+    Object.defineProperty(localStorage, 'gdp', { set: value => { localStorage.saved = value; writes++; } });
+    const fresh = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js'], { localStorage });
+    fresh.app(`store = { cur: 'p', profs: { p: { data: {
+        levels: [{ id: 'n1', tags: ['Existing', 'Missing', 'Shared'] }, { id: 'n2', tags: ['Shared', 'Last'] }],
+        order: { classic: [], platform: [] }, wishlists: [],
+        tags: [{ name: 'Existing', color: '#123456' }, { name: 'Unused', color: '#abcdef' },
+            { name: 'Third', color: '#112233' }, { name: 'Fourth', color: '#445566' }, { name: 'Fifth', color: '#778899' }]
+    } } } }; profile = store.profs.p.data; ensureProfileDefaults()`);
+    assert.equal(writes, 1);
+    assert.deepEqual(JSON.parse(localStorage.saved).profs.p.data.tags, [
+        { name: 'Existing', color: '#123456' }, { name: 'Unused', color: '#abcdef' },
+        { name: 'Third', color: '#112233' }, { name: 'Fourth', color: '#445566' }, { name: 'Fifth', color: '#778899' },
+        { name: 'Missing', color: '#9d7bff' }, { name: 'Shared', color: '#ff2bd6' }, { name: 'Last', color: '#00e5ff' }
+    ]);
+    assert.equal(writes, 1);
+    fresh.app('ensureProfileDefaults()');
+    assert.equal(writes, 1);
+});
+
+test('ensureProfileDefaults removes repeated level tags in first-occurrence order and saves the result', () => {
+    let writes = 0;
+    const localStorage = {};
+    Object.defineProperty(localStorage, 'gdp', { set: value => { localStorage.saved = value; writes++; } });
+    const fresh = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js'], { localStorage });
+    fresh.app(`store = { cur: 'p', profs: { p: { data: {
+        levels: [{ id: 'n', tags: ['B', 'A', 'B', 'A', 'B'] }],
+        order: { classic: [], platform: [] }, wishlists: [],
+        tags: [{ name: 'A', color: '#123456' }, { name: 'B', color: '#abcdef' }]
+    } } } }; profile = store.profs.p.data; ensureProfileDefaults()`);
+    assert.deepEqual([...fresh.app('profile.levels[0].tags')], ['B', 'A']);
+    assert.deepEqual(JSON.parse(localStorage.saved).profs.p.data.levels[0].tags, ['B', 'A']);
+    assert.equal(writes, 1);
+    fresh.app('ensureProfileDefaults()');
+    assert.equal(writes, 1);
+});
+
+test('ensureProfileDefaults leaves consistent tags unchanged without saving', () => {
+    let writes = 0;
+    const localStorage = {};
+    Object.defineProperty(localStorage, 'gdp', { set: () => { writes++; } });
+    const fresh = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js'], { localStorage });
+    fresh.app(`profile = {
+        levels: [{ id: 'n1', tags: ['B', 'A'], deaths: {} }, { id: 'n2', tags: [], deaths: {} }],
+        order: { classic: [], platform: [] }, wishlists: [],
+        tags: [{ name: 'A', color: '#123456' }, { name: 'B', color: '#abcdef' }]
+    }`);
+    const before = fresh.app('JSON.stringify(profile)'), levelTags = fresh.app('profile.levels[0].tags'), tags = fresh.app('profile.tags');
+    fresh.app('ensureProfileDefaults()');
+    assert.equal(fresh.app('JSON.stringify(profile)'), before);
+    assert.equal(fresh.app('profile.levels[0].tags'), levelTags);
+    assert.equal(fresh.app('profile.tags'), tags);
+    assert.equal(writes, 0);
+});

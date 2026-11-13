@@ -26,6 +26,10 @@ function home() {
 }
 
 function profileSwitcher() {
+    if (account.status == 'signed-in') {
+        const own = account.profile;
+        return `<div class="psw cloud-account"><button class="obj pbtn" data-act=aprofile>${cubeIcon(own.color, own.secondary_color)}<span class=info><span class=nm>${escapeHtml(own.display_name)}</span>${own.username ? `<span class=by>@${escapeHtml(own.username)}</span>` : ''}<span class=by data-cloud-status>${escapeHtml(cloudStatusSentence())}</span></span></button><span data-cloud-retry>${cloudRetryButton()}</span></div>`;
+    }
     const ids = Object.keys(store.profs), cur = store.profs[store.cur];
     const row = id => {
         const p = store.profs[id], on = id == store.cur, eid = escapeHtml(id), name = escapeHtml(p.name);
