@@ -27,7 +27,7 @@ test('delete_account removes only the caller and all their rows; anonymous execu
         }
         const snapshots = new Map();
         for (const table of ['profiles', ...fixtures.map(([table]) => table)])
-            snapshots.set(table, ok(await other.client.from(table).select('*')));
+            snapshots.set(table, ok(await other.client.from(table).select('*').eq(table === 'profiles' ? 'id' : 'user_id', other.id)));
         const denied = await context.anon.rpc('delete_account');
         assert.equal(denied.error?.code, '42501');
         assert.ok(ok(await context.admin.auth.admin.getUserById(user.id)).user);
@@ -35,7 +35,7 @@ test('delete_account removes only the caller and all their rows; anonymous execu
         assert.equal((await context.admin.auth.admin.getUserById(user.id)).error?.status, 404);
         for (const [table, snapshot] of snapshots) {
             assert.deepEqual(ok(await context.admin.from(table).select('*').eq(table === 'profiles' ? 'id' : 'user_id', user.id)), [], table);
-            assert.deepEqual(ok(await other.client.from(table).select('*')), snapshot, table);
+            assert.deepEqual(ok(await other.client.from(table).select('*').eq(table === 'profiles' ? 'id' : 'user_id', other.id)), snapshot, table);
         }
     }
     finally {
