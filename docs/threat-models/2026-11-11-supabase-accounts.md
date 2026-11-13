@@ -59,7 +59,7 @@ flowchart LR
 - [ ] Row caps, write budget and batch limit — verified by the limit tests (#193, #195)
 - [ ] Versioned writes and field-level merge — verified by the stale-version test (#195)
 - [ ] Per-user cloud cache cleared on sign-out — verified by the shared-device test (#195)
-- [ ] Idempotent, non-destructive migration — verified by the double-run and failed-push tests (#196)
+- [x] Idempotent, non-destructive migration — verified by the double-run and failed-push tests (#196; `tests/migration.test.js`)
 - [ ] Definer functions locked down — verified by the advisors and the `delete_account` test (#193, #194)
 - [ ] No secret keys in the repository — verified by the key scan test and gitleaks (#193)
 

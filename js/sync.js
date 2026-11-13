@@ -135,7 +135,7 @@ function useCloudCache(user, accountProfile, cached) {
     cloudSession = {
         snapshot: new Map(Object.entries(cached?.snapshot || {})), rejected: new Map(Object.entries(cached?.rejected || {})),
         revision: cached?.revision ?? null, accountProfile, retry: 0, retryAt: 0, limitedUntil: 0,
-        started: false, timer: null, poll: null, pushing: null, pulling: null, checking: null, rejectionError: t('cloudInvalid')
+        started: false, pulled: false, timer: null, poll: null, pushing: null, pulling: null, checking: null, rejectionError: t('cloudInvalid')
     };
     cloudSync = { status: navigator.onLine === false ? 'offline' : 'saving', pending: 0, error: '' };
     profile = cached?.profile || emptyProfile();
@@ -398,6 +398,7 @@ function pullCloud() {
     if (session.pulling)
         return session.pulling;
     session.pulling = Promise.resolve().then(async () => {
+        const hadRevision = session.revision != null;
         try {
             const client = await loadCloud(), { data, error } = await client.rpc('sync_pull');
             if (session !== cloudSession)
@@ -422,6 +423,7 @@ function pullCloud() {
             rebuildCloudProfile(rows);
             session.revision = data.revision;
             session.accountProfile = data.profile;
+            session.pulled = true;
             if (data.profile)
                 account.profile = data.profile;
             session.retryAt = session.limitedUntil;
@@ -431,7 +433,9 @@ function pullCloud() {
             writeCloudCache();
             if (!cloudFormOpen())
                 render();
-            notifyCloudChanges(names);
+            if (hadRevision)
+                notifyCloudChanges(names);
+            maybeOfferMigration();
             return true;
         }
         catch (error) {

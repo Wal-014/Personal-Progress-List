@@ -31,7 +31,7 @@ function renderSyncStatus() {
 /** Quick actions shown in the toolbar palette (and in the pause menu on phones). */
 function paletteButtons() {
     const pal = (act, icon, label, extra = '') => `<button class=pal data-act=${act} ${extra}>${icon}<span class=pl>${label}</span></button>`;
-    return pal('add', ICONS.add, t('palAdd')) + pal('wnew', ICONS.wish, t('palWish')) + pal('tags', ICONS.tag, t('tags')) + (cloudUser ? '' : pal('exp', ICONS.exp, t('palExp')));
+    return pal('add', ICONS.add, t('palAdd')) + pal('wnew', ICONS.wish, t('palWish')) + pal('tags', ICONS.tag, t('tags')) + (cloudUser || cloudBeta() ? '' : pal('exp', ICONS.exp, t('palExp')));
 }
 
 /** Bottom navigation: the editor toolbar on wide screens, a tab bar and an add button on phones. CSS shows one of them. The lists and statistics open from their Home cards. */
@@ -50,7 +50,7 @@ function pauseUI() {
 <h3>${t('lang')}</h3><div class=lang>${[['es', 'Español'], ['en', 'English']].map(lang).join('')}</div>
 <div class=mob><h3>${t('more')}</h3><div class=palette>${paletteButtons()}</div></div>
 <h3>AREDL</h3><p id=aredl class=by>${aredlLine()}</p>
-${cloudUser ? '' : `<p><button data-act=imp>${ICONS.imp} ${t('impP')}</button></p>`}
+${cloudUser || cloudBeta() ? '' : `<p><button data-act=imp>${ICONS.imp} ${t('impP')}</button></p>`}
 <nav class=legal>${['terms', 'privacy', 'credits'].map(k => `<a class=lk data-act=legal data-v=${k} role=button tabindex=0>${t(k)}</a>`).join(' · ')}</nav>
 <p class=by>© ${new Date().getFullYear()} Retlaw · ${t('rights')} · v1.0.0</p>
 <p class=dgb><button class=pri data-act=close>${t('resume')}</button></p></div>`;
