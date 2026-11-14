@@ -1,6 +1,8 @@
 {
 	// Deploy steps and the URL the app needs are in README.md
 	"name": "ppl-level-relay",
+	// The site owner's account; an account ID is not a secret
+	"account_id": "ed48c5f705877f5eccbecf8f6e5837df",
 	"main": "src/index.js",
 	"compatibility_date": "2026-11-06",
 	"workers_dev": true,
