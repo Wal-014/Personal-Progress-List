@@ -24,7 +24,7 @@ function card(l, i, n, reorderable) {
     const u = thumbUrl(l), rank = i == 'pre' ? ICONS.classic : i != null ? i + 1 : '—';
     const podium = i === 0 ? ' top1' : i === 1 ? ' top2' : i === 2 ? ' top3' : '';
     const meta = [l.creator ? t('by') + ' ' + escapeHtml(l.creator) : '', escapeHtml(formatDate(l.date)), aredlLabel(l)].filter(Boolean).join(' · ');
-    return `<div class="obj lv${podium}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${u ? ` style="--th:url('${u}')"` : ''}>${u ? '<i class=th aria-hidden=true></i>' : ''}${reorderable ? `<span class=grip aria-hidden=true title="${t('dragHint')}">${ICONS.grip}</span>` : ''}<span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + (i + 1) + ' / ' + n : t('unplaced')}">${rank}</span><div class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>${meta}</span>${l.tags?.length ? `<div>${l.tags.map(name => tagFilterChip(name)).join('')}</div>` : ''}</div>${difficultyFace(l)}</div>`;
+    return `<div class="obj lv${podium}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${u ? ` style="--th:url('${u}')"` : ''}>${u ? '<i class=th aria-hidden=true></i>' : ''}${canEdit() && reorderable ? `<span class=grip aria-hidden=true title="${t('dragHint')}">${ICONS.grip}</span>` : ''}<span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + (i + 1) + ' / ' + n : t('unplaced')}">${rank}</span><div class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>${meta}</span>${l.tags?.length ? `<div>${l.tags.map(name => tagFilterChip(name)).join('')}</div>` : ''}</div>${difficultyFace(l)}</div>`;
 }
 
 /** Ids of the ranked levels of a list, in order: Pre-Extremes levels and ids of deleted levels have no rank. */
@@ -44,7 +44,7 @@ function listTagOptions(levels, selectedTags) {
 
 /** Only the full list can be reordered: a filtered one hides levels, so its order cannot be saved. */
 function canReorder() {
-    return !ui.q && !ui.tagFilter.length;
+    return canEdit() && !ui.q && !ui.tagFilter.length;
 }
 
 /** List body grouped into ranked, unplaced and first-step levels. */
@@ -56,7 +56,7 @@ function list() {
     const unplacedLevels = listLevels.filter(level => !orderedIds.includes(level.id) && !isPre(level) && isShown(level));
     const firstStepLevels = listLevels.filter(level => isPre(level) && isShown(level));
     const reorderable = canReorder();
-    return `<div id=lst>${rankedLevels.map((level, index) => isShown(level) ? card(level, index, rankedLevels.length, reorderable) : '').join('')}</div>${unplacedLevels.length ? `<h2 class=grp>${t('unplaced')}</h2>` + unplacedLevels.map(level => card(level)).join('') : ''}${firstStepLevels.length ? `<h2 class=grp>${t('first')}</h2>` + firstStepLevels.map(level => card(level, 'pre')).join('') : ''}${!listLevels.length ? emptyList({ icon: ICONS.add, title: t('emptyListTitle'), text: t('emptyListText'), action: 'add' }) : !listLevels.some(isShown) ? `<p class=by>${t('noMatch')}</p>` : ''}`;
+    return `<div id=lst>${rankedLevels.map((level, index) => isShown(level) ? card(level, index, rankedLevels.length, reorderable) : '').join('')}</div>${unplacedLevels.length ? `<h2 class=grp>${t('unplaced')}</h2>` + unplacedLevels.map(level => card(level)).join('') : ''}${firstStepLevels.length ? `<h2 class=grp>${t('first')}</h2>` + firstStepLevels.map(level => card(level, 'pre')).join('') : ''}${!listLevels.length ? canEdit() ? emptyList({ icon: ICONS.add, title: t('emptyListTitle'), text: t('emptyListText'), action: 'add' }) : `<p class=by>${t('publicNoLevels')}</p>` : !listLevels.some(isShown) ? `<p class=by>${t('noMatch')}</p>` : ''}`;
 }
 
 function youtubeId(url) {
@@ -94,7 +94,7 @@ ${section('s4', `<div class=grid>${statCell('date', orDash(formatDate(level.date
 ${section('s5', `<div class=grid><div class=st><small>${t('enj')}</small>${meter(level.enj)}</div><div class=st><small>${t('lik')}</small>${meter(level.lik)}</div></div>`)}
 ${(level.tags?.length || level.notes) ? section('sh', `${(level.tags || []).map(name => tagFilterChip(name, true)).join('')}${level.notes ? `<p style="white-space:pre-wrap">${escapeHtml(level.notes)}</p>` : ''}`) : ''}
 ${histogram ? section('dh', histogram) : ''}
-</div><p class=dgb><button class=blue data-act=edit data-id="${escapeHtml(level.id)}">${ICONS.edit} ${t('edit')}</button> <button data-act=lvclose>${t('close')}</button></p></div>`;
+</div><p class=dgb>${canEdit() ? `<button class=blue data-act=edit data-id="${escapeHtml(level.id)}">${ICONS.edit} ${t('edit')}</button>` : ''} <button data-act=lvclose>${t('close')}</button></p></div>`;
 }
 
 const tagChip = n => `<span class=chip data-act=tgrm data-v="${escapeHtml(n)}" style="${tagStyle(n)}">${escapeHtml(n)} ${ICONS.del}<input type=hidden name=tg value="${escapeHtml(n)}"></span>`;
@@ -176,7 +176,7 @@ function lcol() {
 /** Right column with level details, an editing form or an empty prompt. */
 function panel() {
     const l = ui.sel ? findLevel(ui.sel) : null;
-    return !l ? `<div class=ph>${t('pick')}</div>` : ui.edit ? levelForm(l) : detail(l);
+    return !l ? `<div class=ph>${t('pick')}</div>` : ui.edit && canEdit() ? levelForm(l) : detail(l);
 }
 
 /** Sortable filter: touch and pen drags start only from the grip, so a swipe anywhere else on a card scrolls the page. A mouse still drags the whole card. */

@@ -164,44 +164,6 @@ test('the profile dialog changes only the colour group that was edited', () => {
     assert.match(preview.innerHTML, /fill="#123456"/);
 });
 
-test('creating and editing profiles saves both colours independently outside their data', async () => {
-    const { app, context, setProfiles, loadEvents } = createApp();
-    setProfiles({ old: { name: 'Old', color: '#ffe94d', secondaryColor: '#ABCDEF', data: app('emptyProfile()') } });
-    loadEvents();
-    context.askProfile = async (title, values) => {
-        assert.equal(title, 'Nuevo perfil');
-        assert.deepEqual({ ...values }, { name: '', color: '#a6ff4d', secondaryColor: '#5ef0ff' });
-        return { name: 'New', color: '#ff8af2', secondaryColor: '#123456' };
-    };
-    app('ACTIONS.pnew()');
-    await flush();
-    const created = app('store.profs[store.cur]');
-    assert.equal(created.name, 'New');
-    assert.equal(created.color, '#ff8af2');
-    assert.equal(created.secondaryColor, '#123456');
-    assert.equal(created.data.color, undefined);
-    assert.equal(created.data.secondaryColor, undefined);
-    context.askProfile = async (title, values) => {
-        assert.equal(title, 'Editar perfil');
-        assert.equal(values.name, 'Old');
-        assert.equal(values.color, '#ffe94d');
-        assert.equal(values.secondaryColor, '#ABCDEF');
-        return { name: 'Edited', color: '#123456', secondaryColor: values.secondaryColor };
-    };
-    app('ACTIONS.pedit(null, "old")');
-    await flush();
-    assert.equal(app('store.profs.old.name'), 'Edited');
-    assert.equal(app('store.profs.old.color'), '#123456');
-    assert.equal(app('store.profs.old.secondaryColor'), '#ABCDEF');
-    context.askProfile = async (title, values) => ({ name: values.name, color: values.color, secondaryColor: '#123456' });
-    app('ACTIONS.pedit(null, "old")');
-    await flush();
-    assert.equal(app('store.profs.old.color'), '#123456');
-    assert.equal(app('store.profs.old.secondaryColor'), '#123456', 'identical colours are allowed');
-    assert.equal(created.color, '#ff8af2');
-    assert.equal(created.secondaryColor, '#123456');
-});
-
 test('export and import preserve profile metadata separately from level data', async () => {
     const { app, context, setProfiles, loadEvents } = createApp();
     setProfiles({ a: { name: 'Player', color: '#123456', secondaryColor: '#ABCDEF', data: app('emptyProfile()') } });
@@ -211,7 +173,7 @@ test('export and import preserve profile metadata separately from level data', a
     context.URL = { createObjectURL: blob => { exported = blob; return 'blob:test'; }, revokeObjectURL() {} };
     context.setTimeout = () => {};
     context.document.createElement = () => ({ click() {} });
-    app('ACTIONS.exp(null)');
+    app("ACTIONS.localbackup(null, 'a')");
     const json = await exported.text();
     assert.equal(JSON.parse(json).profileColor, '#123456');
     assert.equal(JSON.parse(json).profileSecondaryColor, '#ABCDEF');

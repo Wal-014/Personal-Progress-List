@@ -25,7 +25,7 @@ export default [
         files: appFiles,
         languageOptions: {
             sourceType: 'script',
-            globals: { ...globals.browser, ...sharedGlobals, Sortable: 'readonly' }
+            globals: { ...globals.browser, ...sharedGlobals, Sortable: 'readonly', supabase: 'readonly' }
         },
         rules: {
             'no-redeclare': ['error', { builtinGlobals: false }],

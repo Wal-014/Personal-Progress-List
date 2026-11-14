@@ -20,6 +20,43 @@ function zoomTimeline(factor) {
 
 /** What each data-act value does when clicked. Handlers get the clicked element and its data-id. */
 const ACTIONS = {
+    myprogress: () => backToMyProgress(),
+    ashare: () => shareDialog(),
+    asharestate: a => setProfileVisibility(a),
+    acopy: () => copyProfileLink(),
+    localdata: () => openModal(localDataDialog()),
+    localuse(a, id) {
+        if (cloudUser || !store.profs[id] || store.cur == id)
+            return;
+        activateProfile(id);
+        matchWithAredl(profile.levels);
+        ui.sel = ui.wl = null;
+        localStorage.gdp = JSON.stringify(store);
+        closeModal();
+        render();
+    },
+    localimport() {
+        closeModal();
+        qs('#fi').click();
+    },
+    localbackup: (a, id) => downloadLocalBackup(id),
+    localbring: (a, id) => openLocalMigration(id),
+    localdelete: (a, id) => deleteLocalProfile(id),
+    migrationbackup: () => downloadMigrationBackup(),
+    migrationlater: () => deferMigration(),
+    migrationconfirm: a => submitMigration(a),
+    asignin: () => openAuthDialog(),
+    amode: a => openAuthDialog(a.dataset.v),
+    agoogle: a => continueWithGoogle(a),
+    aresend: a => resendAccountEmail(a),
+    apw: a => toggleAccountPassword(a),
+    aprofile: () => openModal(profileCard()),
+    aedit: () => openProfileForm(),
+    asettings: () => settingsDialog(),
+    apassword: () => passwordDialog(),
+    adelete: a => confirmAccountDeletion(a),
+    asignout: a => signOutFromMenu(a),
+    csync: () => retryCloudSync(),
     tab(a) {
         ui.tab = a.dataset.v;
         resetListFilters();
@@ -30,7 +67,12 @@ const ACTIONS = {
     },
     pause: () => openModal(pauseUI()),
     theme(a) {
-        ui.theme = localStorage.gt = a.dataset.v;
+        if (cloudUser) {
+            applyCloudSettings({ theme: a.dataset.v });
+            save();
+        }
+        else
+            ui.theme = localStorage.gt = a.dataset.v;
         reopenPause(`[data-act=theme][data-v=${a.dataset.v}]`);
     },
     bell: () => openModal(bellUI()),
@@ -47,7 +89,12 @@ const ACTIONS = {
         i.dispatchEvent(new Event('input', { bubbles: true }));
     },
     lang(a) {
-        ui.lang = localStorage.gl = a.dataset.v;
+        if (cloudUser) {
+            applyCloudSettings({ lang: a.dataset.v });
+            save();
+        }
+        else
+            ui.lang = localStorage.gl = a.dataset.v;
         if (a.closest('.pause'))
             reopenPause(`[data-act=lang][data-v=${a.dataset.v}]`);
         else
@@ -141,50 +188,6 @@ const ACTIONS = {
         openModal(tagsUI());
     },
     sync: () => syncWithAredl(true),
-    pnew() {
-        askProfile(t('pnew'), { name: '', color: nextProfileColor(), secondaryColor: DEFAULT_SECONDARY_COLOR }).then(p => {
-            if (!p)
-                return;
-            const i = newId('p');
-            store.profs[i] = { name: p.name, color: p.color, secondaryColor: p.secondaryColor, data: emptyProfile() };
-            activateProfile(i);
-            ui.tab = 'home';
-            save();
-            render();
-        });
-    },
-    psel(a, id) {
-        activateProfile(id);
-        matchWithAredl(profile.levels);
-        ui.wl = null;
-        save();
-        render();
-    },
-    pedit(a, id) {
-        askProfile(t('pedit'), store.profs[id]).then(p => {
-            if (!p)
-                return;
-            store.profs[id].name = p.name;
-            store.profs[id].color = p.color;
-            store.profs[id].secondaryColor = p.secondaryColor;
-            save();
-            render();
-        });
-    },
-    pdelid(a, id) {
-        if (Object.keys(store.profs).length < 2)
-            return showAlert(t('lastP'));
-        // The menu can delete any profile, not just the active one, so the dialog names it
-        showDialog({ title: t('pdel'), msg: store.profs[id].name, danger: 1 }).then(ok => {
-            if (!ok)
-                return;
-            delete store.profs[id];
-            if (store.cur == id)
-                activateProfile(Object.keys(store.profs)[0]);
-            save();
-            render();
-        });
-    },
     wnew() {
         askText(t('wname'), '').then(n => {
             if (!n)
@@ -200,7 +203,8 @@ const ACTIONS = {
     wopen(a, id) {
         ui.tab = 'wish';
         ui.wl = id;
-        enrichWishlist(profile.wishlists.find(w => w.id == id));
+        if (canEdit())
+            enrichWishlist(profile.wishlists.find(w => w.id == id));
         render();
     },
     wren() {
@@ -255,17 +259,17 @@ const ACTIONS = {
     },
     wstatus: (a, id) => setWishlistStatus(id, a.dataset.v),
     wask: (a, id) => askTransfer(currentWishlist().items.find(i => i.id == id), false),
-    wto: (a, id) => transferWishlistItem(id, a.dataset.v),
-    imp: () => qs('#fi').click(),
-    exp(a, id) {
-        const pr = store.profs[id || store.cur], u = URL.createObjectURL(new Blob([JSON.stringify({ ...pr.data, profileName: pr.name, profileColor: pr.color, profileSecondaryColor: pr.secondaryColor })], { type: 'application/json' })), x = document.createElement('a');
-        x.href = u;
-        // Only characters that file systems reject are replaced, so accents and non-Latin names survive
-        x.download = (pr.name.trim().replace(/[/:*?"<>|\s]+/g, '-') || 'profile') + '.json';
-        x.click();
-        setTimeout(() => URL.revokeObjectURL(u), 1000);
-    }
+    wto: (a, id) => transferWishlistItem(id, a.dataset.v)
 };
+
+function downloadLocalBackup(id) {
+    const pr = store.profs[id], u = URL.createObjectURL(new Blob([JSON.stringify({ ...pr.data, profileName: pr.name, profileColor: pr.color, profileSecondaryColor: pr.secondaryColor })], { type: 'application/json' })), x = document.createElement('a');
+    x.href = u;
+    // Only characters that file systems reject are replaced, so accents and non-Latin names survive
+    x.download = (pr.name.trim().replace(/[/:*?"<>|\s]+/g, '-') || 'profile') + '.json';
+    x.click();
+    setTimeout(() => URL.revokeObjectURL(u), 1000);
+}
 
 function saveLevel(form) {
     const position = form.elements.pos.value, old = findLevel(form.dataset.id), level = old || { id: newId('n') };
@@ -342,10 +346,15 @@ async function importProfile(file) {
     delete data.profileColor;
     delete data.profileSecondaryColor;
     store.profs[id] = { name: selected.name, color: selected.color, secondaryColor: selected.secondaryColor, data };
-    activateProfile(id);
-    matchWithAredl(profile.levels);
-    save();
+    if (!cloudUser) {
+        activateProfile(id);
+        ui.sel = ui.wl = null;
+        matchWithAredl(profile.levels);
+    }
+    localStorage.gdp = JSON.stringify(store);
     render();
+    if (cloudUser)
+        openModal(localDataDialog());
 }
 
 document.body.onclick = e => {
@@ -365,7 +374,7 @@ document.body.onclick = e => {
     }
     if (a) {
         const k = a.dataset.act;
-        if (a.closest('.pause') && ['wnew', 'tags', 'exp', 'imp', 'legal'].includes(k))
+        if (a.closest('.pause') && ['wnew', 'tags', 'legal'].includes(k))
             closeModal();
         a.closest(':popover-open')?.hidePopover();
         ACTIONS[k]?.(a, a.dataset.id);
@@ -387,6 +396,14 @@ document.body.onclick = e => {
 };
 document.body.onsubmit = e => {
     e.preventDefault();
+    if (e.target.id == 'af')
+        return submitAuth(e.target);
+    if (e.target.id == 'pf')
+        return submitAccountProfile(e.target);
+    if (e.target.id == 'pwf')
+        return submitAccountPassword(e.target);
+    if (e.target.id == 'ef')
+        return submitAccountEmail(e.target);
     // The level fields are read-only, so the browser does not check them: a level must be picked from the search
     if (!e.target.elements.name.value) {
         qs('#gdq').setCustomValidity(t('gdPick'));
@@ -398,6 +415,8 @@ document.body.onsubmit = e => {
         saveLevel(e.target);
 };
 document.body.oninput = e => {
+    if (['pf', 'pwf'].includes(e.target.form?.id))
+        return accountFormInput(e.target);
     if (e.target.dataset.compareSlot != null)
         return setComparisonSearch(e.target);
     if (['fm', 'wf'].includes(e.target.form?.id))
@@ -436,14 +455,29 @@ document.body.onchange = e => {
         input.value = '';
     }
 };
-// Popovers open in the top layer, away from their button; place the profile menu under it, inside the viewport
+// Popovers open in the top layer, away from their button; place each menu under its own button, inside the viewport
 document.addEventListener('beforetoggle', e => {
-    if (e.target.id != 'pmenu' || e.newState != 'open')
+    if (e.target.id != 'amenu' || e.newState != 'open')
         return;
-    const r = qs('[popovertarget=pmenu]').getBoundingClientRect(), w = Math.min(360, innerWidth - 24);
-    // Only the profile rows scroll, so the menu never runs past the bottom of the screen
+    const r = qs(`[popovertarget=${e.target.id}]`).getBoundingClientRect(), w = Math.min(360, innerWidth - 24);
     Object.assign(e.target.style, { width: w + 'px', top: r.bottom + 6 + 'px', left: Math.max(12, Math.min(r.left, innerWidth - w - 12)) + 'px', maxHeight: Math.max(200, innerHeight - r.bottom - 18) + 'px' });
 }, true);
+
+let recoveryDialogOpened = false;
+
+function accountRendered() {
+    finishAccountSignIn();
+    if (!account.recovering)
+        recoveryDialogOpened = false;
+    if (account.status == 'signed-in' && account.recovering && !recoveryDialogOpened && !qs('dialog[open]')) {
+        recoveryDialogOpened = true;
+        passwordDialog();
+    }
+    if (canEdit() && cloudUser)
+        queueMicrotask(maybeOfferMigration);
+}
+
+document.addEventListener('close', () => queueMicrotask(accountRendered), true);
 /** Fits an open dropdown panel inside the viewport. */
 document.addEventListener('toggle', e => {
     if (e.target.matches('.ms[open]')) {
@@ -500,6 +534,13 @@ document.body.onmousemove = e => {
 };
 /** Another tab saved: load its data so this tab's next save does not overwrite it. Open forms are left alone. */
 window.addEventListener('storage', e => {
+    if (!canEdit())
+        return;
+    if (cloudUser) {
+        if (e.key == 'gcloud:' + cloudUser && e.newValue)
+            reloadCloudCache();
+        return;
+    }
     if (e.key != 'gdp' || !e.newValue)
         return;
     const cur = store.cur;
@@ -513,3 +554,53 @@ window.addEventListener('storage', e => {
     if (!qs('form, .modal'))
         render();
 });
+
+function openLocalMigration(id) {
+    if (cloudUser && cloudSession?.pulled && store.profs[id] && !(migratedLocalProfiles()[cloudUser] || []).includes(id))
+        openModal(migrationDialog(id));
+}
+
+function downloadMigrationBackup() {
+    const selected = qs('#migration [name=local-profile]:checked');
+    if (selected)
+        downloadLocalBackup(selected.value);
+}
+
+async function submitMigration(button) {
+    const selected = qs('#migration [name=local-profile]:checked');
+    if (!selected || button.disabled)
+        return;
+    button.disabled = true;
+    try {
+        await bringLocalProfile(selected.value, qs('#migration-identity').checked);
+    }
+    finally {
+        button.disabled = false;
+    }
+}
+
+function canDeleteLocalProfile(id) {
+    return !!store.profs[id] && Object.keys(store.profs).length > 1 && (!!cloudUser || store.cur != id);
+}
+
+async function deleteLocalProfile(id) {
+    if (!canDeleteLocalProfile(id))
+        return;
+    const ok = await showDialog({ title: t('localDeleteConfirm'), msg: store.profs[id].name, danger: 1 });
+    if (!ok || !canDeleteLocalProfile(id))
+        return;
+    const next = { ...store, profs: { ...store.profs } };
+    delete next.profs[id];
+    if (next.cur == id)
+        next.cur = Object.keys(next.profs)[0];
+    try {
+        localStorage.gdp = JSON.stringify(next);
+    }
+    catch {
+        return showAlert(t('cloudStorage'));
+    }
+    store = next;
+    render();
+    openModal(localDataDialog());
+    showToast(t('localDeleted'));
+}

@@ -26,6 +26,8 @@ const progressBar = (w, fx) => {
 
 /** Three labelled status buttons remain available in every state. */
 function statusControl(i) {
+    if (!canEdit())
+        return `<span class=wseg>${wishlistIcon(i.status)} ${t('st_' + i.status)}</span>`;
     return `<div class=wseg role=group aria-label="${escapeHtml(t('status') + ' · ' + i.name)}">${['todo', 'prog', 'done'].map(s => `<button type=button data-act=wstatus data-id="${escapeHtml(i.id)}" data-v=${s} aria-pressed=${i.status == s}>${t('st_' + s)}</button>`).join('')}</div>`;
 }
 
@@ -41,23 +43,23 @@ function transferSlot(i) {
 /** A fixed-height progress row reserves the same space in every state. */
 function progressRow(i) {
     if (i.status == 'todo')
-        return `<div class=wprog><span class=by>${t('wTodoHint')}</span></div>`;
+        return `<div class=wprog><span class=by>${canEdit() ? t('wTodoHint') : '0%'}</span></div>`;
     const pct = i.status == 'done' ? 100 : i.pct ?? 0, fx = ui.wishFx?.id == i.id ? ui.wishFx : null;
-    const slot = i.status == 'done' ? transferSlot(i) : `<label class=wpct><input type=number min=0 max=100 step=1 inputmode=numeric data-wp="${escapeHtml(i.id)}" value="${pct}" aria-label="${escapeHtml(t('wPct').replace('{name}', () => i.name))}"><span>%</span></label>`;
+    const slot = !canEdit() ? `${pct}%` : i.status == 'done' ? transferSlot(i) : `<label class=wpct><input type=number min=0 max=100 step=1 inputmode=numeric data-wp="${escapeHtml(i.id)}" value="${pct}" aria-label="${escapeHtml(t('wPct').replace('{name}', () => i.name))}"><span>%</span></label>`;
     return `<div class=wprog><div class="pb${fx ? ' wfill' : ''}" aria-hidden=true><i style="width:${pct}%;${fx ? `--from:${fx.from}%` : ''}"></i></div><div class=wslot>${slot}</div></div>`;
 }
 
 /** A wishlist card keeps the same grid areas across all statuses. */
 function wishlistCard(i) {
     const u = thumbUrl(i), id = escapeHtml(i.id), celebrate = ui.wishFx?.id == i.id;
-    return `<div class="obj wi s-${i.status}${celebrate ? ' celebrate' : ''}" data-id="${id}"${u ? ` style="--th:url('${u}')"` : ''}>${u ? '<i class=th aria-hidden=true></i>' : ''}<span class=grip aria-hidden=true title="${t('dragHint')}">${ICONS.grip}</span><span class="tg s-${i.status}" aria-hidden=true>${wishlistIcon(i.status)}</span><div class=info><span class=nm>${escapeHtml(i.name)}</span>${i.creator ? `<span class=by>${t('by')} ${escapeHtml(i.creator)}</span>` : ''}</div>${difficultyFace(i)}${statusControl(i)}<div class=wact><button class=xs data-act=wedit data-id="${id}" aria-label="${t('edit')}">${ICONS.edit}</button><button class="xs dg" data-act=wdel data-id="${id}" aria-label="${t('del')}">${ICONS.del}</button></div>${progressRow(i)}${celebrate ? `<span class=wstamp aria-hidden=true>${ICONS.check} ${escapeHtml(t('st_done').toUpperCase())}</span>` : ''}</div>`;
+    return `<div class="obj wi s-${i.status}${celebrate ? ' celebrate' : ''}" data-id="${id}"${u ? ` style="--th:url('${u}')"` : ''}>${u ? '<i class=th aria-hidden=true></i>' : ''}${canEdit() ? `<span class=grip aria-hidden=true title="${t('dragHint')}">${ICONS.grip}</span>` : ''}<span class="tg s-${i.status}" aria-hidden=true>${wishlistIcon(i.status)}</span><div class=info><span class=nm>${escapeHtml(i.name)}</span>${i.creator ? `<span class=by>${t('by')} ${escapeHtml(i.creator)}</span>` : ''}</div>${difficultyFace(i)}${statusControl(i)}${canEdit() ? `<div class=wact><button class=xs data-act=wedit data-id="${id}" aria-label="${t('edit')}">${ICONS.edit}</button><button class="xs dg" data-act=wdel data-id="${id}" aria-label="${t('del')}">${ICONS.del}</button></div>` : ''}${progressRow(i)}${celebrate ? `<span class=wstamp aria-hidden=true>${ICONS.check} ${escapeHtml(t('st_done').toUpperCase())}</span>` : ''}</div>`;
 }
 
 function wishView() {
     const w = currentWishlist(), p = wishlistProgress(w);
     const summary = ['todo', 'prog', 'done'].map(s => `<span>${wishlistIcon(s)} ${t('st_' + s)}: ${w.items.filter(i => i.status == s).length}</span>`).join('');
     const line = p.s == 'done' ? t('wAllDone') : t('wDoneN').replace('{d}', () => p.d).replace('{n}', () => p.n);
-    return `<div class="wh${p.s == 'done' ? ' done' : ''}"><div class=info><h2>${escapeHtml(w.name)}</h2><span class=by>${line}</span>${progressBar(w, ui.wishFx)}<div class=wsummary>${summary}</div></div><div class=wa><button class=pri data-act=wadd>${t('addLevel')}</button><button data-act=wren>${t('wren')}</button><button class=dg data-act=wdelL>${t('wdelL')}</button></div></div>${w.items.length ? `<div class=wl>${w.items.map(wishlistCard).join('')}</div>` : emptyList({ icon: ICONS.wish, title: t('emptyWishTitle'), text: t('emptyWishText'), action: 'wadd' })}`;
+    return `<div class="wh${p.s == 'done' ? ' done' : ''}"><div class=info><h2>${escapeHtml(w.name)}</h2><span class=by>${line}</span>${progressBar(w, ui.wishFx)}<div class=wsummary>${summary}</div></div>${canEdit() ? `<div class=wa><button class=pri data-act=wadd>${t('addLevel')}</button><button data-act=wren>${t('wren')}</button><button class=dg data-act=wdelL>${t('wdelL')}</button></div>` : ''}</div>${w.items.length ? `<div class=wl>${w.items.map(wishlistCard).join('')}</div>` : canEdit() ? emptyList({ icon: ICONS.wish, title: t('emptyWishTitle'), text: t('emptyWishText'), action: 'wadd' }) : `<p class=by>${t('publicNoLevels')}</p>`}`;
 }
 
 /** Form for adding or editing a wishlist level, including a non-drag position control. */
@@ -190,6 +192,6 @@ function reorderWishlist(evt) {
 }
 
 function initWishlistSort() {
-    if (qs('.wl'))
+    if (canEdit() && qs('.wl'))
         new Sortable(qs('.wl'), { animation: 180, filter: evt => startsAwayFromGrip(evt) || !!evt.target.closest('button, input'), preventOnFilter: false, fallbackTolerance: 5, onUpdate: reorderWishlist });
 }

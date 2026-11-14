@@ -549,6 +549,51 @@ dialog.modal::backdrop {
   flex: 1;
 }
 
+.top:has(.cloudst) h1 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cloudst {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font: bold 12px Arial, Helvetica, sans-serif;
+}
+
+.cloudst > .i, .cloudretry .i {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+.cloudtxt {
+  overflow-wrap: anywhere;
+}
+
+.cloudretry.xs-txt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 4px 8px;
+}
+
+.cloudwarn {
+  display: none;
+}
+
+.cloud-account {
+  align-items: center;
+}
+
+.cloud-account .by {
+  overflow-wrap: anywhere;
+}
+
 .bdg {
   position: absolute;
   top: -10px;
@@ -930,32 +975,21 @@ dialog.modal::backdrop {
   box-shadow: none;
 }
 
-.pbtn:hover, .pbtn:has(~ :popover-open) {
+.pbtn:hover {
   border-color: var(--go);
 }
 
-.pbtn .nm, .prow .nm {
+.pbtn .nm {
   font-size: 18px;
   overflow-wrap: anywhere;
 }
 
-.pbtn > .i, .psel > .i:first-child {
+.pbtn > .i {
   width: 38px;
   height: 38px;
 }
 
-.pbtn .car {
-  width: 22px;
-  height: 22px;
-  transition: transform .15s;
-}
-
-.pbtn:has(~ :popover-open) .car {
-  transform: rotate(180deg);
-}
-
-.pio, .pma {
-  flex-direction: column;
+.pma {
   gap: 4px;
   padding: 6px 4px;
   font: bold 12px Arial, Helvetica, sans-serif;
@@ -965,12 +999,6 @@ dialog.modal::backdrop {
   border-width: 2px;
   border-radius: 8px;
   box-shadow: none;
-}
-
-.pio {
-  flex: none;
-  width: 72px;
-  min-height: 56px;
 }
 
 .pmenu {
@@ -993,52 +1021,6 @@ dialog.modal::backdrop {
   display: flex;
 }
 
-.pmenu h3 {
-  margin: 0 0 8px;
-  font-size: 16px;
-}
-
-.prows {
-  display: grid;
-  gap: 4px;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-.prow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 6px;
-  padding-right: 6px;
-  border: 3px solid transparent;
-  border-radius: 10px;
-}
-
-.prow.act, .prow:has(:focus-visible) {
-  background: var(--pal);
-}
-
-.prow.act {
-  border-color: var(--go);
-}
-
-.psel {
-  justify-content: flex-start;
-  gap: 10px;
-  min-width: 0;
-  min-height: 52px;
-  padding: 6px 4px 6px 6px;
-  font: inherit;
-  color: inherit;
-  text-align: left;
-  -webkit-text-stroke: 0;
-  background: none;
-  border: 0;
-  box-shadow: none;
-}
-
 .pma {
   flex: none;
   flex-direction: row;
@@ -1046,7 +1028,7 @@ dialog.modal::backdrop {
   margin-top: 10px;
 }
 
-.pio .i, .pma .i {
+.pma .i {
   width: 22px;
   height: 22px;
 }
@@ -1069,9 +1051,6 @@ dialog.modal::backdrop {
     flex: 1;
   }
 
-  .pio {
-    width: 60px;
-  }
 }
 
 /* ===== Level list ===== */
@@ -1602,11 +1581,7 @@ input.ro {
     background: rgba(0, 0, 0, .28);
   }
 
-  .prow:hover {
-    background: var(--pal);
-  }
-
-  .ms .msp label:hover, .prow:hover .nm, .pma:hover, .gdc:hover .nm {
+  .ms .msp label:hover, .pma:hover, .gdc:hover .nm {
     color: var(--go);
   }
 
@@ -1619,16 +1594,16 @@ input.ro {
   background: rgba(0, 0, 0, .28);
 }
 
-.ms .msp label:has(:focus-visible), .prow:has(:focus-visible) .nm,
+.ms .msp label:has(:focus-visible),
 .pma:focus-visible, .gdc:focus-visible .nm {
   color: var(--go);
 }
 
-.ms .msp label, .prow {
+.ms .msp label {
   transition: background-color 150ms ease-out, color 150ms ease-out;
 }
 
-.prow .nm, .pma, .gdc .nm {
+.pma, .gdc .nm {
   transition: color 150ms ease-out;
 }
 
@@ -2441,6 +2416,23 @@ input.ro {
   min-width: 0;
 }
 
+.wi:not(:has(> .grip)) {
+  grid-template-columns: 42px minmax(0, 1fr) 64px auto;
+  grid-template-areas:
+    "tile info face status"
+    "tile prog face status";
+}
+
+.wi > span.wseg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wi:not(:has(> .grip)) .wslot {
+  min-width: 0;
+}
+
 .wseg button {
   min-width: 0;
   min-height: 36px;
@@ -2620,6 +2612,14 @@ input.ro {
     row-gap: 8px;
   }
 
+  .wi:not(:has(> .grip)) {
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "tile info face"
+      "status status status"
+      "prog prog prog";
+  }
+
   .wslot {
     min-width: 0;
   }
@@ -2779,6 +2779,193 @@ input.ro {
   text-shadow: 2px 0 #000, -2px 0 #000, 0 2px #000, 0 -2px #000, 1.5px 1.5px #000, -1.5px 1.5px #000, 1.5px -1.5px #000, -1.5px -1.5px #000, 0 3px 0 rgba(0, 0, 0, .5);
 }
 
+/* ===== Cloud account screens ===== */
+.account-button {
+  flex: none;
+  width: 44px;
+  height: 44px;
+}
+
+.account-button .i {
+  width: 32px;
+  height: 32px;
+}
+
+.account-button[aria-busy=true] .i {
+  animation: account-pulse 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes account-pulse {
+  to { opacity: .45; }
+}
+
+.account-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--pal);
+}
+
+.account-head > .i {
+  flex: none;
+  width: 38px;
+  height: 38px;
+}
+
+.account-head .info {
+  min-width: 0;
+  flex: 1;
+}
+
+.account-head .nm, .account-head .by {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.amenu {
+  overflow-y: auto;
+}
+
+.amenu .pma {
+  justify-content: flex-start;
+  gap: 10px;
+  background: var(--pal);
+}
+
+.account-dialog {
+  overflow-wrap: anywhere;
+}
+
+.modal .account-dialog.sm {
+  max-width: 460px;
+}
+
+.account-dialog button, .account-dialog input, .account-dialog select {
+  min-height: 44px;
+}
+
+.account-dialog input:not([type=radio]):not([type=color]), .account-dialog textarea, .account-dialog select {
+  width: 100%;
+  min-width: 0;
+}
+
+.account-dialog form > label {
+  margin-top: 12px;
+}
+
+.account-dialog .gdseg {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.account-dialog .gdseg button {
+  flex: 1;
+}
+
+.account-dialog .gbtn {
+  width: 100%;
+  background: #fff;
+  color: #20232d;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+  font: bold 15px Arial, Helvetica, sans-serif;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+  color: var(--plab);
+}
+
+.auth-divider::before, .auth-divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid currentColor;
+}
+
+.password-field, .username-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.password-field input, .username-field input {
+  flex: 1;
+}
+
+.password-field button {
+  flex: none;
+  min-width: 44px;
+  padding: 4px 8px;
+}
+
+.password-field .i {
+  width: 20px;
+  height: 20px;
+}
+
+.account-link {
+  width: 100%;
+}
+
+.profile-card > .i {
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 12px;
+}
+
+.profile-card h2 {
+  justify-content: center;
+}
+
+.profile-card {
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.profile-bio {
+  white-space: pre-wrap;
+  text-align: left;
+}
+
+.account-counter {
+  text-align: right;
+  margin-top: 4px;
+}
+
+.account-danger {
+  margin-top: 20px;
+  padding: 14px 0 0;
+  border-top: 3px solid var(--rd);
+}
+
+.account-dialog [role=alert]:empty {
+  display: none;
+}
+
+@media (max-width: 560px) {
+  .top:has(.account-button) {
+    gap: 6px;
+  }
+
+  .top:has(.account-button) h1 {
+    min-width: 0;
+    font-size: 17px;
+    overflow-wrap: anywhere;
+  }
+
+  .top:has(.account-button) > .sq {
+    flex: none;
+    width: 44px;
+    height: 44px;
+  }
+}
+
 /* ===== AREDL update status ===== */
 .syncst {
   display: inline-flex;
@@ -2812,13 +2999,139 @@ input.ro {
 }
 
 @media (max-width: 560px) {
-  /* Only the spinning orb on phones; the text stays for screen readers */
-  .syncst span {
+  /* Status sentences remain available to screen readers on narrow headers. */
+  .syncst span, .cloudst .cloudtxt, .cloudst .retrytxt, .top.home-top:has(.cloudst) h1 {
     position: absolute;
     width: 1px;
     height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
   }
+
+  .cloudst {
+    flex: none;
+  }
+
+  .top:has(.cloudst) h1 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .cloudst.saved > .i, .cloudst.offline > .i, .cloudst.error > .i, .cloudst .cloudretry > .i {
+    display: none;
+  }
+
+  .cloudst .cloudwarn {
+    display: inline-flex;
+  }
+
+  .cloudst .cloudretry {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+  }
+}
+
+.local-profile + .local-profile {
+  margin-top: 20px;
+}
+
+.local-profile .obj, .guest-row .obj {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+}
+
+.local-profile .nm, .guest-account .nm, .local-choice .nm {
+  overflow-wrap: anywhere;
+}
+
+.box label.local-choice, .box label.local-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  font: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+  cursor: pointer;
+}
+
+.local-choice .info, .local-profile .info {
+  min-width: 0;
+}
+
+.local-choice > .i, .local-profile .obj > .i {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+}
+
+.box label.local-choice {
+  padding: 10px;
+  margin-bottom: 8px;
+}
+
+.local-choice input, .local-identity input {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.local-choice:has(:focus-visible) {
+  outline: 3px solid var(--fg);
+  outline-offset: 2px;
+}
+
+.local-data button, .migration button, .guest-account button, .cloud-account > button[data-act=localdata] {
+  min-height: 44px;
+  white-space: normal;
+}
+
+.guest-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.guest-row .pbtn {
+  flex: 0 0 auto;
+  max-width: 100%;
+}
+
+.local-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.local-actions button {
+  min-width: 0;
+}
+
+.migration input[type=radio], .migration input[type=checkbox] {
+  min-height: 0;
+  padding: 0;
+  box-shadow: none;
+}
+
+@media (max-width: 600px) {
+  .local-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.share-open {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  min-width: 44px;
 }

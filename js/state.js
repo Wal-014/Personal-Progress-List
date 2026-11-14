@@ -31,6 +31,11 @@ let store = loadStore();
 /** Active profile data: levels, order, wishlists and tags. */
 let profile = store && store.profs[store.cur].data;
 
+let cloudUser = null;
+let viewing = null;
+
+const canEdit = () => !viewing;
+
 /** Interface state: screen, selection, search, statistics views (rankings, comparison, timeline), theme and language. */
 let ui = {
     tab: 'home', wl: null, wishFx: null, q: '', tagFilter: [], z: 28, lang: localStorage.gl || 'es', theme: themeOf(localStorage.gt),
@@ -48,7 +53,11 @@ function resetListFilters() {
 
 const emptyProfile = () => ({ levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
 
-const save = () => localStorage.gdp = JSON.stringify(store);
+const save = () => {
+    if (!canEdit())
+        return;
+    return cloudUser ? saveCloud() : localStorage.gdp = JSON.stringify(store);
+};
 
 /** Migrates profile colours by their original position, saving only when needed. */
 function ensureProfileColors() {
@@ -120,11 +129,26 @@ function ensureProfileDefaults() {
                 delete i.pct;
         });
     });
-    if (!profile.tags) {
-        const pal = ['#ff2bd6', '#00e5ff', '#ffd400', '#7cff6b', '#ff7a3d', '#9d7bff'];
-        profile.tags = [...new Set(profile.levels.flatMap(l => l.tags || []))].map((n, i) => ({ name: n, color: pal[i % pal.length] }));
-        save();
+    let tagsChanged = !profile.tags;
+    profile.tags = profile.tags || [];
+    const pal = ['#ff2bd6', '#00e5ff', '#ffd400', '#7cff6b', '#ff7a3d', '#9d7bff'];
+    const names = new Set(profile.tags.map(tag => tag.name));
+    for (const level of profile.levels) {
+        const tags = [...new Set(level.tags || [])];
+        if (tags.length != (level.tags || []).length) {
+            level.tags = tags;
+            tagsChanged = true;
+        }
+        for (const name of tags) {
+            if (!names.has(name)) {
+                profile.tags.push({ name, color: pal[profile.tags.length % pal.length] });
+                names.add(name);
+                tagsChanged = true;
+            }
+        }
     }
+    if (tagsChanged)
+        save();
 }
 
 /** Gives a new id to every entry that has none or repeats an earlier one. */

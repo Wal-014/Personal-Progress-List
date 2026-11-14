@@ -1,0 +1,2 @@
+# The Supabase publishable key in js/config.js is public by design; this is the commit that added it
+1394eb29fdbe04f5d24660882478fd880781815c:js/config.js:generic-api-key:49
