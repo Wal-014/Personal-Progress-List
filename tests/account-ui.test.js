@@ -467,12 +467,21 @@ test('profile, password and email failures keep the form open and focus their al
 
 test('the account popover anchors to its trigger and stays within the viewport', () => {
     const { nodes, listeners } = createApp({ innerWidth: 360, innerHeight: 800 });
-    nodes['[popovertarget=amenu]'] = { getBoundingClientRect: () => ({ left: 250, bottom: 60 }) };
-    const popover = { id: 'amenu', style: {} };
-    listeners.beforetoggle[0]({ target: popover, newState: 'open' });
+    nodes['[popovertarget=amenu]'] = { getBoundingClientRect: () => ({ left: 250, top: 16, bottom: 60 }) };
+    const popover = { id: 'amenu', matches: selector => selector == '.pmenu', offsetHeight: 300, style: {} };
+    listeners.beforetoggle[0]({ target: popover, newState: 'open', source: nodes['[popovertarget=amenu]'] });
     assert.equal(popover.style.top, '66px');
     assert.equal(popover.style.width, '336px');
     assert.equal(popover.style.left, '12px');
+});
+
+test('opening a popover outside the menu class preserves its styles', () => {
+    const { listeners } = createApp({ innerWidth: 360, innerHeight: 800 });
+    const originalStyle = { width: '120px', top: '24px', left: '32px', maxHeight: '240px', display: 'grid' };
+    const popover = { id: 'help', matches: () => false, offsetHeight: 100, style: { ...originalStyle } };
+    const source = { getBoundingClientRect: () => ({ left: 250, top: 16, bottom: 60 }) };
+    listeners.beforetoggle[0]({ target: popover, newState: 'open', source });
+    assert.deepEqual(popover.style, originalStyle);
 });
 
 test('email templates are bilingual, configured and carry app-verifiable links or a code', () => {

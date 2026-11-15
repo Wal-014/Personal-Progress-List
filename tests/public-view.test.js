@@ -142,7 +142,8 @@ test('restored sessions, including the owner, retain the public view without sta
         for (const event of ['INITIAL_SESSION', 'SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED'])
             await p.app(`applyAccountSession('${event}', { user: { id: 'owner' } })`);
         assert.equal(p.app('account.status'), 'signed-in');
-        assert.match(p.html(), /popovertarget=amenu/);
+        assert.doesNotMatch(p.html(), /popovertarget=amenu/);
+        assert.match(p.html(), /data-act=myprogress/);
         assert.doesNotMatch(p.html(), /id=cloudst/);
         assert.equal(p.app('cloudUser'), null);
         assert.equal(calls.includes('sync'), false);
@@ -203,10 +204,10 @@ for (const [language, publicHeading, ownHeading] of [['en', 'Lists', 'My lists']
         const p = page();
         await p.app('initPublicView()');
         p.app(`ui.lang = '${language}'; render()`);
-        assert.ok(p.html().includes(`<h2 class=sec>${publicHeading}</h2>`));
-        assert.ok(!p.html().includes(`<h2 class=sec>${ownHeading}</h2>`));
+        assert.ok(p.html().includes(`<h2>${publicHeading}</h2>`));
+        assert.ok(!p.html().includes(`<h2>${ownHeading}</h2>`));
         p.app('viewing = null; store = { cur: "p1", profs: { p1: { name: "Local", data: profile } } }; render()');
-        assert.ok(p.html().includes(`<h2 class=sec>${ownHeading}</h2>`));
+        assert.ok(p.html().includes(`<h2>${ownHeading}</h2>`));
     });
 }
 

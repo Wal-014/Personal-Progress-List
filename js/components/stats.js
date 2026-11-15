@@ -25,11 +25,22 @@ const bars = o => {
     return Object.entries(o).map(([k, v]) => `<div class=hb><span>${escapeHtml(k)}</span><span class=tr><i style="width:${v / m * 100}%"></i></span><b>${v}</b></div>`).join('');
 };
 
-function stats() {
+function statsSummary() {
     const levelsWithAttempts = profile.levels.filter(level => totalAttempts(level) != null);
     const attemptTotal = levelsWithAttempts.reduce((sum, level) => sum + totalAttempts(level), 0);
     const playSeconds = profile.levels.reduce((sum, level) => sum + (totalSeconds(level) || 0), 0);
     const mostAttemptsLevel = levelsWithAttempts.length ? levelsWithAttempts.reduce((current, level) => totalAttempts(level) > totalAttempts(current) ? level : current) : null;
+    return {
+        levelCount: profile.levels.length,
+        attemptTotal,
+        playHours: Math.round(playSeconds / 3600),
+        average: levelsWithAttempts.length ? Math.round(attemptTotal / levelsWithAttempts.length) : null,
+        mostAttemptsLevel
+    };
+}
+
+function stats() {
+    const { levelCount, attemptTotal, playHours, average, mostAttemptsLevel } = statsSummary();
     const difficultyCounts = {};
     const yearCounts = {};
     profile.levels.forEach(level => {
@@ -38,6 +49,6 @@ function stats() {
             yearCounts[level.date.slice(0, 4)] = (yearCounts[level.date.slice(0, 4)] || 0) + 1;
     });
     const statCell = (label, value, className = '') => `<div class="kpi ${className}"><small>${label}</small><b>${escapeHtml(value)}</b></div>`;
-    return `<div class=kpis>${statCell(t('lv'), profile.levels.length)}${statCell(t('attT'), attemptTotal.toLocaleString(ui.lang), 'y')}${statCell(t('hrs'), Math.round(playSeconds / 3600))}${statCell(t('avg'), levelsWithAttempts.length ? Math.round(attemptTotal / levelsWithAttempts.length).toLocaleString(ui.lang) : '-')}${mostAttemptsLevel ? statCell(t('most'), `${mostAttemptsLevel.name} · ${totalAttempts(mostAttemptsLevel).toLocaleString(ui.lang)}`, 'sm') : ''}</div>
+    return `<div class=kpis>${statCell(t('lv'), levelCount)}${statCell(t('attT'), attemptTotal.toLocaleString(ui.lang), 'y')}${statCell(t('hrs'), playHours)}${statCell(t('avg'), average == null ? '-' : average.toLocaleString(ui.lang))}${mostAttemptsLevel ? statCell(t('most'), `${mostAttemptsLevel.name} · ${totalAttempts(mostAttemptsLevel).toLocaleString(ui.lang)}`, 'sm') : ''}</div>
 <div class=stats2><div class=well id=timeline-well>${timelineHtml()}</div><div class=side><div class="well d"><h2>${t('byD')}</h2>${bars(Object.fromEntries([...DIFFICULTIES, '-'].filter(difficulty => difficultyCounts[difficulty]).map(difficulty => [difficulty, difficultyCounts[difficulty]])))}</div><div class="well y"><h2>${t('byY')}</h2>${bars(yearCounts)}</div></div></div><section class=well id=rankings-well>${rankingsHtml()}</section>`;
 }

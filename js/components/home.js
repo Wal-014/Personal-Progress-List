@@ -1,28 +1,28 @@
-/**
- * Home screen: the account card, the profile's lists as blocks and wishlists as triggers.
- */
+/** Home content uses the same ranked lists, wishlist progress and totals as the detail screens. */
 
-/** Chart line drawn on the statistics block; the list blocks show their #1 level's thumbnail instead. */
-const STATS_ART = '<svg class=art width=90 height=46 viewBox="0 0 90 46" aria-hidden=true><polyline points="2,40 20,26 36,32 54,10 70,20 88,4" fill=none stroke="#000" stroke-width=7 stroke-linejoin=round /><polyline points="2,40 20,26 36,32 54,10 70,20 88,4" fill=none stroke="#3cff6c" stroke-width=3 stroke-linejoin=round /></svg>';
+function homeListCard(kind) {
+    const levels = profile.levels.filter(level => level.kind == kind);
+    const attempts = levels.reduce((sum, level) => sum + (totalAttempts(level) || 0), 0);
+    const lead = findLevel(rankedIds(kind)[0]), url = lead ? thumbUrl(lead) : '';
+    return `<div class="hcard hcard-${kind}" data-act=tab data-v=${kind} role=button tabindex=0${url ? ` style="--th:url('${url}')"` : ''}>
+<div class=hcard-top>${lead ? `<span class=hbadge>#1</span><span class=hlead>${escapeHtml(lead.name)}</span>${difficultyFace(lead)}` : `<span class=hlead>${t(levels.length ? 'unplaced' : 'listEmpty')}</span>`}</div>
+<div class=hcard-body>${url ? '' : `<span class=hghost aria-hidden=true>${ICONS[kind]}</span>`}<div class=hcard-copy><h3>${t(kind)}</h3><div class=hcard-rule></div><p>${ICONS.levels}<span>${levels.length.toLocaleString(ui.lang)} ${t('lv')}${attempts > 0 ? ` · ${attempts.toLocaleString(ui.lang)} ${t('att')}` : ''}</span></p></div></div></div>`;
+}
+
+function homeWishlists() {
+    const wishes = orderedWishlists(), shown = wishes.slice(0, 3);
+    return `<section class=hwishes><div class=hsection-head><h2>${t('wish')}</h2><button class=htext data-act=tab data-v=wish>${t('viewWishlists')}${wishes.length > shown.length ? ` (${wishes.length.toLocaleString(ui.lang)})` : ''}<span aria-hidden=true>›</span></button></div>
+<div class=hwish-rows>${shown.map(wishlistTrigger).join('')}${wishes.length ? '' : `<p class=by>${t('noWL')}</p>`}${canEdit() && wishes.length < 3 ? wishlistSlot() : ''}</div></section>`;
+}
+
+function homeStats() {
+    const summary = statsSummary();
+    const metric = (icon, value, key) => `<div class=hmetric>${icon}<div><b>${value.toLocaleString(ui.lang)}</b><span>${t(key)}</span></div></div>`;
+    return `<section class=hstats><div class=hsection-head><h2>${ICONS.stats}${t('stats')}</h2></div><div class=hstats-surface>${metric(ICONS.levels, summary.levelCount, 'lv')}${metric(ICONS.retry, summary.attemptTotal, 'attT')}${metric(ICONS.sync, summary.playHours, 'hrs')}<button class=htext data-act=tab data-v=stats>${t('viewStats')}<span aria-hidden=true>→</span></button></div></section>`;
+}
 
 function home() {
-    const block = (k, sub) => {
-        const lead = k == 'stats' ? null : findLevel(rankedIds(k)[0]), u = lead ? thumbUrl(lead) : '';
-        return `<div class="block b-${k}" data-act=tab data-v=${k} role=button tabindex=0${u ? ` style="--th:url('${u}')"` : ''}>${lead ? `<span class=lead>#1 ${escapeHtml(lead.name)}</span>` : ''}${k == 'stats' ? STATS_ART : ''}<h3>${t(k)}</h3><small>${sub}</small></div>`;
-    };
-    const listSub = k => {
-        const levels = profile.levels.filter(l => l.kind == k), attempts = levels.reduce((s, l) => s + (totalAttempts(l) || 0), 0);
-        return `${levels.length} ${t('lv')}${attempts ? ` · ${attempts.toLocaleString(ui.lang)} ${t('att')}` : ''}`;
-    };
-    const order = { prog: 0, todo: 1, done: 2 };
-    const wishes = [...profile.wishlists].sort((a, b) => order[wishlistProgress(a).s] - order[wishlistProgress(b).s]).map(w => {
-        const p = wishlistProgress(w);
-        return `<div class="obj trig" data-act=wopen data-id="${escapeHtml(w.id)}" role=button tabindex=0><span class="tg s-${p.s}">${ICONS.wish}</span><div class=info><span class=nm>${escapeHtml(w.name)}</span>${progressBar(w)}<span class=by>${p.d} / ${p.n} · ${t('st_' + p.s)}</span></div></div>`;
-    }).join('');
-    return `${profileSwitcher()}<h2 class=sec>${t(canEdit() ? 'lists' : 'publicLists')}</h2>
-<div class=blocks>${block('classic', listSub('classic'))}${block('platform', listSub('platform'))}${block('stats', t('statsSub'))}</div>
-<h2 class=sec>${t('wish')}</h2>
-<div class=trigs>${wishes}${canEdit() ? `<div class=slot data-act=wnew role=button tabindex=0>${t('wnew')}</div>` : ''}</div>${profile.wishlists.length ? '' : `<p class=by>${t('noWL')}</p>`}`;
+    return `${canEdit() ? '' : publicIdentityCard()}<div class=hcontent><section class=hlists><div class=hsection-head><h2>${t(canEdit() ? 'lists' : 'publicLists')}</h2>${canEdit() ? `<button class=hadd data-act=add><span aria-hidden=true>+</span>${t('palAdd')}</button>` : ''}</div><div class=hcards>${homeListCard('classic')}${homeListCard('platform')}</div></section><div class=hpreviews>${homeWishlists()}${homeStats()}</div></div>`;
 }
 
 function profileSwitcher() {
@@ -31,7 +31,7 @@ function profileSwitcher() {
     const localButton = `<button data-act=localdata>${t('localData')}</button>`;
     if (account.status == 'signed-in') {
         const own = account.profile;
-        return `<div class="psw cloud-account"><button class="obj pbtn" data-act=aprofile>${cubeIcon(own.color, own.secondary_color)}<span class=info><span class=nm>${escapeHtml(own.display_name)}</span>${own.username ? `<span class=by>@${escapeHtml(own.username)}</span>` : ''}<span class=by data-cloud-status>${escapeHtml(cloudStatusSentence())}</span></span></button><span data-cloud-retry>${cloudRetryButton()}</span>${Object.values(store.profs).some(hasRealLocalData) ? localButton : ''}</div>`;
+        return `<div class="psw cloud-account"><button class="obj pbtn" popovertarget=amenu>${cubeIcon(own.color, own.secondary_color)}<span class=info><span class=nm>${escapeHtml(own.display_name)}</span>${own.username ? `<span class=by>@${escapeHtml(own.username)}</span>` : ''}<span class=by data-cloud-status>${escapeHtml(cloudStatusSentence())}</span></span></button>${accountMenu()}<span data-cloud-retry>${cloudRetryButton()}</span>${Object.values(store.profs).some(hasRealLocalData) ? localButton : ''}</div>`;
     }
     return `<div class=guest-account><div class=guest-row><div class="obj pbtn">${localProfileSummary(store.cur, false)}</div><button class=pri data-act=asignin>${t('accountSignIn')}</button>${localButton}</div><p class=by>${t('localGuestHint')}</p></div>`;
 }

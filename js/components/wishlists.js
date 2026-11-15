@@ -8,6 +8,22 @@ const wishlistProgress = w => {
     return { n, d, s: n && d == n ? 'done' : w.items.some(i => i.status != 'todo') ? 'prog' : 'todo' };
 };
 
+function orderedWishlists() {
+    const order = { prog: 0, todo: 1, done: 2 };
+    return [...profile.wishlists].sort((a, b) => order[wishlistProgress(a).s] - order[wishlistProgress(b).s]);
+}
+
+function wishlistTrigger(w) {
+    const p = wishlistProgress(w);
+    return `<div class="obj trig" data-act=wopen data-id="${escapeHtml(w.id)}" role=button tabindex=0><span class="tg s-${p.s}">${ICONS.wish}</span><div class=info><span class=nm>${escapeHtml(w.name)}</span>${progressBar(w)}<span class=by>${p.d} / ${p.n} · ${t('st_' + p.s)}</span></div></div>`;
+}
+
+const wishlistSlot = () => `<div class=slot data-act=wnew role=button tabindex=0>${t('wnew')}</div>`;
+
+function wishlistsIndex() {
+    return `<div class=trigs>${orderedWishlists().map(wishlistTrigger).join('')}${canEdit() ? wishlistSlot() : ''}</div>${profile.wishlists.length ? '' : `<p class=by>${t('noWL')}</p>`}`;
+}
+
 /** IDs take precedence over names when both entries have one. */
 const isInList = (i, k) => profile.levels.some(l => l.kind == k && (i.levelId && l.levelId ? String(l.levelId) == String(i.levelId) : l.name.toLowerCase() == i.name.toLowerCase()));
 

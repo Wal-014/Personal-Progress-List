@@ -338,11 +338,12 @@ test('write-only network failures keep increasing the retry delay after successf
 });
 
 test('account Home and shell hide local file actions and show the account colours and status', async () => {
-    const page = await ready(); page.load(['js/components/home.js', 'js/components/shell.js']);
+    const page = await ready(); page.load(['js/components/home.js', 'js/components/shell.js', 'js/components/account-ui.js']);
     page.app(`account.status = 'signed-in'`);
     let html = page.app('profileSwitcher()');
     assert.match(html, /obj pbtn/); assert.match(html, /Player/); assert.match(html, /#123456/); assert.match(html, /Saved/);
-    assert.doesNotMatch(html, /data-act=(?:imp|exp|psel)|popovertarget=pmenu|Choose a username/);
+    assert.doesNotMatch(html, /data-act=(?:imp|exp|psel)|popovertarget=pmenu/);
+    assert.doesNotMatch(html.slice(0, html.indexOf('<div id=amenu')), /Choose a username/);
     assert.doesNotMatch(page.app('paletteButtons()'), /data-act=exp/);
     assert.doesNotMatch(page.app('pauseUI()'), /data-act=imp/);
     page.context.alerts = () => []; page.context.accountButton = () => '';
@@ -351,7 +352,9 @@ test('account Home and shell hide local file actions and show the account colour
     page.app(`cloudSync.status = 'offline'; cloudSync.pending = 1`);
     html = page.app('profileSwitcher()');
     assert.match(html, /Offline · 1 change waiting/); assert.match(html, /data-act=csync/);
-    assert.doesNotMatch(html, /<button[^>]*data-act=aprofile[^>]*>(?:(?!<\/button>)[\s\S])*<button/);
+    assert.match(html, /popovertarget=amenu/);
+    assert.equal((html.match(/id=amenu/g) || []).length, 1);
+    assert.doesNotMatch(html, /<button[^>]*popovertarget=amenu[^>]*>(?:(?!<\/button>)[\s\S])*<button/);
     page.app(`account.status = 'signed-out'; stopCloudSync(true)`);
     page.context.localProfileSummary = () => 'Local';
     assert.match(page.app('profileSwitcher()'), /data-act=localdata/);
@@ -369,6 +372,16 @@ test('conflict notices name at most three entries and keep valid selections', as
     assert.equal(b.app('ui.sel'), 'n1'); assert.equal(b.app('ui.wl'), 'w1');
     a.app(`profile.levels = []; profile.wishlists = []; save();`); await a.app('pushCloud()'); await b.app('pullCloud()');
     assert.equal(b.app('ui.sel'), null); assert.equal(b.app('ui.wl'), null);
+});
+
+test('Home status and retry controls update when the separate cloud chip is absent', async () => {
+    const page = await ready();
+    page.nodes['[data-cloud-status]'] = { textContent: '' };
+    page.nodes['[data-cloud-retry]'] = { innerHTML: '' };
+    page.app("cloudSync.status = 'offline'; cloudSync.pending = 1; renderCloudStatus()");
+    assert.equal(page.nodes['[data-cloud-status]'].textContent, 'Offline · 1 change waiting');
+    assert.match(page.nodes['[data-cloud-retry]'].innerHTML, /data-act=csync/);
+    assert.equal(page.nodes['#cloudst'], undefined);
 });
 
 test('saves debounce for one second and update status without a full render', async () => {
