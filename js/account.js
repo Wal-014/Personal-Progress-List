@@ -170,7 +170,7 @@ function cleanAccountUrl() {
 
 /** Restores a saved session or handles an auth link; otherwise leaves the client unloaded. */
 async function initAccount() {
-    if (accountInitialized)
+    if (accountInitialized || !ACCOUNTS)
         return;
     accountInitialized = true;
     try {

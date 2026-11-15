@@ -56,3 +56,5 @@ const SUPABASE_URL = 'https://mjgklvdnuhbnyucytaji.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_k3LU7r-8Ut5FGczl0vTkGw_N8DDBFkI'; // gitleaks:allow
 // Email and password sign-in wait for an SMTP provider; until then the hosted project has its email provider turned off
 const EMAIL_AUTH = false;
+// The dev site has no database of its own, so its build turns accounts off (scripts/build-site.js)
+const ACCOUNTS = true;

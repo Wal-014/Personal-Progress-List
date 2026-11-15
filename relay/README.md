@@ -1,6 +1,6 @@
 # Level relay
 
-A Cloudflare Worker that lets the app search [GDHistory](https://history.geometrydash.eu/api/). GDHistory answers requests from servers, but sends no CORS headers, so a page on `wal-014.github.io` cannot read it directly. The relay adds those headers for the site's origin only and returns levels in the app's own shape. Why the app uses this instead of GDBrowser is in [#159](https://github.com/Wal-014/Personal-Progress-List/issues/159).
+A Cloudflare Worker that lets the app search [GDHistory](https://history.geometrydash.eu/api/). GDHistory answers requests from servers, but sends no CORS headers, so a page on `wal-014.github.io` cannot read it directly. The relay adds those headers only for the site's origins, production and the dev site (`ALLOWED_ORIGINS` in `wrangler.jsonc`), and returns levels in the app's own shape. Why the app uses this instead of GDBrowser is in [#159](https://github.com/Wal-014/Personal-Progress-List/issues/159).
 
 It runs on the site owner's Cloudflare account, on the free plan, at `https://ppl-level-relay.waquermaster.workers.dev`.
 

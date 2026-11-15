@@ -1,0 +1,10 @@
+{
+	// The dev site: CI deploys it from the development branch with `npm run site -- development` (README.md)
+	"name": "ppl-dev",
+	// The site owner's account; an account ID is not a secret
+	"account_id": "ed48c5f705877f5eccbecf8f6e5837df",
+	"compatibility_date": "2026-11-06",
+	"assets": { "directory": "../_site" },
+	"workers_dev": true,
+	"preview_urls": false
+}

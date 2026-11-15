@@ -273,7 +273,7 @@ Accounts are available to every visitor. The old `beta` query parameter is remov
 - `js/config.js` holds the project URL and the publishable key (`sb_publishable_…`). Both are public by design; RLS is what protects the data. Secret and service-role keys are never used by the app or stored in the repository.
 - `index.html` allows `connect-src https://mjgklvdnuhbnyucytaji.supabase.co`.
 - `supabase/config.toml` is the source of truth for the auth settings (site URL, redirect allow list, password policy, email confirmation, email templates, rate limits). It is applied to the hosted project with `npx supabase@2.122.0 config push --project-ref mjgklvdnuhbnyucytaji`, which needs a personal access token in `SUPABASE_ACCESS_TOKEN`.
-- `supabase/migrations/` holds the schema. Each migration is applied to the hosted project once it is reviewed and its tests pass, and the file keeps the version the hosted project recorded.
+- `supabase/migrations/` holds the schema. The `migrate-prod` CI job applies pending migrations to the hosted project with `supabase db push` when they reach `main`, before the site deploys; the files written before that keep the versions the hosted project recorded when they were applied by hand. There is no dev database: the dev site built from `development` has accounts turned off, so a migration is checked by the `db` job and on the local stack before its release.
 
 ## Development
 
@@ -322,7 +322,7 @@ The local stack runs an older Auth version than the hosted project, so a local r
 
 Accounts reached everyone in #198 by removing the beta switch, and every device keeps its local profiles as backups.
 - **The app:** reverting that pull request brings back the switch and the old profile menu; cloud data stays where it is, and beta users keep syncing.
-- **A schema change:** write a new migration that undoes it, test it on the local stack and apply it like any other. Migrations already applied are never edited.
+- **A schema change:** write a new migration that undoes it, test it on the local stack and release it like any other. Migrations already applied are never edited.
 - **Lost or corrupted data:** restore the latest good backup as above.
 
 ### Monitoring

@@ -2,6 +2,8 @@ version: 2
 updates:
   - package-ecosystem: npm
     directory: /
+    # Updates are checked on the dev site before a release reaches production
+    target-branch: development
     schedule:
       interval: weekly
     cooldown:
@@ -9,6 +11,7 @@ updates:
 
   - package-ecosystem: npm
     directory: /relay
+    target-branch: development
     schedule:
       interval: weekly
     cooldown:
@@ -16,6 +19,7 @@ updates:
 
   - package-ecosystem: github-actions
     directory: /
+    target-branch: development
     schedule:
       interval: weekly
     cooldown:
