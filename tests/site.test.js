@@ -53,8 +53,11 @@ test('devPage fails when Supabase is not in connect-src', () => {
     assert.throws(() => devPage(`<meta content="connect-src 'self'">`, SUPABASE_ORIGIN), /connect-src/);
 });
 
-test('dev headers keep every page out of search results', () => {
+test('dev headers keep every page out of search results, frames and plain HTTP', () => {
     const [path, ...headers] = DEV_HEADERS.trim().split('\n');
     assert.equal(path, '/*');
-    assert.deepEqual(headers.map(line => line.trim()), ['X-Robots-Tag: noindex', 'X-Content-Type-Options: nosniff', 'Referrer-Policy: strict-origin-when-cross-origin']);
+    assert.deepEqual(headers.map(line => line.trim()), [
+        'X-Robots-Tag: noindex', 'X-Content-Type-Options: nosniff', 'Referrer-Policy: strict-origin-when-cross-origin',
+        "Content-Security-Policy: frame-ancestors 'none'", 'Strict-Transport-Security: max-age=31536000'
+    ]);
 });

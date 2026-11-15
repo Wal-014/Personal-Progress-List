@@ -14,11 +14,14 @@ export const SITE_FILES = ['index.html', 'manifest.json', 'sw.js', 'favicon.png'
 
 const ACCOUNTS_ON = 'const ACCOUNTS = true;';
 
-// Cloudflare applies this file to the dev Worker's responses
+// Cloudflare applies this file to the dev Worker's responses; this header policy only adds
+// frame-ancestors, which a <meta> policy cannot set, and leaves the rest to the page's own policy
 export const DEV_HEADERS = `/*
   X-Robots-Tag: noindex
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
+  Content-Security-Policy: frame-ancestors 'none'
+  Strict-Transport-Security: max-age=31536000
 `;
 
 /** Each rewrite throws when its target is gone, so a moved line cannot ship a dev site with accounts on. */
