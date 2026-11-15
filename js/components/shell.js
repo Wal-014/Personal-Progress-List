@@ -5,13 +5,35 @@
 const screenTitle = () => ui.tab == 'wish' ? t('wish') : t(ui.tab);
 
 function topBar() {
-    const A = alerts().length, onHome = ui.tab == 'home' || ui.tab == 'wish' && !currentWishlist();
+    const A = alerts().length, onHome = ui.tab == 'home';
     const left = !canEdit()
         ? `<button class="sq pri" data-act=myprogress aria-label="${t('publicBack')}">${ICONS.back}</button><h1>${publicUsernameValid ? '@' + escapeHtml(viewing.username) : 'Personal Ranked Progress'}</h1>`
         : onHome
         ? `<span class=logo data-act=tab data-v=home role=button tabindex=0 aria-label="${t('home')}">${ICONS.app}</span><h1>Personal Ranked Progress</h1>`
         : `<button class="sq pri" data-act=tab data-v=home aria-label="${t('back2')}">${ICONS.back}</button><h1>${escapeHtml(screenTitle())}</h1>`;
     return `<header class="top${ui.tab == 'home' ? ' home-top' : ''}">${left}<span class=sp></span><span id=syncst class=syncst role=status>${syncStatus()}</span>${canEdit() && cloudUser ? cloudStatus() : ''}${accountButton()}${canEdit() ? `<button class=sq data-act=bell aria-label="${t('bell')}${A ? ` (${A})` : ''}">${ICONS.bell}${A ? `<b class=bdg aria-hidden=true>${A}</b>` : ''}</button>` : ''}<button class=sq data-act=pause aria-label="${t('pause')}">${ICONS.pause}</button></header>`;
+}
+
+function homeHeader() {
+    return `<header class=hhead><div class=hbrand><span class=hbrand-frame>${ICONS.app}</span><h1>Personal Ranked<br>Progress</h1></div></header>`;
+}
+
+function homeNavigation() {
+    const navItem = (kind, icon, label) => `<button data-act=tab data-v=${kind}${kind == 'home' ? ' aria-current=page' : ''}>${icon}<span>${label}</span></button>`;
+    const choices = ['classic', 'platform'].map(kind => `<button class=pma data-act=tab data-v=${kind}>${ICONS[kind]}<span>${t(kind)}</span><b>${profile.levels.filter(level => level.kind == kind).length.toLocaleString(ui.lang)}</b></button>`).join('');
+    return `<nav class=hnav aria-label="${t('nav')}">${navItem('home', ICONS.home, t('home'))}<button popovertarget=hlists>${ICONS.classic}<span>${t(canEdit() ? 'lists' : 'publicLists')}</span></button><div id=hlists class=pmenu popover>${choices}</div>${navItem('wish', ICONS.wish, t('wish'))}${navItem('stats', ICONS.stats, t('stats'))}<button class=hmore data-act=pause>${ICONS.more}<span>${t('more')}</span></button></nav>`;
+}
+
+function homeUtilityButton(action, icon, label, extra = '') {
+    return `<button class="sq hu-${action}" data-act=${action} aria-label="${label}" title="${label}">${icon}${extra}</button>`;
+}
+
+function homeUtilities() {
+    const pause = homeUtilityButton('pause', ICONS.pause, t('pause'));
+    if (!canEdit())
+        return `<div class=hutils><button class=hback data-act=myprogress>${ICONS.back}<span>${t('publicBack')}</span></button>${pause}</div>`;
+    const count = alerts().length;
+    return `<div class=hutils><span id=syncst class=syncst role=status>${syncStatus()}</span><div class=hutility-buttons>${homeUtilityButton('bell', ICONS.bell, t('bell') + (count ? ` (${count})` : ''), count ? `<b class=bdg aria-hidden=true>${count}</b>` : '')}${homeUtilityButton('tags', ICONS.tag, t('tags'))}${pause}</div>${profileSwitcher()}</div>`;
 }
 
 const syncStatus = () => ui.sync ? `${ICONS.sync}<span>${t('syncing')}</span>` : '';

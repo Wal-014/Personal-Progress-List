@@ -17,8 +17,11 @@ function render() {
     const focused = controlSelector(document.activeElement);
     const listScrollTop = ui.renderedTab == ui.tab ? qs('#lw')?.scrollTop : 0, isLevelList = isListTab();
     ui.renderedTab = ui.tab;
-    const screen = !canEdit() && !viewing.identity ? publicViewScreen() : ui.tab == 'wish' && currentWishlist() ? wishView() : isLevelList ? `<div class=split><div class=lcol>${lcol()}</div><div class="rcol ${ui.sel ? 'has' : ''}">${panel()}</div></div>` : ui.tab == 'stats' ? stats() : home();
-    qs('#app').innerHTML = `${topBar()}<main class="${isLevelList ? 'wide' : ''}">${screen}</main>${navBars(isLevelList)}`;
+    const onHome = ui.tab == 'home' && (canEdit() || viewing.identity);
+    const screen = !canEdit() && !viewing.identity ? publicViewScreen() : ui.tab == 'wish' ? currentWishlist() ? wishView() : wishlistsIndex() : isLevelList ? `<div class=split><div class=lcol>${lcol()}</div><div class="rcol ${ui.sel ? 'has' : ''}">${panel()}</div></div>` : ui.tab == 'stats' ? stats() : home();
+    qs('#app').innerHTML = onHome
+        ? `<div class=hl>${homeHeader()}<aside class=hside>${homeNavigation()}${homeUtilities()}</aside><main class=home>${screen}</main></div>`
+        : `${topBar()}<main class="${isLevelList ? 'wide' : ''}">${screen}</main>${navBars(isLevelList)}`;
     document.documentElement.dataset.t = ui.theme;
     document.documentElement.lang = ui.lang;
     if (listScrollTop && qs('#lw'))

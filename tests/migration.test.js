@@ -16,7 +16,7 @@ function device() {
         addEventListener: (name, work) => { if (name === 'close') closeListeners.push(work); },
         showModal() {}, close() { closed++; for (const work of closeListeners.splice(0)) work(); }, remove() {} };
     const document = { body: {}, querySelector: selector => nodes[selector] || null, addEventListener() {} };
-    const env = loadScripts(['data/demo-data.js', 'js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/account.js', 'js/cloud-model.js', ...syncScripts, 'js/components/dialogs.js', 'js/components/local-data.js', 'js/components/home.js', 'js/components/shell.js', 'js/events.js'], {
+    const env = loadScripts(['data/demo-data.js', 'js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/account.js', 'js/cloud-model.js', ...syncScripts, 'js/components/dialogs.js', 'js/components/local-data.js', 'js/components/home.js', 'js/components/shell.js', 'js/components/account-ui.js', 'js/events.js'], {
         document, window: { addEventListener() {} }, localStorage: storage,
         queueMicrotask: task => tasks.push(task), setTimeout: task => tasks.push(task), clearTimeout() {},
         navigator: { onLine: true }, render() {}, matchWithAredl() {}, renderTagSuggestions() {}, URL, Blob
@@ -162,7 +162,9 @@ for (const signed of [true, false]) test('home and menus expose accounts, signed
     assert.ok(card.includes('data-act=localdata'));
     assert.equal(card.includes('data-act=asignin'), !signed);
     assert.equal(card.includes('cloud-account'), signed);
-    assert.doesNotMatch(card, /pmenu|data-act=(?:pnew|psel|pedit|pdelid)/);
+    assert.doesNotMatch(card, /data-act=(?:pnew|psel|pedit|pdelid)/);
+    assert.equal(card.includes('popovertarget=amenu'), signed);
+    assert.equal((card.match(/id=amenu/g) || []).length, signed ? 1 : 0);
     assert.doesNotMatch(d.app('paletteButtons()'), /data-act=exp/);
     d.context.aredlLine = () => '';
     assert.doesNotMatch(d.app('pauseUI()'), /data-act=imp/);

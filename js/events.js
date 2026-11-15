@@ -455,13 +455,32 @@ document.body.onchange = e => {
         input.value = '';
     }
 };
-// Popovers open in the top layer, away from their button; place each menu under its own button, inside the viewport
-document.addEventListener('beforetoggle', e => {
-    if (e.target.id != 'amenu' || e.newState != 'open')
+function popoverPlacement(rect, viewport, menuHeight) {
+    const width = Math.min(360, viewport.width - 24);
+    const below = Math.max(0, viewport.height - rect.bottom - 18), above = Math.max(0, rect.top - 18);
+    const useBelow = menuHeight <= below || below >= above, maxHeight = useBelow ? below : above;
+    const top = useBelow ? rect.bottom + 6 : rect.top - 6 - Math.min(menuHeight, maxHeight);
+    return { width: width + 'px', left: Math.max(12, Math.min(rect.left, viewport.width - width - 12)) + 'px',
+        top: Math.max(12, Math.min(top, viewport.height - Math.min(menuHeight, maxHeight) - 12)) + 'px', maxHeight: maxHeight + 'px' };
+}
+
+// Popovers open in the top layer, away from their buttons, so place each menu next to its own button inside the viewport.
+function placePopover(event) {
+    const menu = event.target;
+    if (!menu.matches('.pmenu') || event.newState != 'open')
         return;
-    const r = qs(`[popovertarget=${e.target.id}]`).getBoundingClientRect(), w = Math.min(360, innerWidth - 24);
-    Object.assign(e.target.style, { width: w + 'px', top: r.bottom + 6 + 'px', left: Math.max(12, Math.min(r.left, innerWidth - w - 12)) + 'px', maxHeight: Math.max(200, innerHeight - r.bottom - 18) + 'px' });
-}, true);
+    const button = event.source || qs(`[popovertarget="${CSS.escape(menu.id)}"]`);
+    if (!button)
+        return;
+    const rect = button.getBoundingClientRect(), viewport = { width: innerWidth, height: innerHeight };
+    // Hidden popovers have no dimensions; measure at the final width before choosing a side.
+    Object.assign(menu.style, { width: popoverPlacement(rect, viewport, 0).width, maxHeight: 'none', display: 'flex' });
+    const height = menu.offsetHeight;
+    menu.style.display = '';
+    Object.assign(menu.style, popoverPlacement(rect, viewport, height));
+}
+
+document.addEventListener('beforetoggle', placePopover, true);
 
 let recoveryDialogOpened = false;
 
