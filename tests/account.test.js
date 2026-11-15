@@ -1,12 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadScripts } from './load-scripts.js';
+import { devConfig } from '../scripts/build-site.js';
 
 const user = { id: 'user-a', user_metadata: { display_name: ' Player A ' } };
 const ownProfile = { id: 'user-a', display_name: 'Player A', username: null, is_public: false };
 const plain = value => JSON.parse(JSON.stringify(value));
 
-function accounts({ url = 'https://example.com/app/?keep=yes#section', saved = false } = {}) {
+function accounts({ url = 'https://example.com/app/?keep=yes#section', saved = false, transform } = {}) {
     const calls = [], timers = [], alerts = [], toasts = [], dialogs = [], renders = [], scripts = [];
     const answers = new Map();
     const location = new URL(url);
@@ -63,7 +64,7 @@ function accounts({ url = 'https://example.com/app/?keep=yes#section', saved = f
         showAlert(text) { alerts.push(text); },
         showToast(text) { toasts.push(text); },
         openAuthDialog(mode, note) { dialogs.push([mode, note]); }
-    });
+    }, { transform });
     return {
         ...loaded, calls, timers, alerts, toasts, dialogs, renders, scripts, location, localStorage, respond,
         state: () => plain(loaded.app('account')),
@@ -87,6 +88,14 @@ for (const beta of ['', '?beta=cloud', '?beta=off']) test('accounts are availabl
     assert.equal(page.renders.length, 1);
     assert.equal(page.localStorage.gbeta, undefined);
     assert.equal(page.location.search, '');
+});
+
+test('the dev build leaves accounts off even with a saved session and an auth link', async () => {
+    const page = accounts({ url: 'https://example.com/app/?code=secret', saved: true, transform: { 'js/config.js': devConfig } });
+    await page.app('initAccount()');
+    assert.equal(page.state().status, 'off');
+    assert.equal(page.scripts.length, 0);
+    assert.equal(page.renders.length, 0);
 });
 
 test('startup removes only the beta query and leaves auth links available to the client', async () => {
