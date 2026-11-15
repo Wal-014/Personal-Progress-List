@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, development]
   workflow_dispatch:
   # Daily deploy so the site's copy of the community sheet stays current
   schedule:
@@ -51,8 +51,31 @@ jobs:
         env:
           SUPABASE_CLI: supabase
 
-  deploy:
+  # Database changes reach production only from main, before the site that may depend on them
+  migrate-prod:
     needs: [ci, db]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
+        with:
+          version: 2.122.0
+      - name: Apply pending migrations
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          source scripts/backup-db-url.sh
+          prepare_backup_db_url
+          printf '::add-mask::%s\n' "${BACKUP_DB_PASSWORD//%/%25}"
+          printf '::add-mask::%s\n' "${SUPABASE_DB_URL//%/%25}"
+          supabase db push --db-url "$SUPABASE_DB_URL" --yes
+
+  deploy:
+    needs: [ci, db, migrate-prod]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
@@ -87,3 +110,35 @@ jobs:
           path: _site
       - id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+  # The dev site has no database, so development deploys only the site (scripts/build-site.js)
+  deploy-dev:
+    needs: [ci, db]
+    if: github.ref == 'refs/heads/development' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: development
+      url: https://ppl-dev.waquermaster.workers.dev/
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: relay/package-lock.json
+      - name: Build data/levels.json
+        run: |
+          if ! npm run levels; then
+            echo "::warning::Community sheet unavailable; deploying production's data/levels.json"
+            curl -fsS --retry 3 https://wal-014.github.io/Personal-Progress-List/data/levels.json -o data/levels.json
+          fi
+      - run: npm run site -- development
+      # Wrangler comes from the relay's lockfile; workerd's install script is needed only by `wrangler dev`
+      - run: npm ci --ignore-scripts
+        working-directory: relay
+      - run: relay/node_modules/.bin/wrangler deploy --config dev-site/wrangler.jsonc
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          WRANGLER_SEND_METRICS: 'false'
