@@ -11,18 +11,18 @@ function homeListCard(kind) {
 
 function homeWishlists() {
     const wishes = orderedWishlists(), shown = wishes.slice(0, 3);
-    return `<section class=hwishes><div class=hsection-head><h2>${t('wish')}</h2><button class=htext data-act=tab data-v=wish>${t('viewWishlists')}${wishes.length > shown.length ? ` (${wishes.length.toLocaleString(ui.lang)})` : ''}<span aria-hidden=true>›</span></button></div>
+    return `<section class=hwishes><div class=hsection-head><h2>${ICONS.navWish}${t('wish')}</h2><button class=htext data-act=tab data-v=wish>${t('viewWishlists')}${wishes.length > shown.length ? ` (${wishes.length.toLocaleString(ui.lang)})` : ''}<span aria-hidden=true>›</span></button></div>
 <div class=hwish-rows>${shown.map(wishlistTrigger).join('')}${wishes.length ? '' : `<p class=by>${t('noWL')}</p>`}${canEdit() && wishes.length < 3 ? wishlistSlot() : ''}</div></section>`;
 }
 
 function homeStats() {
     const summary = statsSummary();
     const metric = (icon, value, key) => `<div class=hmetric>${icon}<div><b>${value.toLocaleString(ui.lang)}</b><span>${t(key)}</span></div></div>`;
-    return `<section class=hstats><div class=hsection-head><h2>${t('stats')}</h2></div><div class=hstats-surface>${metric(ICONS.metricLevels, summary.levelCount, 'lv')}${metric(ICONS.metricAttempts, summary.attemptTotal, 'attT')}${metric(ICONS.metricHours, summary.playHours, 'hrs')}<button class=htext data-act=tab data-v=stats>${t('viewStats')}<span aria-hidden=true>→</span></button></div></section>`;
+    return `<section class=hstats><div class=hsection-head><h2>${ICONS.navStats}${t('stats')}</h2></div><div class=hstats-surface>${metric(ICONS.metricLevels, summary.levelCount, 'lv')}${metric(ICONS.metricAttempts, summary.attemptTotal, 'attT')}${metric(ICONS.metricHours, summary.playHours, 'hrs')}<button class=htext data-act=tab data-v=stats>${t('viewStats')}<span aria-hidden=true>→</span></button></div></section>`;
 }
 
 function home() {
-    return `<div class=hcontent><section class=hlists><div class=hsection-head><h2>${t(canEdit() ? 'lists' : 'publicLists')}</h2>${canEdit() ? `<button class=hadd data-act=add><span aria-hidden=true>+</span>${t('palAdd')}</button>` : ''}</div><div class=hcards>${homeListCard('classic')}${homeListCard('platform')}</div></section><div class=hpreviews>${homeWishlists()}${homeStats()}</div></div>`;
+    return `<div class=hcontent><section class=hlists><div class=hsection-head><h2>${ICONS.navLists}${t(canEdit() ? 'lists' : 'publicLists')}</h2>${canEdit() ? `<button class=hadd data-act=add>${ICONS.actionAdd}${t('palAdd')}</button>` : ''}</div><div class=hcards>${homeListCard('classic')}${homeListCard('platform')}</div></section><div class=hpreviews>${homeWishlists()}${homeStats()}</div></div>`;
 }
 
 function profileSwitcher() {
@@ -30,10 +30,10 @@ function profileSwitcher() {
         return viewing.identity ? publicIdentityCard() : '';
     const signedIn = account.status == 'signed-in' && account.profile, own = signedIn ? account.profile : store.profs[store.cur];
     const menuId = signedIn ? 'amenu' : 'pmenu';
-    const pill = `<button id=profile-pill class=profile-pill popovertarget=${menuId}>${cubeIcon(own.color, signedIn ? own.secondary_color : own.secondaryColor)}<span>${escapeHtml(signedIn ? own.display_name : own.name)}</span>${ICONS.chevronDown}</button>`;
+    const pill = `<button id=profile-pill class=profile-pill popovertarget=${menuId}>${signedIn ? cubeIcon(own.color, own.secondary_color) : catalogCube(own.cubeId, own.color, own.secondaryColor)}<span>${escapeHtml(signedIn ? own.display_name : own.name)}</span>${ICONS.chevronDown}</button>`;
     if (signedIn)
         return pill + accountMenu();
     const row = (act, key, extra = '') => `<button class=pma data-act=${act} ${extra}>${t(key)}</button>`;
-    const choices = Object.entries(store.profs).map(([id, p]) => `<div class=profile-choice><button class=pma data-act=localuse data-id="${escapeHtml(id)}"${id == store.cur ? ' aria-pressed=true' : ''}>${cubeIcon(p.color, p.secondaryColor)}<span>${escapeHtml(p.name)}</span></button><button class=pma data-act=localdelete data-id="${escapeHtml(id)}" aria-label="${t('localDelete')}: ${escapeHtml(p.name)}"${id == store.cur ? ' disabled' : ''}>${ICONS.del}</button></div>`).join('');
-    return `${pill}<div id=pmenu class=pmenu popover>${choices}${row('pnew', 'newProfile')}${row('pedit', 'pedit')}${row('localbackup', 'localBackup', `data-id="${escapeHtml(store.cur)}"`)}${row('localimport', 'localImport')}${row('localdata', 'localData')}${row('asignin', account.status == 'loading' ? 'accountLoading' : 'accountSignIn', account.status == 'loading' ? 'disabled aria-busy=true' : '')}${row('tags', 'tagsT')}<p class=by>${t('localGuestHint')}</p></div>`;
+    const choices = Object.entries(store.profs).map(([id, p]) => `<div class=profile-choice><button class=pma data-act=localuse data-id="${escapeHtml(id)}"${id == store.cur ? ' aria-pressed=true' : ''}>${catalogCube(p.cubeId, p.color, p.secondaryColor)}<span>${escapeHtml(p.name)}</span></button></div>`).join('');
+    return `${pill}<div id=pmenu class=pmenu popover>${choices}${row('pnew', 'newProfile')}${row('pedit', 'pedit')}${row('localbackup', 'localBackup', `data-id="${escapeHtml(store.cur)}"`)}${row('localimport', 'localImport')}${row('localdata', 'localData')}${row('asignin', account.status == 'loading' ? 'accountLoading' : 'accountSignIn', account.status == 'loading' ? 'disabled aria-busy=true' : '')}<p class=by>${t('localGuestHint')}</p></div>`;
 }

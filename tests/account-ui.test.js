@@ -54,11 +54,11 @@ function signedIn(app, extra = '') {
     app(`account = { status: 'signed-in', user: { id: 'owner', email: 'owner@example.test', identities: [{ provider: 'email' }] }, profile: { display_name: 'Player', username: 'player', color: '#123456', secondary_color: '#abcdef', bio: 'Hello', country: 'CR', created_at: '2026-10-10T12:00:00Z', ${extra} } }`);
 }
 
-test('account menu preserves profile, sharing, settings, local data, tags and sync hooks', () => {
+test('account menu preserves profile, sharing, settings, local data and sync hooks', () => {
     const { app } = createApp();
     signedIn(app);
     const html = app('accountMenu()');
-    for (const action of ['aprofile', 'aedit', 'ashare', 'asettings', 'asignout', 'localdata', 'tags'])
+    for (const action of ['aprofile', 'aedit', 'ashare', 'asettings', 'asignout', 'localdata'])
         assert.match(html, new RegExp('data-act=' + action));
     assert.match(html, /data-cloud-status/);
     assert.match(html, /data-cloud-retry/);

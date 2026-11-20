@@ -147,12 +147,11 @@ function matchWithAredl(levels) {
     });
 }
 
-/** Downloads AREDL positions and fills missing creators, difficulties and rating tiers of saved levels and wishlist items from the sheet, then asks GDHistory for ratings still missing. Only a manual update reports a failure. */
-async function syncWithAredl(manual) {
+/** Downloads AREDL positions and fills missing creators, difficulties and rating tiers of saved levels and wishlist items from the sheet, then asks GDHistory for ratings still missing. */
+async function syncWithAredl() {
     if (ui.sync)
         return;
     ui.sync = 1;
-    renderSyncStatus();
     const [aredl, gdl] = await Promise.allSettled([loadAredlList(true), loadDemonlist(true)]);
     try {
         if (aredl.status == 'rejected' || !aredl.value)
@@ -165,21 +164,17 @@ async function syncWithAredl(manual) {
         matchWithAredl(profile.levels);
         localStorage.gas = Date.now();
     }
-    catch (e) {
-        if (manual)
-            showAlert('AREDL: ' + e.message);
+    catch {
+        // Keep cached positions and leave the timestamp stale for the next retry.
     }
     if (gdl.status == 'fulfilled')
         matchWithDemonlist(profile.levels);
-    else if (manual && aredl.status == 'fulfilled' && aredl.value)
-        showAlert('GDL: ' + gdl.reason.message);
     if (gdl.status == 'fulfilled' || (aredl.status == 'fulfilled' && aredl.value))
         save();
     ui.sync = 0;
     // Redrawing would wipe a form, dialog or dropdown the user has open; the new data shows on the next render
     if (!qs('form, dialog[open], .ms[open]'))
         render();
-    renderSyncStatus();
 }
 
 function autoSyncIfStale() {

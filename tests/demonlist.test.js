@@ -52,35 +52,33 @@ for (const result of [{ ok: false }, { ok: true, json: async () => ({ data: { le
 
 for (const aredlFails of [false, true])
     for (const gdlFails of [false, true])
-        for (const manual of [false, true])
-            test(`sync independence: AREDL failure=${aredlFails}, GDL failure=${gdlFails}, manual=${manual}`, async () => {
-                const levels = [{ name: 'Listed', levelId: '42', gdl: 2, ar: { s: 'r', p: 8 } }, { name: 'Removed', levelId: '43', gdl: 9 }];
-                const alerts = [], requests = [];
-                let saves = 0;
-                const f = fixture({ profile: { levels, wishlists: [] }, document: { querySelector: () => ({}) },
-                    renderSyncStatus() {}, save() { saves++; }, showAlert: message => alerts.push(message),
-                    loadSheetLevels: async () => {}, fillFromSheet() {}, fillRatings: async () => {},
-                    fetch: async url => {
-                        requests.push(url);
-                        if (url.includes('demonlist.org')) {
-                            if (gdlFails) throw Error('offline');
-                            return response();
-                        }
-                        if (aredlFails) throw Error('offline');
-                        return { json: async () => url.includes('arepl/') ? [] : [{ level_id: 42, name: 'Listed', position: 125 }] };
+        test(`sync independence: AREDL failure=${aredlFails}, GDL failure=${gdlFails}`, async () => {
+            const levels = [{ name: 'Listed', levelId: '42', gdl: 2, ar: { s: 'r', p: 8 } }, { name: 'Removed', levelId: '43', gdl: 9 }];
+            const alerts = [], requests = [];
+            let saves = 0;
+            const f = fixture({ profile: { levels, wishlists: [] }, document: { querySelector: () => ({}) },
+                renderSyncStatus() {}, save() { saves++; }, showAlert: message => alerts.push(message),
+                loadSheetLevels: async () => {}, fillFromSheet() {}, fillRatings: async () => {},
+                fetch: async url => {
+                    requests.push(url);
+                    if (url.includes('demonlist.org')) {
+                        if (gdlFails) throw Error('offline');
+                        return response();
                     }
-                });
-                await f.app('syncWithAredl')(manual);
-                assert.equal(requests.filter(url => url.includes('demonlist.org')).length, 1);
-                assert.equal(levels[0].ar.p, aredlFails ? 8 : 125);
-                assert.deepEqual(levels.map(l => l.gdl), gdlFails ? [2, 9] : [387, null]);
-                assert.equal(saves, aredlFails && gdlFails ? 0 : 1);
-                // Only an AREDL success marks the sync as done, so a failed AREDL download is retried on the next visit
-                assert.equal(f.app('localStorage.gas') != null, !aredlFails);
-                assert.equal(f.app('ui.sync'), 0);
-                assert.equal(alerts.length, manual && (aredlFails || gdlFails) ? 1 : 0);
-                if (alerts.length) assert.match(alerts[0], aredlFails ? /^AREDL:/ : /^GDL:/);
+                    if (aredlFails) throw Error('offline');
+                    return { json: async () => url.includes('arepl/') ? [] : [{ level_id: 42, name: 'Listed', position: 125 }] };
+                }
             });
+            await f.app('syncWithAredl')();
+            assert.equal(requests.filter(url => url.includes('demonlist.org')).length, 1);
+            assert.equal(levels[0].ar.p, aredlFails ? 8 : 125);
+            assert.deepEqual(levels.map(l => l.gdl), gdlFails ? [2, 9] : [387, null]);
+            assert.equal(saves, aredlFails && gdlFails ? 0 : 1);
+            // Only an AREDL success marks the sync as done, so a failed AREDL download is retried on the next visit
+            assert.equal(f.app('localStorage.gas') != null, !aredlFails);
+            assert.equal(f.app('ui.sync'), 0);
+            assert.equal(alerts.length, 0);
+        });
 
 function formFixture() {
     const nodes = Object.fromEntries(['#wn', '#lf-face', '#lf-diffT', '#gdq', 'label[for=fm-ap]', '#fm-gdl-field', '#fm-gdl', '#fm-pos-hint'].map(key => [key, { value: '#7', setCustomValidity() {} }]));

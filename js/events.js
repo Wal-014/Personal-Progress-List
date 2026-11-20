@@ -117,6 +117,11 @@ const ACTIONS = {
         else
             render();
     },
+    listchoices(button) {
+        ui.listsExpanded = button.getAttribute('aria-expanded') != 'true';
+        button.setAttribute('aria-expanded', String(ui.listsExpanded));
+        qs('#hlists').inert = !ui.listsExpanded;
+    },
     zi: () => zoomTimeline(1.5),
     zo: () => zoomTimeline(1 / 1.5),
     'ranking-mode': a => setRankingMode(a.dataset.v),
@@ -126,6 +131,10 @@ const ACTIONS = {
     'compare-toggle': () => toggleComparison(),
     'compare-close': () => closeComparison(),
     'compare-pick': (a, id) => pickComparisonLevel(id),
+    'compare-option': (button, id) => {
+        selectComparisonSlot(+button.dataset.v, id);
+        qs('[data-act=compare-clear][data-v="' + button.dataset.v + '"]')?.focus({ preventScroll: true });
+    },
     'compare-clear': a => clearComparisonSlot(+a.dataset.v),
     'timeline-metric': a => setTimelineMetric(a.dataset.v),
     add() {
@@ -209,7 +218,6 @@ const ACTIONS = {
         render();
         openModal(tagsUI());
     },
-    sync: () => syncWithAredl(true),
     wnew() {
         askText(t('wname'), '').then(n => {
             if (!n)
@@ -285,7 +293,7 @@ const ACTIONS = {
 };
 
 function downloadLocalBackup(id) {
-    const pr = store.profs[id], u = URL.createObjectURL(new Blob([JSON.stringify({ ...pr.data, profileName: pr.name, profileColor: pr.color, profileSecondaryColor: pr.secondaryColor })], { type: 'application/json' })), x = document.createElement('a');
+    const pr = store.profs[id], u = URL.createObjectURL(new Blob([JSON.stringify({ ...pr.data, profileName: pr.name, profileCubeId: pr.cubeId, profileColor: pr.color, profileSecondaryColor: pr.secondaryColor })], { type: 'application/json' })), x = document.createElement('a');
     x.href = u;
     // Only characters that file systems reject are replaced, so accents and non-Latin names survive
     x.download = (pr.name.trim().replace(/[/:*?"<>|\s]+/g, '-') || 'profile') + '.json';
@@ -363,14 +371,15 @@ async function importProfile(file) {
     }
     if (!isValidProfileData(data))
         return showAlert(t('badFile'));
-    const selected = await askProfile(t('impP'), { name: data.profileName || file.name.replace(/\.json$/, ''), color: isHexColor(data.profileColor) ? data.profileColor : nextProfileColor(), secondaryColor: isHexColor(data.profileSecondaryColor) ? data.profileSecondaryColor : DEFAULT_SECONDARY_COLOR });
+    const selected = await askProfile(t('impP'), { ...(validCubeId(data.profileCubeId) ? { cubeId: data.profileCubeId } : {}), name: data.profileName || file.name.replace(/\.json$/, ''), color: isHexColor(data.profileColor) ? data.profileColor : nextProfileColor(), secondaryColor: isHexColor(data.profileSecondaryColor) ? data.profileSecondaryColor : DEFAULT_SECONDARY_COLOR });
     if (!selected)
         return;
     const id = newId('p');
+    delete data.profileCubeId;
     delete data.profileName;
     delete data.profileColor;
     delete data.profileSecondaryColor;
-    store.profs[id] = { name: selected.name, color: selected.color, secondaryColor: selected.secondaryColor, data };
+    store.profs[id] = { ...selected, data };
     if (!cloudUser) {
         activateProfile(id);
         ui.sel = ui.wl = null;
@@ -399,7 +408,7 @@ document.body.onclick = e => {
     }
     if (a) {
         const k = a.dataset.act;
-        if (ui.drawer && a.closest('#shell-sidebar'))
+        if (ui.drawer && k != 'listchoices' && a.closest('#shell-sidebar'))
             setDrawer(false);
         if (a.closest('.pause') && ['wnew', 'tags', 'legal'].includes(k))
             closeModal();
@@ -446,8 +455,10 @@ document.body.oninput = e => {
         return deathInputChanged(e.target);
     if (['pf', 'pwf'].includes(e.target.form?.id))
         return accountFormInput(e.target);
-    if (e.target.dataset.compareSlot != null)
+    if (e.target.dataset.compareSlot != null) {
+        e.target.nextElementSibling.hidden = false;
         return setComparisonSearch(e.target);
+    }
     if (['fm', 'wf'].includes(e.target.form?.id))
         e.target.setCustomValidity(fieldError(e.target.name, e.target.value));
     if (e.target.form?.id == 'fm' && (/^(?:attC|attN|t(?:N|P|PC)_[hms])$/.test(e.target.name)))
@@ -534,6 +545,22 @@ document.addEventListener('focusout', e => durationBlur(e));
 document.onkeydown = e => {
     if (ui.drawer && drawerKeydown(e))
         return;
+    const picker = e.target.closest?.('.compare-picker');
+    if (picker && ['Escape', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
+        const input = picker.querySelector('input'), options = [...picker.querySelectorAll('button')];
+        e.preventDefault();
+        if (e.key == 'Escape') {
+            input.focus();
+            picker.querySelector('.compare-options').hidden = true;
+        }
+        else if (options.length) {
+            picker.querySelector('.compare-options').hidden = false;
+            const index = options.indexOf(e.target);
+            const next = e.key == 'ArrowDown' ? index + 1 : (index < 0 ? options.length : index) - 1;
+            options[(next + options.length) % options.length].focus();
+        }
+        return;
+    }
     if (e.target.dataset.duration)
         return durationKeydown(e);
     if (e.key == 'Enter' && e.target.dataset.deathField != null)

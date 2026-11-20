@@ -52,34 +52,6 @@
   --dropdown-offset: translateY(-6px);
 }
 
-/* Light themes keep unmigrated components on Nebula until their own redesign. */
-[data-theme=porcelain] {
-  --bg1: var(--color-nebula-bg);
-  --bg2: var(--color-nebula-bg);
-  --gridc: color-mix(in srgb, var(--color-nebula-text) 5%, transparent);
-  --obj: var(--color-nebula-surface);
-  --objb: var(--color-nebula-border);
-  --meta: var(--color-nebula-text-muted);
-  --fg: var(--color-nebula-text);
-  --go: var(--color-nebula-success);
-  --go1: var(--color-nebula-success);
-  --go2: var(--color-nebula-surface-elevated);
-  --cy: var(--color-nebula-secondary-light);
-  --ye: var(--color-nebula-warning);
-  --or: var(--color-nebula-mode-classic);
-  --pk: var(--color-nebula-accent);
-  --rd: var(--color-nebula-error);
-  --panel: var(--color-nebula-surface);
-  --panel-in: var(--color-nebula-surface-elevated);
-  --well: var(--color-nebula-bg);
-  --plab: var(--color-nebula-text);
-  --tool: var(--color-nebula-surface);
-  --pal: var(--color-nebula-surface-elevated);
-  --mut: var(--color-nebula-text-muted);
-  --ln: var(--color-nebula-border);
-  --a: var(--color-nebula-accent);
-}
-
 /* ===== Base ===== */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -434,21 +406,16 @@ input:user-invalid, select:user-invalid, textarea:user-invalid {
   }
 }
 
-.chip[data-tag], .ms .msp .chip {
-  transition: box-shadow 150ms ease-out, background-color 150ms ease-out;
+.chip {
+  --candy: color-mix(in oklab, var(--tag-color) 48%, var(--color-text-muted));
+  background: color-mix(in oklab, var(--candy) 14%, var(--color-surface));
+  border: 1px solid var(--candy);
+  color: var(--color-text);
+  border-radius: var(--radius-pill);
+  font: 600 .75rem/1.4 var(--font-ui);
 }
-
-.chip[data-tag]:focus-visible, .ms .msp label:has(:focus-visible) .chip {
-  box-shadow: 0 0 0 1px currentColor, 0 0 10px currentColor;
-  background-color: color-mix(in srgb, currentColor 22%, #000);
-}
-
-/* A tap on a touch screen would leave the hover glow stuck */
-@media (hover: hover) {
-  .chip[data-tag]:hover, .ms .msp label:hover .chip {
-    box-shadow: 0 0 0 1px currentColor, 0 0 10px currentColor;
-    background-color: color-mix(in srgb, currentColor 22%, #000);
-  }
+.chip:is(:hover, :focus-visible) {
+  background: color-mix(in oklab, var(--candy) 26%, var(--color-surface));
 }
 
 /* ===== Edit Object panel: details, forms and dialogs ===== */
@@ -662,7 +629,7 @@ dialog.modal::backdrop {
 }
 
 .lk {
-  color: #fff;
+  color: var(--color-accent);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -797,35 +764,6 @@ dialog.modal::backdrop {
   grid-template-columns: minmax(340px, 1fr) minmax(0, 1.15fr);
   gap: 20px;
   align-items: start;
-}
-
-.list-surface {
-  --bg1: var(--color-bg);
-  --bg2: var(--color-bg);
-  --gridc: var(--color-grid);
-  --obj: var(--color-surface);
-  --objb: var(--color-border);
-  --meta: var(--color-text-muted);
-  --fg: var(--color-text);
-  --go: var(--color-success);
-  --go1: var(--color-success);
-  --go2: var(--color-surface-elevated);
-  --cy: var(--color-secondary-light);
-  --ye: var(--color-warning);
-  --or: var(--color-mode-classic);
-  --pk: var(--color-accent);
-  --rd: var(--color-error);
-  --panel: var(--color-surface);
-  --panel-in: var(--color-surface-elevated);
-  --well: var(--color-bg);
-  --plab: var(--color-text);
-  --tool: var(--color-surface);
-  --pal: var(--color-surface-elevated);
-  --mut: var(--color-text-muted);
-  --ln: var(--color-border);
-  --a: var(--color-accent);
-  color: var(--color-text);
-  font-family: var(--font-ui);
 }
 
 .list-surface .box, .list-surface .ph, .list-surface .lv {
@@ -1037,15 +975,10 @@ dialog.modal::backdrop {
   background: var(--color-surface-elevated);
   box-shadow: 0 6px 18px rgb(0 0 0 / 20%);
 }
-.lh .ms .msp input[type=checkbox] {
-  all: revert;
-  width: 18px;
-  height: 18px;
-  flex: none;
-  accent-color: var(--color-accent);
-}
+
 
 .lh .msp .tag-dot {
+  background: color-mix(in oklab, var(--tag-color) 48%, var(--color-text-muted));
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -1623,51 +1556,6 @@ input.ro {
   cursor: pointer;
 }
 
-.ms .msp input[type=checkbox] {
-  appearance: none;
-  flex: none;
-  width: 20px;
-  height: 20px;
-  /* Keep the box compact when touch inputs get a 44px minimum height. */
-  min-height: 20px;
-  margin: 0;
-  padding: 0;
-  border: 2px solid rgba(255, 255, 255, .55);
-  border-radius: 5px;
-  background: rgba(0, 0, 0, .4);
-  box-shadow: none;
-  cursor: pointer;
-  transition: border-color 150ms ease-out, background-color 150ms ease-out, box-shadow 150ms ease-out;
-}
-
-.ms .msp input[type=checkbox]:checked {
-  border-color: #000;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8l3 3 7-7' fill='none' stroke='%23000' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M3 8l3 3 7-7' fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"), linear-gradient(var(--go1), var(--go2));
-  background-position: center;
-  background-size: 14px 14px, 100% 100%;
-  background-repeat: no-repeat;
-  box-shadow: 0 0 8px color-mix(in srgb, var(--go) 55%, transparent);
-}
-
-@media (hover: hover) {
-  .ms .msp label:hover input[type=checkbox] {
-    border-color: var(--go);
-    box-shadow: 0 0 8px color-mix(in srgb, var(--go) 30%, transparent);
-  }
-}
-
-.ms .msp input[type=checkbox]:focus-visible {
-  outline: 3px solid var(--plab);
-  outline-offset: 2px;
-}
-
-/* Native controls stay recognizable in high-contrast mode. */
-@media (forced-colors: active) {
-  .ms .msp input[type=checkbox] {
-    appearance: auto;
-  }
-}
-
 .ms .msp img {
   flex: none;
   width: 32px;
@@ -1685,7 +1573,7 @@ input.ro {
 
 .gdm {
   margin: 8px 0 0;
-  font: bold 13px Arial, Helvetica, sans-serif;
+  font: 600 13px/1.4 var(--font-ui);
   color: var(--plab);
 }
 
@@ -2077,9 +1965,9 @@ input.ro {
   height: 22px;
   border: 1px solid var(--slot-color);
   border-radius: 4px;
-  background: #000;
+  background: color-mix(in srgb, var(--slot-color) 12%, var(--color-surface));
   color: var(--slot-color);
-  font: bold 13px Arial, Helvetica, sans-serif;
+  font: 700 .825rem var(--font-ui);
 }
 
 .compare-panel {
@@ -2193,26 +2081,6 @@ input.ro {
   margin: auto;
 }
 
-@media (min-width: 900px) {
-  .ranking-layout.comparing {
-    display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-    gap: 14px;
-    align-items: start;
-  }
-
-  .comparing .ranking-list {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .comparing .compare-panel {
-    grid-column: 2;
-    grid-row: 1;
-    margin-bottom: 0;
-  }
-}
-
 @media (max-width: 599px) {
   .stat-card {
     grid-template-columns: 30px minmax(0, 1fr) 42px;
@@ -2244,10 +2112,10 @@ input.ro {
   display: none;
   max-width: 240px;
   padding: 8px 10px;
-  font: bold 12px Arial, Helvetica, sans-serif;
-  color: #fff;
+  font: 600 12px/1.4 var(--font-ui);
+  color: var(--color-text);
   background: var(--tool);
-  border: 2px solid #000;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   box-shadow: 0 4px 0 rgba(0, 0, 0, .4);
   pointer-events: none;
@@ -2922,38 +2790,6 @@ input.ro {
   display: none;
 }
 
-/* ===== AREDL update status ===== */
-.syncst {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px 4px 6px;
-  font: bold 12px Arial, Helvetica, sans-serif;
-  background: rgba(0, 0, 0, .45);
-  border: 2px solid #000;
-  border-radius: 8px;
-}
-
-.syncst:empty {
-  display: none;
-}
-
-.syncst .i {
-  width: 18px;
-  height: 18px;
-  animation: spin 1.2s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-#aredl .xs-txt {
-  margin-left: 4px;
-}
-
 .local-profile + .local-profile {
   margin-top: 20px;
 }
@@ -3093,11 +2929,11 @@ input.ro {
   margin: 0;
 }
 
-.hsection-head h2::before {
+.hsection-head h2::before, .page-title h2::before {
   content: '';
   flex: none;
-  width: 6px;
-  height: 30px;
+  width: .24em;
+  height: 1.18em;
   border-radius: var(--radius-control);
   background: var(--color-accent);
 }
@@ -3116,8 +2952,9 @@ input.ro {
   box-shadow: 0 0 16px color-mix(in srgb, var(--color-accent) 16%, transparent);
 }
 
-.hadd > span {
-  font: 30px/1 var(--font-ui);
+.hadd > .i {
+  width: 1.2em;
+  height: 1.2em;
 }
 
 .hcards {
@@ -3352,22 +3189,7 @@ input.ro {
   overflow-wrap: anywhere;
 }
 
-/* On light surfaces use gold as an accent and the theme ink for the value. */
-[data-theme=porcelain] .list-surface .level-section .st {
-  background: var(--color-surface);
-}
-
-[data-theme=porcelain] .list-surface .level-section .st b {
-  font-family: var(--font-ui);
-  font-weight: 700;
-  text-shadow: none;
-}
-
-[data-theme=porcelain] .list-surface .level-section .st.big {
-  border-inline-start: 3px solid var(--rank-1);
-}
-
-[data-theme=porcelain] .list-surface .level-section .st.big b,
+/* Keep secondary metric values readable on the light Home surface. */
 [data-theme=porcelain] .hmetric:not(:first-child) b {
   color: var(--color-text);
 }
@@ -3469,33 +3291,65 @@ body::before {
     radial-gradient(ellipse at 0 100%, color-mix(in srgb, var(--color-secondary-light) 14%, transparent), transparent 48%);
 }
 
-[data-bg=celestial] body::after, [data-bg=orbital] body::after {
+/* The same light sources illuminate the canvas and the nearby etched lines. */
+:is([data-bg=orbital], [data-bg=celestial]) body::before {
+  background:
+    radial-gradient(ellipse at 88% 1%, color-mix(in srgb, var(--color-secondary-light) 35%, transparent), transparent 36%),
+    radial-gradient(ellipse at 20% 4%, color-mix(in srgb, var(--color-accent) 33%, transparent), transparent 34%),
+    radial-gradient(ellipse at 93% 100%, color-mix(in srgb, var(--color-accent) 20%, transparent), transparent 40%);
+}
+
+:is([data-bg=celestial], [data-bg=orbital]) body::after {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background-color: var(--color-motif);
-  mask-size: cover;
-  mask-position: center;
+  background:
+    radial-gradient(ellipse at 87% 7%, var(--color-secondary-light), transparent 43%),
+    radial-gradient(ellipse at 20% 10%, var(--color-accent), transparent 46%),
+    linear-gradient(135deg, transparent, color-mix(in srgb, var(--color-secondary-light) 20%, transparent) 58%, var(--color-accent));
+}
+
+[data-bg=orbital] body::after {
+  mask-image: url('../assets/backgrounds/orbital.svg');
+  mask-size: 100% 100%;
   mask-repeat: no-repeat;
 }
 
 [data-bg=celestial] body::after {
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1400 1000'%3E%3Cdefs%3E%3ClinearGradient id='fade'%3E%3Cstop stop-color='white'/%3E%3Cstop offset='1' stop-color='white' stop-opacity='0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cg fill='none' stroke='url(%23fade)' stroke-opacity='.08' stroke-width='2'%3E%3Cpath d='M180 40l30 90 95 3-75 58 25 92-75-55-77 55 27-92-75-58 95-3z'/%3E%3Cpath d='M1230 650a150 150 0 1 0 100 240 130 130 0 0 1-100-240z'/%3E%3C/g%3E%3C/svg%3E");
+  --stars: url('../assets/backgrounds/stars.svg');
+  --moons: url('../assets/backgrounds/moons.svg');
+  --sky-tile: clamp(540px, 72vw, 1040px);
+  mask-image: var(--stars), var(--moons);
+  mask-size: var(--sky-tile) auto;
+  mask-position: right top;
+  mask-repeat: repeat;
 }
 
-[data-bg=celestial][data-motif=stars] body::after {
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1400 1000'%3E%3Cg fill='none' stroke='white' stroke-opacity='.08' stroke-width='2'%3E%3Cpath d='M180 40l30 90 95 3-75 58 25 92-75-55-77 55 27-92-75-58 95-3z'/%3E%3Cpath opacity='.4' d='M1220 680l30 90 95 3-75 58 25 92-75-55-77 55 27-92-75-58 95-3z'/%3E%3C/g%3E%3C/svg%3E");
+/* In daylight the aurora supplies the color behind the pale etched lines. */
+[data-theme=porcelain] body::before {
+  --daylight:
+    radial-gradient(ellipse at 88% 1%, #a8d9e6, transparent 44%),
+    radial-gradient(ellipse at 18% 6%, #d3c3eb, transparent 43%),
+    radial-gradient(ellipse at 94% 100%, #dfd6ee, transparent 45%);
+  background: var(--daylight);
 }
 
-[data-bg=celestial][data-motif=moons] body::after {
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1400 1000'%3E%3Cg fill='none' stroke='white' stroke-opacity='.08' stroke-width='2'%3E%3Cpath d='M180 40a150 150 0 1 0 100 240A130 130 0 0 1 180 40z'/%3E%3Cpath opacity='.4' d='M1230 650a150 150 0 1 0 100 240 130 130 0 0 1-100-240z'/%3E%3C/g%3E%3C/svg%3E");
+[data-theme=porcelain][data-bg=grid] body::before {
+  --color-grid: rgb(255 255 255 / 55%);
+  background:
+    linear-gradient(var(--color-grid) 1px, transparent 1px) 0 0 / 40px 40px,
+    linear-gradient(90deg, var(--color-grid) 1px, transparent 1px) 0 0 / 40px 40px,
+    var(--daylight);
 }
 
-[data-bg=orbital] body::after {
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1400 1000'%3E%3Cdefs%3E%3ClinearGradient id='fade'%3E%3Cstop stop-color='white'/%3E%3Cstop offset='1' stop-color='white' stop-opacity='0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cg fill='none' stroke='url(%23fade)' stroke-opacity='.08'%3E%3Cellipse cx='1200' cy='80' rx='380' ry='180' transform='rotate(-30 1200 80)'/%3E%3Cellipse cx='40' cy='950' rx='380' ry='160' transform='rotate(-30 40 950)'/%3E%3C/g%3E%3Ccircle cx='1000' cy='28' r='8' fill='white' fill-opacity='.2'/%3E%3C/svg%3E");
+[data-theme=porcelain]:is([data-bg=orbital], [data-bg=celestial]) body::after {
+  background: linear-gradient(130deg, #fff 5%, #f9f6ff 42%, #fff 75%, #f1fbff);
 }
+
+[data-bg=celestial][data-motif=stars] body::after { mask-image: var(--stars); }
+[data-bg=celestial][data-motif=moons] body::after { mask-image: var(--moons); }
 
 .hl :is(h1, h2, h3, .nm, .hlead) {
   font-family: var(--font-display);
@@ -3955,17 +3809,7 @@ body::before {
   gap: var(--space-8);
 }
 
-.shell-utilities .syncst {
-  font: 600 var(--space-12)/1.5 var(--font-ui);
-  gap: var(--space-8);
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
 
-.shell-utilities .syncst:empty {
-  display: none;
-}
 
 .shell-utilities .sq {
   position: relative;
@@ -4029,18 +3873,377 @@ main.home {
   min-width: 0;
 }
 
+.page-title h2, .kpi small:has(> .i) {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+.page-title h2 > .i, .hsection-head h2 > .i {
+  flex: none;
+  width: 1.13em;
+  height: 1.13em;
+  color: var(--color-text);
+}
+.kpi small > .i { flex: none; width: 18px; height: 18px; }
+
+.shell-paints { position: absolute; pointer-events: none; }
+
+
+@media (forced-colors: none) {
+  :root {
+    --action-edge: var(--color-accent);
+    --action-glint: color-mix(in srgb, var(--color-accent) 45%, var(--color-text));
+    --action-shade: color-mix(in srgb, var(--color-accent) 70%, var(--color-bg));
+  }
+  [data-theme=porcelain] { --action-glint: color-mix(in srgb, var(--color-accent) 48%, white); }
+  .kpi small > .i, .empty > .i { color: var(--color-accent); }
+  .legacy-surface .tg {
+    color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
+    border-color: color-mix(in srgb, var(--color-accent) 42%, var(--color-surface));
+  }
+  .action-edge { stop-color: var(--action-edge); }
+  .action-glint { stop-color: var(--action-glint); }
+
+  .nav-ink { stop-color: color-mix(in srgb, var(--metal-shade) 70%, var(--color-text)); }
+  .nav-glint { stop-color: var(--metal-glint); }
+  [data-theme=porcelain] .nav-ink { stop-color: #584630; }
+  [data-theme=porcelain] .nav-glint { stop-color: #bd9867; }
+
+  .hsection-head h2 > .i, :is(.shell-nav, .shell-footer) > button > .i,
+  .page-title h2 > .i {
+    stroke: url(#nav-metal) currentColor;
+    stroke-width: 2;
+  }
+
+  /* A single bright ink for labels; the metallic bands belong to the icons. */
+  :root:not([data-theme=porcelain]) :is(.shell-nav, .shell-footer, .page-title, .shell-identity) > button > span,
+  :root:not([data-theme=porcelain]) :is(.hl .hadd, .hl .htext, .mode-switch button:not([aria-pressed=true])) {
+    color: color-mix(in srgb, var(--color-text) 92%, white);
+    text-shadow: 0 0 3px color-mix(in srgb, var(--color-accent) 21%, transparent);
+  }
+
+  :root:not([data-theme=porcelain]) :is(.page-title, .lh, .wa, .wseg, .gdseg, .zoom, .compare-panel, .dgb) :is(button, summary):not(:disabled) {
+    text-shadow: 0 0 3px color-mix(in srgb, var(--color-accent) 21%, transparent);
+  }
+  :is(.shell-nav, .shell-footer) > button:not([aria-current=page]) {
+    border: 1px solid transparent;
+    background:
+      linear-gradient(var(--nav-fill, var(--color-bg)), var(--nav-fill, var(--color-bg))) padding-box,
+      linear-gradient(125deg, color-mix(in srgb, var(--metal-edge) 32%, var(--color-bg)),
+        color-mix(in srgb, var(--metal-glint) 48%, var(--color-bg)) 19%,
+        color-mix(in srgb, var(--metal-shade) 32%, var(--color-bg)) 52%,
+        color-mix(in srgb, var(--metal-edge) 38%, var(--color-bg))) border-box;
+  }
+  :is(.shell-nav, .shell-footer) > button:not([aria-current=page]):hover {
+    --nav-fill: var(--color-surface-elevated);
+  }
+}
+
+/* Shared geometry and typography for content screens and native dialogs. */
+.list-surface, .legacy-surface, dialog.modal {
+  color: var(--color-text);
+  font-family: var(--font-ui);
+}
+
+:is(.list-surface, .legacy-surface, .modal) :is(h2, h3, legend, .nm, .stat-position) {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--color-text);
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+}
+
+:is(.list-surface, .legacy-surface, .modal) :is(.box, .stat-card, .wi, .wi .by) {
+  text-shadow: none;
+}
+
+:is(.list-surface, .legacy-surface, .modal) :is(.by, .meta, label, .lab, .mh, .hb, .st small, .kpi small) {
+  font-family: var(--font-ui);
+  color: var(--color-text-muted);
+}
+
+:is(.list-surface, .legacy-surface, .modal) :is(.st b, .mh b, .kpi b) {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-shadow: none;
+  -webkit-text-stroke: 0;
+}
+
+.list-surface .level-section .st, :is(.modal, .list-surface) fieldset, .legacy-surface .compare-panel {
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-card);
+}
+.list-surface .level-section .st { background: var(--color-surface); }
+[data-theme=porcelain] .level-section .st.big { border-inline-start: 3px solid var(--rank-1); }
+[data-theme=porcelain] .level-section .st.big b { color: var(--color-text); }
+.legacy-surface :is(.well, .kpi, .trig, .wi, .stat-card) { border-radius: var(--radius-card); }
+.legacy-surface .stat-card { background: var(--color-surface); }
+.legacy-surface :is(.wi, .stat-card, .compare-panel), .modal .obj { border-width: var(--size-border); }
+.legacy-surface .compare-panel { border-color: var(--color-border); }
+:is(.list-surface, .legacy-surface, .modal) :is(.meter, .pb, .hb .tr) {
+  background: var(--color-surface-elevated);
+  border: var(--size-border) solid var(--color-border);
+}
+
+:is(.modal, .legacy-surface, .list-surface) :is(input, textarea, select):not([type=checkbox], [type=radio], [type=color], [type=range]) {
+  font: 500 1rem/1.35 var(--font-ui);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: var(--size-border) solid var(--color-border);
+  border-radius: var(--radius-control);
+  box-shadow: none;
+}
+:is(.modal, .legacy-surface, .list-surface) :is(input, textarea)::placeholder { color: var(--color-text-muted); opacity: 1; }
+:is(.modal, .legacy-surface, .list-surface) :is(input, select, textarea):user-invalid {
+  outline: 2px solid var(--color-error);
+}
+
+:is(.modal, .legacy-surface, .rcol) button:where(:not(.gdc, .profile-swatch, .gbtn, .stat-card)),
+:is(.modal, .list-surface .rcol) .ms summary {
+  font: 600 .875rem/1.35 var(--font-ui);
+  letter-spacing: normal;
+  color: var(--color-text);
+  background: var(--color-surface-elevated);
+  border: var(--size-border) solid var(--color-border);
+  border-radius: var(--radius-control);
+  box-shadow: none;
+  text-shadow: none;
+  -webkit-text-stroke: 0;
+}
+:is(.modal, .list-surface .rcol) .ms summary, .modal button:where(:not(.profile-swatch)) { min-height: var(--size-control); }
+:is(.modal, .legacy-surface, .rcol) :where(button):is(.pri, .go, .blue) {
+  color: var(--color-bg);
+  background-color: var(--color-accent);
+}
+:is(.modal, .legacy-surface, .rcol) :where(button).dg {
+  background-color: var(--color-surface);
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
+:is(.modal, .legacy-surface, .list-surface .rcol) button[aria-pressed=true], :is(.modal, .list-surface .rcol) .ms[open] > summary {
+  color: var(--color-text);
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 18%, var(--color-surface));
+}
+
+:is(.modal, .list-surface) .gdr, :is(.modal, .list-surface .rcol) .ms .msp {
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: var(--size-border) solid var(--color-border);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-panel);
+}
+:is(.modal, .list-surface) .ms .msp label {
+  color: var(--color-text);
+  font: 500 .875rem/1.4 var(--font-ui);
+}
+:is(.modal, .list-surface) .ms .msp label:is(:hover, :focus-within, :has(:checked)) {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-accent) 13%, var(--color-surface));
+}
+:root input[type=checkbox] {
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    linear-gradient(135deg, var(--metal-edge), var(--metal-glint), var(--metal-shade)) border-box;
+  box-shadow: none;
+  cursor: pointer;
+}
+:root input[type=checkbox]:checked {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+input[type=checkbox]:checked::after {
+  content: "";
+  width: 8px;
+  height: 4px;
+  border: solid currentColor;
+  border-width: 0 0 2px 2px;
+  transform: translateY(-1px) rotate(-45deg);
+}
+@media (forced-colors: active) {
+  :root input[type=checkbox] { appearance: auto; }
+  input[type=checkbox]:checked::after { content: none; }
+}
+
+:is(.modal, .list-surface) .gdc :is(.nm, .by) { color: var(--color-card-text); }
+.modal .box :is(input, select, textarea, button, summary):focus-visible {
+  outline: var(--size-focus) solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* A single hairline follows the existing radius. Layered backgrounds also work on inputs. */
+@media (forced-colors: none) {
+  :root :is(.shell-brand-frame, .hl .hcard, .hl .hstats-surface, .hl .hwish-rows,
+    .shell-sidebar .profile-pill, .shell-nav > button[aria-current=page], .page-title button,
+    .hl .hadd, .lh #q, .lh .ms summary, .lh .list-clear, .lh .list-add,
+    .list-surface .rcol .box, .legacy-surface :is(.well, .wh, .kpi),
+    .trigs .trig, .modal .box, .dgb button, .wa button, .empty .pri, .pause .appearance-option,
+    input:where(:not([type]), [type=text], [type=number], [type=search], [type=email], [type=password], [type=url], [type=date]), textarea,
+    .num button, [data-act=gdgo], button.dg, [data-act=dthremove], [data-act=localdelete], [data-act=compare-toggle]) {
+    --rim-paint: linear-gradient(var(--rim-angle, 125deg), var(--metal-edge) 3%, var(--metal-glint) 13%,
+      var(--metal-edge) 27%, var(--metal-shade) 46%, var(--metal-glint) 55%,
+      var(--metal-edge) 74%, var(--metal-glint) 93%);
+    border: 1px solid transparent;
+    background:
+      linear-gradient(var(--rim-fill, var(--color-surface)), var(--rim-fill, var(--color-surface))) padding-box,
+      var(--rim-paint) border-box;
+    box-shadow: none;
+
+    &:where([data-theme=porcelain] *) {
+      --rim-paint: linear-gradient(145deg, var(--metal-glint), var(--metal-edge) 42%, var(--metal-shade) 92%);
+      background:
+        linear-gradient(148deg, var(--rim-fill, var(--satin-light)), var(--rim-fill, var(--satin-base))) padding-box,
+        var(--rim-paint) border-box;
+    }
+  }
+
+  .hl .hcard-platform {
+    --metal-edge: #89b5bf;
+    --metal-shade: #538a99;
+    --metal-glint: #e6faff;
+  }
+  [data-theme=porcelain] :is(.hwish-rows, .hstats-surface, .trigs .trig, .list-surface .rcol .box, .legacy-surface :is(.well, .wh, .kpi)) {
+    --metal-edge: color-mix(in srgb, var(--color-accent) 38%, var(--color-surface));
+    --metal-glint: color-mix(in srgb, var(--color-accent) 9%, var(--color-surface));
+    --metal-shade: color-mix(in srgb, var(--color-accent) 60%, var(--color-surface));
+  }
+  [data-theme=porcelain] :is(.hl .hcard, .hwish-rows, .hstats-surface, .trigs .trig, .list-surface .rcol .box, .legacy-surface :is(.well, .wh, .kpi)) {
+    --satin-light: color-mix(in srgb, var(--metal-edge) 7%, var(--color-surface));
+    --satin-base: color-mix(in srgb, var(--metal-edge) 19%, var(--color-surface));
+  }
+  [data-theme=porcelain] .hl .hcard-platform {
+    --metal-edge: #90aab7;
+    --metal-glint: #ebf3f5;
+    --metal-shade: #7293a4;
+  }
+  [data-theme=porcelain] .hcard-top {
+    background: linear-gradient(145deg, var(--satin-light), var(--satin-base));
+    border-color: var(--metal-edge);
+  }
+  .dgb .pri, .wa .pri {
+    --rim-fill: var(--color-accent);
+    color: var(--color-bg);
+    text-shadow: none;
+    -webkit-text-stroke: 0;
+  }
+  :is(.dgb, .wa) button { color: var(--color-text); text-shadow: none; -webkit-text-stroke: 0; }
+  .dgb button.pri, .wa button.pri { color: var(--color-bg); }
+  .dgb button.dg, .wa button.dg { --rim-fill: var(--color-error); color: var(--color-bg); }
+  :is(.hl .hadd, .lh .list-add, .wa button[data-act=wadd], .empty .pri) {
+    --metal-edge: var(--action-edge);
+    --metal-glint: var(--action-glint);
+    --metal-shade: var(--action-shade);
+    --rim-fill: color-mix(in srgb, var(--action-edge) 12%, var(--color-surface));
+    color: var(--color-text);
+    -webkit-text-stroke: 0;
+  }
+  :is(.hadd, .list-add, [data-act=wadd], .empty .pri) > .i {
+    stroke: url(#action-metal) currentColor;
+    stroke-width: 2;
+  }
+  .modal .box { --rim-fill: var(--panel); }
+  .modal .dgb button:not(.pri):not(.dg) { --rim-fill: var(--color-surface); }
+  .shell-nav > [aria-current=page], .lh .ms[open] summary,
+  .lh .ms:has(input:checked) summary, .pause .appearance-option[aria-pressed=true] {
+    --rim-fill: color-mix(in srgb, var(--color-accent) 18%, var(--color-surface));
+    --metal-edge: var(--color-accent);
+  }
+
+  :is(.hcard, .hadd, .profile-pill, .appearance-option, .lh summary, .dgb button, .wa button):hover {
+    --rim-angle: 140deg;
+  }
+  .hl .hcard:hover:not(:disabled):not([aria-disabled=true]), .hl .hadd:hover:not(:disabled):not([aria-disabled=true]) {
+    border-color: transparent;
+  }
+
+  /* Reflect the local edge color into the surface. The first mask picks out
+     the polished stretches; the four edge masks fade them toward the center. */
+  @supports (mask-composite: intersect) {
+    :is(.hl .hcard, .hl .hadd, .profile-pill, .shell-nav > button[aria-current=page],
+      .page-title button, .lh .ms summary, .lh .list-clear, .lh .list-add,
+      .trigs .trig, .dgb button, .wa button, .pause .appearance-option) {
+      position: relative;
+    }
+    :is(.hl .hcard, .hl .hadd, .profile-pill, .shell-nav > button[aria-current=page],
+      .page-title button, .lh .ms summary, .lh .list-clear, .lh .list-add,
+      .trigs .trig, .dgb button, .wa button, .pause .appearance-option)::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      border-radius: inherit;
+      pointer-events: none;
+      background: var(--rim-paint);
+      opacity: var(--light-reflection-opacity, .32);
+      mask-image:
+        linear-gradient(var(--rim-angle, 125deg), #0003 3%, black 13%, #0002 27%, transparent 46%, black 55%, #0003 74%, #000c 93%),
+        linear-gradient(to bottom, black, transparent var(--reflection-depth, 5px)),
+        linear-gradient(to top, black, transparent var(--reflection-depth, 5px)),
+        linear-gradient(to right, black, transparent var(--reflection-depth, 5px)),
+        linear-gradient(to left, black, transparent var(--reflection-depth, 5px));
+      mask-composite: intersect, add, add, add;
+    }
+    .hl .hcard { --reflection-depth: 8px; }
+    [data-theme=porcelain] :is(.hcard, button, .ms summary, .trig)::before {
+      --reflection-depth: 3px;
+      opacity: .54;
+      background: linear-gradient(145deg, var(--metal-edge), var(--metal-glint) 34%, transparent 70%);
+      mask-image:
+        linear-gradient(to bottom, black, transparent var(--reflection-depth)),
+        linear-gradient(to right, black, transparent var(--reflection-depth));
+      mask-composite: add;
+    }
+    [data-theme=porcelain] .hl .hcard::before { --reflection-depth: 4px; }
+  }
+
+  /* Detail images supply their own background, so paint the same thin edge above it. */
+  .list-surface .rcol .hero {
+    position: relative;
+    border: 1px solid var(--metal-edge);
+  }
+  @supports (mask-composite: exclude) {
+    .list-surface .rcol .hero::after {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      padding: 1px;
+      pointer-events: none;
+      background: linear-gradient(125deg, var(--metal-edge), var(--metal-glint) 15%, var(--metal-shade) 45%, var(--metal-glint) 74%, var(--metal-edge));
+      mask: linear-gradient(white 0 0) content-box, linear-gradient(white 0 0);
+      mask-composite: exclude;
+    }
+  }
+
+  @supports (background-clip: text) {
+    :root :is(.shell-brand h1, .page-title h2, .hsection-head h2, .list-surface .box > h2, .legacy-surface .well h2) {
+      color: transparent;
+      background: linear-gradient(175deg, var(--color-text) 15%, color-mix(in srgb, var(--color-text) 76%, var(--metal-edge)) 54%, var(--color-text) 82%);
+      background-clip: text;
+      text-shadow: none;
+      -webkit-text-stroke: 0;
+    }
+  }
+}
+
 @media (width < 1280px) {
   .shell-header {
     padding: var(--space-16) calc(var(--space-48) * 2);
   }
 
-  .shell-utilities .syncst span {
-    position: absolute;
-    width: var(--size-border);
-    height: var(--size-border);
-    overflow: hidden;
-    clip-path: inset(50%);
-  }
 
   .shell-content {
     margin-left: 0;
@@ -4169,16 +4372,33 @@ main.home {
   }
 }
 
-.shell-sidebar .profile-choice {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--space-8);
+.shell-sidebar .pmenu {
+  gap: 4px;
+  padding: 8px;
+  background: var(--color-surface);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 38%, var(--color-border));
 }
-
-.shell-sidebar .profile-choice span {
-  overflow-wrap: anywhere;
+.shell-sidebar .pmenu .pma {
+  width: 100%;
+  min-height: var(--size-control);
+  margin: 0;
+  text-align: start;
+  color: var(--color-text);
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
 }
-
+.shell-sidebar .pmenu .pma:is(:hover, :focus-visible, [aria-pressed=true]) {
+  background: color-mix(in srgb, var(--color-accent) 13%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-surface));
+  filter: none;
+}
+.shell-sidebar .profile-choice:last-of-type {
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-border);
+}
+.shell-sidebar .pmenu .by { margin: 4px 8px; line-height: 1.45; }
+.shell-sidebar .profile-choice span { overflow-wrap: anywhere; }
 .shell-sidebar button:disabled {
   opacity: .55;
   cursor: not-allowed;
@@ -4196,27 +4416,135 @@ main.home {
   height: var(--space-16);
 }
 
-[data-theme=porcelain] .legacy-surface {
-  --color-bg: var(--color-nebula-bg);
-  --color-surface: var(--color-nebula-surface);
-  --color-text: var(--color-nebula-text);
-  --color-text-muted: var(--color-nebula-text-muted);
-  --color-accent: var(--color-nebula-accent);
-  --color-secondary-light: var(--color-nebula-secondary-light);
-  --color-surface-elevated: var(--color-nebula-surface-elevated);
-  --color-border: var(--color-nebula-border);
-  --color-focus: var(--color-nebula-accent);
-  --color-success: var(--color-nebula-success);
-  --color-warning: var(--color-nebula-warning);
-  --color-error: var(--color-nebula-error);
-  --color-info: var(--color-nebula-info);
-  --color-mode-classic: var(--color-nebula-mode-classic);
-  --color-mode-platform: var(--color-nebula-secondary-light);
-  color-scheme: dark;
-  color: var(--color-text);
-  background: var(--color-bg);
-  border-radius: var(--radius-panel);
-  padding: var(--space-16);
+/* Compact fields and a separate row for the optional search filters. */
+.gdf > .gdseg { flex-basis: 100%; }
+:is(.modal, .list-surface .rcol) .gdf :is(.gdseg button, .ms summary) {
+  min-height: 34px;
+  padding: 6px 10px;
+  line-height: 20px;
+  border-width: 1px;
+}
+@media (pointer: coarse) {
+  :is(.modal, .list-surface .rcol) .gdf :is(.gdseg button, .ms summary) { min-height: 44px; }
+}
+#fm .duration { grid-column: auto; }
+.duration-parts { grid-template-columns: minmax(0, 6.5ch) auto minmax(0, 4ch) auto minmax(0, 4ch); justify-content: start; }
+#fm .duration-parts input { padding-inline: 2px; }
+#fm :is(#fm-ap, #fm-gdl) { max-width: 11ch; }
+.level-totals, .level-section .grid:has(.st.big) {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-8);
+  margin-top: var(--space-8);
+}
+.dgrid > .level-section:has(.st.big) { grid-column: 1 / -1; }
+
+@media (forced-colors: none) {
+  :root :is(.num button, [data-act=gdgo], .dgb [data-act=edit], [data-act=compare-toggle]) {
+    --rim-fill: var(--color-accent);
+    color: var(--color-bg);
+  }
+  :root :is(button.dg, [data-act=dthremove], [data-act=localdelete]) {
+    --metal-edge: var(--color-error);
+    --metal-glint: color-mix(in srgb, var(--color-error) 45%, white);
+    --metal-shade: color-mix(in srgb, var(--color-error) 72%, var(--color-bg));
+    --rim-fill: color-mix(in srgb, var(--color-error) 15%, var(--color-surface));
+    color: var(--color-text);
+  }
+}
+.shell-nav [data-act=listchoices] > .i:last-child { margin-inline-start: auto; width: 16px; }
+.shell-nav [aria-expanded=true] > .i:last-child { transform: rotate(180deg); }
+.list-choices {
+  display: grid;
+  grid-template-rows: 1fr;
+  flex: none;
+  opacity: 1;
+}
+.list-choices[inert] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  margin-block-start: calc(-1 * var(--space-8));
+}
+.list-choices-inner {
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+  gap: 4px;
+  padding-inline-start: 12px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .list-choices { transition: grid-template-rows 170ms ease, opacity 140ms ease, margin-block-start 170ms ease; }
+}
+.shell-nav .list-choices button { color: var(--color-text); background: var(--color-surface); border-color: var(--color-border); }
+.shell-nav .list-choices button:hover { color: var(--color-text); background: var(--color-surface-elevated); box-shadow: none; filter: none; }
+.legacy-surface .wi.s-todo { border-color: var(--color-info); }
+.legacy-surface .tg.s-todo { color: var(--color-info); border-color: currentColor; }
+.legacy-surface .wi.s-prog { box-shadow: none; }
+
+.legacy-surface .hb { font: 500 .825rem/1.4 var(--font-ui); }
+.legacy-surface .hb b { font-variant-numeric: tabular-nums; color: var(--color-text); }
+.legacy-surface .hb .tr, .compare-track { overflow: hidden; border-radius: var(--radius-pill); background: var(--color-surface-elevated); }
+.legacy-surface .hb i { border-radius: inherit; background: linear-gradient(90deg, var(--color-accent), var(--color-secondary-light)); }
+.legacy-surface .well.d .hb i { background: linear-gradient(90deg, var(--color-secondary-light), var(--color-accent)); }
+
+.ranking-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; }
+.ranking-controls :is(.gdseg, .ranking-order) {
+  grid-column: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-inline-start: 6rem;
+  position: relative;
+}
+.ranking-controls :is(.gdseg, .ranking-order)::before {
+  content: attr(aria-label);
+  position: absolute;
+  inset-inline-start: 0;
+  font: 600 .875rem/1.35 var(--font-ui);
+  color: var(--color-text-muted);
+}
+.legacy-surface .ranking-controls button[data-act=compare-toggle] { color: var(--color-bg); }
+.compare-selection .stat-identity .nm { white-space: normal; overflow-wrap: anywhere; }
+.ranking-controls [data-act=compare-toggle] { grid-column: 2; grid-row: 1 / 4; align-self: start; min-height: 42px; padding-inline: 16px; }
+.compare-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.compare-slot, .compare-picker { min-width: 0; }
+.compare-picker { position: relative; }
+.compare-options { display: none; }
+.compare-picker:focus-within .compare-options:not([hidden], :empty) {
+  display: grid;
+  position: absolute;
+  inset: 100% 0 auto;
+  z-index: 2;
+  max-height: 12rem;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+.compare-panel .compare-options button { text-align: start; justify-content: flex-start; overflow-wrap: anywhere; background: transparent; border: 0; }
+.compare-panel .compare-options button:is(:hover, :focus-visible) { background: var(--color-surface-elevated); }
+.compare-results { margin-top: 12px; padding: 12px; background: var(--color-surface); border-radius: var(--radius-card); }
+.compare-numbers { font: 500 .875rem/1.4 var(--font-ui); }
+.compare-value { font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) {
+  .ranking-controls { grid-template-columns: 1fr; }
+  .ranking-controls :is(.gdseg, .ranking-order) { padding-inline-start: 5rem; }
+  .ranking-controls [data-act=compare-toggle] { grid-column: 1; grid-row: auto; justify-self: start; }
+  .compare-selection { grid-template-columns: minmax(0, 1fr) auto; }
+  .compare-selection .face { display: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  :is(.wi, .trig, .stat-card, .lv, .chip, .mode-switch button, .list-choices button, .gdf button, .gdf summary) {
+    transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  }
+  .compare-picker:focus-within .compare-options { animation: dropdown-enter 150ms ease-out; }
+  @media (hover: hover) {
+    :is(.wi, .trig, .stat-card, .lv):hover { border-color: var(--color-accent); }
+  }
 }
 
 .cloud-header, .cloud-indicator {
@@ -4250,3 +4578,30 @@ main.home {
   font-size: var(--space-12);
   padding: var(--space-4) var(--space-8);
 }
+
+.list-choices {
+  margin-inline-start: 1rem;
+  border-inline-start: 2px solid var(--color-border);
+}
+.shell-nav .list-choices button[aria-current=page] {
+  --choice-accent: var(--color-mode-classic);
+  color: var(--color-text);
+  border-color: var(--choice-accent);
+  background: color-mix(in srgb, var(--choice-accent) 15%, var(--color-surface));
+}
+.shell-nav .list-choices [data-v=platform][aria-current=page] { --choice-accent: var(--color-mode-platform); }
+@keyframes list-arrive { from { opacity: .15; transform: translateX(var(--enter-x)); } }
+@keyframes pill-arrive { from { transform: translateX(var(--pill-start)); } }
+@media (prefers-reduced-motion: no-preference) {
+  .mode-enter { --enter-x: -8px; --pill-start: 100%; }
+  .mode-enter:has([data-v=platform][aria-pressed=true]) { --enter-x: 8px; --pill-start: 0%; }
+  .mode-enter :is(#lw, .rcol) { animation: list-arrive 190ms ease-out; }
+  .mode-enter .mode-switch::before { animation: pill-arrive 210ms var(--motion-easing); }
+}
+
+.cube-catalog { margin-block: 12px; }
+.cube-catalog summary { cursor: pointer; color: var(--color-accent); font-weight: 600; }
+.cube-pager { display: flex; align-items: center; justify-content: space-between; margin-block: 8px; }
+.cube-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.modal .cube-grid button { flex-direction: column; padding: 4px; font-size: .75rem; gap: 1px; }
+.cube-grid .i { width: min(40px, 100%); height: 40px; }

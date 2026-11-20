@@ -15,7 +15,7 @@ function orderedWishlists() {
 
 function wishlistTrigger(w) {
     const p = wishlistProgress(w);
-    return `<div class="obj trig" data-act=wopen data-id="${escapeHtml(w.id)}" role=button tabindex=0><span class="tg s-${p.s}">${ICONS.wish}</span><div class=info><span class=nm>${escapeHtml(w.name)}</span>${progressBar(w)}<span class=by>${p.d} / ${p.n} · ${t('st_' + p.s)}</span></div></div>`;
+    return `<div class="obj trig" data-act=wopen data-id="${escapeHtml(w.id)}" role=button tabindex=0><span class="tg s-${p.s}">${ICONS.navWish}</span><div class=info><span class=nm>${escapeHtml(w.name)}</span>${progressBar(w)}<span class=by>${p.d} / ${p.n} · ${t('st_' + p.s)}</span></div></div>`;
 }
 
 const wishlistSlot = () => `<div class=slot data-act=wnew role=button tabindex=0>${t('wnew')}</div>`;
@@ -32,7 +32,7 @@ const wishlistTransferred = i => i.kind ? isInList(i, i.kind) : isInList(i, 'cla
 
 const currentWishlist = () => profile.wishlists.find(w => w.id == ui.wl);
 
-const wishlistIcon = status => ICONS[{ todo: 'lock', prog: 'play', done: 'check' }[status]];
+const wishlistIcon = status => ICONS[{ todo: 'actionLock', prog: 'actionPlay', done: 'actionCheck' }[status]];
 
 /** Optional transient motion is used by the open wishlist, never its home card. */
 const progressBar = (w, fx) => {
@@ -51,7 +51,7 @@ function statusControl(i) {
 function transferSlot(i) {
     if (wishlistTransferred(i)) {
         const kind = i.kind || (isInList(i, 'classic') ? 'classic' : 'platform');
-        return `<span class=wadded>${ICONS.check} ${t('wIn_' + kind)}</span>`;
+        return `<span class=wadded>${ICONS.actionCheck} ${t('wIn_' + kind)}</span>`;
     }
     return `<button type=button class=xs-txt data-act=${i.kind ? 'wto' : 'wask'} data-id="${escapeHtml(i.id)}"${i.kind ? ` data-v=${i.kind}` : ''}>${t(i.kind ? 'wAddTo_' + i.kind : 'wAddAny')}</button>`;
 }
@@ -68,14 +68,14 @@ function progressRow(i) {
 /** A wishlist card keeps the same grid areas across all statuses. */
 function wishlistCard(i) {
     const u = thumbUrl(i), id = escapeHtml(i.id), celebrate = ui.wishFx?.id == i.id;
-    return `<div class="obj wi s-${i.status}${celebrate ? ' celebrate' : ''}" data-id="${id}"${u ? ` style="--th:url('${u}')"` : ''}>${u ? '<i class=th aria-hidden=true></i>' : ''}${canEdit() ? `<span class=grip aria-hidden=true title="${t('dragHint')}">${ICONS.grip}</span>` : ''}<span class="tg s-${i.status}" aria-hidden=true>${wishlistIcon(i.status)}</span><div class=info><span class=nm>${escapeHtml(i.name)}</span>${i.creator ? `<span class=by>${t('by')} ${escapeHtml(i.creator)}</span>` : ''}</div>${difficultyFace(i)}${statusControl(i)}${canEdit() ? `<div class=wact><button class=xs data-act=wedit data-id="${id}" aria-label="${t('edit')}">${ICONS.edit}</button><button class="xs dg" data-act=wdel data-id="${id}" aria-label="${t('del')}">${ICONS.del}</button></div>` : ''}${progressRow(i)}${celebrate ? `<span class=wstamp aria-hidden=true>${ICONS.check} ${escapeHtml(t('st_done').toUpperCase())}</span>` : ''}</div>`;
+    return `<div class="obj wi s-${i.status}${celebrate ? ' celebrate' : ''}" data-id="${id}"${u ? ` style="--th:url('${u}')"` : ''}>${u ? '<i class=th aria-hidden=true></i>' : ''}${canEdit() ? `<span class=grip aria-hidden=true title="${t('dragHint')}">${ICONS.grip}</span>` : ''}<span class="tg s-${i.status}" aria-hidden=true>${wishlistIcon(i.status)}</span><div class=info><span class=nm>${escapeHtml(i.name)}</span>${i.creator ? `<span class=by>${t('by')} ${escapeHtml(i.creator)}</span>` : ''}</div>${difficultyFace(i)}${statusControl(i)}${canEdit() ? `<div class=wact><button class=xs data-act=wedit data-id="${id}" aria-label="${t('edit')}">${ICONS.actionEdit}</button><button class="xs dg" data-act=wdel data-id="${id}" aria-label="${t('del')}">${ICONS.listClear}</button></div>` : ''}${progressRow(i)}${celebrate ? `<span class=wstamp aria-hidden=true>${ICONS.actionCheck} ${escapeHtml(t('st_done').toUpperCase())}</span>` : ''}</div>`;
 }
 
 function wishView() {
     const w = currentWishlist(), p = wishlistProgress(w);
     const summary = ['todo', 'prog', 'done'].map(s => `<span>${wishlistIcon(s)} ${t('st_' + s)}: ${w.items.filter(i => i.status == s).length}</span>`).join('');
     const line = p.s == 'done' ? t('wAllDone') : t('wDoneN').replace('{d}', () => p.d).replace('{n}', () => p.n);
-    return `<div class="wh${p.s == 'done' ? ' done' : ''}"><div class=info><span class=by>${line}</span>${progressBar(w, ui.wishFx)}<div class=wsummary>${summary}</div></div>${canEdit() ? `<div class=wa><button class=pri data-act=wadd>${t('addLevel')}</button><button data-act=wren>${t('wren')}</button><button class=dg data-act=wdelL>${t('wdelL')}</button></div>` : ''}</div>${w.items.length ? `<div class=wl>${w.items.map(wishlistCard).join('')}</div>` : canEdit() ? emptyList({ icon: ICONS.wish, title: t('emptyWishTitle'), text: t('emptyWishText'), action: 'wadd' }) : `<p class=by>${t('publicNoLevels')}</p>`}`;
+    return `<div class="wh${p.s == 'done' ? ' done' : ''}"><div class=info><span class=by>${line}</span>${progressBar(w, ui.wishFx)}<div class=wsummary>${summary}</div></div>${canEdit() ? `<div class=wa><button class=pri data-act=wadd>${ICONS.actionAdd} ${t('palAdd')}</button><button data-act=wren>${t('wren')}</button><button class=dg data-act=wdelL>${t('wdelL')}</button></div>` : ''}</div>${w.items.length ? `<div class=wl>${w.items.map(wishlistCard).join('')}</div>` : canEdit() ? emptyList({ icon: ICONS.navWish, title: t('emptyWishTitle'), text: t('emptyWishText'), action: 'wadd' }) : `<p class=by>${t('publicNoLevels')}</p>`}`;
 }
 
 /** Form for adding or editing a wishlist level, including a non-drag position control. */

@@ -16,9 +16,12 @@ function controlSelector(el) {
 function render() {
     const focused = controlSelector(document.activeElement);
     const listScrollTop = ui.renderedTab == ui.tab ? qs('#lw')?.scrollTop : 0, isLevelList = isListTab();
+    const changedMode = isLevelList && ['classic', 'platform'].includes(ui.renderedTab) && ui.renderedTab != ui.tab;
     ui.renderedTab = ui.tab;
     const screen = !canEdit() && !viewing.identity ? publicViewScreen() : ui.tab == 'wish' ? currentWishlist() ? wishView() : wishlistsIndex() : isLevelList ? `<div class=split><div class=lcol>${lcol()}</div><div class="rcol ${ui.sel ? 'has' : ''}">${panel()}</div></div>` : ui.tab == 'stats' ? stats() : home();
     qs('#app').innerHTML = sharedShell(screen);
+    if (changedMode)
+        qs('.list-surface')?.classList.add('mode-enter');
     syncDrawer();
     document.documentElement.dataset.theme = ui.theme;
     document.documentElement.dataset.bg = ui.background;

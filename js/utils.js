@@ -76,18 +76,12 @@ const tagColor = n => {
 
 const tagStyle = n => {
     const c = tagColor(n);
-    return `color:${c};border-color:${c}`;
+    return `--tag-color:${c}`;
 };
 
 /** Levels tagged "Pre-Extremes" appear separately under "First steps". */
 const PRE_TAG = 'Pre-Extremes';
 const isPre = l => (l.tags || []).includes(PRE_TAG);
-
-/** Relative time of a past moment, such as "3 hours ago", using ui.lang. */
-const timeAgo = ms => {
-    const s = (Date.now() - ms) / 1000, f = new Intl.RelativeTimeFormat(ui.lang, { numeric: 'auto' });
-    return s < 3600 ? f.format(-Math.round(s / 60), 'minute') : s < 86400 ? f.format(-Math.round(s / 3600), 'hour') : f.format(-Math.round(s / 86400), 'day');
-};
 
 /** Preserve the closest palette when loading preferences from earlier releases. */
 const LEGACY_THEMES = { blue: 'nebula', night: 'graphite', synth: 'crimson', dark: 'graphite', light: 'porcelain' };

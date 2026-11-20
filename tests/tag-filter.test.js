@@ -129,7 +129,7 @@ test('the list header offers only its own tags, escaped, with the selection chec
     assert.deepEqual([...platform.matchAll(/name=tagf value="([^"]*)"/g)].map(m => m[1]), ['Plat']);
     assert.match(platform, /data-act=ct [^>]* hidden>/);
     app('profile.levels = profile.levels.map(level => ({ ...level, tags: [] }))');
-    assert.equal(app('lcol()').includes('<details'), false, 'a list without tags has no dropdown');
+    assert.ok(app('lcol()').includes(app("t('noListTags')")), 'an empty filter menu explains why it has no options');
 });
 
 test('a finished AREDL update does not redraw over an open dropdown', async () => {

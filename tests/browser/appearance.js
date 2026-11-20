@@ -11,11 +11,11 @@ export default async function checkAppearance(page) {
                 const state = await page.evaluate(`(() => {
                     const root = getComputedStyle(document.documentElement);
                     return { overflow: document.documentElement.scrollWidth > innerWidth, background: getComputedStyle(document.body).backgroundColor,
-                        legacySurface: root.getPropertyValue('--obj').trim(), nebulaSurface: root.getPropertyValue('--color-nebula-surface').trim(),
+                        legacySurface: root.getPropertyValue('--obj').trim(),
                         surface: root.getPropertyValue('--color-surface').trim(), selected: !!document.querySelector('.rcol.has') };
                 })()`);
                 check(!state.overflow, `${theme} ${screen} at ${width}: overflow`);
-                check(state.legacySurface == state.nebulaSurface, `${theme}: legacy surface must remain dark`);
+                check(state.legacySurface == state.surface, `${theme}: content surface must match the active palette`);
                 if (screen == 'classic') check(state.selected, 'Level details must be visible');
                 results.push({ width, theme, screen, ...state });
             }

@@ -95,7 +95,9 @@
   --color-mode-platform: var(--color-nebula-secondary-light);
   --color-shadow: rgb(0 0 0 / 20%);
   --color-grid: color-mix(in srgb, var(--color-text) 5%, transparent);
-  --color-motif: var(--color-text);
+  --metal-edge: #CAAD7A;
+  --metal-shade: #846944;
+  --metal-glint: #F9E8C5;
   color-scheme: dark;
 }
 
@@ -154,6 +156,11 @@
   --color-surface-elevated: #E8ECF5;
   --color-border: #8591A8;
   --color-success: #18733D;
+  --satin-light: #FFFAF0;
+  --satin-base: #F6ECDA;
+  --metal-edge: #BC9862;
+  --metal-shade: #B09168;
+  --metal-glint: #FAEFD8;
   --color-warning: #846000;
   --color-error: #B62D49;
   --color-info: #176A9E;
