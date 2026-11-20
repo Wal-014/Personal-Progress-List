@@ -51,7 +51,7 @@ function resetListFilters() {
     ui.tagFilter = [];
 }
 
-const emptyProfile = () => ({ levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
+const emptyProfile = () => ({ ratingScale: 10, levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
 
 const save = () => {
     if (!canEdit())
@@ -110,11 +110,26 @@ function isValidProfileData(d) {
 /** Deaths per percent kept from saved or imported data: whole percentages from 0 to 100 with a count of zero or more. */
 const cleanDeaths = d => Object.fromEntries(Object.entries(d && typeof d == 'object' ? d : {}).filter(([k, v]) => /^(100|[1-9]?\d)$/.test(k) && Number.isInteger(v) && v >= 0));
 
+/** The marker also distinguishes new server rows from legacy local backups. */
+function migrateRatingScale(data) {
+    if (data.ratingScale === 10)
+        return false;
+    for (const level of data.levels) {
+        for (const field of ['enj', 'lik']) {
+            if (level[field] != null)
+                level[field] = Number.isFinite(Number(level[field])) ? (Number(level[field]) + 10) / 2 : null;
+        }
+    }
+    data.ratingScale = 10;
+    return true;
+}
+
 /**
  * Fills missing fields in older or imported profiles.
  * Imported files are only checked for their shape, so statuses and deaths are cleaned here before any template renders them.
  */
 function ensureProfileDefaults() {
+    const ratingsChanged = migrateRatingScale(profile);
     profile.wishlists = profile.wishlists || [];
     fixIds(profile.levels, 'n');
     profile.levels.forEach(l => l.deaths = cleanDeaths(l.deaths));
@@ -147,7 +162,7 @@ function ensureProfileDefaults() {
             }
         }
     }
-    if (tagsChanged)
+    if (tagsChanged || ratingsChanged)
         save();
 }
 

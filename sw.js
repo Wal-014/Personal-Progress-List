@@ -32,6 +32,7 @@ const SHELL = [
   "js/components/faces.js",
   "js/components/empty-list.js",
   "js/components/deaths-input.js",
+  "js/components/duration-input.js",
   "js/components/levels.js",
   "js/components/wishlists.js",
   "js/components/search.js",

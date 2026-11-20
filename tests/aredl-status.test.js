@@ -10,14 +10,14 @@ const lists = [
 ];
 
 function formFixture(lang = 'en') {
-    const nodes = Object.fromEntries(['#wn', '#lf-face', '#lf-diffT', '#gdq', 'label[for=fm-ap]'].map(key => [key, { textContent: '', setCustomValidity() {} }]));
+    const nodes = Object.fromEntries(['#wn', '#fm-pos-hint', '#lf-face', '#lf-diffT', '#gdq', 'label[for=fm-ap]'].map(key => [key, { textContent: '', setCustomValidity() {} }]));
     const f = fixture({
         document: { querySelector: key => nodes[key], body: {}, addEventListener() {} },
         window: { addEventListener() {} }, clearTimeout,
         FormData: class extends URLSearchParams { constructor(form) { super(form.entries); } },
         render() {}, closeModal() {}, scrollSel() {}, renderTagSuggestions() {}
     });
-    f.load(['js/state.js', 'js/components/faces.js', 'js/components/deaths-input.js', 'js/components/levels.js', 'js/components/search.js', 'js/events.js']);
+    f.load(['js/state.js', 'js/components/faces.js', 'js/components/deaths-input.js', 'js/components/duration-input.js', 'js/components/levels.js', 'js/components/search.js', 'js/events.js']);
     f.app('profile = emptyProfile()');
     f.app('ui.lang = ' + JSON.stringify(lang));
     return { ...f, nodes };
@@ -39,7 +39,7 @@ for (const [lang, pending, top] of [['en', 'Awaiting placement', 'Top in'], ['es
 
 test('picking results updates the top, list label and found note from current form fields', async () => {
     const f = formFixture();
-    const form = { id: 'fm', elements: Object.fromEntries(['name', 'lid', 'creator', 'diff', 'rating', 'kind', 'kindT', 'ap'].map(key => [key, { value: '' }])) };
+    const form = { id: 'fm', dataset: {}, elements: Object.fromEntries(['name', 'lid', 'creator', 'diff', 'rating', 'kind', 'kindT', 'ap', 'pos'].map(key => [key, { value: '' }])) };
     for (const [level, value, label, note] of [
         [{ name: 'Bloodbath', levelId: '42', kind: 'classic' }, '#125', 'Top in AREDL', '✓ Found in the list · #125'],
         [{ name: 'Platform Trial', levelId: '45', kind: 'platform' }, '#12', 'Top in AREPL', '✓ Found in the list · #12'],
@@ -58,7 +58,7 @@ test('picking results updates the top, list label and found note from current fo
 test('picking a result without downloadable lists keeps the shown top', async () => {
     const f = formFixture();
     f.app('aredlCache = []');
-    const form = { id: 'fm', elements: Object.fromEntries(['name', 'lid', 'creator', 'diff', 'rating', 'kind', 'kindT', 'ap'].map(key => [key, { value: '' }])) };
+    const form = { id: 'fm', dataset: {}, elements: Object.fromEntries(['name', 'lid', 'creator', 'diff', 'rating', 'kind', 'kindT', 'ap', 'pos'].map(key => [key, { value: '' }])) };
     form.elements.ap.value = '#7';
     f.app('pickLevel')(form, { name: 'New', levelId: '99', kind: 'platform', diff: 'Extreme Demon', rating: 'rated' });
     await new Promise(resolve => setTimeout(resolve));
@@ -73,6 +73,9 @@ test('saving an existing level preserves its status without cached lists', () =>
     const form = { dataset: { id: 'edit' }, elements: { pos: { value: '' } }, entries: [
         ['name', 'Edited'], ['kind', 'classic'], ['deaths', ''], ['as', 'p'], ['ap', '999']
     ] };
+    for (const field of ['tN', 'tP', 'tPC'])
+        for (const part of ['h', 'm', 's'])
+            form.elements[field + '_' + part] = { value: '', setCustomValidity() {} };
     f.app('saveLevel')(form);
     assert.equal(f.app('profile.levels[0].name'), 'Edited');
     assert.equal(f.app('profile.levels[0].ar'), ar);

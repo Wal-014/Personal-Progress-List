@@ -178,6 +178,7 @@ function pickLevel(f, l) {
     set('kindT', t(l.kind));
     qs('#gdq').setCustomValidity('');
     if (f.id == 'fm') {
+        updateRankPositionRange(f);
         fillAredlPosition(f);
         fillDemonlistPosition(f);
     }

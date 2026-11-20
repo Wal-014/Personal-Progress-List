@@ -19,24 +19,18 @@ const newId = prefix => prefix + Date.now().toString(36) + Math.random().toStrin
 /** Shows a stored YYYY-MM-DD date as DD/MM/YYYY, the format used across the app. */
 const formatDate = d => d ? d.split('-').reverse().join('/') : '';
 
+const formatRating = value => value.toLocaleString(ui.lang, { maximumFractionDigits: 1 });
+
 const orDash = v => v == null || v === '' ? '-' : v;
 
 /** Formats seconds as "1h 30m 0s". */
 const formatDuration = s => s == null ? '' : `${~~(s / 3600)}h ${~~(s % 3600 / 60)}m ${s % 60}s`;
 
-/** Parses "1h 30m 0s" into seconds, or null when invalid. */
-const parseDuration = x => {
-    const m = /^\s*(?:(\d+)h)?\s*(?:(\d+)m)?\s*(?:(\d+)s)?\s*$/.exec(x || '');
-    return m && (m[1] || m[2] || m[3]) ? +(m[1] || 0) * 3600 + +(m[2] || 0) * 60 + +(m[3] || 0) : null;
-};
-
 /** Error checks for form fields that the browser cannot validate on its own. */
 const FIELD_CHECKS = {
     name: v => v.trim() ? '' : t('errName'),
-    lid: v => !v.trim() || /^\d+$/.test(v.trim()) ? '' : t('errLid'),
-    tN: v => !v.trim() || parseDuration(v) != null ? '' : t('errTime')
+    lid: v => !v.trim() || /^\d+$/.test(v.trim()) ? '' : t('errLid')
 };
-FIELD_CHECKS.tP = FIELD_CHECKS.tPC = FIELD_CHECKS.tN;
 
 /** Error message for a form field, or '' when its value is valid. */
 const fieldError = (name, value) => FIELD_CHECKS[name]?.(value) || '';

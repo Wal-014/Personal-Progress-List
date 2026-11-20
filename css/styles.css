@@ -1379,16 +1379,6 @@ dialog.modal::backdrop {
   border-radius: 6px;
 }
 
-.meter::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  width: 2px;
-  background: rgba(255, 255, 255, .35);
-}
-
 .meter i {
   position: absolute;
   top: 0;
@@ -3928,5 +3918,48 @@ main.home {
 
   main.home {
     padding: 24px 16px calc(112px + env(safe-area-inset-bottom));
+  }
+}
+
+.duration {
+  min-width: 0;
+  grid-column: span 2;
+}
+
+.duration-parts {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 3px;
+  align-items: start;
+}
+
+.duration-parts > div {
+  min-width: 0;
+}
+
+.duration-parts input {
+  min-height: 44px;
+  min-width: 0;
+  width: 100%;
+  padding: 8px 2px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.duration-parts > span {
+  color: var(--fg);
+  font-size: 15px;
+  font-weight: bold;
+  line-height: 44px;
+}
+
+.duration-parts label {
+  text-align: center;
+  font-size: 12px;
+}
+
+@media (max-width: 560px) {
+  .box .grid .duration {
+    grid-column: 1 / -1;
   }
 }

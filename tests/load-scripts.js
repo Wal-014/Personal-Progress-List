@@ -15,3 +15,6 @@ export function loadScripts(files, globals = {}, { transform = {} } = {}) {
     load(files);
     return { context, app: code => vm.runInContext(code, context), load };
 }
+
+/** Empty hours, minutes and seconds inputs of the level form durations, for fake forms passed to levelFromForm or saveLevel. */
+export const emptyDurationFields = () => Object.fromEntries(['tN', 'tP', 'tPC'].flatMap(field => ['h', 'm', 's'].map(part => [`${field}_${part}`, { value: '', setCustomValidity() {} }])));

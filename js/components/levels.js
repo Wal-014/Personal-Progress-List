@@ -2,11 +2,11 @@
  * Classic and platformer level lists, details and editing forms.
  */
 
-/** Enjoyment or appeal meter on a scale from -10 to 10. */
+/** Enjoyment or appeal meter on a scale from 0 to 10. */
 function meter(v, lab = '') {
     const hd = b => `<div class=mh>${lab ? `<span>${lab}</span>` : ''}${b}</div>`;
-    const p = Math.abs(v) * 5, c = v >= 0 ? `hsl(${160 - v * 11} 100% 55%)` : `hsl(0 ${40 - v * 6}% ${52 + v * 2}%)`;
-    return hd(`<b style="color:${c}">${v > 0 ? '+' : ''}${escapeHtml(v)}</b>`) + `<div class="meter ${v >= 8 ? 'g' : ''}" style="color:${c}"><i style="background:${c};left:${v >= 0 ? 50 : 50 - p}%;width:${p}%"></i></div>`;
+    const p = v * 10, c = `hsl(${v * 12} 100% 55%)`;
+    return hd(`<b style="color:${c}">${escapeHtml(formatRating(v))}</b>`) + `<div class="meter ${v >= 8 ? 'g' : ''}" style="color:${c}"><i style="background:${c};left:0%;width:${p}%"></i></div>`;
 }
 
 /**
@@ -106,8 +106,8 @@ const tagChip = n => `<span class=chip data-act=tgrm data-v="${escapeHtml(n)}" s
 function updateTotals(f) {
     const q = k => f.elements[k], n = k => q(k).value === '' ? null : +q(k).value, a = n('attN'), c = n('attC');
     q('attT').value = a == null && c == null ? '' : (a || 0) + (c || 0);
-    const s = ['tN', 'tP', 'tPC'].map(k => parseDuration(q(k).value)).filter(x => x != null);
-    q('tT').value = s.length ? formatDuration(s.reduce((x, y) => x + y)) : '';
+    const s = ['tN', 'tP', 'tPC'].map(k => readDuration(f, k)).filter(x => x != null);
+    q('tT').value = s.length && s.every(Number.isFinite) ? durationClock(s.reduce((x, y) => x + y)) : '';
 }
 
 function renderTagSuggestions() {
@@ -116,25 +116,39 @@ function renderTagSuggestions() {
         qs('#tgr').innerHTML = profile.tags.filter(g => !sel.includes(g.name) && g.name.toLowerCase().includes(q)).map(g => `<span class=chip data-act=tgadd data-v="${escapeHtml(g.name)}" style="${tagStyle(g.name)}">+ ${escapeHtml(g.name)}</span>`).join('');
 }
 
-function formField(key, value, type = 'text', attrs = '') {
-    return `<div><label for=fm-${key}>${t(key)}</label>${type == 'number' && !attrs.includes('readonly') ? `<div class=num><button type=button class=blue data-act=step data-d=-1 aria-label="−1">−</button><input id=fm-${key} name=${key} type=number ${attrs} value="${escapeHtml(value)}"><button type=button class=blue data-act=step data-d=1 aria-label="+1">+</button></div>` : `<input id=fm-${key} name=${key} type=${type} ${attrs} value="${escapeHtml(value)}"${attrs.includes('readonly') ? ' class=ro' : ''}>`}</div>`;
+function formField(key, value, type = 'text', attrs = '', hint = '') {
+    const step = attrs.match(/\bstep=([\d.]+)/)?.[1] || '1';
+    return `<div><label for=fm-${key}>${t(key)}</label>${type == 'number' && !attrs.includes('readonly') ? `<div class=num><button type=button class=blue data-act=step data-d=-1 aria-label="−${escapeHtml(formatRating(+step))}">−</button><input id=fm-${key} name=${key} type=number ${attrs} value="${escapeHtml(value)}"><button type=button class=blue data-act=step data-d=1 aria-label="+${escapeHtml(formatRating(+step))}">+</button></div>` : `<input id=fm-${key} name=${key} type=${type} ${attrs} value="${escapeHtml(value)}"${attrs.includes('readonly') ? ' class=ro' : ''}>`}${hint ? `<small id=fm-${key}-hint class=by>${escapeHtml(hint)}</small>` : ''}</div>`;
 }
 
 const aredlTopValue = ar => ar?.s == 'r' && ar.p != null ? '#' + ar.p : ar?.s == 'p' ? t('pending') : '—';
+
+function maxRankPosition(kind, id) {
+    const ids = rankedIds(kind);
+    return ids.length + (ids.includes(id) ? 0 : 1);
+}
+
+const rankPositionHint = maximum => t('availablePositions').replace('{min}', 1).replace('{max}', maximum);
+
+function updateRankPositionRange(form) {
+    const maximum = maxRankPosition(form.elements.kind.value, form.dataset.id);
+    form.elements.pos.max = maximum;
+    qs('#fm-pos-hint').textContent = rankPositionHint(maximum);
+}
 
 /** Form for adding a level or editing one. */
 function levelForm(level) {
     const kind = level?.kind || (isListTab() ? ui.tab : 'classic');
     const levelData = level || { tags: [], ar: { s: 'n' }, kind };
-    const rankPosition = rankedIds(kind).indexOf(level?.id) + 1 || '';
+    const rankPosition = rankedIds(kind).indexOf(level?.id) + 1 || '', maximum = maxRankPosition(kind, level?.id);
     const section = (key, body) => `<fieldset><legend>${t(key)}</legend><div class=grid>${body}</div></fieldset>`;
     return `<div class=box><h2>${level ? t('edit') : t('palAdd')}</h2><form id=fm data-id="${escapeHtml(level?.id)}"><div class=warn id=wn></div>
 ${levelSearchBox()}
 ${section('s1', levelFields(levelData, true))}
-${section('s2', formField('pos', rankPosition, 'number', 'min=1 step=1') + `<div><label for=fm-ap>${t(kind == 'platform' ? 'apPlatform' : 'ap')}</label><input id=fm-ap name=ap type=text readonly tabindex=-1 value="${escapeHtml(aredlTopValue(levelData.ar))}" class=ro></div><div id=fm-gdl-field${kind == 'platform' ? ' hidden' : ''}><label for=fm-gdl>${t('gdlTop')}</label><input id=fm-gdl type=text readonly tabindex=-1 value="${escapeHtml(kind == 'platform' || levelData.gdl == null ? '—' : '#' + levelData.gdl)}" class=ro></div>`)}
-${section('s3', formField('attC', levelData.attC, 'number', 'min=0 step=1') + formField('attN', levelData.attN, 'number', 'min=0 step=1') + formField('tN', formatDuration(levelData.tN), 'text', 'placeholder="1h 30m 0s"') + formField('tP', formatDuration(levelData.tP)) + formField('tPC', formatDuration(levelData.tPC)) + formField('attT', totalAttempts(levelData), 'number', 'readonly tabindex=-1') + formField('tT', formatDuration(totalSeconds(levelData)), 'text', 'readonly tabindex=-1'))}
+${section('s2', formField('pos', rankPosition, 'number', `min=1 max=${maximum} step=1 aria-describedby=fm-pos-hint`, rankPositionHint(maximum)) + `<div><label for=fm-ap>${t(kind == 'platform' ? 'apPlatform' : 'ap')}</label><input id=fm-ap name=ap type=text readonly tabindex=-1 value="${escapeHtml(aredlTopValue(levelData.ar))}" class=ro></div><div id=fm-gdl-field${kind == 'platform' ? ' hidden' : ''}><label for=fm-gdl>${t('gdlTop')}</label><input id=fm-gdl type=text readonly tabindex=-1 value="${escapeHtml(kind == 'platform' || levelData.gdl == null ? '—' : '#' + levelData.gdl)}" class=ro></div>`)}
+${section('s3', formField('attC', levelData.attC, 'number', 'min=0 step=1') + formField('attN', levelData.attN, 'number', 'min=0 step=1') + durationInput('tN', levelData.tN) + durationInput('tP', levelData.tP) + durationInput('tPC', levelData.tPC) + formField('attT', totalAttempts(levelData), 'number', 'readonly tabindex=-1') + formField('tT', durationClock(totalSeconds(levelData)), 'text', 'readonly tabindex=-1'))}
 ${section('s4', formField('date', levelData.date, 'date') + formField('link', levelData.link))}
-<fieldset><legend>${t('s5')}</legend><div class=grid>${formField('enj', levelData.enj, 'number', 'min=-10 max=10')}${formField('lik', levelData.lik, 'number', 'min=-10 max=10')}</div><label for=tgq style="margin-top:12px">${t('tags')}</label><input id=tgq placeholder="${t('tgs')}" autocomplete=off><div id=tgr class=tgr></div><div id=tgs>${(levelData.tags || []).map(tagChip).join('')}</div></fieldset>
+<fieldset><legend>${t('s5')}</legend><div class=grid>${formField('enj', levelData.enj, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}${formField('lik', levelData.lik, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}</div><label for=tgq style="margin-top:12px">${t('tags')}</label><input id=tgq placeholder="${t('tgs')}" autocomplete=off><div id=tgr class=tgr></div><div id=tgs>${(levelData.tags || []).map(tagChip).join('')}</div></fieldset>
 <fieldset><legend>${t('s6')}</legend><label for=fm-notes>${t('notes')}</label><textarea id=fm-notes name=notes rows=3>${escapeHtml(levelData.notes)}</textarea>${deathsInput(levelData.deaths)}</fieldset>
 <p class=dgb><button class=pri>${t('save')}</button> <button type=button data-act=${level ? 'lvclose' : 'close'}>${t('close')}</button> ${level ? `<button type=button class=dg data-act=del data-id="${escapeHtml(level.id)}">${t('del')}</button>` : ''}</p></form></div>`;
 }
@@ -142,13 +156,13 @@ ${section('s4', formField('date', levelData.date, 'date') + formField('link', le
 function levelFromForm(form) {
     const data = new FormData(form), fields = Object.fromEntries(data), number = key => fields[key] === '' ? null : +fields[key], clamp = key => {
         const value = number(key);
-        return value == null ? value : Math.max(-10, Math.min(10, value));
+        return value == null ? value : Math.round(Math.max(0, Math.min(10, value)) * 10) / 10;
     };
     return {
         name: fields.name.trim(), kind: fields.kind, levelId: fields.lid || null, creator: fields.creator || null,
         diff: fields.diff || null, rating: fields.rating || null, attC: number('attC'), attN: number('attN'),
         date: fields.date || null, link: fields.link || null, enj: clamp('enj'), lik: clamp('lik'),
-        tN: parseDuration(fields.tN), tP: parseDuration(fields.tP), tPC: parseDuration(fields.tPC),
+        tN: readDuration(form, 'tN'), tP: readDuration(form, 'tP'), tPC: readDuration(form, 'tPC'),
         notes: fields.notes, tags: data.getAll('tg'), deaths: deathsFromValues(data.getAll('dth'))
     };
 }

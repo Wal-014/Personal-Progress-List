@@ -1,7 +1,7 @@
 ﻿import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { loadScripts } from './load-scripts.js';
+import { emptyDurationFields, loadScripts } from './load-scripts.js';
 
 const response = (levels = [{ id: 999, ingame_id: 42, placement: 387, name: 'Collision' }]) => ({ ok: true, json: async () => ({ message: 'success', data: { levels } }) });
 const fixture = (extra = {}) => loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/demonlist.js', 'js/api.js'], { localStorage: {}, ui: { lang: 'en' }, ...extra });
@@ -83,11 +83,11 @@ for (const aredlFails of [false, true])
             });
 
 function formFixture() {
-    const nodes = Object.fromEntries(['#wn', '#lf-face', '#lf-diffT', '#gdq', 'label[for=fm-ap]', '#fm-gdl-field', '#fm-gdl'].map(key => [key, { value: '#7', setCustomValidity() {} }]));
+    const nodes = Object.fromEntries(['#wn', '#lf-face', '#lf-diffT', '#gdq', 'label[for=fm-ap]', '#fm-gdl-field', '#fm-gdl', '#fm-pos-hint'].map(key => [key, { value: '#7', setCustomValidity() {} }]));
     const f = fixture({ localStorage: { ggdl: '[[42,387]]' }, document: { querySelector: key => nodes[key], body: {}, addEventListener() {} }, window: { addEventListener() {} }, clearTimeout,
         FormData: class extends URLSearchParams { constructor(form) { super(form.entries); } },
         render() {}, save() {}, closeModal() {}, scrollSel() {}, renderTagSuggestions() {}, fetch: async () => { throw Error('offline'); } });
-    f.load(['js/state.js', 'js/components/faces.js', 'js/components/deaths-input.js', 'js/components/levels.js', 'js/components/search.js', 'js/events.js']);
+    f.load(['js/state.js', 'js/components/faces.js', 'js/components/deaths-input.js', 'js/components/duration-input.js', 'js/components/levels.js', 'js/components/search.js', 'js/events.js']);
     f.app('profile = emptyProfile(); ui.lang = "en"');
     return { ...f, nodes };
 }
@@ -111,7 +111,7 @@ test('form and detail show classic GDL values, hide platformer GDL and escape va
 });
 
 test('picked results toggle GDL visibility and update from cached IDs', async () => {
-    const f = formFixture(), form = { id: 'fm', elements: Object.fromEntries(['name', 'lid', 'creator', 'diff', 'rating', 'kind', 'kindT', 'ap'].map(key => [key, { value: '' }])) };
+    const f = formFixture(), form = { id: 'fm', dataset: {}, elements: Object.fromEntries(['name', 'lid', 'creator', 'diff', 'rating', 'kind', 'kindT', 'ap', 'pos'].map(key => [key, { value: '' }])) };
     for (const kind of ['classic', 'platform', 'classic']) {
         f.app('pickLevel')(form, { name: 'Level', levelId: '42', kind });
         await new Promise(resolve => setTimeout(resolve));
@@ -127,7 +127,7 @@ test('picked results toggle GDL visibility and update from cached IDs', async ()
 test('saveLevel derives GDL from cache and never accepts a submitted position', () => {
     const f = formFixture();
     for (const kind of ['classic', 'platform']) {
-        f.app('saveLevel')({ dataset: {}, elements: { pos: { value: '' } }, entries: [['name', 'Level'], ['kind', kind], ['lid', '42'], ['deaths', ''], ['gdl', '999']] });
+        f.app('saveLevel')({ dataset: {}, elements: { ...emptyDurationFields(), pos: { value: '' } }, entries: [['name', 'Level'], ['kind', kind], ['lid', '42'], ['deaths', ''], ['gdl', '999']] });
         assert.equal(f.app('profile.levels.at(-1).gdl'), kind == 'classic' ? 387 : null);
     }
 });

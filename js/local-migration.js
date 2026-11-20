@@ -37,6 +37,7 @@ function localProfilesToOffer(userId) {
 /** Counts fields changed on a copy; the original remains a downloadable backup. */
 function cleanMigrationData(source, localId) {
     const data = JSON.parse(JSON.stringify(source));
+    migrateRatingScale(data);
     let adjusted = 0;
     const set = (entry, key, value) => {
         if (JSON.stringify(entry[key]) !== JSON.stringify(value)) {
@@ -93,7 +94,7 @@ function cleanMigrationData(source, localId) {
             set(entry, 'link', safeUrl(entry.link) ? text(entry.link, 500) : '');
         for (const field of ['enj', 'lik', 'attN', 'attC', 'tN', 'tP', 'tPC']) {
             if (entry[field] != null)
-                set(entry, field, clamp(entry[field], ['enj', 'lik'].includes(field) ? -10 : 0, ['enj', 'lik'].includes(field) ? 10 : 1000000000));
+                set(entry, field, ['enj', 'lik'].includes(field) ? (Number.isFinite(Number(entry[field])) ? Math.round(Math.max(0, Math.min(10, Number(entry[field]))) * 10) / 10 : null) : clamp(entry[field], 0, 1000000000));
         }
         if (entry.deaths != null) {
             const deaths = cleanDeaths(entry.deaths);

@@ -10,11 +10,11 @@ const plain = value => {
         return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, plain(entry)]));
     return value;
 };
-const empty = () => ({ levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
+const empty = () => ({ ratingScale: 10, levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
 const level = (fields = {}) => ({
     id: 'n1', name: 'Étoile 星 🎮', kind: 'classic', levelId: '123456', creator: 'Creator',
     diff: 'Extreme Demon', rating: 'mythic', attN: 0, attC: 123, tN: 456, tP: 789, tPC: 10,
-    date: '2026-11-11', link: 'https://example.com/video', enj: -10, lik: 0,
+    date: '2026-11-11', link: 'https://example.com/video', enj: 2.5, lik: 0,
     notes: '  Private notes\n第二行  ', tags: ['Focus', '星'], deaths: { 0: 0, 43: 7, 100: 1 },
     ar: { s: 'r', p: 42 }, gdl: 387, ...fields
 });
@@ -50,7 +50,7 @@ test('profileRows maps every level field and keeps private notes in their own ro
             id: 'n1', name: 'Étoile 星 🎮', kind: 'classic', level_id: 123456, creator: 'Creator',
             difficulty: 'Extreme Demon', rating: 'mythic', attempts_normal: 0, attempts_copy: 123,
             time_normal: 456, time_practice: 789, time_practice_copy: 10, completed_on: '2026-11-11',
-            video_url: 'https://example.com/video', enjoyment: -10, liking: 0,
+            video_url: 'https://example.com/video', enjoyment: 2.5, liking: 0,
             deaths: { 0: 0, 43: 7, 100: 1 }, aredl_status: 'r', aredl_position: 42, gdl_position: 387
         }
     });
@@ -264,7 +264,7 @@ test('250 seeded profiles round-trip after defaults and normalize randomly missi
             attN: choose([null, 0, 1000000000]), attC: choose([null, 0, 17]),
             tN: choose([null, 0, 12345]), tP: choose([null, 0, 42]), tPC: choose([null, 0, 60]),
             date: choose([null, '2026-11-11']), link: choose([null, 'https://example.com/🎮']),
-            enj: choose([null, -10, 0, 10]), lik: choose([null, -10, 0, 10]), notes: choose(['', '星\n  Notes  ']),
+            enj: choose([null, 0, 2.5, 10]), lik: choose([null, 0, 2.5, 10]), notes: choose(['', '星\n  Notes  ']),
             tags: Array.from({ length: Math.floor(random() * 7) }, () => choose(tagNames)),
             deaths: random() < 0.5 ? {} : { 0: 0, [Math.floor(random() * 100) + 1]: Math.floor(random() * 100) },
             ar: choose([{ s: null, p: null }, { s: 'n', p: null }, { s: 'p', p: null }, { s: 'r', p: 1 }])
@@ -447,4 +447,12 @@ test('mergeRow ignores all server columns, including when one side is null', () 
     for (const [local, remote] of [[{ value: 1, ...server }, null], [null, { value: 1, ...server }]])
         assert.deepEqual(plain(merge({ value: 0 }, local, remote)), { row: { value: 1 }, conflicts: [] });
     assert.deepEqual(plain(merge({ value: 0 }, null, null)), { row: null, conflicts: [] });
+});
+
+test('server decimal ratings remain numbers and are never converted as legacy profiles', () => {
+    const { app } = createApp();
+    app(`profile = rowsProfile([{ table: 'levels', row: { id: 'n1', enjoyment: 2.5, liking: 0 } }]).profile; ensureProfileDefaults(); ensureProfileDefaults()`);
+    assert.equal(app('profile.ratingScale'), 10);
+    assert.equal(app('profile.levels[0].enj'), 2.5);
+    assert.equal(app('profile.levels[0].lik'), 0);
 });

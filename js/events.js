@@ -90,7 +90,8 @@ const ACTIONS = {
     },
     step(a) {
         const i = a.parentNode.querySelector('input'), mn = i.min === '' ? -1e9 : +i.min, mx = i.max === '' ? 1e9 : +i.max;
-        i.value = Math.max(mn, Math.min(mx, (+i.value || 0) + +a.dataset.d));
+        const step = Number(i.step) || 1, precision = (String(step).split('.')[1] || '').length;
+        i.value = Number(Math.max(mn, Math.min(mx, Math.round(((+i.value || 0) + +a.dataset.d * step) / step) * step)).toFixed(precision));
         i.dispatchEvent(new Event('input', { bubbles: true }));
     },
     lang(a) {
@@ -277,15 +278,21 @@ function downloadLocalBackup(id) {
 }
 
 function saveLevel(form) {
+    const durations = ['tN', 'tP', 'tPC'].map(field => readDuration(form, field));
+    if (durations.some(Number.isNaN)) {
+        form.reportValidity();
+        return;
+    }
     const position = form.elements.pos.value, old = findLevel(form.dataset.id), level = old || { id: newId('n') };
-    Object.assign(level, levelFromForm(form));
+    const fields = levelFromForm(form), maximum = maxRankPosition(fields.kind, level.id);
+    Object.assign(level, fields);
     if (!old)
         profile.levels.push(level);
     matchWithAredl([level]);
     matchWithDemonlist([level]);
     removeFromOrder(level.id);
     if (position && !isPre(level)) {
-        const order = profile.order[level.kind], before = rankedIds(level.kind)[Math.max(0, +position - 1)];
+        const order = profile.order[level.kind], before = rankedIds(level.kind)[Math.max(1, Math.min(maximum, +position)) - 1];
         order.splice(before ? order.indexOf(before) : order.length, 0, level.id);
     }
     save();
@@ -425,7 +432,7 @@ document.body.oninput = e => {
         return setComparisonSearch(e.target);
     if (['fm', 'wf'].includes(e.target.form?.id))
         e.target.setCustomValidity(fieldError(e.target.name, e.target.value));
-    if (e.target.form?.id == 'fm' && ['attC', 'attN', 'tN', 'tP', 'tPC'].includes(e.target.name))
+    if (e.target.form?.id == 'fm' && (/^(?:attC|attN|t(?:N|P|PC)_[hms])$/.test(e.target.name)))
         updateTotals(e.target.form);
     if (e.target.id == 'tgq')
         renderTagSuggestions();
@@ -505,7 +512,10 @@ document.addEventListener('toggle', e => {
         optionsPanel.style.setProperty('--ms-height', Math.max(0, innerHeight - panelTop - 12) + 'px');
     }
 }, true);
+document.addEventListener('focusout', e => durationBlur(e));
 document.onkeydown = e => {
+    if (e.target.dataset.duration)
+        return durationKeydown(e);
     if (e.key == 'Enter' && e.target.dataset.deathField != null)
         return deathInputKeydown(e);
     if (e.key == 'Escape') {
