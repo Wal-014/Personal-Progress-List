@@ -1,7 +1,7 @@
 /**
  * Service worker for installation and offline use, fetching same-origin files from the network first with a cache fallback.
  */
-const CACHE = 'prp-1.13.2';
+const CACHE = 'prp-1.13.3';
 // vendor/supabase.js is intentionally omitted so visitors who never sign in never download it.
 const SHELL = [
   "./",
@@ -16,6 +16,8 @@ const SHELL = [
   "manifest.json",
   "icon.svg",
   "favicon.png",
+  "assets/backgrounds/stars.svg",
+  "assets/backgrounds/moons.svg",
   "assets/modes/classic.svg",
   "assets/modes/platform.svg",
   "vendor/Sortable.min.js",

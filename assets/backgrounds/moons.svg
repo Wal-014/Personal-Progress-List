@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 660 460">
+  <defs><path id="moon" d="M9-37C-14-33-28-17-27 3c1 23 17 36 37 36 14 0 25-6 33-17-15 8-33 5-43-8C-11 0-10-22 9-37Z" fill="white" fill-opacity=".18" stroke="white" stroke-width="1.5"/></defs>
+  <g opacity=".69">
+    <use xlink:href="#moon" transform="translate(302 51) rotate(-8) scale(0.82)"/>
+    <use xlink:href="#moon" transform="translate(601 146) rotate(16) scale(0.64)"/>
+    <use xlink:href="#moon" transform="translate(143 345) rotate(-14) scale(0.96)"/>
+  </g>
+</svg>

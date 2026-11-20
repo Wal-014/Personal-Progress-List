@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 660 460">
+  <defs><path id="star" d="m0-37 10 25 28 2-21 18 6 28L0 21l-24 15 6-28-21-18 29-2Z" fill="white" fill-opacity=".025" stroke="white" stroke-width="1.7"/></defs>
+  <g opacity=".69">
+    <use xlink:href="#star" transform="translate(73 70) rotate(-12) scale(1)"/>
+    <use xlink:href="#star" transform="translate(390 225) rotate(14) scale(0.52)"/>
+    <use xlink:href="#star" transform="translate(560 395) rotate(8) scale(0.83)"/>
+  </g>
+</svg>
