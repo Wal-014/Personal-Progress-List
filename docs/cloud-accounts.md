@@ -82,8 +82,8 @@ erDiagram
     integer time_practice_copy
     date completed_on
     text video_url
-    smallint enjoyment
-    smallint liking
+    numeric enjoyment
+    numeric liking
     jsonb deaths "percent to count"
   }
   LEVEL_NOTES {
@@ -163,7 +163,7 @@ Every column has a check constraint:
 - allowed values for `kind`, `difficulty`, `rating`, `status`, `aredl_status`, `lang` and `theme`, written as `check (… in (…))` rather than enum types, so a new value is a one-line migration;
 - `#rrggbb` colours, `http(s)` video links, positive Geometry Dash level IDs, and IDs in the order arrays matching the app's ID format;
 - lengths: names and creators 100, notes 5,000, display names 40, biographies 300, tag names 40;
-- ranges: attempts and seconds 0-1,000,000,000, enjoyment and liking -10 to 10, wishlist progress 0-100, tag position on a level 0-49;
+- ranges: attempts and seconds 0-1,000,000,000, enjoyment and liking 0 to 10 with one decimal, wishlist progress 0-100, tag position on a level 0-49;
 - deaths as an object of percentages 0-100 with whole, non-negative counts;
 - usernames `^[a-z0-9_]{3,20}$`, unique, and countries as two capital letters.
 

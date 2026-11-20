@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { loadScripts } from './load-scripts.js';
+import { emptyDurationFields, loadScripts } from './load-scripts.js';
 
 const createApp = () => {
     const { app, context } = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/components/deaths-input.js', 'js/components/duration-input.js', 'js/components/levels.js'], {
@@ -31,7 +31,7 @@ test('activateProfile selects the stored data and normalizes only that profile',
     assert.equal(app('profile === store.profs.second.data'), true);
     assert.deepEqual(plain(app('profile.levels[0].deaths')), { 63: 2 });
     assert.equal(app('profile.wishlists[0].items[0].status'), 'done');
-    assert.deepEqual(plain(app('store.profs.first.data')), { levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
+    assert.deepEqual(plain(app('store.profs.first.data')), { ratingScale: 10, levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
     assert.equal(app('ui.wl'), 'unchanged');
 });
 
@@ -74,7 +74,7 @@ test('levelFromForm preserves fields, converts units, clamps ratings and keeps a
     const input = durationForm(structuredClone(filledEntries));
     assert.deepEqual(plain(app('levelFromForm')(input)), {
         name: 'Test level', kind: 'platform', levelId: '123', creator: 'Creator', diff: 'Hard', rating: 'epic',
-        attC: 0, attN: 12, date: '2026-10-26', link: 'https://example.com/video', enj: 10, lik: -10,
+        attC: 0, attN: 12, date: '2026-10-26', link: 'https://example.com/video', enj: 10, lik: 0,
         tN: 5405, tP: 120, tPC: 0, notes: '  Keep spacing  ', tags: ['First', 'Second'],
         deaths: { 0: 0, 63: 6, 100: 1 }
     });
@@ -102,4 +102,31 @@ test('chip data feeds the existing histogram with zero counts preserved', () => 
     assert.match(histogram, /data-hp="24" data-hn="270"/);
     assert.match(histogram, /data-hp="40" data-hn="82"/);
     assert.match(histogram, /data-hp="0" data-hn="0"/);
+});
+
+
+test('legacy ratings convert once and persist the scale marker', () => {
+    const { app, context, plain } = createApp();
+    app(`store = { cur: 'old', profs: { old: { data: { levels: [-10, -3, 0, 10, null].map((v, i) => ({ id: 'n' + i, enj: v, lik: v })), order: { classic: [], platform: [] }, tags: [], wishlists: [] } } } }; activateProfile('old')`);
+    assert.deepEqual(plain(app('profile.levels.map(l => l.enj)')), [0, 3.5, 5, 10, null]);
+    assert.deepEqual(plain(app('profile.levels.map(l => l.lik)')), [0, 3.5, 5, 10, null]);
+    assert.equal(JSON.parse(context.localStorage.gdp).profs.old.data.ratingScale, 10);
+    app("activateProfile('old')");
+    assert.deepEqual(plain(app('profile.levels.map(l => l.enj)')), [0, 3.5, 5, 10, null]);
+});
+
+test('rating formatting uses the interface locale and at most one decimal', () => {
+    const { app } = createApp();
+    for (const lang of ['es', 'en']) {
+        app(`ui.lang = '${lang}'`);
+        assert.deepEqual([0, 1, 2.5, 9.9, 10].map(app('formatRating')), lang === 'es' ? ['0', '1', '2,5', '9,9', '10'] : ['0', '1', '2.5', '9.9', '10']);
+        assert.equal(app('formatRating(7.33333)'), lang === 'es' ? '7,3' : '7.3');
+    }
+});
+
+test('levelFromForm rounds rating decimals without converting the new scale', () => {
+    const { app } = createApp();
+    const result = app('levelFromForm')({ entries: [['name', 'Level'], ['enj', '7.34'], ['lik', '2.56']], elements: emptyDurationFields() });
+    assert.equal(result.enj, 7.3);
+    assert.equal(result.lik, 2.6);
 });

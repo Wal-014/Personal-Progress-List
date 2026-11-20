@@ -669,3 +669,27 @@ test('the first pull after a cached restart still reports conflicts when a revis
     assert.equal(restored.data().levels[0].attN, 20);
     assert.deepEqual(restored.toasts, ['Changed on another device: Level n1']);
 });
+
+test('a legacy cloud cache converts before merging with migrated server ratings without conflicts', async () => {
+    const a = await ready();
+    a.app(`profile.levels.push({ id: 'n1', name: 'Old rating', kind: 'classic', enj: 3, lik: -3 }); save()`);
+    await a.app('pushCloud()');
+    const storage = { ...a.storage }, cached = JSON.parse(storage['gcloud:owner']);
+    delete cached.profile.ratingScale;
+    storage['gcloud:owner'] = JSON.stringify(cached);
+    const old = a.server.rows('levels')[0];
+    await a.server.rpc('sync_push', { changes: [{ table: 'levels', key: { id: 'n1' }, version: old.version, row: { ...old, enjoyment: 6.5, liking: 3.5 } }] });
+    const b = device(a.server, storage); b.load();
+    b.app(`useCloudCache({ id: 'owner' }, ${JSON.stringify(a.server.profile)}, readCloudCache('owner'))`);
+    assert.equal(b.data().levels[0].enj, 6.5);
+    assert.equal(b.data().levels[0].lik, 3.5);
+    assert.equal(b.app("cloudSession.snapshot.get('levels:n1').row.enjoyment"), 3);
+    await b.start();
+    assert.deepEqual(b.toasts, []);
+    assert.equal(b.status().pending, 0);
+    assert.equal(b.data().levels[0].enj, 6.5);
+    assert.equal(b.data().levels[0].lik, 3.5);
+    const c = await ready(a.server, storage);
+    assert.equal(c.data().levels[0].enj, 6.5);
+    assert.equal(c.data().ratingScale, 10);
+});

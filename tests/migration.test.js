@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { loadScripts, syncScripts } from './load-scripts.js';
 
 const plain = value => JSON.parse(JSON.stringify(value));
-const data = () => ({ levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
+const data = () => ({ ratingScale: 10, levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
 const level = (id, extra = {}) => ({ id, name: id, kind: 'classic', ...extra });
 const localProfile = (extra = {}) => ({ name: 'Local', color: '#123456', secondaryColor: '#abcdef', data: data(), ...extra });
 
@@ -88,7 +88,7 @@ test('cleaning counts each changed field and merges normalized tags without modi
     assert.equal(cleaned.adjusted, 21);
     const l = cleaned.data.levels[0];
     assert.equal(l.name, 'N'.repeat(100)); assert.equal(l.creator, 'C'.repeat(100)); assert.equal(l.notes.length, 5000);
-    assert.equal(l.link, ''); assert.equal(l.enj, -10); assert.equal(l.lik, 10);
+    assert.equal(l.link, ''); assert.equal(l.enj, 0); assert.equal(l.lik, 10);
     assert.deepEqual([l.attN, l.attC, l.tN, l.tP, l.tPC], [0, 1e9, 0, 1e9, 1e9]);
     assert.deepEqual(l.deaths, { 50: 3 }); assert.equal(l.levelId, null);
     assert.deepEqual(l.tags, ['Shared', 'X'.repeat(40)]);
@@ -270,7 +270,7 @@ for (const [field, input, expected] of [
     ['name', '\u0001A\u007f', 'A'], ['creator', 'C'.repeat(101), 'C'.repeat(100)],
     ['notes', 'x'.repeat(5001), 'x'.repeat(5000)], ['link', 'data:text/plain,bad', ''],
     ['link', 'https://example.test/' + 'x'.repeat(500), ('https://example.test/' + 'x'.repeat(500)).slice(0, 500)],
-    ['enj', 11, 10], ['lik', -11, -10], ['attN', -1, 0], ['attC', 1e9 + 1, 1e9],
+    ['enj', 11, 10], ['lik', -11, 0], ['attN', -1, 0], ['attC', 1e9 + 1, 1e9],
     ['tN', -1, 0], ['tP', 1e9 + 1, 1e9], ['tPC', 1e9 + 1, 1e9],
     ['deaths', { 101: 1, 50: 2.5, 99: -1, 20: 10000001 }, { 20: 10000000 }],
     ['levelId', '123abc', null], ['levelId', '1234567890123', null], ['diff', 'malicious', null],
@@ -285,7 +285,7 @@ for (const [field, input, expected] of [
 
 test('unchanged valid rows stay unchanged and unknown metadata meets database constraints', () => {
     const d = device();
-    const good = level('n1', { name: 'Good', creator: 'Creator', levelId: '123', diff: 'Hard', rating: 'epic', date: '2026-11-12', link: 'HTTPS://example.test', notes: 'Note', deaths: { 50: 1 }, enj: -10, lik: 10, tN: 0, tP: 1e9, tPC: null });
+    const good = level('n1', { name: 'Good', creator: 'Creator', levelId: '123', diff: 'Hard', rating: 'epic', date: '2026-11-12', link: 'HTTPS://example.test', notes: 'Note', deaths: { 50: 1 }, enj: 0, lik: 10, tN: 0, tP: 1e9, tPC: null });
     d.context.source = { ...data(), levels: [good] };
     const result = plain(d.app('cleanMigrationData(source)'));
     assert.deepEqual(result.data.levels[0], good); assert.equal(result.adjusted, 0);
@@ -452,4 +452,18 @@ test('editing the first profile still counts as real data when startup reused th
     assert.deepEqual(plain(d.app("localProfilesToOffer('owner')")), []);
     d.app("store.profs.a.data.levels.push({ id: 'user-level', name: 'User level', kind: 'classic' })");
     assert.deepEqual(plain(d.app("localProfilesToOffer('owner')")), ['a']);
+});
+
+test('cleaning converts an inactive legacy profile once without changing its backup', () => {
+    const d = device(), source = data();
+    delete source.ratingScale;
+    source.levels = [-10, -3, 0, 10, null].map((value, i) => level('n' + i, { enj: value, lik: value }));
+    const before = structuredClone(source), cleaned = d.app('cleanMigrationData')(source, 'legacy').data;
+    assert.equal(cleaned.ratingScale, 10);
+    assert.deepEqual([...cleaned.levels].map(entry => entry.enj), [0, 3.5, 5, 10, null]);
+    assert.deepEqual([...cleaned.levels].map(entry => entry.lik), [0, 3.5, 5, 10, null]);
+    assert.deepEqual(plain(d.app('cleanMigrationData')(cleaned, 'legacy').data), plain(cleaned));
+    assert.deepEqual(source, before);
+    cleaned.levels[0].enj = 7.34;
+    assert.equal(d.app('cleanMigrationData')(cleaned, 'legacy').data.levels[0].enj, 7.3);
 });
