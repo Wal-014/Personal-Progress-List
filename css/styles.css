@@ -2864,17 +2864,8 @@ input.ro {
   background: var(--color-accent);
 }
 
-.hstats .hsection-head h2::before {
-  display: none;
-}
-
-.hstats .hsection-head .i {
-  width: 36px;
-  height: 36px;
-}
-
-.hstats .hsection-head .i path:last-child {
-  stroke: var(--color-mode-classic);
+.hmetric > .i {
+  color: var(--color-accent);
 }
 
 .hl .hadd {
