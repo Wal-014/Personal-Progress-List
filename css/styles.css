@@ -4065,13 +4065,21 @@ main.home {
 .hsection-head h2 > .i { flex: none; width: 24px; height: 24px; color: var(--color-text); }
 
 @media (forced-colors: none) {
-  .nav-ink { stop-color: color-mix(in srgb, var(--color-text) 62%, var(--metal-shade)); }
+  .nav-ink { stop-color: color-mix(in srgb, var(--metal-shade) 70%, var(--color-text)); }
   .nav-glint { stop-color: var(--metal-glint); }
-  [data-theme=porcelain] .nav-glint { stop-color: color-mix(in srgb, var(--metal-edge) 66%, var(--color-text)); }
+  [data-theme=porcelain] .nav-ink { stop-color: #584630; }
+  [data-theme=porcelain] .nav-glint { stop-color: #bd9867; }
 
   .hsection-head h2 > .i, :is(.shell-nav, .shell-footer) > button > .i {
     stroke: url(#nav-metal) currentColor;
-    stroke-width: 1.8;
+    stroke-width: 2;
+  }
+
+  /* A single bright ink for labels; the metallic bands belong to the icons. */
+  :root:not([data-theme=porcelain]) :is(.shell-nav, .shell-footer, .page-title, .shell-identity) > button > span,
+  :root:not([data-theme=porcelain]) :is(.hl .hadd, .hl .htext, .mode-switch button:not([aria-pressed=true])) {
+    color: color-mix(in srgb, var(--color-text) 92%, white);
+    text-shadow: 0 0 3px color-mix(in srgb, var(--color-accent) 21%, transparent);
   }
 
   :is(.shell-nav, .shell-footer) > button:not([aria-current=page]) {
