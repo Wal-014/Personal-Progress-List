@@ -872,6 +872,7 @@ dialog.modal::backdrop {
 
 /* Shared list controls and the selected level's detail pane. */
 .mode-switch {
+  --mode-ink: var(--color-mode-classic);
   position: relative;
   isolation: isolate;
   display: inline-grid;
@@ -903,7 +904,8 @@ dialog.modal::backdrop {
   inset: 3px auto 3px 3px;
   width: calc(50% - 3px);
   border-radius: inherit;
-  background: var(--color-accent);
+  background: color-mix(in srgb, var(--mode-ink) 16%, var(--color-surface));
+  box-shadow: inset 0 0 0 1px var(--mode-ink);
   transition: transform var(--motion-selection) var(--motion-easing);
 }
 
@@ -911,8 +913,15 @@ dialog.modal::backdrop {
   transform: translateX(100%);
 }
 
+.mode-switch:has([data-v=platform][aria-pressed=true]) {
+  --mode-ink: var(--color-mode-platform);
+}
+
+.mode-switch [data-v=classic] span { color: var(--color-mode-classic); }
+.mode-switch [data-v=platform] span { color: var(--color-mode-platform); }
+
 .mode-switch button[aria-pressed=true] {
-  color: var(--color-bg);
+  color: var(--color-text);
   opacity: 1;
 }
 
@@ -932,8 +941,24 @@ dialog.modal::backdrop {
   overflow-wrap: anywhere;
 }
 
+.list-surface .lv:has(.th) {
+  color: var(--color-card-text);
+  --meta: var(--color-card-text);
+}
+
+.list-surface .lv > .th::before {
+  background: linear-gradient(90deg, rgb(0 0 0 / 92%), rgb(0 0 0 / 72%) 48%, rgb(0 0 0 / 36%)), var(--th) center / cover no-repeat;
+  opacity: 1;
+  mask-image: none;
+}
+
+.list-surface .rcol .hero {
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+
 .split .lv {
-  height: 96px;
+  height: 104px;
 }
 
 .split .lv .info {
@@ -1182,6 +1207,8 @@ dialog.modal::backdrop {
 
 /* Phones: the detail replaces the list instead of sitting under it */
 @media (max-width: 900px) {
+  .split .lv { height: 96px; }
+
   .lh #q {
     flex-basis: 100%;
   }

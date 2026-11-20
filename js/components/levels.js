@@ -96,7 +96,7 @@ function detail(level) {
         section('sh', `${(level.tags || []).map(name => tagFilterChip(name, true)).join('')}${recorded(level.notes) ? `<p style="white-space:pre-wrap">${escapeHtml(level.notes)}</p>` : ''}`),
         section('dh', histogram)
     ].join('');
-    return `<div class=box>${thumbnail ? `<div class=hero style="background-image:url('${thumbnail}')"></div>` : ''}<h2>${escapeHtml(level.name)}</h2><p class=by>${escapeHtml(orDash(level.creator))} · ID ${escapeHtml(orDash(level.levelId))} · ${escapeHtml(difficultyLabel(level))} · ${aredlLabel(level)}${level.kind == 'platform' ? '' : ` · GDL ${escapeHtml(level.gdl == null ? '—' : '#' + level.gdl)}`}</p>
+    return `<div class=box>${thumbnail ? `<div class=hero style="background-image:url('${thumbnail}')"></div>` : ''}<h2>${escapeHtml(level.name)}</h2><p class=by>${difficultyFace(level)} ${escapeHtml(orDash(level.creator))} · ID ${escapeHtml(orDash(level.levelId))} · ${escapeHtml(difficultyLabel(level))} · ${aredlLabel(level)}${level.kind == 'platform' ? '' : ` · GDL ${escapeHtml(level.gdl == null ? '—' : '#' + level.gdl)}`}</p>
 <div${sections ? ' class=dgrid' : ''}>${sections || `<p class=by>${t('noAdditionalDetails')}</p>`}
 </div><p class=dgb>${canEdit() ? `<button class=blue data-act=edit data-id="${escapeHtml(level.id)}">${ICONS.edit} ${t('edit')}</button>` : ''} <button data-act=lvclose>${t('close')}</button></p></div>`;
 }

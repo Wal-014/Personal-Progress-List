@@ -164,7 +164,7 @@ test('every screen uses the shared shell, active destination and page actions', 
         if (tab == 'home') assert.equal(title, '');
         else {
             assert.match(title, /class=page-title/);
-            assert.ok(title.includes(app(`t('${tab}')`)));
+            assert.ok(title.includes(app(`t('${['classic', 'platform'].includes(tab) ? 'lists' : tab}')`)));
         }
         if (['classic', 'platform'].includes(tab)) assert.doesNotMatch(title, /data-act=add/);
         if (tab == 'wish') assert.match(title, /data-act=wnew/);
