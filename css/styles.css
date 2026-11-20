@@ -4044,82 +4044,79 @@ main.home {
   min-width: 0;
 }
 
-/* Two narrow faces give the frame a bevel at its actual display size. */
-.shell-brand-frame, .list-surface .rcol .hero {
-  position: relative;
-  border: 1px solid var(--metal-edge);
-  border-top-color: var(--metal-glint);
-  border-bottom-color: var(--metal-shade);
-  box-shadow: none;
-}
-@supports (mask-composite: exclude) {
-  .shell-brand-frame::after, .list-surface .rcol .hero::after {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    padding: 2px;
-    border-radius: inherit;
-    pointer-events: none;
-    background:
-      linear-gradient(122deg, transparent 10%, var(--metal-glint) 13%, transparent 19% 69%, var(--metal-glint) 74%, transparent 80%),
-      conic-gradient(from 45deg, var(--metal-edge), var(--metal-shade) 25%, var(--metal-edge) 55%, var(--metal-glint) 77%, var(--metal-edge));
-    mask: linear-gradient(white 0 0) content-box, linear-gradient(white 0 0);
-    mask-composite: exclude;
-  }
-  .shell-brand-frame::before, .list-surface .rcol .hero::before {
-    content: '';
-    position: absolute;
-    inset: 1px;
-    pointer-events: none;
-    border-radius: calc(var(--radius-control) - 2px);
-    border: 1px solid var(--metal-shade);
-    border-right-color: var(--metal-glint);
-    border-bottom-color: var(--metal-edge);
-  }
-}
-
-/* Porcelain reflects light across the rim itself, including the Home card edges. */
+/* A single hairline follows the existing radius. Layered backgrounds also work on inputs. */
 @media (forced-colors: none) {
-  [data-theme=porcelain] :is(.shell-brand-frame, .hl .hcard) {
-    --rim-mid: #ceae79;
-    --rim-shade: #a9804c;
-    --rim-light: #fff1cf;
-    --rim-angle: 125deg;
-    border: 3px solid transparent;
+  :root :is(.shell-brand-frame, .hl .hcard, .hl .hstats-surface, .hl .hwish-rows,
+    .shell-sidebar .profile-pill, .shell-nav button[aria-current=page], .page-title button,
+    .hl .hadd, .lh #q, .lh .ms summary, .lh .list-clear, .lh .list-add,
+    .list-surface .rcol .box, .legacy-surface :is(.well, .wh, .kpi),
+    .trigs .trig, .modal .box, .dgb button, .wa button, .pause .appearance-option) {
+    border: 1px solid transparent;
     background:
-      linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
-      linear-gradient(var(--rim-angle), var(--rim-mid) 3%, var(--rim-light) 13%, var(--rim-mid) 27%,
-        var(--rim-shade) 46%, var(--rim-light) 55%, var(--rim-mid) 74%, var(--rim-light) 93%) border-box;
+      linear-gradient(var(--rim-fill, var(--color-surface)), var(--rim-fill, var(--color-surface))) padding-box,
+      linear-gradient(var(--rim-angle, 125deg), var(--metal-edge) 3%, var(--metal-glint) 13%,
+        var(--metal-edge) 27%, var(--metal-shade) 46%, var(--metal-glint) 55%,
+        var(--metal-edge) 74%, var(--metal-glint) 93%) border-box;
     box-shadow: none;
   }
 
-  [data-theme=porcelain] .shell-brand-frame::before,
-  [data-theme=porcelain] .shell-brand-frame::after { content: none; }
-
-  [data-theme=porcelain] .hl .hcard-platform {
-    --rim-mid: #89b5bf;
-    --rim-shade: #538a99;
-    --rim-light: #e6faff;
+  .hl .hcard-platform {
+    --metal-edge: #89b5bf;
+    --metal-shade: #538a99;
+    --metal-glint: #e6faff;
+  }
+  .lh .list-add, .dgb .pri, .wa .pri {
+    --rim-fill: var(--color-accent);
+    color: var(--color-bg);
+    text-shadow: none;
+    -webkit-text-stroke: 0;
+  }
+  :is(.dgb, .wa) button { color: var(--color-text); text-shadow: none; -webkit-text-stroke: 0; }
+  .dgb button.pri, .wa button.pri { color: var(--color-bg); }
+  .dgb button.dg, .wa button.dg { --rim-fill: #903239; color: white; }
+  .modal .box { --rim-fill: var(--panel); }
+  .modal .dgb button:not(.pri):not(.dg) { --rim-fill: var(--color-surface); }
+  .shell-nav [aria-current=page], .lh .ms[open] summary,
+  .lh .ms:has(input:checked) summary, .pause .appearance-option[aria-pressed=true] {
+    --rim-fill: color-mix(in srgb, var(--color-accent) 18%, var(--color-surface));
+    --metal-edge: var(--color-accent);
   }
 
-  [data-theme=porcelain] .hl .hcard:hover:not(:disabled):not([aria-disabled=true]) {
-    border-color: transparent;
+  :is(.hcard, .hadd, .profile-pill, .appearance-option, .lh summary, .dgb button, .wa button):hover {
     --rim-angle: 140deg;
   }
-}
-
-@supports (background-clip: text) {
-  :root:not([data-theme=porcelain]) :is(.page-title h2, .hsection-head h2, .list-surface .box > h2) {
-    color: transparent;
-    background: linear-gradient(175deg, #fff9eb 24%, #efdec4 60%, #fff6de 85%);
-    background-clip: text;
+  .hl .hcard:hover:not(:disabled):not([aria-disabled=true]), .hl .hadd:hover:not(:disabled):not([aria-disabled=true]) {
+    border-color: transparent;
   }
-}
 
-@media (forced-colors: active) {
-  :root:not([data-theme=porcelain]) :is(.page-title h2, .hsection-head h2, .list-surface .box > h2) { color: CanvasText; }
-  :is(.shell-brand-frame, .list-surface .rcol .hero)::before,
-  :is(.shell-brand-frame, .list-surface .rcol .hero)::after { display: none; }
+  /* Detail images supply their own background, so paint the same thin edge above it. */
+  .list-surface .rcol .hero {
+    position: relative;
+    border: 1px solid var(--metal-edge);
+  }
+  @supports (mask-composite: exclude) {
+    .list-surface .rcol .hero::after {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      padding: 1px;
+      pointer-events: none;
+      background: linear-gradient(125deg, var(--metal-edge), var(--metal-glint) 15%, var(--metal-shade) 45%, var(--metal-glint) 74%, var(--metal-edge));
+      mask: linear-gradient(white 0 0) content-box, linear-gradient(white 0 0);
+      mask-composite: exclude;
+    }
+  }
+
+  @supports (background-clip: text) {
+    :root :is(.shell-brand h1, .page-title h2, .hsection-head h2, .list-surface .box > h2, .legacy-surface .well h2) {
+      color: transparent;
+      background: linear-gradient(175deg, var(--color-text) 15%, color-mix(in srgb, var(--color-text) 76%, var(--metal-edge)) 54%, var(--color-text) 82%);
+      background-clip: text;
+      text-shadow: none;
+      -webkit-text-stroke: 0;
+    }
+  }
 }
 
 @media (width < 1280px) {
