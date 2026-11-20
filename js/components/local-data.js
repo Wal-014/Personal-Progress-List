@@ -6,7 +6,7 @@ function localProfileCounts(p) {
 
 function localProfileSummary(id, showActive = true) {
     const p = store.profs[id];
-    return `${cubeIcon(p.color, p.secondaryColor)}<span class=info><span class=nm>${escapeHtml(p.name)}</span><span class=by>${localProfileCounts(p)}</span>${showActive && id == store.cur ? `<span class=by>${t('localActive')}</span>` : ''}</span>`;
+    return `${catalogCube(p.cubeId, p.color, p.secondaryColor)}<span class=info><span class=nm>${escapeHtml(p.name)}</span><span class=by>${localProfileCounts(p)}</span>${showActive && id == store.cur ? `<span class=by>${t('localActive')}</span>` : ''}</span>`;
 }
 
 function migrationDialog(selectedId) {
@@ -51,6 +51,7 @@ async function editLocalProfile(create) {
     }
     else {
         own.name = selected.name;
+        own.cubeId = selected.cubeId;
         own.color = selected.color;
         own.secondaryColor = selected.secondaryColor;
     }

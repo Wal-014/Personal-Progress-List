@@ -1556,51 +1556,6 @@ input.ro {
   cursor: pointer;
 }
 
-.ms .msp input[type=checkbox] {
-  appearance: none;
-  flex: none;
-  width: 20px;
-  height: 20px;
-  /* Keep the box compact when touch inputs get a 44px minimum height. */
-  min-height: 20px;
-  margin: 0;
-  padding: 0;
-  border: 2px solid rgba(255, 255, 255, .55);
-  border-radius: 5px;
-  background: rgba(0, 0, 0, .4);
-  box-shadow: none;
-  cursor: pointer;
-  transition: border-color 150ms ease-out, background-color 150ms ease-out, box-shadow 150ms ease-out;
-}
-
-.ms .msp input[type=checkbox]:checked {
-  border-color: #000;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8l3 3 7-7' fill='none' stroke='%23000' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M3 8l3 3 7-7' fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"), linear-gradient(var(--go1), var(--go2));
-  background-position: center;
-  background-size: 14px 14px, 100% 100%;
-  background-repeat: no-repeat;
-  box-shadow: 0 0 8px color-mix(in srgb, var(--go) 55%, transparent);
-}
-
-@media (hover: hover) {
-  .ms .msp label:hover input[type=checkbox] {
-    border-color: var(--go);
-    box-shadow: 0 0 8px color-mix(in srgb, var(--go) 30%, transparent);
-  }
-}
-
-.ms .msp input[type=checkbox]:focus-visible {
-  outline: 3px solid var(--plab);
-  outline-offset: 2px;
-}
-
-/* Native controls stay recognizable in high-contrast mode. */
-@media (forced-colors: active) {
-  .ms .msp input[type=checkbox] {
-    appearance: auto;
-  }
-}
-
 .ms .msp img {
   flex: none;
   width: 32px;
@@ -2835,38 +2790,6 @@ input.ro {
   display: none;
 }
 
-/* ===== AREDL update status ===== */
-.syncst {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px 4px 6px;
-  font: bold 12px Arial, Helvetica, sans-serif;
-  background: rgba(0, 0, 0, .45);
-  border: 2px solid #000;
-  border-radius: 8px;
-}
-
-.syncst:empty {
-  display: none;
-}
-
-.syncst .i {
-  width: 18px;
-  height: 18px;
-  animation: spin 1.2s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-#aredl .xs-txt {
-  margin-left: 4px;
-}
-
 .local-profile + .local-profile {
   margin-top: 20px;
 }
@@ -3886,17 +3809,7 @@ body::before {
   gap: var(--space-8);
 }
 
-.shell-utilities .syncst {
-  font: 600 var(--space-12)/1.5 var(--font-ui);
-  gap: var(--space-8);
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
 
-.shell-utilities .syncst:empty {
-  display: none;
-}
 
 .shell-utilities .sq {
   position: relative;
@@ -4130,13 +4043,41 @@ main.home {
   color: var(--color-text);
   background: color-mix(in srgb, var(--color-accent) 13%, var(--color-surface));
 }
-:is(.lh, .modal, .list-surface .rcol) .ms .msp input[type=checkbox] {
-  all: revert;
+:root input[type=checkbox] {
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
   flex: none;
   width: 18px;
   height: 18px;
-  accent-color: var(--color-accent);
+  min-height: 18px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    linear-gradient(135deg, var(--metal-edge), var(--metal-glint), var(--metal-shade)) border-box;
+  box-shadow: none;
+  cursor: pointer;
 }
+:root input[type=checkbox]:checked {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+input[type=checkbox]:checked::after {
+  content: "";
+  width: 8px;
+  height: 4px;
+  border: solid currentColor;
+  border-width: 0 0 2px 2px;
+  transform: translateY(-1px) rotate(-45deg);
+}
+@media (forced-colors: active) {
+  :root input[type=checkbox] { appearance: auto; }
+  input[type=checkbox]:checked::after { content: none; }
+}
+
 :is(.modal, .list-surface) .gdc :is(.nm, .by) { color: var(--color-card-text); }
 .modal .box :is(input, select, textarea, button, summary):focus-visible {
   outline: var(--size-focus) solid var(--color-focus);
@@ -4146,7 +4087,7 @@ main.home {
 /* A single hairline follows the existing radius. Layered backgrounds also work on inputs. */
 @media (forced-colors: none) {
   :root :is(.shell-brand-frame, .hl .hcard, .hl .hstats-surface, .hl .hwish-rows,
-    .shell-sidebar .profile-pill, .shell-nav button[aria-current=page], .page-title button,
+    .shell-sidebar .profile-pill, .shell-nav > button[aria-current=page], .page-title button,
     .hl .hadd, .lh #q, .lh .ms summary, .lh .list-clear, .lh .list-add,
     .list-surface .rcol .box, .legacy-surface :is(.well, .wh, .kpi),
     .trigs .trig, .modal .box, .dgb button, .wa button, .empty .pri, .pause .appearance-option,
@@ -4215,7 +4156,7 @@ main.home {
   }
   .modal .box { --rim-fill: var(--panel); }
   .modal .dgb button:not(.pri):not(.dg) { --rim-fill: var(--color-surface); }
-  .shell-nav [aria-current=page], .lh .ms[open] summary,
+  .shell-nav > [aria-current=page], .lh .ms[open] summary,
   .lh .ms:has(input:checked) summary, .pause .appearance-option[aria-pressed=true] {
     --rim-fill: color-mix(in srgb, var(--color-accent) 18%, var(--color-surface));
     --metal-edge: var(--color-accent);
@@ -4231,12 +4172,12 @@ main.home {
   /* Reflect the local edge color into the surface. The first mask picks out
      the polished stretches; the four edge masks fade them toward the center. */
   @supports (mask-composite: intersect) {
-    :is(.hl .hcard, .hl .hadd, .profile-pill, .shell-nav button[aria-current=page],
+    :is(.hl .hcard, .hl .hadd, .profile-pill, .shell-nav > button[aria-current=page],
       .page-title button, .lh .ms summary, .lh .list-clear, .lh .list-add,
       .trigs .trig, .dgb button, .wa button, .pause .appearance-option) {
       position: relative;
     }
-    :is(.hl .hcard, .hl .hadd, .profile-pill, .shell-nav button[aria-current=page],
+    :is(.hl .hcard, .hl .hadd, .profile-pill, .shell-nav > button[aria-current=page],
       .page-title button, .lh .ms summary, .lh .list-clear, .lh .list-add,
       .trigs .trig, .dgb button, .wa button, .pause .appearance-option)::before {
       content: '';
@@ -4303,13 +4244,6 @@ main.home {
     padding: var(--space-16) calc(var(--space-48) * 2);
   }
 
-  .shell-utilities .syncst span {
-    position: absolute;
-    width: var(--size-border);
-    height: var(--size-border);
-    overflow: hidden;
-    clip-path: inset(50%);
-  }
 
   .shell-content {
     margin-left: 0;
@@ -4518,17 +4452,24 @@ main.home {
 .legacy-surface .well.d .hb i { background: linear-gradient(90deg, var(--color-secondary-light), var(--color-accent)); }
 
 .ranking-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; }
-.ranking-controls .gdseg { grid-column: 1; }
-.legacy-surface .ranking-controls button[data-act=compare-toggle] { color: var(--color-bg); }
-.compare-selection .stat-identity .nm { white-space: normal; overflow-wrap: anywhere; }
-.ranking-controls .gdseg::before {
+.ranking-controls :is(.gdseg, .ranking-order) {
+  grid-column: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-inline-start: 6rem;
+  position: relative;
+}
+.ranking-controls :is(.gdseg, .ranking-order)::before {
   content: attr(aria-label);
-  align-self: center;
-  min-width: 5rem;
-  font: 600 .8rem/1.3 var(--font-ui);
+  position: absolute;
+  inset-inline-start: 0;
+  font: 600 .875rem/1.35 var(--font-ui);
   color: var(--color-text-muted);
 }
-.ranking-order { display: flex; flex-wrap: wrap; gap: 4px; }
+.legacy-surface .ranking-controls button[data-act=compare-toggle] { color: var(--color-bg); }
+.compare-selection .stat-identity .nm { white-space: normal; overflow-wrap: anywhere; }
 .ranking-controls [data-act=compare-toggle] { grid-column: 2; grid-row: 1 / 4; align-self: start; min-height: 42px; padding-inline: 16px; }
 .compare-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .compare-slot, .compare-picker { min-width: 0; }
@@ -4554,7 +4495,7 @@ main.home {
 .compare-value { font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) {
   .ranking-controls { grid-template-columns: 1fr; }
-  .ranking-controls .gdseg::before { flex-basis: 100%; }
+  .ranking-controls :is(.gdseg, .ranking-order) { padding-inline-start: 5rem; }
   .ranking-controls [data-act=compare-toggle] { grid-column: 1; grid-row: auto; justify-self: start; }
   .compare-selection { grid-template-columns: minmax(0, 1fr) auto; }
   .compare-selection .face { display: none; }
@@ -4563,7 +4504,7 @@ main.home {
   :is(.wi, .trig, .stat-card, .lv, .chip, .mode-switch button, .list-choices button, .gdf button, .gdf summary) {
     transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
   }
-  .list-choices:not([hidden]), .compare-picker:focus-within .compare-options { animation: dropdown-enter 150ms ease-out; }
+  .compare-picker:focus-within .compare-options { animation: dropdown-enter 150ms ease-out; }
   @media (hover: hover) {
     :is(.wi, .trig, .stat-card, .lv):hover { border-color: var(--color-accent); }
   }
@@ -4600,3 +4541,30 @@ main.home {
   font-size: var(--space-12);
   padding: var(--space-4) var(--space-8);
 }
+
+.list-choices {
+  margin-inline-start: 1rem;
+  border-inline-start: 2px solid var(--color-border);
+}
+.shell-nav .list-choices button[aria-current=page] {
+  --choice-accent: var(--color-mode-classic);
+  color: var(--color-text);
+  border-color: var(--choice-accent);
+  background: color-mix(in srgb, var(--choice-accent) 15%, var(--color-surface));
+}
+.shell-nav .list-choices [data-v=platform][aria-current=page] { --choice-accent: var(--color-mode-platform); }
+@keyframes list-arrive { from { opacity: .15; transform: translateX(var(--enter-x)); } }
+@keyframes pill-arrive { from { transform: translateX(var(--pill-start)); } }
+@media (prefers-reduced-motion: no-preference) {
+  .mode-enter { --enter-x: -8px; --pill-start: 100%; }
+  .mode-enter:has([data-v=platform][aria-pressed=true]) { --enter-x: 8px; --pill-start: 0%; }
+  .mode-enter :is(#lw, .rcol) { animation: list-arrive 190ms ease-out; }
+  .mode-enter .mode-switch::before { animation: pill-arrive 210ms var(--motion-easing); }
+}
+
+.cube-catalog { margin-block: 12px; }
+.cube-catalog summary { cursor: pointer; color: var(--color-accent); font-weight: 600; }
+.cube-pager { display: flex; align-items: center; justify-content: space-between; margin-block: 8px; }
+.cube-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.modal .cube-grid button { flex-direction: column; padding: 4px; font-size: .75rem; gap: 1px; }
+.cube-grid .i { width: min(40px, 100%); height: 40px; }

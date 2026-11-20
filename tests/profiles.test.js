@@ -110,8 +110,8 @@ test('askProfile preserves untouched colours exactly and defaults invalid values
     load(['js/components/dialogs.js']);
     context.showDialog = ({ enhance }) => enhance({ querySelector: () => ({}) })('Player');
     const ask = app('askProfile');
-    assert.deepEqual({ ...await ask('Edit profile', { name: 'Player', color: '#FFE94D', secondaryColor: '#ABCDEF' }) }, { name: 'Player', color: '#FFE94D', secondaryColor: '#ABCDEF' });
-    assert.deepEqual({ ...await ask('New profile', { name: 'Player', color: null, secondaryColor: 'invalid' }) }, { name: 'Player', color: '#ffe94d', secondaryColor: '#5ef0ff' });
+    assert.deepEqual({ ...await ask('Edit profile', { name: 'Player', color: '#FFE94D', secondaryColor: '#ABCDEF' }) }, { name: 'Player', cubeId: 2, color: '#FFE94D', secondaryColor: '#ABCDEF' });
+    assert.deepEqual({ ...await ask('New profile', { name: 'Player', color: null, secondaryColor: 'invalid' }) }, { name: 'Player', cubeId: 2, color: '#ffe94d', secondaryColor: '#5ef0ff' });
 });
 
 test('askProfile shows a labelled radio group per colour with its own radio name', () => {
@@ -149,19 +149,22 @@ test('the profile dialog changes only the colour group that was edited', () => {
     app('askProfile')('Edit profile', { name: 'Player', color: '#ffe94d', secondaryColor: '#5ef0ff' });
     const pink = secondary.radios.find(radio => radio.value == '#ff8af2');
     fieldset.oninput({ target: pink });
-    assert.deepEqual({ ...read('Player') }, { name: 'Player', color: '#ffe94d', secondaryColor: '#ff8af2' });
+    assert.deepEqual({ ...read('Player') }, { name: 'Player', cubeId: 2, color: '#ffe94d', secondaryColor: '#ff8af2' });
     assert.deepEqual(secondary.radios.filter(radio => radio.checked), [pink]);
     assert.equal(secondary.custom.parentNode.dataset.selected, false);
     assert.equal(primary.radios.some(radio => radio.checked), false, 'the other group is left alone');
-    assert.match(preview.innerHTML, /x=2\.5 y=2\.5 width=43 height=43 rx=3 fill="#ffe94d"/);
-    assert.equal(preview.innerHTML.match(/fill="#ff8af2"/g).length, 3);
+    assert.match(preview.innerHTML, /assets\/cubes\/0\.webp/);
+    const previous = preview.innerHTML.match(/<feColorMatrix[^>]*>/g);
+    assert.equal(previous.length, 2);
     primary.custom.value = '#123456';
     fieldset.oninput({ target: primary.custom });
-    assert.deepEqual({ ...read('Player') }, { name: 'Player', color: '#123456', secondaryColor: '#ff8af2' });
+    assert.deepEqual({ ...read('Player') }, { name: 'Player', cubeId: 2, color: '#123456', secondaryColor: '#ff8af2' });
     assert.equal(primary.custom.parentNode.dataset.selected, true);
     assert.equal(primary.radios.some(radio => radio.checked), false);
     assert.equal(pink.checked, true, 'the secondary choice survives a primary change');
-    assert.match(preview.innerHTML, /fill="#123456"/);
+    const updated = preview.innerHTML.match(/<feColorMatrix[^>]*>/g);
+    assert.equal(updated[0], previous[0]);
+    assert.notEqual(updated[1], previous[1]);
 });
 
 test('export and import preserve profile metadata separately from level data', async () => {

@@ -61,7 +61,7 @@ function showDialog({ title, msg, input, def, ok, cancel, danger, label, extra =
         };
         m.onkeydown = e => {
             e.stopPropagation();
-            if (e.key == 'Enter') {
+            if (e.key == 'Enter' && !e.target.closest('button, summary, .cube-catalog')) {
                 e.preventDefault();
                 accept();
             }
@@ -73,31 +73,67 @@ function showDialog({ title, msg, input, def, ok, cancel, danger, label, extra =
 
 const askText = (title, def) => showDialog({ title, input: 1, def });
 
+const profilePreview = selected => selected.cubeId ? catalogCube(selected.cubeId, selected.color, selected.secondaryColor) : cubeIcon(selected.color, selected.secondaryColor);
+
+function bindCubeCatalog(dialog, selected) {
+    const catalog = dialog.querySelector('.cube-catalog');
+    let page = Math.floor((selected.cubeId - 1) / CUBES_PER_PAGE);
+    const draw = () => {
+        const start = page * CUBES_PER_PAGE + 1, end = Math.min(start + CUBES_PER_PAGE - 1, CUBE_COUNT);
+        const tiles = Array.from({ length: end - start + 1 }, (_, offset) => {
+            const id = start + offset;
+            return `<button type=button data-cube=${id} aria-pressed=${id == selected.cubeId} aria-label="${t('cube')} ${id}">${catalogCube(id, selected.color, selected.secondaryColor)}<span>${id}</span></button>`;
+        }).join('');
+        catalog.querySelector('.cube-grid').innerHTML = tiles;
+        catalog.querySelector('output').textContent = start + '–' + end + ' / ' + CUBE_COUNT;
+        catalog.querySelector('[data-page="-1"]').disabled = page == 0;
+        catalog.querySelector('[data-page="1"]').disabled = end == CUBE_COUNT;
+    };
+    catalog.ontoggle = () => { if (catalog.open) draw(); };
+    catalog.onclick = event => {
+        const button = event.target.closest('button');
+        if (!button) return;
+        if (button.dataset.page) {
+            page += Number(button.dataset.page);
+            draw();
+            if (button.disabled) catalog.querySelector('.cube-grid button').focus();
+        }
+        else {
+            selected.cubeId = Number(button.dataset.cube);
+            catalog.querySelectorAll('[data-cube]').forEach(tile => tile.setAttribute('aria-pressed', String(tile == button)));
+            dialog.querySelector('.profile-preview').innerHTML = profilePreview(selected);
+            catalog.querySelector('summary span').textContent = selected.cubeId;
+        }
+    };
+    return () => { if (catalog.open) draw(); };
+}
+
 function profileColorFields(selected) {
     const colorGroup = (key, labelKey) => {
         const current = selected[key].toLowerCase(), labelId = 'profile-' + key;
         const swatch = ([presetKey, c]) => `<label class=profile-swatch style="--swatch:${c}"><input type=radio name="profile-${key}" value="${c}" aria-label="${t(presetKey)}"${c == current ? ' checked' : ''}><span class=profile-color aria-hidden=true>${ICONS.check}</span></label>`;
         return `<div><span class=lab id="${labelId}">${t(labelKey)}</span><div class=profile-swatches role=radiogroup aria-labelledby="${labelId}" data-color=${key}>${Object.entries(PROFILE_PRESETS).map(swatch).join('')}<span class="profile-swatch profile-custom" data-selected=${!PROFILE_COLORS.includes(current)}><input type=color value="${current}" aria-label="${t('customColor')}"><span class=profile-color aria-hidden=true>${ICONS.check}</span></span></div></div>`;
     };
-    return `<fieldset class=profile-colors><legend>${t('color')}</legend><div class=profile-colors-row><span class=profile-preview>${cubeIcon(selected.color, selected.secondaryColor)}</span><div class=profile-color-groups>${colorGroup('color', 'primaryColor')}${colorGroup('secondaryColor', 'secondaryColor')}</div></div></fieldset>`;
+    return `<fieldset class=profile-colors><legend>${t('color')}</legend><div class=profile-colors-row><span class=profile-preview>${profilePreview(selected)}</span><div class=profile-color-groups>${colorGroup('color', 'primaryColor')}${colorGroup('secondaryColor', 'secondaryColor')}</div></div></fieldset>`;
 }
 
-function bindProfileColors(root, selected) {
+function bindProfileColors(root, selected, onChange) {
     const fieldset = root.querySelector('.profile-colors');
     fieldset.oninput = e => {
         const group = e.target.closest('.profile-swatches'), custom = group.querySelector('[type=color]'), isCustom = e.target == custom;
         selected[group.dataset.color] = e.target.value;
         group.querySelectorAll('[type=radio]').forEach(radio => radio.checked = !isCustom && radio.value == e.target.value);
         custom.parentNode.dataset.selected = isCustom;
-        fieldset.querySelector('.profile-preview').innerHTML = cubeIcon(selected.color, selected.secondaryColor);
+        fieldset.querySelector('.profile-preview').innerHTML = profilePreview(selected);
+        onChange?.();
     };
 }
 
 /** Asks for a profile name and colours, sharing the prompt's validation and keyboard handling. */
-function askProfile(title, { name, color, secondaryColor }) {
-    const selected = { color: isHexColor(color) ? color : PROFILE_COLORS[0], secondaryColor: isHexColor(secondaryColor) ? secondaryColor : DEFAULT_SECONDARY_COLOR };
-    return showDialog({ title, input: 1, def: name, label: t('pname'), extra: profileColorFields(selected), enhance: m => {
-        bindProfileColors(m, selected);
+function askProfile(title, { name, color, secondaryColor, cubeId }) {
+    const selected = { cubeId: validCubeId(cubeId) ? cubeId : 2, color: isHexColor(color) ? color : PROFILE_COLORS[0], secondaryColor: isHexColor(secondaryColor) ? secondaryColor : DEFAULT_SECONDARY_COLOR };
+    return showDialog({ title, input: 1, def: name, label: t('pname'), extra: profileColorFields(selected) + `<details class=cube-catalog><summary>${t('cube')} <span>${selected.cubeId}</span></summary><div class=cube-pager><button type=button data-page="-1" aria-label="${t('previousPage')}">&lsaquo;</button><output></output><button type=button data-page="1" aria-label="${t('nextPage')}">&rsaquo;</button></div><div class=cube-grid></div></details>`, enhance: m => {
+        bindProfileColors(m, selected, bindCubeCatalog(m, selected));
         return name => ({ name, ...selected });
     } });
 }

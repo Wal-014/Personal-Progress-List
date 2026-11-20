@@ -2,6 +2,8 @@
  * Application constants for difficulties, API URLs, icons, flags and themes.
  */
 
+// The face geometry is shared with the tilted cube in the application mark.
+const modeCube = '<rect x="9" y="6" width="20" height="20" rx="2"/><path d="M12.5 10.5h4v4h-4zM21.5 10.5h4v4h-4zM12.5 18.5h13v3h-13z"/>';
 const ICONS = {
     actionAdd: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.7 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M12 4v16M4 12h16"/></svg>',
     actionBack: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.7 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="m14 5-7 7 7 7"/></svg>',
@@ -33,8 +35,8 @@ const ICONS = {
     bell: '<svg class=i viewBox="0 0 24 24" aria-hidden=true><path d="M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6zm-2 15a2 2 0 0 0 4 0" fill="#fff" stroke="#000" stroke-width=2 stroke-linejoin=round /></svg>',
     pause: '<svg class=i viewBox="0 0 24 24" aria-hidden=true><rect x=5 y=4 width=5 height=16 rx=1 fill="#fff" stroke="#000" stroke-width=2 /><rect x=14 y=4 width=5 height=16 rx=1 fill="#fff" stroke="#000" stroke-width=2 /></svg>',
     home: '<svg class=i viewBox="0 0 24 24" aria-hidden=true><path d="M3 11 12 3l9 8v10H3z" fill="#fff" stroke="#000" stroke-width=2 stroke-linejoin=round /><rect x=10 y=14 width=4 height=7 fill="#000" /></svg>',
-    classic: '<svg class=i viewBox="0 0 24 24" aria-hidden=true><path d="M1 21 7 9l6 12zM11 21l6-12 6 12z" fill="#fff" stroke="#000" stroke-width=2 stroke-linejoin=round /></svg>',
-    platform: '<svg class=i viewBox="0 0 24 24" aria-hidden=true><path d="M2 22v-6h9v-5h11v11Z" fill="#fff" stroke="#000" stroke-width=2 stroke-linejoin=round /><rect x=13 y=2 width=8 height=8 rx=1 fill="#fff" stroke="#000" stroke-width=2 /><path d="M15 5h1m2 0h1M15 7h4" stroke="#000" stroke-width=1.5 /></svg>',
+    classic: `<svg class=i viewBox="0 0 48 44" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden=true><path d="M3 31l6-8m-4 0 6-7m-2 16 3-4M4 39h39M24 38l7-13 7 13"/><g transform="translate(7 -2) rotate(22 19 16)">${modeCube}</g></svg>`,
+    platform: `<svg class=i viewBox="0 0 48 44" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linejoin="round" aria-hidden=true><g transform="translate(-5 0)">${modeCube}</g><path d="M2 27h25v5H2zM31 19h14v5H31zM31 34h11v4H31z"/></svg>`,
     stats: '<svg class=i viewBox="0 0 24 24" aria-hidden=true><path d="m2 20 7-8 5 4 8-12m-7 0h7v7" fill=none stroke="#000" stroke-width=6 stroke-linecap=round stroke-linejoin=round /><path d="m2 20 7-8 5 4 8-12m-7 0h7v7" fill=none stroke="#fff" stroke-width=3 stroke-linecap=round stroke-linejoin=round /></svg>',
     levels: '<svg class=i viewBox="0 0 24 24" aria-hidden=true><path d="m2 7 10-5 10 5-10 5Zm0 5 10 5 10-5M2 17l10 5 10-5" fill=none stroke="#000" stroke-width=6 stroke-linecap=round stroke-linejoin=round /><path d="m2 7 10-5 10 5-10 5Zm0 5 10 5 10-5M2 17l10 5 10-5" fill=none stroke="#fff" stroke-width=2.5 stroke-linecap=round stroke-linejoin=round /></svg>',
     more: '<svg class=i viewBox="0 0 24 24" aria-hidden=true><rect x=3 y=4 width=18 height=3.5 fill="#fff" stroke="#000" stroke-width=1.5 /><rect x=3 y=10.5 width=18 height=3.5 fill="#fff" stroke="#000" stroke-width=1.5 /><rect x=3 y=17 width=18 height=3.5 fill="#fff" stroke="#000" stroke-width=1.5 /></svg>',
@@ -68,6 +70,24 @@ const cubeIcon = (color, secondaryColor) => {
     const fill = isHexColor(color) ? color : PROFILE_COLORS[0], face = isHexColor(secondaryColor) ? secondaryColor : DEFAULT_SECONDARY_COLOR, id = 'cube' + ++cubeIds;
     return `<svg class=i viewBox="0 0 48 48" aria-hidden=true><defs><linearGradient id=${id} x1=0 y1=0 x2=0 y2=1><stop offset=0 stop-color="#000" stop-opacity=0 /><stop offset=1 stop-color="#000" stop-opacity=".3" /></linearGradient></defs><rect x=2.5 y=2.5 width=43 height=43 rx=3 fill="${fill}" stroke="#000" stroke-width=3 /><rect x=2.5 y=2.5 width=43 height=43 rx=3 fill="url(#${id})" /><rect x=6 y=6 width=36 height=36 rx=1.5 fill=none stroke="#fff" stroke-opacity=".35" stroke-width=1.5 /><rect x=12 y=13 width=8 height=8 fill="${face}" stroke="#000" stroke-width=2.5 /><rect x=28 y=13 width=8 height=8 fill="${face}" stroke="#000" stroke-width=2.5 /><rect x=12 y=28 width=24 height=6 fill="${face}" stroke="#000" stroke-width=2.5 /></svg>`;
 };
+// Each sheet holds twenty 80px cubes. The three bands preserve the secondary,
+// primary and fixed-detail layers of the original Icon Kit sprites.
+const CUBE_COUNT = 485;
+const CUBES_PER_PAGE = 20;
+const validCubeId = id => Number.isInteger(id) && id >= 1 && id <= CUBE_COUNT;
+function catalogCube(id, primary, secondary) {
+    const index = (validCubeId(id) ? id : 2) - 1, cell = index % CUBES_PER_PAGE;
+    const x = cell % 5 * 80, y = Math.floor(cell / 5) * 80;
+    const src = 'assets/cubes/' + Math.floor(index / CUBES_PER_PAGE) + '.webp';
+    const uid = 'kit' + ++cubeIds;
+    const filters = [isHexColor(secondary) ? secondary : DEFAULT_SECONDARY_COLOR, isHexColor(primary) ? primary : PROFILE_COLORS[0]].map((color, layer) => {
+        const [r, g, b] = color.slice(1).match(/../g).map(hex => parseInt(hex, 16) / 255);
+        return `<filter id="${uid}-${layer}" color-interpolation-filters="sRGB"><feColorMatrix values="${r} 0 0 0 0 0 ${g} 0 0 0 0 0 ${b} 0 0 0 0 0 1 0"/></filter>`;
+    }).join('');
+    const layers = [0, 1, 2].map(layer => `<g${layer < 2 ? ` filter="url(#${uid}-${layer})"` : ''}><svg width="80" height="80" viewBox="${x} ${y + layer * 320} 80 80" overflow="hidden"><image href="${src}" width="400" height="960"/></svg></g>`).join('');
+    return `<svg class=i viewBox="0 0 80 80" aria-hidden=true><defs>${filters}</defs>${layers}</svg>`;
+}
+
 const FLAGS = { es: '<svg class=fl viewBox="0 0 60 40"><rect width=60 height=40 fill="#c60b1e"/><rect y=10 width=60 height=20 fill="#ffc400"/></svg>', en: '<svg class=fl viewBox="0 0 60 40"><rect width=60 height=40 fill="#012169"/><path d="M0 0L60 40M60 0L0 40" stroke="#fff" stroke-width=8 /><path d="M0 0L60 40M60 0L0 40" stroke="#c8102e" stroke-width=3 /><path d="M30 0V40M0 20H60" stroke="#fff" stroke-width=13 /><path d="M30 0V40M0 20H60" stroke="#c8102e" stroke-width=7 /></svg>' };
 const DIFFICULTIES = ['Auto', 'Easy', 'Normal', 'Hard', 'Harder', 'Insane', 'Easy Demon', 'Medium Demon', 'Hard Demon', 'Insane Demon', 'Extreme Demon'];
 const RATING_TIERS = ['rated', 'featured', 'epic', 'legendary', 'mythic'];
