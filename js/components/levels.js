@@ -84,7 +84,7 @@ function detail(level) {
     const statCell = (key, value, className = '') => recorded(value) ? `<div class="st ${className}"><small>${t(key)}</small><b>${escapeHtml(value)}</b></div>` : '';
     const thumbnail = fullThumbUrl(level);
     const grid = body => body ? `<div class=grid>${body}</div>` : '';
-    const section = (key, body) => body ? `<fieldset><legend>${t(key)}</legend>${body}</fieldset>` : '';
+    const section = (key, body) => body ? `<details class=level-section open><summary>${t(key)}</summary>${body}</details>` : '';
     const link = safeUrl(level.link);
     const videoId = youtubeId(link);
     const histogram = deathHistogram(deaths);
@@ -188,7 +188,8 @@ function setListTagFilter() {
 /** Left column: name search, tag filters and the list. */
 function lcol() {
     const options = listTagOptions(profile.levels.filter(level => level.kind == ui.tab), ui.tagFilter);
-    return `<div class=lh><input id=q type=search placeholder="${t('search')}" aria-label="${t('search')}" value="${escapeHtml(ui.q)}">${options.length ? `<details class=ms><summary>${escapeHtml(listTagSummary())}</summary><div class=msp>${options.map(name => `<label><input type=checkbox name=tagf value="${escapeHtml(name)}"${ui.tagFilter.includes(name) ? ' checked' : ''}><span class=chip style="${tagStyle(name)}">${escapeHtml(name)}</span></label>`).join('')}</div></details><button type=button class="xs dg" data-act=ct aria-label="${t('clearTags')}" title="${t('clearTags')}"${ui.tagFilter.length ? '' : ' hidden'}>${ICONS.del}</button>` : ''}</div><div id=lw>${list()}</div>`;
+    const modes = ['classic', 'platform'].map(kind => `<button type=button data-act=tab data-v=${kind} aria-pressed=${ui.tab == kind}${ui.tab == kind ? ' disabled' : ''}><span aria-hidden=true>${kind == 'classic' ? '&#9733;' : '&#9790;'}</span> ${t(kind)}</button>`).join('');
+    return `<div class=mode-switch role=group aria-label="${t('lists')}">${modes}</div><div class=lh><input id=q type=search placeholder="${t('search')}" aria-label="${t('search')}" value="${escapeHtml(ui.q)}">${options.length ? `<details class=ms><summary>${escapeHtml(listTagSummary())}</summary><div class=msp>${options.map(name => `<label><input type=checkbox name=tagf value="${escapeHtml(name)}"${ui.tagFilter.includes(name) ? ' checked' : ''}><span class=chip style="${tagStyle(name)}">${escapeHtml(name)}</span></label>`).join('')}</div></details><button type=button class="xs dg" data-act=ct aria-label="${t('clearTags')}" title="${t('clearTags')}"${ui.tagFilter.length ? '' : ' hidden'}>${ICONS.del}</button>` : ''}${canEdit() ? `<button type=button class=list-add data-act=add>+ ${t('palAdd')}</button>` : ''}</div><div id=lw>${list()}</div>`;
 }
 
 /** Right column with level details, an editing form or an empty prompt. */
@@ -242,15 +243,17 @@ function renderPanel() {
 
 /** Selects a level without rebuilding the list. */
 function selectLevel(id) {
+    if (innerWidth <= 900)
+        ui.listReturnY = window.scrollY;
     ui.sel = id;
     ui.edit = 0;
     document.querySelectorAll('.lv.sel').forEach(c => c.classList.remove('sel'));
     qs(`.lv[data-id="${CSS.escape(id)}"]`)?.classList.add('sel');
     renderPanel();
-    if (innerWidth <= 560)
+    if (innerWidth <= 900) {
         scrollTo({ top: 0 });
-    else if (innerWidth < 900)
-        qs('.rcol').scrollIntoView({ behavior: 'smooth' });
+        qs('.rcol [data-act=lvclose]')?.focus({ preventScroll: true });
+    }
 }
 
 /** Updates the automatic top field and found note from the picked level. */

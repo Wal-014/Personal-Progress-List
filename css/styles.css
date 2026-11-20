@@ -799,6 +799,155 @@ dialog.modal::backdrop {
   align-items: start;
 }
 
+.list-surface {
+  --bg1: var(--color-bg);
+  --bg2: var(--color-bg);
+  --gridc: var(--color-grid);
+  --obj: var(--color-surface);
+  --objb: var(--color-border);
+  --meta: var(--color-text-muted);
+  --fg: var(--color-text);
+  --go: var(--color-success);
+  --go1: var(--color-success);
+  --go2: var(--color-surface-elevated);
+  --cy: var(--color-secondary-light);
+  --ye: var(--color-warning);
+  --or: var(--color-mode-classic);
+  --pk: var(--color-accent);
+  --rd: var(--color-error);
+  --panel: var(--color-surface);
+  --panel-in: var(--color-surface-elevated);
+  --well: var(--color-bg);
+  --plab: var(--color-text);
+  --tool: var(--color-surface);
+  --pal: var(--color-surface-elevated);
+  --mut: var(--color-text-muted);
+  --ln: var(--color-border);
+  --a: var(--color-accent);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+}
+
+.list-surface .box, .list-surface .ph, .list-surface .lv {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  box-shadow: none;
+  background-image: none;
+}
+
+.list-surface :is(.nm, h2, .mode-switch button, .list-add, .level-section summary) {
+  color: inherit;
+  font-family: var(--font-display);
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+}
+
+.list-surface .lv.sel {
+  border-color: var(--color-accent);
+  box-shadow: inset 4px 0 var(--color-accent);
+}
+
+.level-section {
+  min-width: 0;
+  padding: var(--space-12);
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-control);
+}
+
+.level-section summary {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.level-section[open] summary {
+  margin-bottom: var(--space-8);
+}
+
+.list-surface .dgrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: var(--space-12);
+}
+
+/* Shared list controls and the selected level's detail pane. */
+.mode-switch {
+  position: relative;
+  isolation: isolate;
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 100%;
+  padding: 3px;
+  margin-bottom: var(--space-16);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+}
+
+.mode-switch button, .lh .list-add {
+  min-height: 44px;
+  padding: 6px 12px;
+  font: 600 1rem/1.25 var(--font-ui);
+  color: var(--color-text);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+.mode-switch::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 3px auto 3px 3px;
+  width: calc(50% - 3px);
+  border-radius: inherit;
+  background: var(--color-accent);
+  transition: transform var(--motion-selection) var(--motion-easing);
+}
+
+.mode-switch:has([data-v=platform][aria-pressed=true])::before {
+  transform: translateX(100%);
+}
+
+.mode-switch button[aria-pressed=true] {
+  color: var(--color-bg);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mode-switch::before { transition: none; }
+}
+
+.lh .list-add {
+  color: var(--color-bg);
+  background: var(--color-accent);
+  opacity: 1;
+}
+
+.split .rcol {
+  min-width: 0;
+  border-radius: var(--radius-panel);
+  overflow-wrap: anywhere;
+}
+
+.split .lv {
+  height: 96px;
+}
+
+.split .lv .info {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.split .lv :is(.nm,.by) {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .lh {
   position: relative;
   display: flex;
@@ -1032,7 +1181,7 @@ dialog.modal::backdrop {
 }
 
 /* Phones: the detail replaces the list instead of sitting under it */
-@media (max-width: 560px) {
+@media (max-width: 900px) {
   .lh #q {
     flex-basis: 100%;
   }

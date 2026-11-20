@@ -21,7 +21,7 @@ for (const publicView of [false, true]) {
         for (const [language, message] of [['es', 'Sin datos adicionales'], ['en', 'No additional details']]) {
             const html = drawDetail({}, language);
             assert.ok(html.includes(`<p class=by>${message}</p>`));
-            assert.doesNotMatch(html, /<fieldset|<legend|class=(?:dgrid|grid|hist)\b/);
+            assert.doesNotMatch(html, /<details|<summary|class=(?:dgrid|grid|hist)\b/);
             assert.match(html, /data-act=lvclose/);
         }
     });
@@ -31,14 +31,14 @@ for (const publicView of [false, true]) {
             const fields = Object.fromEntries(['attN', 'attC', 'tN', 'tP', 'tPC', 'date', 'link', 'enj', 'lik', 'notes'].map(key => [key, value]));
             const html = drawDetail({ ...fields, tags: [], deaths: {} });
             assert.match(html, /No additional details/);
-            assert.doesNotMatch(html, /<fieldset|<legend|class=(?:dgrid|grid|hist)\b/);
+            assert.doesNotMatch(html, /<details|<summary|class=(?:dgrid|grid|hist)\b/);
         }
     });
 
     test(`detail retains zero enjoyment and fractional appeal in ${mode} mode`, () => {
         const html = drawDetail({ enj: 0, lik: 3.5 });
-        assert.equal((html.match(/<fieldset>/g) || []).length, 1);
-        assert.match(html, /<legend>Rating<\/legend>/);
+        assert.equal((html.match(/<details class=level-section open>/g) || []).length, 1);
+        assert.match(html, /<summary>Rating<\/summary>/);
         assert.match(html, /<small>Enjoyment<\/small><div class=mh><b[^>]*>0<\/b>/);
         assert.match(html, /<small>Level appeal<\/small><div class=mh><b[^>]*>3\.5<\/b>/);
         assert.doesNotMatch(html, /No additional details/);
@@ -47,7 +47,7 @@ for (const publicView of [false, true]) {
     test(`detail draws only recorded attempts and their total in ${mode} mode`, () => {
         for (const attempts of [0, 12]) {
             const html = drawDetail({ attN: attempts, deaths: {} });
-            assert.equal((html.match(/<fieldset>/g) || []).length, 1);
+            assert.equal((html.match(/<details class=level-section open>/g) || []).length, 1);
             assert.equal((html.match(/class="st /g) || []).length, 2);
             assert.ok(html.includes(`<small>Total attempts</small><b>${attempts}</b>`));
             assert.ok(html.includes(`<small>Normal attempts</small><b>${attempts}</b>`));
@@ -57,8 +57,8 @@ for (const publicView of [false, true]) {
 
     test(`detail hides whitespace notes while preserving tags in ${mode} mode`, () => {
         const html = drawDetail({ notes: ' \n\t ', tags: ['Recorded'] });
-        assert.equal((html.match(/<fieldset>/g) || []).length, 1);
-        assert.match(html, /<legend>Tags & notes<\/legend>/);
+        assert.equal((html.match(/<details class=level-section open>/g) || []).length, 1);
+        assert.match(html, /<summary>Tags & notes<\/summary>/);
         assert.match(html, /data-tag="Recorded"/);
         assert.doesNotMatch(html, /white-space:pre-wrap|No additional details/);
     });
@@ -86,9 +86,9 @@ for (const publicView of [false, true]) {
 
     test(`detail keeps every section for a fully recorded level in ${mode} mode`, () => {
         const html = drawDetail({ attN: 12, attC: 3, tN: 60, tP: 120, tPC: 180, date: '2026-01-02', link: 'https://youtu.be/Ab_12-cDef3', enj: 8, lik: 3.5, tags: ['Recorded'], notes: 'A recorded note', deaths: { 63: 2, 90: 1 } });
-        assert.equal((html.match(/<fieldset>/g) || []).length, 6);
+        assert.equal((html.match(/<details class=level-section open>/g) || []).length, 6);
         for (const label of ['Attempts', 'Play time', 'Completion', 'Rating', 'Tags & notes', 'Deaths per percent'])
-            assert.ok(html.includes(`<legend>${label}</legend>`), label);
+            assert.ok(html.includes(`<summary>${label}</summary>`), label);
         for (const text of ['<small>Total attempts</small><b>15</b>', '<small>Total time</small><b>0h 6m 0s</b>', 'Copy or StartPos playtime', '90% ×1', 'A recorded note', 'class=yt', 'class=hist'])
             assert.ok(html.includes(text), text);
         assert.doesNotMatch(html, /No additional details|<b>-<\/b>/);

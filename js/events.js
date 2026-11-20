@@ -151,10 +151,15 @@ const ACTIONS = {
             scrollSel();
     },
     lvclose() {
+        const returnId = !ui.edit && ui.sel;
         if (!ui.edit)
             ui.sel = null;
         ui.edit = 0;
         render();
+        if (returnId && innerWidth <= 900) {
+            qs(`.lv[data-id="${CSS.escape(returnId)}"]`)?.focus({ preventScroll: true });
+            scrollTo({ top: ui.listReturnY || 0 });
+        }
     },
     tgadd(a) {
         // tagChip escapes the tag name and tagColor only returns #rrggbb, so the HTML is safe

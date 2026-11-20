@@ -166,7 +166,7 @@ test('every screen uses the shared shell, active destination and page actions', 
             assert.match(title, /class=page-title/);
             assert.ok(title.includes(app(`t('${tab}')`)));
         }
-        if (['classic', 'platform'].includes(tab)) assert.match(title, /data-act=add/);
+        if (['classic', 'platform'].includes(tab)) assert.doesNotMatch(title, /data-act=add/);
         if (tab == 'wish') assert.match(title, /data-act=wnew/);
         app("viewing = { identity: { display_name: 'Public player' } }; render()");
         assert.match(root.innerHTML, /Public player/);
@@ -340,8 +340,10 @@ test('legacy screens isolate content below the themed page title', () => {
     for (const tab of ['classic', 'platform', 'wish', 'stats']) {
         app(`ui.tab = '${tab}'`);
         const html = app("sharedShell('<p>Content</p>')");
-        assert.match(html, /class=legacy-surface><p>Content<\/p><\/div><\/main>/);
-        assert.ok(html.indexOf('class=page-title') < html.indexOf('class=legacy-surface'));
+        const surface = ['classic', 'platform'].includes(tab) ? 'list-surface' : 'legacy-surface';
+        assert.ok(html.includes(`class=${surface}>`));
+        assert.match(html, /class=(?:legacy|list)-surface><p>Content<\/p><\/div><\/main>/);
+        assert.ok(html.indexOf('class=page-title') < html.indexOf(`class=${surface}`));
     }
     app("ui.tab = 'home'");
     assert.doesNotMatch(app("sharedShell('Home')"), /class=legacy-surface/);

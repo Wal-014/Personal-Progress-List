@@ -123,7 +123,7 @@ test('the list header offers only its own tags, escaped, with the selection chec
     assert.match(classic, /value="B" checked>/);
     assert.match(classic, /<summary>Tags · B<\/summary>/);
     assert.match(classic, /data-act=ct aria-label="Quitar filtros de tags" title="Quitar filtros de tags">/);
-    assert.equal(classic.includes('Plat'), false);
+    assert.doesNotMatch(classic, /name=tagf value="Plat"/);
     app('ui.tab = "platform"; ui.tagFilter = []');
     const platform = app('lcol()');
     assert.deepEqual([...platform.matchAll(/name=tagf value="([^"]*)"/g)].map(m => m[1]), ['Plat']);
