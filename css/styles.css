@@ -4051,12 +4051,13 @@ main.home {
     .hl .hadd, .lh #q, .lh .ms summary, .lh .list-clear, .lh .list-add,
     .list-surface .rcol .box, .legacy-surface :is(.well, .wh, .kpi),
     .trigs .trig, .modal .box, .dgb button, .wa button, .pause .appearance-option) {
+    --rim-paint: linear-gradient(var(--rim-angle, 125deg), var(--metal-edge) 3%, var(--metal-glint) 13%,
+      var(--metal-edge) 27%, var(--metal-shade) 46%, var(--metal-glint) 55%,
+      var(--metal-edge) 74%, var(--metal-glint) 93%);
     border: 1px solid transparent;
     background:
       linear-gradient(var(--rim-fill, var(--color-surface)), var(--rim-fill, var(--color-surface))) padding-box,
-      linear-gradient(var(--rim-angle, 125deg), var(--metal-edge) 3%, var(--metal-glint) 13%,
-        var(--metal-edge) 27%, var(--metal-shade) 46%, var(--metal-glint) 55%,
-        var(--metal-edge) 74%, var(--metal-glint) 93%) border-box;
+      var(--rim-paint) border-box;
     box-shadow: none;
   }
 
@@ -4087,6 +4088,37 @@ main.home {
   }
   .hl .hcard:hover:not(:disabled):not([aria-disabled=true]), .hl .hadd:hover:not(:disabled):not([aria-disabled=true]) {
     border-color: transparent;
+  }
+
+  /* Reflect the local edge color into the surface. The first mask picks out
+     the polished stretches; the four edge masks fade them toward the center. */
+  @supports (mask-composite: intersect) {
+    :is(.hl .hcard, .hl .hadd, .profile-pill, .shell-nav button[aria-current=page],
+      .page-title button, .lh .ms summary, .lh .list-clear, .lh .list-add,
+      .trigs .trig, .dgb button, .wa button, .pause .appearance-option) {
+      position: relative;
+    }
+    :is(.hl .hcard, .hl .hadd, .profile-pill, .shell-nav button[aria-current=page],
+      .page-title button, .lh .ms summary, .lh .list-clear, .lh .list-add,
+      .trigs .trig, .dgb button, .wa button, .pause .appearance-option)::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      border-radius: inherit;
+      pointer-events: none;
+      background: var(--rim-paint);
+      opacity: var(--light-reflection-opacity, .32);
+      mask-image:
+        linear-gradient(var(--rim-angle, 125deg), #0003 3%, black 13%, #0002 27%, transparent 46%, black 55%, #0003 74%, #000c 93%),
+        linear-gradient(to bottom, black, transparent var(--reflection-depth, 5px)),
+        linear-gradient(to top, black, transparent var(--reflection-depth, 5px)),
+        linear-gradient(to right, black, transparent var(--reflection-depth, 5px)),
+        linear-gradient(to left, black, transparent var(--reflection-depth, 5px));
+      mask-composite: intersect, add, add, add;
+    }
+    .hl .hcard { --reflection-depth: 8px; }
+    [data-theme=porcelain] :is(.hcard, button, .ms summary, .trig)::before { --light-reflection-opacity: .24; }
   }
 
   /* Detail images supply their own background, so paint the same thin edge above it. */
