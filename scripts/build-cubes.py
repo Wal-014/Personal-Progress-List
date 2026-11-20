@@ -1,4 +1,4 @@
-"""Build paginated, recolorable cube sheets from the GDBrowser Icon Kit (requires Pillow)."""
+"""Build paginated, recolorable cube sheets from the GDBrowser Icon Kit (requires Pillow and requests)."""
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from pathlib import Path
@@ -6,7 +6,7 @@ from tempfile import gettempdir
 import plistlib
 import re
 import time
-from http.client import HTTPSConnection
+import requests
 from PIL import Image
 
 CACHE = Path(gettempdir()) / 'ppl-iconkit-sources'
@@ -17,24 +17,23 @@ COLUMNS = 5
 
 
 def source(name):
+    if not re.fullmatch(r'player_[0-9]{2,3}-uhd\.(png|plist)', name):
+        raise ValueError(f'Invalid sprite filename: {name}')
     path = CACHE / name
     if not path.exists():
         for attempt in range(3):
-            connection = HTTPSConnection('gdbrowser.com', timeout=30)
             try:
-                connection.request('GET', '/iconkit/icons/' + name, headers={'User-Agent': 'Personal-Progress-List/1.0'})
-                with connection.getresponse() as response:
-                    if response.status != 200:
-                        raise OSError(f'{name}: HTTP {response.status}')
-                    data = response.read()
+                url = f'https://gdbrowser.com/iconkit/icons/{name}'
+                with requests.get(url, timeout=30, allow_redirects=False, headers={'User-Agent': 'Personal-Progress-List/1.0'}) as response:
+                    if response.status_code != 200:
+                        raise OSError(f'{name}: HTTP {response.status_code}')
+                    data = response.content
                 path.write_bytes(data)
                 break
             except OSError:
                 if attempt == 2:
                     raise
                 time.sleep(1 + attempt)
-            finally:
-                connection.close()
     return path.read_bytes()
 
 
