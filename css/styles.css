@@ -4090,9 +4090,14 @@ main.home {
     --metal-shade: #538a99;
     --metal-glint: #e6faff;
   }
-  [data-theme=porcelain] .hl .hcard {
-    --satin-light: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface));
-    --satin-base: color-mix(in srgb, var(--color-accent) 18%, var(--color-surface));
+  [data-theme=porcelain] :is(.hwish-rows, .hstats-surface, .trigs .trig, .legacy-surface :is(.well, .wh, .kpi)) {
+    --metal-edge: color-mix(in srgb, var(--color-accent) 38%, var(--color-surface));
+    --metal-glint: color-mix(in srgb, var(--color-accent) 9%, var(--color-surface));
+    --metal-shade: color-mix(in srgb, var(--color-accent) 60%, var(--color-surface));
+  }
+  [data-theme=porcelain] :is(.hl .hcard, .hwish-rows, .hstats-surface, .trigs .trig, .legacy-surface :is(.well, .wh, .kpi)) {
+    --satin-light: color-mix(in srgb, var(--metal-edge) 7%, var(--color-surface));
+    --satin-base: color-mix(in srgb, var(--metal-edge) 19%, var(--color-surface));
   }
   [data-theme=porcelain] .hl .hcard-platform {
     --metal-edge: #90aab7;
