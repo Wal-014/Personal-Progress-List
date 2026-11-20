@@ -1,15 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { loadScripts } from './load-scripts.js';
+import { emptyDurationFields, loadScripts } from './load-scripts.js';
 
 function fixture() {
     const nodes = Object.fromEntries(['#lf-face', '#lf-diffT', '#gdq', '#fm-pos-hint'].map(key => [key, { textContent: '', setCustomValidity() {} }]));
-    const f = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js', 'js/components/search.js', 'js/components/deaths-input.js', 'js/components/levels.js', 'js/events.js'], {
+    const f = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js', 'js/components/search.js', 'js/components/deaths-input.js', 'js/components/duration-input.js', 'js/components/levels.js', 'js/events.js'], {
         localStorage: {}, clearTimeout, Event,
         document: { querySelector: key => nodes[key], body: {}, addEventListener() {} },
         window: { addEventListener() {} },
         FormData: class extends URLSearchParams { constructor(form) { super(form.entries); } },
-        matchWithAredl() {}, closeModal() {}, render() {}
+        matchWithAredl() {}, matchWithDemonlist() {}, closeModal() {}, render() {}
     });
     f.app(`profile = emptyProfile(); ui.lang = 'en'; ui.tab = 'classic';
         profile.levels = Array.from({ length: 6 }, (_, i) => ({ id: 'c' + i, name: 'Classic', kind: 'classic' }));
@@ -56,7 +56,7 @@ test('picking another kind refreshes bounds and hint without changing the typed 
 for (const [position, expected] of [['99', ['c1', 'c2', 'c3', 'c4', 'c5', 'c0']], ['-2', ['c0', 'c1', 'c2', 'c3', 'c4', 'c5']], ['0', ['c0', 'c1', 'c2', 'c3', 'c4', 'c5']], ['2', ['c1', 'c0', 'c2', 'c3', 'c4', 'c5']], ['', ['c1', 'c2', 'c3', 'c4', 'c5']]])
     test(`saveLevel clamps position ${position || 'empty'} while preserving unplaced behavior`, () => {
         const f = fixture();
-        const form = { dataset: { id: 'c0' }, elements: { pos: { value: position }, kind: { value: 'classic' } }, entries: [['name', 'Edited'], ['kind', 'classic']] };
+        const form = { dataset: { id: 'c0' }, elements: { ...emptyDurationFields(), pos: { value: position }, kind: { value: 'classic' } }, entries: [['name', 'Edited'], ['kind', 'classic']] };
         f.app('saveLevel')(form);
         assert.deepEqual([...f.app("rankedIds('classic')")], expected);
         assert.deepEqual([...f.app('profile.order.platform')], ['p']);
@@ -79,7 +79,7 @@ test('position step buttons stop at the rendered bounds', () => {
 for (const id of ['', 'unplaced', 'c0'])
     test(`saving ${id || 'a new level'} at an excessive platform position uses the destination list`, () => {
         const f = fixture();
-        const form = { dataset: { id }, elements: { pos: { value: '99' } }, entries: [['name', 'Moved'], ['kind', 'platform']] };
+        const form = { dataset: { id }, elements: { ...emptyDurationFields(), pos: { value: '99' } }, entries: [['name', 'Moved'], ['kind', 'platform']] };
         f.app('saveLevel')(form);
         const savedId = f.app('ui.sel');
         assert.deepEqual([...f.app('profile.order.platform')], ['p', savedId]);
@@ -88,6 +88,6 @@ for (const id of ['', 'unplaced', 'c0'])
 
 test('saving a Pre-Extremes level leaves it outside the ranking', () => {
     const f = fixture();
-    f.app('saveLevel')({ dataset: { id: 'pre' }, elements: { pos: { value: '99' } }, entries: [['name', 'First step'], ['kind', 'classic'], ['tg', 'Pre-Extremes']] });
+    f.app('saveLevel')({ dataset: { id: 'pre' }, elements: { ...emptyDurationFields(), pos: { value: '99' } }, entries: [['name', 'First step'], ['kind', 'classic'], ['tg', 'Pre-Extremes']] });
     assert.deepEqual([...f.app("rankedIds('classic')")], ['c0', 'c1', 'c2', 'c3', 'c4', 'c5']);
 });

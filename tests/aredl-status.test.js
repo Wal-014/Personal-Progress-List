@@ -17,7 +17,7 @@ function formFixture(lang = 'en') {
         FormData: class extends URLSearchParams { constructor(form) { super(form.entries); } },
         render() {}, closeModal() {}, scrollSel() {}, renderTagSuggestions() {}
     });
-    f.load(['js/state.js', 'js/components/faces.js', 'js/components/deaths-input.js', 'js/components/levels.js', 'js/components/search.js', 'js/events.js']);
+    f.load(['js/state.js', 'js/components/faces.js', 'js/components/deaths-input.js', 'js/components/duration-input.js', 'js/components/levels.js', 'js/components/search.js', 'js/events.js']);
     f.app('profile = emptyProfile()');
     f.app('ui.lang = ' + JSON.stringify(lang));
     return { ...f, nodes };
@@ -73,6 +73,9 @@ test('saving an existing level preserves its status without cached lists', () =>
     const form = { dataset: { id: 'edit' }, elements: { pos: { value: '' } }, entries: [
         ['name', 'Edited'], ['kind', 'classic'], ['deaths', ''], ['as', 'p'], ['ap', '999']
     ] };
+    for (const field of ['tN', 'tP', 'tPC'])
+        for (const part of ['h', 'm', 's'])
+            form.elements[field + '_' + part] = { value: '', setCustomValidity() {} };
     f.app('saveLevel')(form);
     assert.equal(f.app('profile.levels[0].name'), 'Edited');
     assert.equal(f.app('profile.levels[0].ar'), ar);
@@ -88,7 +91,7 @@ test('cards show ranking metadata only for a position or pending placement', () 
 });
 
 function fixture(extra = {}) {
-    return loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/sheet.js', 'js/gd.js', 'js/api.js'], {
+    return loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/sheet.js', 'js/gd.js', 'js/demonlist.js', 'js/api.js'], {
         localStorage: { gar: JSON.stringify(lists) }, ui: { lang: 'en' }, ...extra
     });
 }

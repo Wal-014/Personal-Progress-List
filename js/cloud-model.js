@@ -6,7 +6,7 @@ const CLOUD_LEVEL_FIELDS = {
     id: 'id', name: 'name', kind: 'kind', creator: 'creator',
     diff: 'difficulty', rating: 'rating', attN: 'attempts_normal', attC: 'attempts_copy',
     tN: 'time_normal', tP: 'time_practice', tPC: 'time_practice_copy', date: 'completed_on',
-    link: 'video_url', enj: 'enjoyment', lik: 'liking'
+    link: 'video_url', enj: 'enjoyment', lik: 'liking', gdl: 'gdl_position'
 };
 
 function profileRows(data, settings) {

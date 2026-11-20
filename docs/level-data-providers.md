@@ -152,3 +152,13 @@ Reconsider when one of these changes:
 - Saved levels that are not in the sheet (unrated ones) keep an unknown tier until the relay answers again.
 - Without the relay, results that match equally well are ordered by name length rather than by downloads.
 - The relay's rate limit is approximate: Cloudflare counts per location and syncs late, so it slows abuse but is not a hard cap.
+
+## Global Demonlist
+
+For #238, the supplied API checks confirmed that `GET https://api.demonlist.org/level/classic/list` without parameters returns every listed classic level in one response (about 1,850 levels, 530 KB). The shape is `{ "message": "success", "data": { "levels": [{ "id": 3442, "ingame_id": 149992717, "placement": 1, "name": "GRIEF" }] } }`. `ingame_id` is the Geometry Dash ID; `id` is internal to GDL. Matching uses only the game ID, never names.
+
+Every returned level has a placement; there is no awaiting-placement state. The API sends `Access-Control-Allow-Origin: *` and allows 250 requests per minute. The app makes one request per sync and stores only `[ingame_id, placement]` pairs in `localStorage.ggdl`. An empty downloaded list is distinct from a missing or invalid cache.
+
+GDL and AREDL download in parallel on the existing 12-hour sync schedule. Each successful provider updates its own positions even when the other fails. A failed GDL download preserves stored positions. A successful lookup sets `gdl` to a position or `null` for an absent ID; levels without IDs remain untouched, and platformers have no GDL position. Cloud rows store the value as nullable `gdl_position` (integer 1–100000).
+
+Classic forms show a read-only Global Demonlist field, and classic details append `GDL #position` or `GDL —`. Saving and transferring wishlist items apply cached positions. The field shows `?` for unlisted or unchecked levels and is hidden for platformers. Live API checks were supplied with the issue; implementation tests use fixtures and do not recheck the network.

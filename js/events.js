@@ -283,12 +283,18 @@ function downloadLocalBackup(id) {
 }
 
 function saveLevel(form) {
+    const durations = ['tN', 'tP', 'tPC'].map(field => readDuration(form, field));
+    if (durations.some(Number.isNaN)) {
+        form.reportValidity();
+        return;
+    }
     const position = form.elements.pos.value, old = findLevel(form.dataset.id), level = old || { id: newId('n') };
     const fields = levelFromForm(form), maximum = maxRankPosition(fields.kind, level.id);
     Object.assign(level, fields);
     if (!old)
         profile.levels.push(level);
     matchWithAredl([level]);
+    matchWithDemonlist([level]);
     removeFromOrder(level.id);
     if (position && !isPre(level)) {
         const order = profile.order[level.kind], before = rankedIds(level.kind)[Math.max(1, Math.min(maximum, +position)) - 1];
@@ -431,7 +437,7 @@ document.body.oninput = e => {
         return setComparisonSearch(e.target);
     if (['fm', 'wf'].includes(e.target.form?.id))
         e.target.setCustomValidity(fieldError(e.target.name, e.target.value));
-    if (e.target.form?.id == 'fm' && ['attC', 'attN', 'tN', 'tP', 'tPC'].includes(e.target.name))
+    if (e.target.form?.id == 'fm' && (/^(?:attC|attN|t(?:N|P|PC)_[hms])$/.test(e.target.name)))
         updateTotals(e.target.form);
     if (e.target.id == 'tgq')
         renderTagSuggestions();
@@ -511,7 +517,10 @@ document.addEventListener('toggle', e => {
         optionsPanel.style.setProperty('--ms-height', Math.max(0, innerHeight - panelTop - 12) + 'px');
     }
 }, true);
+document.addEventListener('focusout', e => durationBlur(e));
 document.onkeydown = e => {
+    if (e.target.dataset.duration)
+        return durationKeydown(e);
     if (e.key == 'Enter' && e.target.dataset.deathField != null)
         return deathInputKeydown(e);
     if (e.key == 'Escape') {

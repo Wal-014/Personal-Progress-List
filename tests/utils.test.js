@@ -36,13 +36,9 @@ test('safeUrl only lets http and https links through', () => {
     assert.equal(safeUrl(undefined), '');
 });
 
-test('durations round-trip and invalid text is rejected', () => {
-    const parse = app('parseDuration'), format = app('formatDuration');
-    assert.equal(parse('1h 30m 5s'), 5405);
-    assert.equal(format(5405), '1h 30m 5s');
-    assert.equal(parse('45m'), 2700);
-    assert.equal(parse('1h30'), null);
-    assert.equal(parse(''), null);
+test('duration display retains its existing format', () => {
+    assert.equal(app('formatDuration')(5405), '1h 30m 5s');
+    assert.equal(app('formatDuration')(null), '');
 });
 
 test('thumbnails are only requested for numeric level IDs', () => {

@@ -153,8 +153,9 @@ async function syncWithAredl(manual) {
         return;
     ui.sync = 1;
     renderSyncStatus();
+    const [aredl, gdl] = await Promise.allSettled([loadAredlList(true), loadDemonlist(true)]);
     try {
-        if (!await loadAredlList(true))
+        if (aredl.status == 'rejected' || !aredl.value)
             throw Error('no response');
         await loadSheetLevels();
         profile.levels.forEach(fillAredlMetadata);
@@ -163,12 +164,17 @@ async function syncWithAredl(manual) {
         await fillRatings([...profile.levels, ...profile.wishlists.flatMap(w => w.items)]);
         matchWithAredl(profile.levels);
         localStorage.gas = Date.now();
-        save();
     }
     catch (e) {
         if (manual)
             showAlert('AREDL: ' + e.message);
     }
+    if (gdl.status == 'fulfilled')
+        matchWithDemonlist(profile.levels);
+    else if (manual && aredl.status == 'fulfilled' && aredl.value)
+        showAlert('GDL: ' + gdl.reason.message);
+    if (gdl.status == 'fulfilled' || (aredl.status == 'fulfilled' && aredl.value))
+        save();
     ui.sync = 0;
     // Redrawing would wipe a form, dialog or dropdown the user has open; the new data shows on the next render
     if (!qs('form, dialog[open], .ms[open]'))
