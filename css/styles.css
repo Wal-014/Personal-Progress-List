@@ -1729,7 +1729,34 @@ input.ro {
 }
 
 .gdc .by {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gdc .credit {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gdc .gdmode {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, .8);
+  white-space: nowrap;
+}
+
+.gdc .gdmode.classic {
+  color: var(--ye);
+}
+
+.gdc .gdmode.platform {
+  color: var(--cy);
 }
 
 .gdc .face, .wi .face {
