@@ -1,6 +1,6 @@
 # Design tokens
 
-`css/tokens.css` loads before component styles. Home and the shared sidebar, header and page titles use the tokens directly; legacy screens use aliases such as `--bg1`, `--obj` and `--meta` without a component redesign. Until those screens are migrated, Porcelain temporarily maps every legacy colour alias to the fixed Nebula palette. Each non-Home screen wraps its content in `.legacy-surface`, with its own Nebula colour tokens, text and background, panel radius and dark colour scheme. The page title row sits outside this panel; the surrounding page background, sidebar and header always follow the chosen theme. This surface override applies only to Porcelain; dark themes are unchanged. Lists, details, forms, settings-dialog legacy controls, wishlists and statistics therefore stay dark and legible; Home and the new appearance controls still use Porcelain. Dark themes continue mapping legacy aliases to their own palette. `--color-nebula-*` holds those fixed reference values once.
+The shared shell, list details, wishlists, statistics and dialogs use the active theme's tokens. Older component names such as `--bg1`, `--obj` and `--meta` resolve to those same tokens. Porcelain uses light surfaces, dark text and satin edges. `--color-nebula-*` provides the default dark palette.
 
 ## Token groups
 

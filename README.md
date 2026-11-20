@@ -144,6 +144,10 @@ First-time setup, done once by a repository admin:
 - **Locked-down pipeline** — every action is pinned to a commit SHA, the workflow token is read-only except for the Pages deploy job, and checkout does not keep credentials. Backups are encrypted before they leave the runner and the password is masked in the logs.
 - **Few API requests** — a sync downloads the two AREDL lists once; creators come from the sheet copy instead of one AREDL request per level.
 
+## Repository language
+
+Write issues, pull requests, commit messages, change explanations and documentation in English. Capture previews with the interface set to English and use English sample content, captions and filenames. The application supports English and Spanish.
+
 ## License
 
 All rights reserved. The code is published for viewing only; see [`LICENSE`](LICENSE).
