@@ -3158,6 +3158,24 @@ input.ro {
   }
 }
 
+/* Keep both list previews compact on short laptop screens. */
+@media (max-height: 850px) {
+  @container home (min-width: 621px) {
+    .hcards {
+      align-self: stretch;
+      flex: none;
+    }
+
+    .hcard {
+      min-height: 0;
+    }
+
+    .hcard-body {
+      min-height: clamp(180px, 32vh, 272px);
+    }
+  }
+}
+
 @container home (max-width: 620px) {
   .hpreviews {
     grid-template-columns: minmax(0, 1fr);
