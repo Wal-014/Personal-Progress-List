@@ -132,12 +132,15 @@ test('the list header offers only its own tags, escaped, with the selection chec
     assert.ok(app('lcol()').includes(app("t('noListTags')")), 'an empty filter menu explains why it has no options');
 });
 
-test('a finished AREDL update does not redraw over an open dropdown', async () => {
+test('a finished AREDL update does not redraw over an open dropdown or an active drag', async () => {
     const { app, calls, context } = createApp();
     let present = ['.ms[open]'];
     context.document.querySelector = selector => selector.split(', ').some(part => present.includes(part)) ? {} : null;
     context.loadAredlList = async () => false;
     context.renderSyncStatus = () => {};
+    await app('syncWithAredl()');
+    assert.equal(calls.includes('render'), false);
+    present = ['.sortable-chosen'];
     await app('syncWithAredl()');
     assert.equal(calls.includes('render'), false);
     present = [];

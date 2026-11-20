@@ -31,7 +31,7 @@ function showDialog({ title, msg, input, def, ok, cancel, danger, label, extra =
         const m = document.createElement('dialog');
         m.className = 'modal';
         m.setAttribute('aria-labelledby', 'dgt');
-        m.innerHTML = `<div class="box sm"><h2 id=dgt>${escapeHtml(title || '')}</h2>${msg ? `<p style="white-space:pre-wrap">${escapeHtml(msg)}</p>` : ''}${input ? `${label ? `<label for=dgi>${escapeHtml(label)}</label>` : ''}<input id=dgi${label ? '' : ' aria-labelledby=dgt'} value="${escapeHtml(def || '')}" style="width:100%">` : ''}${extra}<p class=dgb>${cancel === false ? '' : `<button data-r=0>${t('cancel')}</button>`}<button class="${danger ? 'dg' : 'pri'}" data-r=1>${ok || t('ok2')}</button></p></div>`;
+        m.innerHTML = `<div class="box sm"><h2 id=dgt>${escapeHtml(title || '')}</h2>${msg ? `<p style="white-space:pre-wrap">${escapeHtml(msg)}</p>` : ''}${input ? `${label ? `<label for=dgi>${escapeHtml(label)}</label>` : ''}<input id=dgi${label ? '' : ' aria-labelledby=dgt'} value="${escapeHtml(def || '')}" style="width:100%">` : ''}${extra}<p class=dgb>${cancel === false ? '' : `<button data-r=0>${t('cancel')}</button>`}<button class="${danger ? ok ? 'dg bulk-delete' : 'dg' : 'pri'}" data-r=1>${ok || t('ok2')}</button></p></div>`;
         const read = enhance?.(m);
         document.body.appendChild(m);
         m.showModal();
@@ -52,7 +52,7 @@ function showDialog({ title, msg, input, def, ok, cancel, danger, label, extra =
             i.select();
         }
         else
-            m.querySelector('[data-r="1"]').focus();
+            m.querySelector(danger && ok ? '[data-r="0"]' : '[data-r="1"]').focus();
         m.onclick = e => {
             e.stopPropagation();
             const r = e.target.dataset.r;
@@ -138,7 +138,7 @@ function askProfile(title, { name, color, secondaryColor, cubeId }) {
     } });
 }
 
-const askConfirm = title => showDialog({ title, danger: 1 });
+const askConfirm = (title, ok) => showDialog({ title, ok, danger: 1 });
 
 const showAlert = msg => showDialog({ title: msg, cancel: false });
 

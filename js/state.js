@@ -47,6 +47,7 @@ const isListTab = () => ['classic', 'platform'].includes(ui.tab);
 
 /** Clears the name search and the tag filter, so the next list opens unfiltered. */
 function resetListFilters() {
+    ui.levelSelection = null;
     ui.q = '';
     ui.tagFilter = [];
 }
@@ -85,6 +86,7 @@ function nextProfileColor() {
 const findLevel = id => profile.levels.find(l => l.id == id);
 
 function activateProfile(id) {
+    ui.levelSelection = null;
     store.cur = id;
     profile = store.profs[id].data;
     ensureProfileDefaults();

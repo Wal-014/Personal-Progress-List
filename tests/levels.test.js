@@ -192,16 +192,13 @@ test('detail renders keyboard-accessible tag filters with escaped translated lab
     }
 });
 
-test('card tag filters stay outside the tab order in both level lists', () => {
+test('cards omit tags in both level lists', () => {
     app('profile = emptyProfile()');
     for (const kind of ['classic', 'platform']) {
         const html = app('card')({ id: 'tag-test', levelId: '4125776', name: 'Tagged level', kind, tags: ['first', 'second'] });
         assert.ok(html.includes("--th:url('https://levelthumbs.prevter.me/thumbnail/4125776/small')"));
         assert.match(html, /role=button tabindex=0/);
-        const chips = html.match(/<span class=chip\b[^>]*>/g);
-        assert.equal(chips.length, 2);
-        for (const chip of chips)
-            assert.doesNotMatch(chip, /\b(?:role|tabindex|aria-label)=/);
+        assert.doesNotMatch(html, /data-tag=|class=chip/);
     }
 });
 
@@ -297,7 +294,7 @@ for (const kind of ['classic', 'platform'])
         });
 
 test('initSort registers the grip filter and saves only updates on an unfiltered list', () => {
-    const created = [], listNode = {};
+    const created = [], listNode = { parentElement: { scrollHeight: 500, clientHeight: 200 } };
     const fixture = loadScripts(['js/components/levels.js'], {
         ui: { q: '', tagFilter: [] },
         qs(selector) {
@@ -311,6 +308,10 @@ test('initSort registers the grip filter and saves only updates on an unfiltered
     const { element, options } = created[0];
     assert.equal(element, listNode);
     assert.equal(options.animation, 180);
+    assert.equal(options.scroll, listNode.parentElement);
+    assert.equal(options.bubbleScroll, false);
+    assert.equal(options.forceAutoScrollFallback, true);
+    assert.ok(options.scrollSensitivity >= 60);
     assert.equal(options.filter, fixture.app('startsAwayFromGrip'));
     assert.equal(options.preventOnFilter, false);
     assert.equal(options.fallbackTolerance, 5);
@@ -359,4 +360,25 @@ test('step buttons use decimal steps without floating noise and stop at bounds',
     input.step = ''; button.dataset.d = '1';
     env.app('ACTIONS.step')(button);
     assert.equal(Number(input.value), 1);
+});
+test('list rows pair the creator with the name and keep only the completion date below', () => {
+    app("profile = emptyProfile(); viewing = null; ui.lang = 'en'");
+    const level = { id: 'row', kind: 'classic', name: 'Example', creator: 'Player', date: '2026-01-02', ar: { s: 'r', p: 25 } };
+    const html = app('card')(level, 0, 1);
+    assert.match(html, /class=level-title><span class=nm>Example<\/span><span class=level-creator>by Player<\/span><\/div>/i);
+    assert.match(html, /<time class=level-date datetime="2026-01-02">02\/01\/2026<\/time>/);
+    assert.doesNotMatch(html, /AREDL|#25/);
+    assert.doesNotMatch(app('card')({ ...level, date: '', creator: '' }), /class=level-creator|class=level-date/);
+});
+
+test('details distinguish level identity from external ranks for both modes', () => {
+    app("profile = emptyProfile(); viewing = null; ui.lang = 'en'");
+    for (const kind of ['classic', 'platform']) {
+        const html = app('detail')({ id: 'row', name: 'Level', creator: 'Player', levelId: '123', diff: 'Hard', kind, ar: { s: 'r', p: 12 }, gdl: 7 });
+        assert.ok(html.includes(`<dt>${app("t('creator')")}</dt><dd>Player</dd>`));
+        assert.match(html, /<dt>ID<\/dt><dd>123<\/dd>/);
+        assert.match(html, /<dt>Difficulty<\/dt><dd>Hard/);
+        assert.ok(html.includes('<dt>' + (kind === 'classic' ? 'AREDL' : 'AREPL') + '</dt><dd>#12</dd>'));
+        assert.equal(html.includes('<dt>GDL</dt><dd>#7</dd>'), kind === 'classic');
+    }
 });

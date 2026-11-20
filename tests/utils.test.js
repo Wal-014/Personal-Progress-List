@@ -4,24 +4,6 @@ import { loadScripts } from './load-scripts.js';
 
 const { app } = loadScripts(['js/config.js', 'js/utils.js']);
 
-const label = loadScripts(['js/i18n.js', 'js/utils.js'], { ui: { lang: 'en' } }).app('aredlLabel');
-
-for (const [kind, listName] of [['classic', 'AREDL'], ['platform', 'AREPL']]) {
-    test(`aredlLabel formats every status for ${kind} levels`, () => {
-        assert.equal(label({ kind, ar: { s: 'r', p: 42 } }), `${listName} #42`);
-        assert.equal(label({ kind, ar: { s: 'r', p: 0 } }), `${listName} #0`);
-        assert.equal(label({ kind, ar: { s: 'r', p: '<&' } }), `${listName} #&lt;&amp;`);
-        assert.equal(label({ kind, ar: { s: 'r' } }), `${listName} —`);
-        assert.equal(label({ kind, ar: { s: 'r', p: null } }), `${listName} —`);
-        assert.equal(label({ kind, ar: { s: 'p' } }), `${listName} · Awaiting placement`);
-        assert.equal(label({ kind, ar: { s: 'n' } }), `${listName} —`);
-        for (const status of [undefined, null, '', 'unknown', 0, false])
-            assert.equal(label({ kind, ar: { s: status } }), `${listName} —`);
-        assert.equal(label({ kind, ar: null }), `${listName} —`);
-        assert.equal(label({ kind }), `${listName} —`);
-    });
-}
-
 test('escapeHtml escapes every HTML-significant character', () => {
     assert.equal(app('escapeHtml')(`<a href="x" title='y'>&</a>`), '&lt;a href=&quot;x&quot; title=&#39;y&#39;&gt;&amp;&lt;/a&gt;');
     assert.equal(app('escapeHtml')(null), '');

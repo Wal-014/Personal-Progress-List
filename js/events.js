@@ -36,8 +36,7 @@ window.addEventListener('resize', () => syncDrawer());
 const ACTIONS = {
     drawer: () => setDrawer(!ui.drawer),
     drawerclose: () => setDrawer(false),
-    pnew: () => editLocalProfile(true),
-    pedit: () => editLocalProfile(false),
+    pedit: () => editLocalProfile(),
     dthadd: a => addDeath(a),
     dthedit: a => editDeath(a),
     dthremove: a => removeDeath(a),
@@ -117,6 +116,9 @@ const ACTIONS = {
         else
             render();
     },
+    'list-select': () => toggleLevelSelection(),
+    'list-pick': (row, id) => pickListLevel(row, id),
+    'list-delete': () => deleteSelectedLevels(),
     listchoices(button) {
         ui.listsExpanded = button.getAttribute('aria-expanded') != 'true';
         button.setAttribute('aria-expanded', String(ui.listsExpanded));
@@ -399,7 +401,7 @@ document.body.onclick = e => {
     const g = e.target.closest('[data-tag]'), a = e.target.closest('[data-act]'), c = e.target.closest('[data-id]');
     if (e.target.classList.contains('modal'))
         return closeModal();
-    if (g) {
+    if (g && a?.dataset.act !== 'list-pick') {
         ui.tagFilter = [g.dataset.tag];
         if (!isListTab())
             ui.tab = 'classic';

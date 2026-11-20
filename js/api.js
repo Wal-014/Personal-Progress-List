@@ -172,8 +172,8 @@ async function syncWithAredl() {
     if (gdl.status == 'fulfilled' || (aredl.status == 'fulfilled' && aredl.value))
         save();
     ui.sync = 0;
-    // Redrawing would wipe a form, dialog or dropdown the user has open; the new data shows on the next render
-    if (!qs('form, dialog[open], .ms[open]'))
+    // Replacing a dragged row interrupts sorting. Show refreshed metadata on the next render.
+    if (!qs('form, dialog[open], .ms[open], .sortable-chosen'))
         render();
 }
 

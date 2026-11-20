@@ -53,11 +53,11 @@ test('empty cards stay navigable, show the empty label and omit badges, faces an
     }
 });
 
-test('Platformer has its own icon and fallback art is absent when a thumbnail URL exists', () => {
+test('Platformer has its own icon and keeps fallback art underneath the optional thumbnail', () => {
     const { app } = homeApp();
     app("profile = emptyProfile(); profile.levels = [{ id: 'p', kind: 'platform', name: 'Platform', levelId: '123' }]; profile.order.platform = ['p']");
     assert.match(app("homeListCard('platform')"), /--th:/);
-    assert.doesNotMatch(app("homeListCard('platform')"), /class=hghost/);
+    assert.match(app("homeListCard('platform')"), /class=hghost[\s\S]+class=hcover/);
     app('delete profile.levels[0].levelId');
     const card = app("homeListCard('platform')"), icon = app('ICONS.platform');
     assert.equal(typeof icon, 'string');
@@ -184,7 +184,7 @@ test('every screen uses the shared shell, active destination and page actions', 
 test('local profile menu retains every action without sharing', () => {
     const { app } = homeApp();
     const html = app('profileSwitcher()');
-    for (const action of ['localuse', 'pnew', 'pedit', 'localbackup', 'localimport', 'localdata', 'asignin'])
+    for (const action of ['localuse', 'pedit', 'localbackup', 'localimport', 'localdata', 'asignin'])
         assert.match(html, new RegExp('data-act=' + action));
     assert.match(html, /id=profile-pill/);
     assert.doesNotMatch(html, /data-act=ashare/);

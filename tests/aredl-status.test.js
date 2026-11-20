@@ -32,10 +32,21 @@ for (const [lang, pending, top] of [['en', 'Awaiting placement', 'Top in'], ['es
                 const html = f.app('levelForm')(level);
                 assert.doesNotMatch(html, /\bname=as\b/);
                 assert.ok(html.includes(`<label for=fm-ap>${top} ${list}</label>`));
-                assert.match(html, /id=fm-ap name=ap type=text readonly tabindex=-1/);
-                assert.ok(html.includes(`value="${value}" class=ro`));
+                assert.ok(html.includes(`<output id=fm-ap name=ap>${value}</output>`));
             }
         });
+
+test('level form groups attempts, times and totals separately, with read-only lookup data', () => {
+    const f = formFixture();
+    const html = f.app('levelForm')({ name: 'A & B', kind: 'classic', attN: 1234567, attC: 2, tPC: 60 });
+    assert.ok(html.includes('<output id=lf-name name=nameDisplay class=level-info-value>A &amp; B</output><input type=hidden name=name value="A &amp; B">'));
+    const groups = html.split(/<div class=level-(?:attempts|times|totals)>/);
+    assert.equal(groups.length, 4);
+    assert.match(groups[1], /name=attN[^>]*value="1234567"[\s\S]*name=attC/);
+    assert.match(groups[2], /data-duration="tN"[\s\S]*data-duration="tP"[\s\S]*data-duration="tPC"/);
+    assert.ok(groups[3].includes('<output id=fm-attT name=attT>1234569</output>'));
+    assert.ok(groups[3].includes('<output id=fm-tT name=tT>00:01:00</output>'));
+});
 
 test('picking results updates the top, list label and found note from current form fields', async () => {
     const f = formFixture();
@@ -81,12 +92,19 @@ test('saving an existing level preserves its status without cached lists', () =>
     assert.equal(f.app('profile.levels[0].ar'), ar);
 });
 
-test('cards show ranking metadata only for a position or pending placement', () => {
+test('only details show external ranks, including pending, missing and escaped positions', () => {
     const f = formFixture();
-    for (const [ar, shown] of [[{ s: 'r', p: 125 }, true], [{ s: 'p' }, true], [{ s: 'r' }, false], [{ s: 'n' }, false], [undefined, false]]) {
-        const level = { id: 'card', name: 'Level', kind: 'classic', ar };
-        assert.equal(f.app('card')(level).includes('AREDL'), shown);
-        assert.equal(f.app('detail')(level).includes('AREDL'), true);
+    const cases = [
+        [{ s: 'r', p: 125 }, '#125'], [{ s: 'r', p: 0 }, '#0'], [{ s: 'r', p: '<&' }, '#&lt;&amp;'],
+        [{ s: 'p' }, 'Awaiting placement'], [{ s: 'r' }, '—'], [{ s: 'r', p: null }, '—'],
+        [{ s: 'n' }, '—'], [{ s: 'unknown' }, '—'], [null, '—'], [undefined, '—']
+    ];
+    for (const [kind, list] of [['classic', 'AREDL'], ['platform', 'AREPL']]) {
+        for (const [ar, value] of cases) {
+            const level = { id: 'card', name: 'Level', kind, ar };
+            assert.equal(f.app('card')(level).includes(list), false);
+            assert.ok(f.app('detail')(level).includes(`<dt>${list}</dt><dd>${value}</dd>`));
+        }
     }
 });
 
