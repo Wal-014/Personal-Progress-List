@@ -90,7 +90,8 @@ const ACTIONS = {
     },
     step(a) {
         const i = a.parentNode.querySelector('input'), mn = i.min === '' ? -1e9 : +i.min, mx = i.max === '' ? 1e9 : +i.max;
-        i.value = Math.max(mn, Math.min(mx, (+i.value || 0) + +a.dataset.d));
+        const step = Number(i.step) || 1, precision = (String(step).split('.')[1] || '').length;
+        i.value = Number(Math.max(mn, Math.min(mx, Math.round(((+i.value || 0) + +a.dataset.d * step) / step) * step)).toFixed(precision));
         i.dispatchEvent(new Event('input', { bubbles: true }));
     },
     lang(a) {

@@ -1379,16 +1379,6 @@ dialog.modal::backdrop {
   border-radius: 6px;
 }
 
-.meter::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  width: 2px;
-  background: rgba(255, 255, 255, .35);
-}
-
 .meter i {
   position: absolute;
   top: 0;

@@ -12,7 +12,7 @@ const LEVEL_METRICS = {
     },
     enj: {
         label: 'enj', read: level => level.enj ?? null,
-        format: value => `${value > 0 ? '+' : ''}${value}`, formatGap: String, range: [-10, 10]
+        format: formatRating, formatGap: formatRating, range: [0, 10]
     }
 };
 

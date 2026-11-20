@@ -35,12 +35,12 @@ for (const publicView of [false, true]) {
         }
     });
 
-    test(`detail retains zero enjoyment and negative appeal in ${mode} mode`, () => {
-        const html = drawDetail({ enj: 0, lik: -3 });
+    test(`detail retains zero enjoyment and fractional appeal in ${mode} mode`, () => {
+        const html = drawDetail({ enj: 0, lik: 3.5 });
         assert.equal((html.match(/<fieldset>/g) || []).length, 1);
         assert.match(html, /<legend>Rating<\/legend>/);
         assert.match(html, /<small>Enjoyment<\/small><div class=mh><b[^>]*>0<\/b>/);
-        assert.match(html, /<small>Level appeal<\/small><div class=mh><b[^>]*>-3<\/b>/);
+        assert.match(html, /<small>Level appeal<\/small><div class=mh><b[^>]*>3\.5<\/b>/);
         assert.doesNotMatch(html, /No additional details/);
     });
 
@@ -72,7 +72,7 @@ for (const publicView of [false, true]) {
             [{ date: '2026-01-02' }, ['Completion date', '02/01/2026'], ['class=yt', 'Video (YouTube)']],
             [{ link: 'https://example.com/video' }, ['href="https://example.com/video"'], ['Completion date', 'class=grid']],
             [{ enj: 0 }, ['Enjoyment'], ['Level appeal']],
-            [{ lik: -3 }, ['Level appeal'], ['Enjoyment']],
+            [{ lik: 3.5 }, ['Level appeal'], ['Enjoyment']],
             [{ notes: '<Recorded>' }, ['&lt;Recorded&gt;'], ['<Recorded>']],
             [{ deaths: { 63: 2 } }, ['Best %', '63% ×2', 'class=hist'], ['Total attempts', 'Normal attempts', 'Copy attempts']]
         ];
@@ -85,7 +85,7 @@ for (const publicView of [false, true]) {
     });
 
     test(`detail keeps every section for a fully recorded level in ${mode} mode`, () => {
-        const html = drawDetail({ attN: 12, attC: 3, tN: 60, tP: 120, tPC: 180, date: '2026-01-02', link: 'https://youtu.be/Ab_12-cDef3', enj: 8, lik: -3, tags: ['Recorded'], notes: 'A recorded note', deaths: { 63: 2, 90: 1 } });
+        const html = drawDetail({ attN: 12, attC: 3, tN: 60, tP: 120, tPC: 180, date: '2026-01-02', link: 'https://youtu.be/Ab_12-cDef3', enj: 8, lik: 3.5, tags: ['Recorded'], notes: 'A recorded note', deaths: { 63: 2, 90: 1 } });
         assert.equal((html.match(/<fieldset>/g) || []).length, 6);
         for (const label of ['Attempts', 'Play time', 'Completion', 'Rating', 'Tags & notes', 'Deaths per percent'])
             assert.ok(html.includes(`<legend>${label}</legend>`), label);
@@ -325,4 +325,38 @@ test('initSort registers the grip filter and saves only updates on an unfiltered
     fixture.context.qs = () => null;
     fixture.app('initSort()');
     assert.equal(created.length, 1);
+});
+
+test('rating meters fill from the left, use localized decimals and omit plus signs', () => {
+    app("ui.lang = 'es'");
+    for (const value of [0, 2.5, 8, 10]) {
+        const html = app('meter')(value);
+        assert.ok(html.includes(`left:0%;width:${value * 10}%`));
+        assert.doesNotMatch(html, /\+/);
+        assert.equal(html.includes('class="meter g"'), value >= 8);
+    }
+    assert.match(app('meter(2.5)'), />2,5<\/b>/);
+    assert.match(app('meter(7.3)'), />7,3<\/b>/);
+    const field = app("formField('lik', 7.3, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')");
+    assert.match(field, /aria-label="\u22120,1"/);
+    assert.match(field, /aria-label="\+0,1"/);
+    assert.match(app("formField('enj', null, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')"), /min=0 max=10 step=0.1 inputmode=decimal value=""/);
+});
+
+test('step buttons use decimal steps without floating noise and stop at bounds', () => {
+    const input = { value: '0', min: '0', max: '10', step: '0.1', dispatchEvent(event) { assert.equal(event.type, 'input'); } };
+    const env = loadScripts(['js/events.js'], { document: { body: {}, addEventListener() {} }, window: { addEventListener() {} }, Event: class { constructor(type) { this.type = type; } } });
+    const button = { parentNode: { querySelector: () => input }, dataset: { d: '1' } };
+    for (let i = 1; i <= 105; i++) {
+        env.app('ACTIONS.step')(button);
+        assert.equal(Number(input.value), Math.min(i, 100) / 10);
+    }
+    button.dataset.d = '-1';
+    for (let i = 99; i >= -5; i--) {
+        env.app('ACTIONS.step')(button);
+        assert.equal(Number(input.value), Math.max(i, 0) / 10);
+    }
+    input.step = ''; button.dataset.d = '1';
+    env.app('ACTIONS.step')(button);
+    assert.equal(Number(input.value), 1);
 });
