@@ -4061,6 +4061,22 @@ main.home {
   min-width: 0;
 }
 
+.page-title h2, .kpi small:has(> .i) {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+.page-title h2::before {
+  content: '';
+  width: 6px;
+  height: 30px;
+  flex: none;
+  border-radius: var(--radius-control);
+  background: var(--color-accent);
+}
+.page-title h2 > .i { flex: none; width: 24px; height: 24px; color: var(--color-text); }
+.kpi small > .i { flex: none; width: 18px; height: 18px; }
+
 .shell-paints { position: absolute; pointer-events: none; }
 .hsection-head h2 > .i { flex: none; width: 24px; height: 24px; color: var(--color-text); }
 
@@ -4070,7 +4086,8 @@ main.home {
   [data-theme=porcelain] .nav-ink { stop-color: #584630; }
   [data-theme=porcelain] .nav-glint { stop-color: #bd9867; }
 
-  .hsection-head h2 > .i, :is(.shell-nav, .shell-footer) > button > .i {
+  .hsection-head h2 > .i, :is(.shell-nav, .shell-footer) > button > .i,
+  :is(.page-title, .lh, .kpi small, .wa, .wact, .dgb) .i[stroke=currentColor] {
     stroke: url(#nav-metal) currentColor;
     stroke-width: 2;
   }
@@ -4082,6 +4099,9 @@ main.home {
     text-shadow: 0 0 3px color-mix(in srgb, var(--color-accent) 21%, transparent);
   }
 
+  :root:not([data-theme=porcelain]) :is(.page-title, .lh, .wa, .wseg, .gdseg, .zoom, .compare-panel, .dgb) :is(button, summary):not(:disabled) {
+    text-shadow: 0 0 3px color-mix(in srgb, var(--color-accent) 21%, transparent);
+  }
   :is(.shell-nav, .shell-footer) > button:not([aria-current=page]) {
     border: 1px solid transparent;
     background:

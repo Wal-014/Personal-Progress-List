@@ -25,7 +25,7 @@ for (const [lang, addLabel, wishTitle, wishText, listTitle, listText, noMatch] o
             const html = app('wishView()');
             const header = html.split(hasItems ? '<div class=wl>' : '<div class=empty>')[0];
             assert.ok(header.startsWith('<div class="wh">'));
-            assert.ok(header.includes(`<button class=pri data-act=wadd>${addLabel}</button>`));
+            assert.ok(header.includes(`<button class=pri data-act=wadd>${app('ICONS.actionAdd')} ${addLabel}</button>`));
             if (hasItems) {
                 assert.match(html, /<div class=wl><div class="obj wi s-todo" data-id="wanted"/);
                 assert.ok(html.includes('<span class=nm>Wanted level</span>'));

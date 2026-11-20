@@ -48,7 +48,7 @@ function stats() {
         if (level.date)
             yearCounts[level.date.slice(0, 4)] = (yearCounts[level.date.slice(0, 4)] || 0) + 1;
     });
-    const statCell = (label, value, className = '') => `<div class="kpi ${className}"><small>${label}</small><b>${escapeHtml(value)}</b></div>`;
-    return `<div class=kpis>${statCell(t('lv'), levelCount)}${statCell(t('attT'), attemptTotal.toLocaleString(ui.lang), 'y')}${statCell(t('hrs'), playHours)}${statCell(t('avg'), average == null ? '-' : average.toLocaleString(ui.lang))}${mostAttemptsLevel ? statCell(t('most'), `${mostAttemptsLevel.name} · ${totalAttempts(mostAttemptsLevel).toLocaleString(ui.lang)}`, 'sm') : ''}</div>
+    const statCell = (label, value, className = '', icon = '') => `<div class="kpi ${className}"><small>${icon}${label}</small><b>${escapeHtml(value)}</b></div>`;
+    return `<div class=kpis>${statCell(t('lv'), levelCount, '', ICONS.metricLevels)}${statCell(t('attT'), attemptTotal.toLocaleString(ui.lang), 'y', ICONS.metricAttempts)}${statCell(t('hrs'), playHours, '', ICONS.metricHours)}${statCell(t('avg'), average == null ? '-' : average.toLocaleString(ui.lang))}${mostAttemptsLevel ? statCell(t('most'), `${mostAttemptsLevel.name} · ${totalAttempts(mostAttemptsLevel).toLocaleString(ui.lang)}`, 'sm') : ''}</div>
 <div class=stats2><div class=well id=timeline-well>${timelineHtml()}</div><div class=side><div class="well d"><h2>${t('byD')}</h2>${bars(Object.fromEntries([...DIFFICULTIES, '-'].filter(difficulty => difficultyCounts[difficulty]).map(difficulty => [difficulty, difficultyCounts[difficulty]])))}</div><div class="well y"><h2>${t('byY')}</h2>${bars(yearCounts)}</div></div></div><section class=well id=rankings-well>${rankingsHtml()}</section>`;
 }

@@ -68,8 +68,9 @@ function shellPageTitle() {
         return '';
     const wish = ui.tab == 'wish' && currentWishlist();
     const title = isListTab() ? t(canEdit() ? 'lists' : 'publicLists') : wish ? wish.name : t(ui.tab);
-    const primary = !canEdit() ? '' : ui.tab == 'wish' && !wish ? `<button data-act=wnew>${ICONS.plus}${t('palWish')}</button>` : '';
-    return `<div class=page-title>${wish ? `<button data-act=tab data-v=wish aria-label="${t('back2')}">${ICONS.back}</button>` : ''}<h2>${escapeHtml(title)}</h2>${primary}</div>`;
+    const icon = isListTab() ? ICONS.navLists : ui.tab == 'wish' ? ICONS.navWish : ICONS.navStats;
+    const primary = !canEdit() ? '' : ui.tab == 'wish' && !wish ? `<button data-act=wnew>${ICONS.actionAdd}${t('palWish')}</button>` : '';
+    return `<div class=page-title>${wish ? `<button data-act=tab data-v=wish aria-label="${t('back2')}">${ICONS.actionBack}</button>` : ''}<h2>${icon}${escapeHtml(title)}</h2>${primary}</div>`;
 }
 
 function sharedShell(screen) {

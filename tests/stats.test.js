@@ -251,7 +251,7 @@ test('rankings changes preserve metric, direction and comparison partner; all co
 test('existing totals and distributions remain before rankings and count all modes', () => {
     const app = statsApp();
     app(statsFixture);
-    const markup = app('stats()');
+    const markup = app('stats()').replace(/<svg\b[^>]*aria-hidden=true[^>]*>[\s\S]*?<\/svg>/g, '');
     assert.match(markup, /<small>Levels<\/small><b>7<\/b>/);
     assert.match(markup, /<small>Total attempts<\/small><b>70<\/b>/);
     assert.match(markup, /<small>Hours<\/small><b>37<\/b>/);
