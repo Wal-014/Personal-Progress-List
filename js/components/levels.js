@@ -106,8 +106,8 @@ const tagChip = n => `<span class=chip data-act=tgrm data-v="${escapeHtml(n)}" s
 function updateTotals(f) {
     const q = k => f.elements[k], n = k => q(k).value === '' ? null : +q(k).value, a = n('attN'), c = n('attC');
     q('attT').value = a == null && c == null ? '' : (a || 0) + (c || 0);
-    const s = ['tN', 'tP', 'tPC'].map(k => parseDuration(q(k).value)).filter(x => x != null);
-    q('tT').value = s.length ? formatDuration(s.reduce((x, y) => x + y)) : '';
+    const s = ['tN', 'tP', 'tPC'].map(k => readDuration(f, k)).filter(x => x != null);
+    q('tT').value = s.length && s.every(Number.isFinite) ? durationClock(s.reduce((x, y) => x + y)) : '';
 }
 
 function renderTagSuggestions() {
@@ -146,7 +146,7 @@ function levelForm(level) {
 ${levelSearchBox()}
 ${section('s1', levelFields(levelData, true))}
 ${section('s2', formField('pos', rankPosition, 'number', `min=1 max=${maximum} step=1 aria-describedby=fm-pos-hint`, rankPositionHint(maximum)) + `<div><label for=fm-ap>${t(kind == 'platform' ? 'apPlatform' : 'ap')}</label><input id=fm-ap name=ap type=text readonly tabindex=-1 value="${escapeHtml(aredlTopValue(levelData.ar))}" class=ro></div>`)}
-${section('s3', formField('attC', levelData.attC, 'number', 'min=0 step=1') + formField('attN', levelData.attN, 'number', 'min=0 step=1') + formField('tN', formatDuration(levelData.tN), 'text', 'placeholder="1h 30m 0s"') + formField('tP', formatDuration(levelData.tP)) + formField('tPC', formatDuration(levelData.tPC)) + formField('attT', totalAttempts(levelData), 'number', 'readonly tabindex=-1') + formField('tT', formatDuration(totalSeconds(levelData)), 'text', 'readonly tabindex=-1'))}
+${section('s3', formField('attC', levelData.attC, 'number', 'min=0 step=1') + formField('attN', levelData.attN, 'number', 'min=0 step=1') + durationInput('tN', levelData.tN) + durationInput('tP', levelData.tP) + durationInput('tPC', levelData.tPC) + formField('attT', totalAttempts(levelData), 'number', 'readonly tabindex=-1') + formField('tT', durationClock(totalSeconds(levelData)), 'text', 'readonly tabindex=-1'))}
 ${section('s4', formField('date', levelData.date, 'date') + formField('link', levelData.link))}
 <fieldset><legend>${t('s5')}</legend><div class=grid>${formField('enj', levelData.enj, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}${formField('lik', levelData.lik, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}</div><label for=tgq style="margin-top:12px">${t('tags')}</label><input id=tgq placeholder="${t('tgs')}" autocomplete=off><div id=tgr class=tgr></div><div id=tgs>${(levelData.tags || []).map(tagChip).join('')}</div></fieldset>
 <fieldset><legend>${t('s6')}</legend><label for=fm-notes>${t('notes')}</label><textarea id=fm-notes name=notes rows=3>${escapeHtml(levelData.notes)}</textarea>${deathsInput(levelData.deaths)}</fieldset>
@@ -162,7 +162,7 @@ function levelFromForm(form) {
         name: fields.name.trim(), kind: fields.kind, levelId: fields.lid || null, creator: fields.creator || null,
         diff: fields.diff || null, rating: fields.rating || null, attC: number('attC'), attN: number('attN'),
         date: fields.date || null, link: fields.link || null, enj: clamp('enj'), lik: clamp('lik'),
-        tN: parseDuration(fields.tN), tP: parseDuration(fields.tP), tPC: parseDuration(fields.tPC),
+        tN: readDuration(form, 'tN'), tP: readDuration(form, 'tP'), tPC: readDuration(form, 'tPC'),
         notes: fields.notes, tags: data.getAll('tg'), deaths: deathsFromValues(data.getAll('dth'))
     };
 }
