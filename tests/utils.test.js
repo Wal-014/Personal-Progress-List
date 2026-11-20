@@ -45,12 +45,6 @@ test('durations round-trip and invalid text is rejected', () => {
     assert.equal(parse(''), null);
 });
 
-test('death lines are summed per percent and limited to 100%', () => {
-    assert.deepEqual({ ...app('parseDeaths')('63% x4\n63% x2\n90% x1') }, { 63: 6, 90: 1 });
-    assert.equal(app('isDeathLine')('100% x3'), true);
-    assert.equal(app('isDeathLine')('101% x3'), false);
-});
-
 test('thumbnails are only requested for numeric level IDs', () => {
     assert.equal(app('thumbUrl')({ levelId: '4125776' }), 'https://levelthumbs.prevter.me/thumbnail/4125776/small');
     assert.equal(app('thumbUrl')({ levelId: '../x' }), '');

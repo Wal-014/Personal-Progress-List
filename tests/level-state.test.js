@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { loadScripts } from './load-scripts.js';
 
 const createApp = () => {
-    const { app, context } = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/components/levels.js'], {
+    const { app, context } = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/components/deaths-input.js', 'js/components/levels.js'], {
         localStorage: {},
         FormData: class extends URLSearchParams {
             constructor(form) {
@@ -64,7 +64,7 @@ const filledEntries = [
     ['diff', 'Hard'], ['rating', 'epic'], ['attC', '0'], ['attN', '12'], ['date', '2026-10-26'],
     ['link', 'https://example.com/video'], ['enj', '15'], ['lik', '-12'], ['tN', '1h 30m 5s'],
     ['tP', '2m'], ['tPC', '0s'], ['notes', '  Keep spacing  '], ['tg', 'First'], ['tg', 'Second'],
-    ['deaths', '63% x4\n63% x2\n100% x1'], ['as', 'r'], ['ap', '0'], ['pos', '2']
+    ['dth', '63:6'], ['dth', '100:1'], ['dth', '0:0'], ['as', 'r'], ['ap', '0'], ['pos', '2']
 ];
 
 test('levelFromForm preserves fields, converts units, clamps ratings and keeps all tags', () => {
@@ -74,14 +74,14 @@ test('levelFromForm preserves fields, converts units, clamps ratings and keeps a
         name: 'Test level', kind: 'platform', levelId: '123', creator: 'Creator', diff: 'Hard', rating: 'epic',
         attC: 0, attN: 12, date: '2026-10-26', link: 'https://example.com/video', enj: 10, lik: -10,
         tN: 5405, tP: 120, tPC: 0, notes: '  Keep spacing  ', tags: ['First', 'Second'],
-        deaths: { 63: 6, 100: 1 }
+        deaths: { 0: 0, 63: 6, 100: 1 }
     });
     assert.deepEqual(input, { entries: filledEntries });
 });
 
 test('levelFromForm keeps empty values null and ignores legacy status fields', () => {
     const { app, plain } = createApp();
-    const entries = filledEntries.filter(([key]) => !['tg', 'pos'].includes(key)).map(([key]) => [key, '']);
+    const entries = filledEntries.filter(([key]) => !['tg', 'dth', 'pos'].includes(key)).map(([key]) => [key, '']);
     assert.deepEqual(plain(app('levelFromForm')({ entries })), {
         name: '', kind: '', levelId: null, creator: null, diff: null, rating: null,
         attC: null, attN: null, date: null, link: null, enj: null, lik: null,
@@ -89,4 +89,15 @@ test('levelFromForm keeps empty values null and ignores legacy status fields', (
     });
     const pending = filledEntries.map(([key, value]) => [key, key == 'as' ? 'p' : value]);
     assert.equal('ar' in app('levelFromForm')({ entries: pending }), false);
+});
+
+test('chip data feeds the existing histogram with zero counts preserved', () => {
+    const { app, plain } = createApp();
+    const entries = filledEntries.filter(([key]) => key != 'dth').concat([['dth', '24:270'], ['dth', '40:82'], ['dth', '0:0']]);
+    const level = app('levelFromForm')({ entries });
+    assert.deepEqual(plain(level.deaths), { 0: 0, 24: 270, 40: 82 });
+    const histogram = app('deathHistogram')(level.deaths);
+    assert.match(histogram, /data-hp="24" data-hn="270"/);
+    assert.match(histogram, /data-hp="40" data-hn="82"/);
+    assert.match(histogram, /data-hp="0" data-hn="0"/);
 });

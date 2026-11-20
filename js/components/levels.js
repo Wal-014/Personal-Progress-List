@@ -135,7 +135,7 @@ ${section('s2', formField('pos', rankPosition, 'number', 'min=1 step=1') + `<div
 ${section('s3', formField('attC', levelData.attC, 'number', 'min=0 step=1') + formField('attN', levelData.attN, 'number', 'min=0 step=1') + formField('tN', formatDuration(levelData.tN), 'text', 'placeholder="1h 30m 0s"') + formField('tP', formatDuration(levelData.tP)) + formField('tPC', formatDuration(levelData.tPC)) + formField('attT', totalAttempts(levelData), 'number', 'readonly tabindex=-1') + formField('tT', formatDuration(totalSeconds(levelData)), 'text', 'readonly tabindex=-1'))}
 ${section('s4', formField('date', levelData.date, 'date') + formField('link', levelData.link))}
 <fieldset><legend>${t('s5')}</legend><div class=grid>${formField('enj', levelData.enj, 'number', 'min=-10 max=10')}${formField('lik', levelData.lik, 'number', 'min=-10 max=10')}</div><label for=tgq style="margin-top:12px">${t('tags')}</label><input id=tgq placeholder="${t('tgs')}" autocomplete=off><div id=tgr class=tgr></div><div id=tgs>${(levelData.tags || []).map(tagChip).join('')}</div></fieldset>
-<fieldset><legend>${t('s6')}</legend><label for=fm-notes>${t('notes')}</label><textarea id=fm-notes name=notes rows=3>${escapeHtml(levelData.notes)}</textarea><label for=fm-deaths style="margin-top:10px">${t('deaths')}</label><textarea id=fm-deaths name=deaths rows=5>${escapeHtml(Object.keys(levelData.deaths || {}).sort((a, b) => a - b).map(k => `${k}% x${levelData.deaths[k]}`).join('\n'))}</textarea></fieldset>
+<fieldset><legend>${t('s6')}</legend><label for=fm-notes>${t('notes')}</label><textarea id=fm-notes name=notes rows=3>${escapeHtml(levelData.notes)}</textarea>${deathsInput(levelData.deaths)}</fieldset>
 <p class=dgb><button class=pri>${t('save')}</button> <button type=button data-act=${level ? 'lvclose' : 'close'}>${t('close')}</button> ${level ? `<button type=button class=dg data-act=del data-id="${escapeHtml(level.id)}">${t('del')}</button>` : ''}</p></form></div>`;
 }
 
@@ -149,7 +149,7 @@ function levelFromForm(form) {
         diff: fields.diff || null, rating: fields.rating || null, attC: number('attC'), attN: number('attN'),
         date: fields.date || null, link: fields.link || null, enj: clamp('enj'), lik: clamp('lik'),
         tN: parseDuration(fields.tN), tP: parseDuration(fields.tP), tPC: parseDuration(fields.tPC),
-        notes: fields.notes, tags: data.getAll('tg'), deaths: parseDeaths(fields.deaths)
+        notes: fields.notes, tags: data.getAll('tg'), deaths: deathsFromValues(data.getAll('dth'))
     };
 }
 

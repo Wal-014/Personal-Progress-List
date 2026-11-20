@@ -20,6 +20,11 @@ function zoomTimeline(factor) {
 
 /** What each data-act value does when clicked. Handlers get the clicked element and its data-id. */
 const ACTIONS = {
+    dthadd: a => addDeath(a),
+    dthedit: a => editDeath(a),
+    dthremove: a => removeDeath(a),
+    dthcancel: a => cancelDeathEdit(a),
+    dthresolve: a => resolveDeath(a),
     myprogress: () => backToMyProgress(),
     ashare: () => shareDialog(),
     asharestate: a => setProfileVisibility(a),
@@ -411,6 +416,8 @@ document.body.onsubmit = e => {
         saveLevel(e.target);
 };
 document.body.oninput = e => {
+    if (e.target.dataset.deathField != null)
+        return deathInputChanged(e.target);
     if (['pf', 'pwf'].includes(e.target.form?.id))
         return accountFormInput(e.target);
     if (e.target.dataset.compareSlot != null)
@@ -498,6 +505,8 @@ document.addEventListener('toggle', e => {
     }
 }, true);
 document.onkeydown = e => {
+    if (e.key == 'Enter' && e.target.dataset.deathField != null)
+        return deathInputKeydown(e);
     if (e.key == 'Escape') {
         const dropdown = e.target.closest('.ms[open]');
         if (dropdown) {

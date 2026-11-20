@@ -17,7 +17,7 @@ function formFixture(lang = 'en') {
         FormData: class extends URLSearchParams { constructor(form) { super(form.entries); } },
         render() {}, closeModal() {}, scrollSel() {}, renderTagSuggestions() {}
     });
-    f.load(['js/state.js', 'js/components/faces.js', 'js/components/levels.js', 'js/components/search.js', 'js/events.js']);
+    f.load(['js/state.js', 'js/components/faces.js', 'js/components/deaths-input.js', 'js/components/levels.js', 'js/components/search.js', 'js/events.js']);
     f.app('profile = emptyProfile()');
     f.app('ui.lang = ' + JSON.stringify(lang));
     return { ...f, nodes };
