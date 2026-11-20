@@ -19,6 +19,8 @@ const newId = prefix => prefix + Date.now().toString(36) + Math.random().toStrin
 /** Shows a stored YYYY-MM-DD date as DD/MM/YYYY, the format used across the app. */
 const formatDate = d => d ? d.split('-').reverse().join('/') : '';
 
+const formatRating = value => value.toLocaleString(ui.lang, { maximumFractionDigits: 1 });
+
 const orDash = v => v == null || v === '' ? '-' : v;
 
 /** Formats seconds as "1h 30m 0s". */

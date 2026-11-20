@@ -2,11 +2,11 @@
  * Classic and platformer level lists, details and editing forms.
  */
 
-/** Enjoyment or appeal meter on a scale from -10 to 10. */
+/** Enjoyment or appeal meter on a scale from 0 to 10. */
 function meter(v, lab = '') {
     const hd = b => `<div class=mh>${lab ? `<span>${lab}</span>` : ''}${b}</div>`;
-    const p = Math.abs(v) * 5, c = v >= 0 ? `hsl(${160 - v * 11} 100% 55%)` : `hsl(0 ${40 - v * 6}% ${52 + v * 2}%)`;
-    return hd(`<b style="color:${c}">${v > 0 ? '+' : ''}${escapeHtml(v)}</b>`) + `<div class="meter ${v >= 8 ? 'g' : ''}" style="color:${c}"><i style="background:${c};left:${v >= 0 ? 50 : 50 - p}%;width:${p}%"></i></div>`;
+    const p = v * 10, c = `hsl(${v * 12} 100% 55%)`;
+    return hd(`<b style="color:${c}">${escapeHtml(formatRating(v))}</b>`) + `<div class="meter ${v >= 8 ? 'g' : ''}" style="color:${c}"><i style="background:${c};left:0%;width:${p}%"></i></div>`;
 }
 
 /**
@@ -117,7 +117,8 @@ function renderTagSuggestions() {
 }
 
 function formField(key, value, type = 'text', attrs = '') {
-    return `<div><label for=fm-${key}>${t(key)}</label>${type == 'number' && !attrs.includes('readonly') ? `<div class=num><button type=button class=blue data-act=step data-d=-1 aria-label="−1">−</button><input id=fm-${key} name=${key} type=number ${attrs} value="${escapeHtml(value)}"><button type=button class=blue data-act=step data-d=1 aria-label="+1">+</button></div>` : `<input id=fm-${key} name=${key} type=${type} ${attrs} value="${escapeHtml(value)}"${attrs.includes('readonly') ? ' class=ro' : ''}>`}</div>`;
+    const step = attrs.match(/\bstep=([\d.]+)/)?.[1] || '1';
+    return `<div><label for=fm-${key}>${t(key)}</label>${type == 'number' && !attrs.includes('readonly') ? `<div class=num><button type=button class=blue data-act=step data-d=-1 aria-label="−${escapeHtml(formatRating(+step))}">−</button><input id=fm-${key} name=${key} type=number ${attrs} value="${escapeHtml(value)}"><button type=button class=blue data-act=step data-d=1 aria-label="+${escapeHtml(formatRating(+step))}">+</button></div>` : `<input id=fm-${key} name=${key} type=${type} ${attrs} value="${escapeHtml(value)}"${attrs.includes('readonly') ? ' class=ro' : ''}>`}</div>`;
 }
 
 const aredlTopValue = ar => ar?.s == 'r' && ar.p != null ? '#' + ar.p : ar?.s == 'p' ? t('pending') : '—';
@@ -134,7 +135,7 @@ ${section('s1', levelFields(levelData, true))}
 ${section('s2', formField('pos', rankPosition, 'number', 'min=1 step=1') + `<div><label for=fm-ap>${t(kind == 'platform' ? 'apPlatform' : 'ap')}</label><input id=fm-ap name=ap type=text readonly tabindex=-1 value="${escapeHtml(aredlTopValue(levelData.ar))}" class=ro></div>`)}
 ${section('s3', formField('attC', levelData.attC, 'number', 'min=0 step=1') + formField('attN', levelData.attN, 'number', 'min=0 step=1') + formField('tN', formatDuration(levelData.tN), 'text', 'placeholder="1h 30m 0s"') + formField('tP', formatDuration(levelData.tP)) + formField('tPC', formatDuration(levelData.tPC)) + formField('attT', totalAttempts(levelData), 'number', 'readonly tabindex=-1') + formField('tT', formatDuration(totalSeconds(levelData)), 'text', 'readonly tabindex=-1'))}
 ${section('s4', formField('date', levelData.date, 'date') + formField('link', levelData.link))}
-<fieldset><legend>${t('s5')}</legend><div class=grid>${formField('enj', levelData.enj, 'number', 'min=-10 max=10')}${formField('lik', levelData.lik, 'number', 'min=-10 max=10')}</div><label for=tgq style="margin-top:12px">${t('tags')}</label><input id=tgq placeholder="${t('tgs')}" autocomplete=off><div id=tgr class=tgr></div><div id=tgs>${(levelData.tags || []).map(tagChip).join('')}</div></fieldset>
+<fieldset><legend>${t('s5')}</legend><div class=grid>${formField('enj', levelData.enj, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}${formField('lik', levelData.lik, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}</div><label for=tgq style="margin-top:12px">${t('tags')}</label><input id=tgq placeholder="${t('tgs')}" autocomplete=off><div id=tgr class=tgr></div><div id=tgs>${(levelData.tags || []).map(tagChip).join('')}</div></fieldset>
 <fieldset><legend>${t('s6')}</legend><label for=fm-notes>${t('notes')}</label><textarea id=fm-notes name=notes rows=3>${escapeHtml(levelData.notes)}</textarea>${deathsInput(levelData.deaths)}</fieldset>
 <p class=dgb><button class=pri>${t('save')}</button> <button type=button data-act=${level ? 'lvclose' : 'close'}>${t('close')}</button> ${level ? `<button type=button class=dg data-act=del data-id="${escapeHtml(level.id)}">${t('del')}</button>` : ''}</p></form></div>`;
 }
@@ -142,7 +143,7 @@ ${section('s4', formField('date', levelData.date, 'date') + formField('link', le
 function levelFromForm(form) {
     const data = new FormData(form), fields = Object.fromEntries(data), number = key => fields[key] === '' ? null : +fields[key], clamp = key => {
         const value = number(key);
-        return value == null ? value : Math.max(-10, Math.min(10, value));
+        return value == null ? value : Math.round(Math.max(0, Math.min(10, value)) * 10) / 10;
     };
     return {
         name: fields.name.trim(), kind: fields.kind, levelId: fields.lid || null, creator: fields.creator || null,

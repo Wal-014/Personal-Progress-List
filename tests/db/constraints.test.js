@@ -22,8 +22,8 @@ const invalid = [
     ['levels', 'difficulty', 'unknown'], ['levels', 'rating', 'unknown'],
     ['levels', 'aredl_status', 'unknown'], ['levels', 'aredl_position', 0], ['levels', 'aredl_position', 100001],
     ['levels', 'video_url', 'javascript:alert(1)'], ['levels', 'video_url', `https://${'x'.repeat(493)}`],
-    ['levels', 'enjoyment', -11], ['levels', 'enjoyment', 11],
-    ['levels', 'liking', -11], ['levels', 'liking', 11],
+    ['levels', 'enjoyment', -0.1], ['levels', 'enjoyment', 10.1],
+    ['levels', 'liking', -0.1], ['levels', 'liking', 10.1],
     ['levels', 'deaths', []], ['levels', 'deaths', 1], ['levels', 'deaths', null],
     ['levels', 'deaths', { 101: 1 }], ['levels', 'deaths', { '05': 1 }],
     ['levels', 'deaths', { 5: -1 }], ['levels', 'deaths', { 5: 1.5 }],
@@ -89,7 +89,7 @@ describe('database constraints through the Data API', { skip: !enabled }, () => 
             name: 'x'.repeat(100), level_id: 123456789012, creator: 'x'.repeat(100), difficulty: 'Extreme Demon',
             rating: 'mythic', aredl_status: 'r', aredl_position: 100000, attempts_normal: 1000000000, attempts_copy: 0,
             time_normal: 0, time_practice: 1000000000, time_practice_copy: 0, completed_on: '2026-11-11',
-            video_url: 'HTTPS://example.test/video', enjoyment: -10, liking: 10, deaths
+            video_url: 'HTTPS://example.test/video', enjoyment: 0, liking: 10, deaths
         }).eq('id', 'level').select().single());
         assert.deepEqual(level.deaths, deaths);
         assert.equal(level.level_id, 123456789012);
@@ -108,6 +108,18 @@ describe('database constraints through the Data API', { skip: !enabled }, () => 
         const anonymous = ok(await context.anon.from('levels').select('*').eq('user_id', userId));
         assert.deepEqual(anonymous, ok(await client.from('levels').select('*').eq('user_id', userId)));
         assert.equal(anonymous.length, 1);
+    });
+
+    test('ratings accept boundaries, decimals and null as JSON numbers', async () => {
+        for (const value of [0, 10, 2.5, null]) {
+            const row = ok(await client.from('levels').update({ enjoyment: value, liking: value }).eq('id', 'level').select().single());
+            assert.equal(row.enjoyment, value);
+            assert.equal(row.liking, value);
+            const pulled = ok(await client.rpc('sync_pull'));
+            const synced = pulled.levels.find(entry => entry.id === 'level');
+            assert.equal(synced.enjoyment, value);
+            assert.equal(synced.liking, value);
+        }
     });
 
     test('nonnumeric Geometry Dash IDs are rejected on both tables without changing the row', async () => {

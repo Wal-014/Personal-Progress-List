@@ -13,12 +13,12 @@ function statsApp() {
 
 const plainStats = value => JSON.parse(JSON.stringify(value));
 const statsFixture = `profile.levels = [
-    { id: 'b', name: 'Beta', kind: 'classic', attN: 10, tN: 36000, enj: -10, date: '2025-01-01', levelId: '123' },
-    { id: 'a', name: 'Alpha', kind: 'classic', attC: 10, tP: 77400, enj: 5, date: '2025-01-02' },
-    { id: 'z', name: 'Zero', kind: 'classic', attN: 0, tN: 0, enj: 0, date: '2025-01-03' },
+    { id: 'b', name: 'Beta', kind: 'classic', attN: 10, tN: 36000, enj: 0, date: '2025-01-01', levelId: '123' },
+    { id: 'a', name: 'Alpha', kind: 'classic', attC: 10, tP: 77400, enj: 7.5, date: '2025-01-02' },
+    { id: 'z', name: 'Zero', kind: 'classic', attN: 0, tN: 0, enj: 5, date: '2025-01-03' },
     { id: 'm', name: 'Missing', kind: 'classic', attN: null, enj: null, date: '2025-01-04' },
     { id: 'n', name: 'Absent', kind: 'classic' },
-    { id: 'u', name: 'Undated', kind: 'classic', attN: 20, enj: 8 },
+    { id: 'u', name: 'Undated', kind: 'classic', attN: 20, enj: 9 },
     { id: 'p', name: 'Platform', kind: 'platform', attN: 30, tN: 18000, date: '2025-01-01' }
 ]`;
 
@@ -161,17 +161,17 @@ test('comparison calculates neutral differences, larger side and relative or fix
     assert.deepEqual(row('time', 'a', 'b'), { values: [77400, 36000], shares: [100, 36000 / 774], difference: '11h 30m 0s', arrow: '←' });
     assert.deepEqual(row('att', 'z', 'u'), { values: [0, 20], shares: [0, 100], difference: '20', arrow: '→' });
     assert.deepEqual(row('att', 'z', 'z'), { values: [0, 0], shares: [0, 0], difference: '', arrow: '=' });
-    assert.deepEqual(row('enj', 'b', 'a'), { values: [-10, 5], shares: [0, 75], difference: '15', arrow: '→' });
-    assert.deepEqual(row('enj', 'z', 'u'), { values: [0, 8], shares: [50, 90], difference: '8', arrow: '→' });
+    assert.deepEqual(row('enj', 'b', 'a'), { values: [0, 7.5], shares: [0, 75], difference: '7.5', arrow: '→' });
+    assert.deepEqual(row('enj', 'z', 'u'), { values: [5, 9], shares: [50, 90], difference: '4', arrow: '→' });
     assert.deepEqual(row('att', 'm', 'b'), { values: [null, 10], shares: [null, 100], difference: null, arrow: null });
-    assert.deepEqual(row('enj', 'm', 'a'), { values: [null, 5], shares: [null, 75], difference: null, arrow: null });
+    assert.deepEqual(row('enj', 'm', 'a'), { values: [null, 7.5], shares: [null, 75], difference: null, arrow: null });
     app('ui.comparison.open = true; ui.comparison.slots = ["m", "b"]');
     assert.match(app('comparisonHtml()'), /class=compare-value>-<\/span>/);
     assert.match(app('comparisonHtml()'), /Difficulty/);
     assert.doesNotMatch(app('comparisonMetricHtml(LEVEL_METRICS.att, findLevel("m"), findLevel("b"))'), /class=compare-gap|compare-track compare-1"><i/);
-    assert.match(app('comparisonMetricHtml(LEVEL_METRICS.enj, findLevel("b"), findLevel("a"))'), /class=compare-gap>→ 15/);
+    assert.match(app('comparisonMetricHtml(LEVEL_METRICS.enj, findLevel("b"), findLevel("a"))'), /class=compare-gap>→ 7\.5/);
     assert.match(app('comparisonMetricHtml(LEVEL_METRICS.att, findLevel("a"), findLevel("b"))'), /class=compare-gap>=<\/small>/);
-    assert.match(app('comparisonMetricHtml(LEVEL_METRICS.enj, findLevel("b"), findLevel("a"))'), /class=compare-value>\+5<\/span>/);
+    assert.match(app('comparisonMetricHtml(LEVEL_METRICS.enj, findLevel("b"), findLevel("a"))'), /class=compare-value>7\.5<\/span>/);
     assert.match(app('comparisonMetricHtml(LEVEL_METRICS.enj, findLevel("b"), findLevel("a"))'), /compare-track compare-2"><i style="width:75%"/);
 });
 
