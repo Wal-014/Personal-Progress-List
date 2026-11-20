@@ -3352,6 +3352,26 @@ input.ro {
   overflow-wrap: anywhere;
 }
 
+/* On light surfaces use gold as an accent and the theme ink for the value. */
+[data-theme=porcelain] .list-surface .level-section .st {
+  background: var(--color-surface);
+}
+
+[data-theme=porcelain] .list-surface .level-section .st b {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  text-shadow: none;
+}
+
+[data-theme=porcelain] .list-surface .level-section .st.big {
+  border-inline-start: 3px solid var(--rank-1);
+}
+
+[data-theme=porcelain] .list-surface .level-section .st.big b,
+[data-theme=porcelain] .hmetric:not(:first-child) b {
+  color: var(--color-text);
+}
+
 .hmetric:first-child b {
   color: var(--color-mode-platform);
 }
