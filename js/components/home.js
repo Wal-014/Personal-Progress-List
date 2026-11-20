@@ -22,7 +22,7 @@ function homeStats() {
 }
 
 function home() {
-    return `<div class=hcontent><section class=hlists><div class=hsection-head><h2>${ICONS.navLists}${t(canEdit() ? 'lists' : 'publicLists')}</h2>${canEdit() ? `<button class=hadd data-act=add><span aria-hidden=true>+</span>${t('palAdd')}</button>` : ''}</div><div class=hcards>${homeListCard('classic')}${homeListCard('platform')}</div></section><div class=hpreviews>${homeWishlists()}${homeStats()}</div></div>`;
+    return `<div class=hcontent><section class=hlists><div class=hsection-head><h2>${ICONS.navLists}${t(canEdit() ? 'lists' : 'publicLists')}</h2>${canEdit() ? `<button class=hadd data-act=add>${ICONS.actionAdd}${t('palAdd')}</button>` : ''}</div><div class=hcards>${homeListCard('classic')}${homeListCard('platform')}</div></section><div class=hpreviews>${homeWishlists()}${homeStats()}</div></div>`;
 }
 
 function profileSwitcher() {

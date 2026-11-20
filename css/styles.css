@@ -3093,11 +3093,11 @@ input.ro {
   margin: 0;
 }
 
-.hsection-head h2::before {
+.hsection-head h2::before, .page-title h2::before {
   content: '';
   flex: none;
-  width: 6px;
-  height: 30px;
+  width: .24em;
+  height: 1.18em;
   border-radius: var(--radius-control);
   background: var(--color-accent);
 }
@@ -3116,8 +3116,9 @@ input.ro {
   box-shadow: 0 0 16px color-mix(in srgb, var(--color-accent) 16%, transparent);
 }
 
-.hadd > span {
-  font: 30px/1 var(--font-ui);
+.hadd > .i {
+  width: 1.2em;
+  height: 1.2em;
 }
 
 .hcards {
@@ -4066,28 +4067,40 @@ main.home {
   align-items: center;
   gap: var(--space-8);
 }
-.page-title h2::before {
-  content: '';
-  width: 6px;
-  height: 30px;
+.page-title h2 > .i, .hsection-head h2 > .i {
   flex: none;
-  border-radius: var(--radius-control);
-  background: var(--color-accent);
+  width: 1.13em;
+  height: 1.13em;
+  color: var(--color-text);
 }
-.page-title h2 > .i { flex: none; width: 24px; height: 24px; color: var(--color-text); }
 .kpi small > .i { flex: none; width: 18px; height: 18px; }
 
 .shell-paints { position: absolute; pointer-events: none; }
-.hsection-head h2 > .i { flex: none; width: 24px; height: 24px; color: var(--color-text); }
+
 
 @media (forced-colors: none) {
+  :root {
+    --action-edge: var(--color-accent);
+    --action-glint: color-mix(in srgb, var(--color-accent) 45%, var(--color-text));
+    --action-shade: color-mix(in srgb, var(--color-accent) 70%, var(--color-bg));
+  }
+  [data-theme=porcelain] { --action-glint: color-mix(in srgb, var(--color-accent) 48%, white); }
+  .kpi small > .i, .empty > .i { color: var(--color-accent); }
+  .legacy-surface .tg {
+    color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
+    border-color: color-mix(in srgb, var(--color-accent) 42%, var(--color-surface));
+  }
+  .action-edge { stop-color: var(--action-edge); }
+  .action-glint { stop-color: var(--action-glint); }
+
   .nav-ink { stop-color: color-mix(in srgb, var(--metal-shade) 70%, var(--color-text)); }
   .nav-glint { stop-color: var(--metal-glint); }
   [data-theme=porcelain] .nav-ink { stop-color: #584630; }
   [data-theme=porcelain] .nav-glint { stop-color: #bd9867; }
 
   .hsection-head h2 > .i, :is(.shell-nav, .shell-footer) > button > .i,
-  :is(.page-title, .lh, .kpi small, .wa, .wact, .dgb) .i[stroke=currentColor] {
+  .page-title h2 > .i {
     stroke: url(#nav-metal) currentColor;
     stroke-width: 2;
   }
@@ -4122,7 +4135,7 @@ main.home {
     .shell-sidebar .profile-pill, .shell-nav button[aria-current=page], .page-title button,
     .hl .hadd, .lh #q, .lh .ms summary, .lh .list-clear, .lh .list-add,
     .list-surface .rcol .box, .legacy-surface :is(.well, .wh, .kpi),
-    .trigs .trig, .modal .box, .dgb button, .wa button, .pause .appearance-option) {
+    .trigs .trig, .modal .box, .dgb button, .wa button, .empty .pri, .pause .appearance-option) {
     --rim-paint: linear-gradient(var(--rim-angle, 125deg), var(--metal-edge) 3%, var(--metal-glint) 13%,
       var(--metal-edge) 27%, var(--metal-shade) 46%, var(--metal-glint) 55%,
       var(--metal-edge) 74%, var(--metal-glint) 93%);
@@ -4163,7 +4176,7 @@ main.home {
     background: linear-gradient(145deg, var(--satin-light), var(--satin-base));
     border-color: var(--metal-edge);
   }
-  .lh .list-add, .dgb .pri, .wa .pri {
+  .dgb .pri, .wa .pri {
     --rim-fill: var(--color-accent);
     color: var(--color-bg);
     text-shadow: none;
@@ -4172,6 +4185,18 @@ main.home {
   :is(.dgb, .wa) button { color: var(--color-text); text-shadow: none; -webkit-text-stroke: 0; }
   .dgb button.pri, .wa button.pri { color: var(--color-bg); }
   .dgb button.dg, .wa button.dg { --rim-fill: #903239; color: white; }
+  :is(.hl .hadd, .lh .list-add, .wa button[data-act=wadd], .empty .pri) {
+    --metal-edge: var(--action-edge);
+    --metal-glint: var(--action-glint);
+    --metal-shade: var(--action-shade);
+    --rim-fill: color-mix(in srgb, var(--action-edge) 12%, var(--color-surface));
+    color: var(--color-text);
+    -webkit-text-stroke: 0;
+  }
+  :is(.hadd, .list-add, [data-act=wadd], .empty .pri) > .i {
+    stroke: url(#action-metal) currentColor;
+    stroke-width: 2;
+  }
   .modal .box { --rim-fill: var(--panel); }
   .modal .dgb button:not(.pri):not(.dg) { --rim-fill: var(--color-surface); }
   .shell-nav [aria-current=page], .lh .ms[open] summary,

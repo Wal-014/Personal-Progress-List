@@ -5,6 +5,9 @@
 const ICONS = {
     actionAdd: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.7 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M12 4v16M4 12h16"/></svg>',
     actionBack: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.7 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="m14 5-7 7 7 7"/></svg>',
+    actionCheck: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.7 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="m4 12 5 5L20 6"/></svg>',
+    actionPlay: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.7 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M7 4v16l13-8Z"/></svg>',
+    actionLock: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.7 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14v11H5z"/></svg>',
     actionEdit: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.7 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="m4 20 4-1 12-12-3-3L5 16zM14 7l3 3"/></svg>',
     listSearch: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.7 stroke-linecap=round stroke-linejoin=round aria-hidden=true><circle cx=10 cy=10 r=6.5 /><path d="m15 15 6 6"/></svg>',
     listFilter: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.7 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M3 4h18l-7 8v6l-4 2v-8z"/></svg>',
