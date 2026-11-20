@@ -1,5 +1,5 @@
 <p align="center">
-  <img alt="Personal Ranked Progress - track and rank your hardest Geometry Dash levels" src="docs/brand/banner.png" width="880" />
+  <img alt="Personal Progress List - track and rank your hardest Geometry Dash levels" src="docs/brand/banner.png" width="880" />
 </p>
 
 <p align="center">
@@ -28,17 +28,19 @@
 ## What it does
 
 - **Accounts and sync** — sign in with Google and your lists, wishlists, tags, notes and preferences follow you to every device. Edits made offline wait on the device and are sent when the connection returns; when two devices change the same level, fields edited on only one side are both kept and the app names what changed. Your account has a display name, a username, a cube icon in two colours, a biography and a country.
-- **No account needed** — without signing in, the app keeps your profile in this browser, as before. **Local data** on Home lists every profile stored on the device, downloads backups, imports old backup files, switches between them and brings one into your account without overwriting anything there.
+- **No account needed** — without signing in, the app keeps your profile in this browser, as before. **Local data** in the profile menu lists every profile stored on the device, downloads backups, imports old backup files, switches between them and brings one into your account without overwriting anything there.
 - **Public profiles** — profiles are private until you make yours public from **Share profile**; then anyone with its link (`?user=<username>`) sees your lists, statistics, wishlists and tags read-only, never your notes or email.
 - **Your own ranking** — Classic and Platformer lists with drag-and-drop cards for your personal top (`#12 / 90`), the level's AREDL position, its thumbnail as the card background and the game's difficulty face, from NA to Extreme Demon, with the Featured, Epic, Legendary or Mythic halo of its rating. The faces also appear on wishlist cards, search results and the level form.
 - **Level details** — attempts (normal and copy), play time, completion date, YouTube video with its thumbnail, enjoyment and liking ratings from −10 to 10, tags, notes and a deaths-by-percent histogram.
-- **Automatic sync** — AREDL positions, level IDs, creators and difficulties refresh when the app opens or regains focus if they are more than 12 hours old. Missing creators, difficulties and rating tiers of any rated level, not only those on the AREDL, come from the Geometry Dash community sheet; the level relay (GDHistory) is asked only for tiers the sheet does not have. A chip in the top bar shows the status and the pause menu has **Update now**.
+- **Automatic sync** — AREDL positions, level IDs, creators and difficulties refresh when the app opens or regains focus if they are more than 12 hours old. Missing creators, difficulties and rating tiers of any rated level, not only those on the AREDL, come from the Geometry Dash community sheet; the level relay (GDHistory) is asked only for tiers the sheet does not have. A chip beside the centred header shows the status and **Settings** has **Update now**.
 - **Level search** — the level form and wishlists search by ID or by any part of a level's name as you type, with Rated / Unrated, rate type and difficulty filters. Every rated level comes from the community sheet; [GDHistory](https://history.geometrydash.eu), through the project's level relay, adds unrated levels, levels rated since the last sheet update and download counts. Results are cards with their thumbnail, best matches first, and picking one fills in the name, ID, creator, difficulty, rating and list. When nothing matches, similar names are suggested; when the relay does not answer, the search says what it could not cover ([why a relay and not GDBrowser](docs/level-data-providers.md)).
 - **Wishlists** — *Not started / In progress / Completed* states, a progress bar per list, and completed levels sent to your lists.
 - **Statistics** — totals, per-mode level rankings by attempts, playtime or enjoyment, two-level comparisons, a zoomable attempts/playtime timeline, and completions by difficulty and by year.
 - **Filters, notifications and themes** — live name search that keeps the selected level, a tag filter that shows the levels with any of the chosen tags, and colour tags that filter the list when clicked; a bell lists levels not yet placed in your ranking, completed wishlist levels not yet in a list, and levels without an ID. Six colour themes (Nebula, Graphite, Ocean, Amber, Crimson and Porcelain) and four independent backgrounds (Grid, Aurora, Celestial and Orbital), Spanish and English, and an installable PWA that opens without a connection.
 
 ## How it works
+
+Every screen shares a fixed sidebar and a centred Personal Progress List header. Below 1280px the sidebar opens as a keyboard-accessible drawer. The profile menu contains account or local-profile actions and tag management; page title rows contain the primary creation actions. Public profiles use the same navigation without editing controls.
 
 ```mermaid
 flowchart LR
@@ -108,7 +110,7 @@ Node is only used for the checks; the app itself has no dependencies to install.
 The banner is drawn in `docs/brand/banner.html`. Regenerate it from the repository root with
 `npx -y playwright@1.63.0 screenshot --viewport-size "1280,640" "file:///<absolute path>/docs/brand/banner.html" docs/brand/banner.png`. The favicon source is `docs/brand/favicon.svg`; render it to `favicon.png` at 64x64 with a transparent background, for example with Playwright's `page.screenshot({ omitBackground: true })`.
 
-The promotional card, also the site's link preview image, is drawn in `docs/brand/card.html` from screenshots of the app in `docs/brand/card/` (demo profile, English, Classic blue theme). With the server above running, regenerate it with `npx -y playwright@1.63.0 screenshot --viewport-size "1200,630" "http://localhost:8000/docs/brand/card.html" docs/brand/card.png`. Retake the screenshots when the screens they show change.
+The promotional card, also the site's link preview image, is drawn in `docs/brand/card.html` from screenshots of the app in `docs/brand/card/` (demo profile, English, Classic blue theme). With the server above running, regenerate it with `npx -y playwright@1.63.0 screenshot --viewport-size "1200,630" "http://localhost:8000/docs/brand/card.html" docs/brand/card.png`. Retake the screenshots when the screens they show change. The existing banner and card PNGs still show the former Personal Ranked Progress name; their HTML sources use the new name.
 
 ## Deployment
 

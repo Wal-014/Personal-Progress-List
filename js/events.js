@@ -30,8 +30,14 @@ function zoomTimeline(factor) {
     n.scrollLeft = r * n.scrollWidth - n.clientWidth / 2;
 }
 
+window.addEventListener('resize', () => syncDrawer());
+
 /** What each data-act value does when clicked. Handlers get the clicked element and its data-id. */
 const ACTIONS = {
+    drawer: () => setDrawer(!ui.drawer),
+    drawerclose: () => setDrawer(false),
+    pnew: () => editLocalProfile(true),
+    pedit: () => editLocalProfile(false),
     dthadd: a => addDeath(a),
     dthedit: a => editDeath(a),
     dthremove: a => removeDeath(a),
@@ -388,6 +394,8 @@ document.body.onclick = e => {
     }
     if (a) {
         const k = a.dataset.act;
+        if (ui.drawer && a.closest('#shell-sidebar'))
+            setDrawer(false);
         if (a.closest('.pause') && ['wnew', 'tags', 'legal'].includes(k))
             closeModal();
         a.closest(':popover-open')?.hidePopover();
@@ -519,6 +527,8 @@ document.addEventListener('toggle', e => {
 }, true);
 document.addEventListener('focusout', e => durationBlur(e));
 document.onkeydown = e => {
+    if (ui.drawer && drawerKeydown(e))
+        return;
     if (e.target.dataset.duration)
         return durationKeydown(e);
     if (e.key == 'Enter' && e.target.dataset.deathField != null)

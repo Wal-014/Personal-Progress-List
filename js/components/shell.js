@@ -1,39 +1,81 @@
-/**
- * Editor shell: top bar, bottom toolbar (desktop), tab bar (phones) and the pause menu.
- */
+/** Shared navigation, header, page title and settings. */
 
-const screenTitle = () => ui.tab == 'wish' ? t('wish') : t(ui.tab);
-
-function topBar() {
-    const A = alerts().length, onHome = ui.tab == 'home';
-    const left = !canEdit()
-        ? `<button class="sq pri" data-act=myprogress aria-label="${t('publicBack')}">${ICONS.back}</button><h1>${publicUsernameValid ? '@' + escapeHtml(viewing.username) : 'Personal Ranked Progress'}</h1>`
-        : onHome
-        ? `<span class=logo data-act=tab data-v=home role=button tabindex=0 aria-label="${t('home')}">${ICONS.app}</span><h1>Personal Ranked Progress</h1>`
-        : `<button class="sq pri" data-act=tab data-v=home aria-label="${t('back2')}">${ICONS.back}</button><h1>${escapeHtml(screenTitle())}</h1>`;
-    return `<header class="top${ui.tab == 'home' ? ' home-top' : ''}">${left}<span class=sp></span><span id=syncst class=syncst role=status>${syncStatus()}</span>${canEdit() && cloudUser ? cloudStatus() : ''}${accountButton()}${canEdit() ? `<button class=sq data-act=bell aria-label="${t('bell')}${A ? ` (${A})` : ''}">${ICONS.bell}${A ? `<b class=bdg aria-hidden=true>${A}</b>` : ''}</button>` : ''}<button class=sq data-act=pause aria-label="${t('pause')}">${ICONS.pause}</button></header>`;
+function syncDrawer() {
+    const sidebar = qs('#shell-sidebar');
+    if (!sidebar)
+        return;
+    const narrow = !!window.matchMedia?.('(width < 1280px)').matches;
+    if (!narrow)
+        ui.drawer = false;
+    const open = narrow && !!ui.drawer;
+    sidebar.inert = narrow && !open;
+    sidebar.setAttribute('data-open', String(open));
+    if (open) {
+        sidebar.setAttribute('role', 'dialog');
+        sidebar.setAttribute('aria-modal', 'true');
+    }
+    else {
+        sidebar.removeAttribute('role');
+        sidebar.removeAttribute('aria-modal');
+    }
+    qs('#shell-menu').setAttribute('aria-expanded', String(open));
+    qs('.shell-content').inert = open;
+    qs('.drawer-backdrop').hidden = !open;
 }
 
-function homeHeader() {
-    return `<header class=hhead><div class=hbrand><span class=hbrand-frame>${ICONS.app}</span><h1>Personal Ranked<br>Progress</h1></div></header>`;
+function setDrawer(open) {
+    ui.drawer = open;
+    syncDrawer();
+    if (ui.drawer)
+        qs('#shell-sidebar')?.querySelectorAll('button:not(:disabled), a[href]')[0]?.focus();
+    else {
+        document.querySelectorAll('#shell-sidebar :popover-open').forEach(menu => menu.hidePopover());
+        qs('#shell-menu')?.focus({ preventScroll: true });
+    }
 }
 
-function homeNavigation() {
-    const navItem = (kind, icon, label) => `<button data-act=tab data-v=${kind}${kind == 'home' ? ' aria-current=page' : ''}>${icon}<span>${label}</span></button>`;
+function drawerKeydown(event) {
+    if (!ui.drawer)
+        return false;
+    if (event.key == 'Escape') {
+        event.preventDefault();
+        setDrawer(false);
+        return true;
+    }
+    if (event.key == 'Tab') {
+        const controls = [...qs('#shell-sidebar').querySelectorAll('button:not(:disabled), a[href]')].filter(control => control.getClientRects().length);
+        const first = controls[0], last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement == first || !event.shiftKey && document.activeElement == last) {
+            event.preventDefault();
+            (event.shiftKey ? last : first)?.focus();
+        }
+    }
+    return false;
+}
+
+function shellNavigation() {
+    const navItem = (kind, label, icon) => `<button data-act=tab data-v=${kind}${kind == ui.tab ? ' aria-current=page' : ''}>${icon}<span>${t(label)}</span></button>`;
     const choices = ['classic', 'platform'].map(kind => `<button class=pma data-act=tab data-v=${kind}>${ICONS[kind]}<span>${t(kind)}</span><b>${profile.levels.filter(level => level.kind == kind).length.toLocaleString(ui.lang)}</b></button>`).join('');
-    return `<nav class=hnav aria-label="${t('nav')}">${navItem('home', ICONS.home, t('home'))}<button popovertarget=hlists>${ICONS.classic}<span>${t(canEdit() ? 'lists' : 'publicLists')}</span></button><div id=hlists class=pmenu popover>${choices}</div>${navItem('wish', ICONS.wish, t('wish'))}${navItem('stats', ICONS.stats, t('stats'))}<button class=hmore data-act=pause>${ICONS.more}<span>${t('more')}</span></button></nav>`;
+    return `<nav class=shell-nav aria-label="${t('nav')}">${navItem('home', 'home', ICONS.navHome)}<button popovertarget=hlists${isListTab() ? ' aria-current=page' : ''}>${ICONS.navLists}<span>${t(canEdit() ? 'lists' : 'publicLists')}</span></button><div id=hlists class=pmenu popover>${choices}</div>${navItem('wish', 'wish', ICONS.navWish)}${navItem('stats', 'stats', ICONS.navStats)}</nav>`;
 }
 
-function homeUtilityButton(action, icon, label, extra = '') {
-    return `<button class="sq hu-${action}" data-act=${action} aria-label="${label}" title="${label}">${icon}${extra}</button>`;
+function shellFooter() {
+    return `<div class=shell-footer>${canEdit() ? '' : `<button data-act=myprogress>${ICONS.back}<span>${t('publicBack')}</span></button>`}<button data-act=pause>${ICONS.navSettings}<span>${t('pause')}</span></button></div>`;
 }
 
-function homeUtilities() {
-    const pause = homeUtilityButton('pause', ICONS.pause, t('pause'));
-    if (!canEdit())
-        return `<div class=hutils><button class=hback data-act=myprogress>${ICONS.back}<span>${t('publicBack')}</span></button>${pause}</div>`;
-    const count = alerts().length;
-    return `<div class=hutils><span id=syncst class=syncst role=status>${syncStatus()}</span><div class=hutility-buttons>${homeUtilityButton('bell', ICONS.bell, t('bell') + (count ? ` (${count})` : ''), count ? `<b class=bdg aria-hidden=true>${count}</b>` : '')}${homeUtilityButton('tags', ICONS.tag, t('tags'))}${pause}</div>${profileSwitcher()}</div>`;
+function shellPageTitle() {
+    if (ui.tab == 'home')
+        return '';
+    const wish = ui.tab == 'wish' && currentWishlist();
+    const title = wish ? wish.name : t(ui.tab);
+    const primary = !canEdit() ? '' : isListTab() ? `<button data-act=add>${ICONS.add}${t('palAdd')}</button>` : ui.tab == 'wish' && !wish ? `<button data-act=wnew>${ICONS.plus}${t('palWish')}</button>` : '';
+    return `<div class=page-title>${wish ? `<button data-act=tab data-v=wish aria-label="${t('back2')}">${ICONS.back}</button>` : ''}<h2>${escapeHtml(title)}</h2>${primary}</div>`;
+}
+
+function sharedShell(screen) {
+    const count = canEdit() ? alerts().length : 0;
+    const utilities = canEdit() ? `<div class=shell-utilities><span id=cloud-header class=cloud-header>${cloudHeaderStatus()}</span><span id=syncst class=syncst role=status>${syncStatus()}</span><button class=sq data-act=bell aria-label="${t('bell')}${count ? ` (${count})` : ''}">${ICONS.bell}${count ? `<b class=bdg aria-hidden=true>${count}</b>` : ''}</button></div>` : '';
+    return `<div class=app-shell><aside id=shell-sidebar class=shell-sidebar aria-label="${t('nav')}"><div class=shell-identity>${profileSwitcher()}</div>${shellNavigation()}${shellFooter()}</aside><button class=drawer-backdrop data-act=drawerclose tabindex=-1 aria-label="${t('close')}" hidden></button><div class=shell-content><header class=shell-header><button id=shell-menu class=shell-menu data-act=drawer aria-expanded=false aria-controls=shell-sidebar aria-label="${t('nav')}">${ICONS.menu}</button><div class=shell-brand><span class=shell-brand-frame>${ICONS.app}</span><h1>Personal Progress List</h1></div>${utilities}</header><main class="shell-main${ui.tab == 'home' ? ' home hl' : isListTab() ? ' wide' : ''}">${shellPageTitle()}${ui.tab == 'home' ? screen : `<div class=legacy-surface>${screen}</div>`}</main></div></div>`;
 }
 
 const syncStatus = () => ui.sync ? `${ICONS.sync}<span>${t('syncing')}</span>` : '';
@@ -52,22 +94,6 @@ function renderSyncStatus() {
         qs('#aredl').innerHTML = aredlLine();
 }
 
-/** Quick actions shown in the toolbar palette (and in the pause menu on phones). */
-function paletteButtons() {
-    if (!canEdit())
-        return '';
-    const pal = (act, icon, label, extra = '') => `<button class=pal data-act=${act} ${extra}>${icon}<span class=pl>${label}</span></button>`;
-    return pal('add', ICONS.add, t('palAdd')) + pal('wnew', ICONS.wish, t('palWish')) + pal('tags', ICONS.tag, t('tags'));
-}
-
-/** Bottom navigation: the editor toolbar on wide screens, a tab bar and an add button on phones. CSS shows one of them. The lists and statistics open from their Home cards. */
-function navBars(isList) {
-    const cur = ui.tab == 'home', homeButton = (cls, label) => `<button class="${cls}${cur ? ' pri' : ''}" data-act=tab data-v=home${cur ? ' aria-current=page' : ''}>${label}</button>`;
-    return `<nav class=toolbar aria-label="${t('nav')}">${homeButton('mode', t('home'))}<div class=palette>${paletteButtons()}</div></nav>`
-        + `<nav class=tabbar aria-label="${t('nav')}">${homeButton('tab', `${ICONS.home}<span>${t('home')}</span>`)}<button class=tab data-act=pause>${ICONS.more}<span>${t('more')}</span></button></nav>`
-        + (canEdit() && isList ? `<button class=fab data-act=add aria-label="${t('palAdd')}">${ICONS.plus}</button>` : '');
-}
-
 function pauseUI() {
     const sw = k => `<button class=appearance-option data-act=theme data-v=${k} aria-pressed=${ui.theme == k}><i class="theme-preview sw-${k}" aria-hidden=true></i>${t(k)}</button>`;
     const bg = k => `<button class=appearance-option data-act=background data-v=${k} aria-pressed=${ui.background == k}><i class="background-preview bg-${k}" aria-hidden=true></i>${t(k)}</button>`;
@@ -76,8 +102,7 @@ function pauseUI() {
 <h3 id=colour-theme>${t('theme')}</h3><div class=appearance-options role=group aria-labelledby=colour-theme>${THEMES.map(sw).join('')}</div>
 <h3 id=background-design>${t('background')}</h3><div class=appearance-options role=group aria-labelledby=background-design>${BACKGROUNDS.map(bg).join('')}</div>
 <h3>${t('lang')}</h3><div class=lang>${[['es', 'Español'], ['en', 'English']].map(lang).join('')}</div>
-${canEdit() ? `<div class=mob><h3>${t('more')}</h3><div class=palette>${paletteButtons()}</div></div>
-<h3>AREDL</h3><p id=aredl class=by>${aredlLine()}</p>` : ''}
+${canEdit() ? `<h3>AREDL</h3><p id=aredl class=by>${aredlLine()}</p>` : ''}
 <nav class=legal>${['terms', 'privacy', 'credits'].map(k => `<a class=lk data-act=legal data-v=${k} role=button tabindex=0>${t(k)}</a>`).join(' · ')}</nav>
 <p class=by>© ${new Date().getFullYear()} Retlaw · ${t('rights')} · v1.0.0</p>
 <p class=dgb><button class=pri data-act=close>${t('resume')}</button></p></div>`;

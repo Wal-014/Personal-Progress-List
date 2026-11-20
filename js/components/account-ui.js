@@ -2,20 +2,10 @@
 
 let accountSignInPending = false;
 
-function accountButton() {
-    if (account.status == 'off')
-        return '';
-    if (account.status == 'signed-in' && account.profile) {
-        const own = account.profile;
-        return `<button class="sq account-button" popovertarget=amenu aria-label="${t('account')} · ${escapeHtml(own.display_name)}">${cubeIcon(own.color, own.secondary_color)}</button>${accountMenu()}`;
-    }
-    return `<button class="sq account-button" ${account.status == 'loading' ? 'disabled aria-busy=true' : 'data-act=asignin'} aria-label="${t(account.status == 'loading' ? 'accountLoading' : 'accountSignIn')}">${cubeIcon('#8a8fa3', '#d2d9ff')}</button>`;
-}
-
 function accountMenu() {
     const own = account.profile;
     const row = (act, icon, key) => `<button class=pma data-act=${act}>${icon}<span>${t(key)}</span></button>`;
-    return `<div id=amenu class="pmenu amenu" popover><div class=account-head>${cubeIcon(own.color, own.secondary_color)}<div class=info><span class=nm>${escapeHtml(own.display_name)}</span><span class=by>${own.username ? '@' + escapeHtml(own.username) : t('accountChooseUsername')}</span></div></div>${row('aprofile', ICONS.person, 'accountProfile')}${row('aedit', ICONS.edit, 'pedit')}${row('ashare', ICONS.exp, 'shareProfile')}${row('asettings', ICONS.settings, 'accountSettings')}${row('asignout', ICONS.logout, 'accountSignOut')}</div>`;
+    return `<div id=amenu class="pmenu amenu" popover><div class=account-head>${cubeIcon(own.color, own.secondary_color)}<div class=info><span class=nm>${escapeHtml(own.display_name)}</span><span class=by>${own.username ? '@' + escapeHtml(own.username) : t('accountChooseUsername')}</span></div></div>${row('aprofile', ICONS.person, 'accountProfile')}${row('aedit', ICONS.edit, 'pedit')}${row('ashare', ICONS.exp, 'shareProfile')}${row('asettings', ICONS.settings, 'accountSettings')}${row('asignout', ICONS.logout, 'accountSignOut')}${row('localdata', ICONS.exp, 'localData')}${row('tags', ICONS.tag, 'tagsT')}<span class=by data-cloud-status role=status aria-atomic=true>${escapeHtml(cloudStatusSentence())}</span><span data-cloud-retry>${cloudRetryButton()}</span></div>`;
 }
 
 function passwordField(id, labelKey, autocomplete) {

@@ -161,23 +161,22 @@ for (const signed of [true, false]) test('home and menus expose accounts, signed
     const card = d.app('profileSwitcher()');
     assert.ok(card.includes('data-act=localdata'));
     assert.equal(card.includes('data-act=asignin'), !signed);
-    assert.equal(card.includes('cloud-account'), signed);
-    assert.doesNotMatch(card, /data-act=(?:pnew|psel|pedit|pdelid)/);
+    assert.equal(card.includes('data-act=pnew'), !signed);
+    assert.equal(card.includes('data-act=pedit'), !signed);
     assert.equal(card.includes('popovertarget=amenu'), signed);
     assert.equal((card.match(/id=amenu/g) || []).length, signed ? 1 : 0);
-    assert.doesNotMatch(d.app('paletteButtons()'), /data-act=exp/);
     d.context.aredlLine = () => '';
     assert.doesNotMatch(d.app('pauseUI()'), /data-act=imp/);
-    for (const action of ['pnew', 'psel', 'pedit', 'pdelid', 'imp', 'exp'])
+    for (const action of ['psel', 'pdelid', 'imp', 'exp'])
         assert.equal(d.app('ACTIONS')[action], undefined);
 });
 
-test('account Home hides local data for demo-only backups and guests always see it', () => {
+test('profile menu always provides local data for accounts and guests', () => {
     const d = device();
     d.setup({ a: localProfile({ data: d.context.window.DEMO_PROFILE }) });
-    assert.doesNotMatch(d.app('profileSwitcher()'), /data-act=localdata/);
+    assert.match(d.app('profileSwitcher()'), /data-act=localdata/);
     d.app("account.status = 'signed-out'; cloudUser = null; activateProfile('a')");
-    assert.match(d.app('profileSwitcher()'), /guest-account/);
+    assert.match(d.app('profileSwitcher()'), /class=profile-pill/);
     assert.match(d.app('profileSwitcher()'), /data-act=localdata/);
 });
 
@@ -379,7 +378,7 @@ for (const addition of ['none', 'level', 'item', 'tag']) test(`real demo fixture
     if (addition === 'tag') demo.tags.push({ name: 'User tag', color: '#123456' });
     d.setup({ a: localProfile({ data: demo }) });
     assert.deepEqual(plain(d.app("localProfilesToOffer('owner')")), addition === 'none' ? [] : ['a']);
-    assert.equal(d.app('profileSwitcher()').includes('data-act=localdata'), addition !== 'none');
+    assert.match(d.app('profileSwitcher()'), /data-act=localdata/);
 });
 
 test('a missing or malformed demo definition does not block real profiles', () => {
@@ -438,7 +437,7 @@ for (const [lang, expected, toast] of [
     assert.equal(d.toasts[0], toast);
 });
 
-test('guest summary omits the active badge and keeps the hint below the compact card row', () => {
+test('guest menu keeps the local-only hint after its actions', () => {
     const d = device(); d.app("cloudUser = null; account.status = 'signed-out'");
     const html = d.app('profileSwitcher()');
     assert.doesNotMatch(html, /Active on this device/);
@@ -480,4 +479,32 @@ test('migration rejects invalid GDL positions and platformer positions', () => {
     }
     d.context.source = { ...data(), levels: [level('n', { kind: 'platform', gdl: 387 })] };
     assert.equal(d.app('cleanMigrationData(source).data.levels[0].gdl'), null);
+});
+
+
+test('local profile creation and editing preserve progress and persist names and both colours', async () => {
+    const d = device();
+    d.setup({ a: localProfile({ data: { ...data(), levels: [level('kept')] } }) });
+    d.app("cloudUser = null; account.status = 'signed-out'; activateProfile('a')");
+    d.context.askProfile = async () => ({ name: '<Renamed>', color: '#aabbcc', secondaryColor: '#112233' });
+    await d.app('ACTIONS.pedit()');
+    assert.equal(d.app('store.profs.a.name'), '<Renamed>');
+    assert.equal(d.app('profile.levels[0].id'), 'kept');
+    assert.equal(JSON.parse(d.storage.gdp).profs.a.secondaryColor, '#112233');
+    assert.match(d.app('profileSwitcher()'), /&lt;Renamed&gt;/);
+    d.app("ui.sel = 'kept'; ui.wl = 'old'; ui.edit = 1");
+    await d.app('ACTIONS.pnew()');
+    assert.notEqual(d.app('store.cur'), 'a');
+    assert.equal(d.app('profile.levels.length'), 0);
+    assert.equal(d.app('ui.sel'), null);
+    assert.equal(d.app('ui.edit'), 0);
+    assert.equal(JSON.parse(d.storage.gdp).profs.a.data.levels[0].id, 'kept');
+    const before = d.storage.gdp;
+    d.context.askProfile = async () => null;
+    await d.app('ACTIONS.pnew()');
+    assert.equal(d.storage.gdp, before);
+    d.app("cloudUser = 'owner'");
+    d.context.askProfile = async () => { throw Error('Account must not edit local identity'); };
+    await d.app('ACTIONS.pedit()');
+    assert.equal(d.storage.gdp, before);
 });
