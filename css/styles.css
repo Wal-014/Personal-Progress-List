@@ -4372,16 +4372,33 @@ input[type=checkbox]:checked::after {
   }
 }
 
-.shell-sidebar .profile-choice {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--space-8);
+.shell-sidebar .pmenu {
+  gap: 4px;
+  padding: 8px;
+  background: var(--color-surface);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 38%, var(--color-border));
 }
-
-.shell-sidebar .profile-choice span {
-  overflow-wrap: anywhere;
+.shell-sidebar .pmenu .pma {
+  width: 100%;
+  min-height: var(--size-control);
+  margin: 0;
+  text-align: start;
+  color: var(--color-text);
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
 }
-
+.shell-sidebar .pmenu .pma:is(:hover, :focus-visible, [aria-pressed=true]) {
+  background: color-mix(in srgb, var(--color-accent) 13%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-surface));
+  filter: none;
+}
+.shell-sidebar .profile-choice:last-of-type {
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-border);
+}
+.shell-sidebar .pmenu .by { margin: 4px 8px; line-height: 1.45; }
+.shell-sidebar .profile-choice span { overflow-wrap: anywhere; }
 .shell-sidebar button:disabled {
   opacity: .55;
   cursor: not-allowed;
@@ -4438,7 +4455,27 @@ input[type=checkbox]:checked::after {
 }
 .shell-nav [data-act=listchoices] > .i:last-child { margin-inline-start: auto; width: 16px; }
 .shell-nav [aria-expanded=true] > .i:last-child { transform: rotate(180deg); }
-.list-choices:not([hidden]) { display: grid; gap: 4px; padding-inline-start: 12px; }
+.list-choices {
+  display: grid;
+  grid-template-rows: 1fr;
+  flex: none;
+  opacity: 1;
+}
+.list-choices[inert] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  margin-block-start: calc(-1 * var(--space-8));
+}
+.list-choices-inner {
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+  gap: 4px;
+  padding-inline-start: 12px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .list-choices { transition: grid-template-rows 170ms ease, opacity 140ms ease, margin-block-start 170ms ease; }
+}
 .shell-nav .list-choices button { color: var(--color-text); background: var(--color-surface); border-color: var(--color-border); }
 .shell-nav .list-choices button:hover { color: var(--color-text); background: var(--color-surface-elevated); box-shadow: none; filter: none; }
 .legacy-surface .wi.s-todo { border-color: var(--color-info); }

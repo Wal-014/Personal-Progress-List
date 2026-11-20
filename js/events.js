@@ -120,7 +120,7 @@ const ACTIONS = {
     listchoices(button) {
         ui.listsExpanded = button.getAttribute('aria-expanded') != 'true';
         button.setAttribute('aria-expanded', String(ui.listsExpanded));
-        qs('#hlists').hidden = !ui.listsExpanded;
+        qs('#hlists').inert = !ui.listsExpanded;
     },
     zi: () => zoomTimeline(1.5),
     zo: () => zoomTimeline(1 / 1.5),

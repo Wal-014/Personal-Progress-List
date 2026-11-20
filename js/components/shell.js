@@ -39,7 +39,13 @@ function drawerKeydown(event) {
         return false;
     if (event.key == 'Escape') {
         event.preventDefault();
-        setDrawer(false);
+        const menu = qs('#shell-sidebar :popover-open');
+        if (menu) {
+            menu.hidePopover();
+            qs('#profile-pill')?.focus({ preventScroll: true });
+        }
+        else
+            setDrawer(false);
         return true;
     }
     if (event.key == 'Tab') {
@@ -57,11 +63,11 @@ function shellNavigation() {
     const navItem = (kind, label, icon) => `<button data-act=tab data-v=${kind}${kind == ui.tab ? ' aria-current=page' : ''}>${icon}<span>${t(label)}</span></button>`;
     const expanded = ui.listsExpanded ?? isListTab();
     const choices = ['classic', 'platform'].map(kind => `<button class=pma data-act=tab data-v=${kind}${ui.tab == kind ? ' aria-current=page' : ''}>${ICONS[kind]}<span>${t(kind)}</span></button>`).join('');
-    return `<nav class=shell-nav aria-label="${t('nav')}">${navItem('home', 'home', ICONS.navHome)}<button data-act=listchoices aria-expanded=${expanded} aria-controls=hlists${isListTab() ? ' aria-current=page' : ''}>${ICONS.navLists}<span>${t(canEdit() ? 'lists' : 'publicLists')}</span>${ICONS.chevronDown}</button><div id=hlists class=list-choices${expanded ? '' : ' hidden'}>${choices}</div>${navItem('wish', 'wish', ICONS.navWish)}${navItem('stats', 'stats', ICONS.navStats)}</nav>`;
+    return `<nav class=shell-nav aria-label="${t('nav')}">${navItem('home', 'home', ICONS.navHome)}<button data-act=listchoices aria-expanded=${expanded} aria-controls=hlists${isListTab() ? ' aria-current=page' : ''}>${ICONS.navLists}<span>${t(canEdit() ? 'lists' : 'publicLists')}</span>${ICONS.chevronDown}</button><div id=hlists class=list-choices${expanded ? '' : ' inert'}><div class=list-choices-inner>${choices}</div></div>${navItem('wish', 'wish', ICONS.navWish)}${navItem('stats', 'stats', ICONS.navStats)}</nav>`;
 }
 
 function shellFooter() {
-    return `<div class=shell-footer>${canEdit() ? '' : `<button data-act=myprogress>${ICONS.back}<span>${t('publicBack')}</span></button>`}<button data-act=pause>${ICONS.navSettings}<span>${t('pause')}</span></button></div>`;
+    return `<div class=shell-footer>${canEdit() ? `<button data-act=tags>${ICONS.navTags}<span>${t('tagsT')}</span></button>` : `<button data-act=myprogress>${ICONS.back}<span>${t('publicBack')}</span></button>`}<button data-act=pause>${ICONS.navSettings}<span>${t('pause')}</span></button></div>`;
 }
 
 function shellPageTitle() {

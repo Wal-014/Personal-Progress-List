@@ -184,7 +184,7 @@ test('every screen uses the shared shell, active destination and page actions', 
 test('local profile menu retains every action without sharing', () => {
     const { app } = homeApp();
     const html = app('profileSwitcher()');
-    for (const action of ['localuse', 'pnew', 'pedit', 'localdelete', 'localbackup', 'localimport', 'localdata', 'asignin', 'tags'])
+    for (const action of ['localuse', 'pnew', 'pedit', 'localbackup', 'localimport', 'localdata', 'asignin'])
         assert.match(html, new RegExp('data-act=' + action));
     assert.match(html, /id=profile-pill/);
     assert.doesNotMatch(html, /data-act=ashare/);
@@ -324,12 +324,12 @@ test('the document title and manifest match the shared brand', async () => {
 });
 
 
-test('local menu protects the active profile and offers inactive deletion; loading disables sign-in', () => {
+test('profile actions keep deletion in Local data and tags in the sidebar; loading disables sign-in', () => {
     const { app } = homeApp();
     app("store.profs.other = { name: '<Other>', color: '#123456', data: emptyProfile() }");
     const html = app('profileSwitcher()');
-    assert.match(html, /data-act=localdelete data-id="demo"[^>]* disabled/);
-    assert.match(html, /data-act=localdelete data-id="other" aria-label="Delete from this device: &lt;Other&gt;">/);
+    assert.doesNotMatch(html, /data-act=localdelete|data-act=tags/);
+    assert.match(app('shellFooter()'), /data-act=tags/);
     app("account.status = 'loading'");
     assert.match(app('profileSwitcher()'), /data-act=asignin disabled aria-busy=true>Loading account/);
 });

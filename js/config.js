@@ -21,6 +21,7 @@ const ICONS = {
     metricLevels: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.5 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="m3 7 9-4 9 4-9 4Zm0 5 9 4 9-4M3 17l9 4 9-4"/></svg>',
     metricAttempts: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.5 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M20 10a8 8 0 1 0 0 6M20 4v6h-6"/></svg>',
     metricHours: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.5 stroke-linecap=round stroke-linejoin=round aria-hidden=true><circle cx=12 cy=12 r=9 /><path d="M12 7v5l4 2"/></svg>',
+    navTags: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.7 stroke-linejoin=round aria-hidden=true><path d="M3 3h8l10 10-8 8L3 11Z"/><circle cx=7.5 cy=7.5 r=1.4 /></svg>',
     navSettings: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.5 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="m9 3-1 3-3 1 1 3-2 2 2 2-1 3 3 1 1 3h6l1-3 3-1-1-3 2-2-2-2 1-3-3-1-1-3ZM9 12a3 3 0 1 0 6 0 3 3 0 1 0-6 0"/></svg>',
     menu: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.5 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M3 6h18M3 12h18M3 18h18"/></svg>',
     chevronDown: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.5 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="m6 9 6 6 6-6"/></svg>',
