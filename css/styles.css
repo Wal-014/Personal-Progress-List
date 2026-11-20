@@ -2873,8 +2873,8 @@ input.ro {
   height: 36px;
 }
 
-.hstats .hsection-head .i path:last-child {
-  stroke: var(--color-mode-classic);
+.hstats .hsection-head .i, .hmetric > .i {
+  color: var(--color-accent);
 }
 
 .hl .hadd {
