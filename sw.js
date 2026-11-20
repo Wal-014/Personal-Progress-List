@@ -18,6 +18,7 @@ const SHELL = [
   "js/i18n.js",
   "js/utils.js",
   "js/state.js",
+  "js/demonlist.js",
   "js/api.js",
   "js/sheet.js",
   "js/relay.js",

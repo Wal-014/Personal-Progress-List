@@ -16,7 +16,7 @@ const level = (fields = {}) => ({
     diff: 'Extreme Demon', rating: 'mythic', attN: 0, attC: 123, tN: 456, tP: 789, tPC: 10,
     date: '2026-11-11', link: 'https://example.com/video', enj: -10, lik: 0,
     notes: '  Private notes\n第二行  ', tags: ['Focus', '星'], deaths: { 0: 0, 43: 7, 100: 1 },
-    ar: { s: 'r', p: 42 }, ...fields
+    ar: { s: 'r', p: 42 }, gdl: 387, ...fields
 });
 const item = (fields = {}) => ({
     id: 'i1', name: 'Wishlist 星', levelId: '789', creator: 'Maker', diff: 'Hard', rating: 'featured',
@@ -51,7 +51,7 @@ test('profileRows maps every level field and keeps private notes in their own ro
             difficulty: 'Extreme Demon', rating: 'mythic', attempts_normal: 0, attempts_copy: 123,
             time_normal: 456, time_practice: 789, time_practice_copy: 10, completed_on: '2026-11-11',
             video_url: 'https://example.com/video', enjoyment: -10, liking: 0,
-            deaths: { 0: 0, 43: 7, 100: 1 }, aredl_status: 'r', aredl_position: 42
+            deaths: { 0: 0, 43: 7, 100: 1 }, aredl_status: 'r', aredl_position: 42, gdl_position: 387
         }
     });
     assert.deepEqual(plain(rows.get('level_notes:n1')), { table: 'level_notes', row: { level_id: 'n1', notes: '  Private notes\n第二行  ' } });
@@ -68,7 +68,7 @@ test('profileRows normalizes missing and empty level values without losing zeroe
             id: 'empty', name: null, kind: null, level_id: null, creator: null, difficulty: null,
             rating: null, attempts_normal: null, attempts_copy: null, time_normal: null,
             time_practice: null, time_practice_copy: null, completed_on: null, video_url: null,
-            enjoyment: null, liking: null, deaths: {}, aredl_status: null, aredl_position: null
+            enjoyment: null, liking: null, deaths: {}, aredl_status: null, aredl_position: null, gdl_position: null
         });
         assert.equal(rows.has('level_notes:empty'), false);
     }
@@ -187,7 +187,7 @@ test('rowsProfile supplies the exact level field set, empty notes and missing co
             ...empty(), levels: [{
                 id: 'n', kind: 'platform', name: 'Sparse', levelId: null, creator: null, diff: null,
                 rating: null, attN: null, attC: null, tN: null, tP: null, tPC: null, date: null,
-                link: null, enj: null, lik: null, notes: '', tags: [], deaths: {}, ar: { s: null, p: null }
+                link: null, enj: null, lik: null, gdl: null, notes: '', tags: [], deaths: {}, ar: { s: null, p: null }
             }]
         }, settings: null
     });

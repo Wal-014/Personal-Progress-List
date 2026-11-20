@@ -21,6 +21,7 @@ const invalid = [
     ['levels', 'creator', 'x'.repeat(101)], ['levels', 'creator', 'A\tB'],
     ['levels', 'difficulty', 'unknown'], ['levels', 'rating', 'unknown'],
     ['levels', 'aredl_status', 'unknown'], ['levels', 'aredl_position', 0], ['levels', 'aredl_position', 100001],
+    ['levels', 'gdl_position', 0], ['levels', 'gdl_position', 100001],
     ['levels', 'video_url', 'javascript:alert(1)'], ['levels', 'video_url', `https://${'x'.repeat(493)}`],
     ['levels', 'enjoyment', -11], ['levels', 'enjoyment', 11],
     ['levels', 'liking', -11], ['levels', 'liking', 11],
@@ -87,14 +88,14 @@ describe('database constraints through the Data API', { skip: !enabled }, () => 
         ok(await client.from('profiles').update({ username: 'player_123', is_public: true, display_name: 'x'.repeat(40), bio: 'x'.repeat(300), country: 'CR' }).not('id', 'is', null));
         const level = ok(await client.from('levels').update({
             name: 'x'.repeat(100), level_id: 123456789012, creator: 'x'.repeat(100), difficulty: 'Extreme Demon',
-            rating: 'mythic', aredl_status: 'r', aredl_position: 100000, attempts_normal: 1000000000, attempts_copy: 0,
+            rating: 'mythic', aredl_status: 'r', aredl_position: 100000, gdl_position: 100000, attempts_normal: 1000000000, attempts_copy: 0,
             time_normal: 0, time_practice: 1000000000, time_practice_copy: 0, completed_on: '2026-11-11',
             video_url: 'HTTPS://example.test/video', enjoyment: -10, liking: 10, deaths
         }).eq('id', 'level').select().single());
         assert.deepEqual(level.deaths, deaths);
         assert.equal(level.level_id, 123456789012);
         assert.equal(typeof level.level_id, 'number');
-        ok(await client.from('levels').update({ deaths: {}, difficulty: null, rating: null, video_url: null }).eq('id', 'level'));
+        ok(await client.from('levels').update({ gdl_position: null, deaths: {}, difficulty: null, rating: null, video_url: null }).eq('id', 'level'));
         ok(await client.from('level_notes').update({ notes: 'x'.repeat(5000) }).eq('level_id', 'level'));
         ok(await client.from('list_orders').update({ level_ids: Array(5000).fill('level') }).eq('kind', 'classic'));
         ok(await client.from('wishlists').update({ item_ids: Array(5000).fill('item') }).eq('id', 'wishlist'));

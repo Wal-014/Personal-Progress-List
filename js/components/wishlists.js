@@ -188,6 +188,7 @@ function transferWishlistItem(id, kind) {
         const level = { id: newId('n'), name: item.name, kind, levelId: item.levelId || null, creator: item.creator || null, diff: item.diff || null, rating: item.rating || null, ar: { s: 'n' }, deaths: {}, tags: [], notes: '', date: todayLocal() };
         profile.levels.push(level);
         matchWithAredl([level]);
+        matchWithDemonlist([level]);
     }
     showToast(t(exists ? 'wExists' : 'wAdded').replace('{list}', () => t(kind)).replace('{name}', () => item.name));
     save();

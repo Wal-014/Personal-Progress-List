@@ -282,6 +282,7 @@ function saveLevel(form) {
     if (!old)
         profile.levels.push(level);
     matchWithAredl([level]);
+    matchWithDemonlist([level]);
     removeFromOrder(level.id);
     if (position && !isPre(level)) {
         const order = profile.order[level.kind], before = rankedIds(level.kind)[Math.max(0, +position - 1)];

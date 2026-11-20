@@ -75,6 +75,7 @@ erDiagram
     text rating
     text aredl_status
     integer aredl_position
+    integer gdl_position
     integer attempts_normal
     integer attempts_copy
     integer time_normal "seconds"
@@ -152,6 +153,7 @@ How the app's fields map to columns:
 | level `levelId`, `diff`, `ar.s`, `ar.p` | `level_id`, `difficulty`, `aredl_status`, `aredl_position` | The name, ID, creator, difficulty, rating and AREDL fields are metadata the app looks up from GDHistory, the AREDL and the community sheet; they stay on the user's row because they are a per-user cache that the app refreshes itself, not data users may write for everyone. |
 | level `attN`, `attC`, `tN`, `tP`, `tPC` | `attempts_normal`, `attempts_copy`, `time_normal`, `time_practice`, `time_practice_copy` | Times are seconds. |
 | level `date`, `link`, `enj`, `lik` | `completed_on` (date), `video_url`, `enjoyment`, `liking` | |
+| level `gdl` | `gdl_position` | Nullable classic Global Demonlist position, matched by Geometry Dash ID and refreshed independently of AREDL. Integer 1 through 100000. |
 | level `notes` | `level_notes.notes` | A separate table so public profiles can be served by RLS without ever exposing notes. |
 | level `tags` | `level_tags` rows, `position` = index in the array | A tag is identified by its name, as in the app. |
 | `order.classic`, `order.platform` | `list_orders.level_ids` | |

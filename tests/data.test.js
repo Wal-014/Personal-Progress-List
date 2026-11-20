@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { loadScripts } from './load-scripts.js';
 
 // state.js and api.js read localStorage when they load, so an empty one is provided
-const { context, app } = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js'], { localStorage: {} });
+const { context, app } = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/demonlist.js', 'js/api.js'], { localStorage: {} });
 
 test('an unreadable AREDL cache is dropped instead of breaking every AREDL lookup', () => {
     for (const [stored, expected] of [['{broken', []], ['{"k":"d"}', []], ['[{"k":"d","i":1}]', [{ k: 'd', i: 1 }]]]) {
-        const fresh = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js'], { localStorage: { gar: stored } });
+        const fresh = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/demonlist.js', 'js/api.js'], { localStorage: { gar: stored } });
         assert.deepEqual(JSON.parse(JSON.stringify(fresh.app('aredlCache'))), expected, stored);
     }
 });
@@ -108,7 +108,7 @@ test('AREDL name lookups use the replacement cache and drop names from the previ
 
 test('AREDL name lookups normalize each cached name once per array on first use', () => {
     const normalized = [];
-    const fresh = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js'], {
+    const fresh = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/demonlist.js', 'js/api.js'], {
         localStorage: {}, recordNormalization: name => normalized.push(name)
     });
     fresh.app(`(() => {

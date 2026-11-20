@@ -6,7 +6,7 @@ import { loadScripts } from './load-scripts.js';
 const createApp = () => {
     const calls = [], dom = {};
     const document = { body: {}, addEventListener() {}, querySelector: selector => dom[selector] ?? null, querySelectorAll: selector => dom[selector] ?? [] };
-    const { context, app } = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/api.js', 'js/components/faces.js', 'js/components/levels.js', 'js/events.js'], { localStorage: {}, document, window: { addEventListener() {} } });
+    const { context, app } = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/demonlist.js', 'js/api.js', 'js/components/faces.js', 'js/components/levels.js', 'js/events.js'], { localStorage: {}, document, window: { addEventListener() {} } });
     for (const name of ['render', 'closeModal', 'openModal', 'tagsUI'])
         context[name] = () => calls.push(name);
     context.askConfirm = async () => true;

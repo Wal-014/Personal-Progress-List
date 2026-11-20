@@ -184,7 +184,7 @@ test('account Home hides local data for demo-only backups and guests always see 
 test('use on this device is available only signed out for inactive backups and persists the switch', () => {
     const d = device();
     d.setup({ a: localProfile(), b: localProfile({ name: 'Other', data: { ...data(), levels: [level('n2'), level('n3', { kind: 'platform' })] } }) });
-    d.load(['js/api.js']);
+    d.load(['js/demonlist.js', 'js/api.js']);
     d.app("aredlCache = [{ k: 'd', n: 'n2', i: 123, p: 42 }, { k: 'p', n: 'n3', i: 456, p: 84 }]");
     assert.doesNotMatch(d.app('localDataDialog()'), /data-act=localuse/);
     const cloud = d.app('profile');
@@ -452,4 +452,18 @@ test('editing the first profile still counts as real data when startup reused th
     assert.deepEqual(plain(d.app("localProfilesToOffer('owner')")), []);
     d.app("store.profs.a.data.levels.push({ id: 'user-level', name: 'User level', kind: 'classic' })");
     assert.deepEqual(plain(d.app("localProfilesToOffer('owner')")), ['a']);
+});
+
+test('migration rejects invalid GDL positions and platformer positions', () => {
+    const d = device();
+    for (const value of [0, 100001, 1.5, '387', {}, -1]) {
+        d.context.source = { ...data(), levels: [level('n', { gdl: value })] };
+        assert.equal(d.app('cleanMigrationData(source).data.levels[0].gdl'), null);
+    }
+    for (const value of [1, 100000, null]) {
+        d.context.source = { ...data(), levels: [level('n', { gdl: value })] };
+        assert.equal(d.app('cleanMigrationData(source).data.levels[0].gdl'), value);
+    }
+    d.context.source = { ...data(), levels: [level('n', { kind: 'platform', gdl: 387 })] };
+    assert.equal(d.app('cleanMigrationData(source).data.levels[0].gdl'), null);
 });
