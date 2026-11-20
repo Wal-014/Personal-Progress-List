@@ -41,7 +41,7 @@ function searchForm() {
         return { '#gdq': input, '#gdr': results, '#gdm': message, '.gdclr': clear }[selector];
     }, querySelectorAll: () => [], addEventListener() {} };
     input.focus = () => { document.activeElement = input; };
-    const scripts = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/i18n.js', 'js/api.js', 'js/sheet.js', 'js/relay.js', 'js/gd.js', 'js/components/faces.js', 'js/components/search.js'], {
+    const scripts = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/i18n.js', 'js/demonlist.js', 'js/api.js', 'js/sheet.js', 'js/relay.js', 'js/gd.js', 'js/components/faces.js', 'js/components/search.js'], {
         document, localStorage: {}, AbortSignal, URLSearchParams, Date: { now: () => now }, window: { addEventListener() {} },
         setTimeout(callback, delay) { timers.set(++timerId, { at: now + delay, callback }); return timerId; },
         clearTimeout(id) { timers.delete(id); },

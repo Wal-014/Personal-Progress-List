@@ -7,7 +7,7 @@ function fixture(extra = {}) {
     const item = { id: 'i1', name: 'A $& <level>', levelId: '42', creator: 'Maker', diff: 'Hard', rating: 'epic', status: 'prog', pct: 63 };
     const wishlist = { id: 'w1', name: 'Goals', items: [item] };
     nodes.set('#md', { innerHTML: '' });
-    const f = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/sheet.js', 'js/components/faces.js', 'js/components/empty-list.js', 'js/components/levels.js', 'js/components/wishlists.js', 'js/components/search.js', 'js/components/dialogs.js'], {
+    const f = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/sheet.js', 'js/demonlist.js', 'js/components/faces.js', 'js/components/empty-list.js', 'js/components/levels.js', 'js/components/wishlists.js', 'js/components/search.js', 'js/components/dialogs.js'], {
         profile: { levels: [], order: { classic: [], platform: [] }, tags: [], wishlists: [wishlist] },
         ui: { tab: 'wish', wl: 'w1', lang: 'en', wishFx: null },
         document: { body: {}, querySelector: s => nodes.get(s) || null, querySelectorAll: () => [], addEventListener() {} },
@@ -491,3 +491,10 @@ test('controlSelector restores the specific status button and percentage input',
         assert.equal(f.app('controlSelector')(element), expected);
     }
 });
+
+for (const kind of ['classic', 'platform'])
+    test(`wishlist transfer applies GDL only for ${kind}`, () => {
+        const f = fixture({ localStorage: { ggdl: '[[42,387]]' } });
+        f.app('transferWishlistItem')('i1', kind);
+        assert.equal(f.context.profile.levels[0].gdl, kind == 'classic' ? 387 : null);
+    });

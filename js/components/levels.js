@@ -96,7 +96,7 @@ function detail(level) {
         section('sh', `${(level.tags || []).map(name => tagFilterChip(name, true)).join('')}${recorded(level.notes) ? `<p style="white-space:pre-wrap">${escapeHtml(level.notes)}</p>` : ''}`),
         section('dh', histogram)
     ].join('');
-    return `<div class=box>${thumbnail ? `<div class=hero style="background-image:url('${thumbnail}')"></div>` : ''}<h2>${escapeHtml(level.name)}</h2><p class=by>${escapeHtml(orDash(level.creator))} · ID ${escapeHtml(orDash(level.levelId))} · ${escapeHtml(difficultyLabel(level))} · ${aredlLabel(level)}</p>
+    return `<div class=box>${thumbnail ? `<div class=hero style="background-image:url('${thumbnail}')"></div>` : ''}<h2>${escapeHtml(level.name)}</h2><p class=by>${escapeHtml(orDash(level.creator))} · ID ${escapeHtml(orDash(level.levelId))} · ${escapeHtml(difficultyLabel(level))} · ${aredlLabel(level)}${level.kind == 'platform' ? '' : ` · GDL ${escapeHtml(level.gdl == null ? '—' : '#' + level.gdl)}`}</p>
 <div${sections ? ' class=dgrid' : ''}>${sections || `<p class=by>${t('noAdditionalDetails')}</p>`}
 </div><p class=dgb>${canEdit() ? `<button class=blue data-act=edit data-id="${escapeHtml(level.id)}">${ICONS.edit} ${t('edit')}</button>` : ''} <button data-act=lvclose>${t('close')}</button></p></div>`;
 }
@@ -145,7 +145,7 @@ function levelForm(level) {
     return `<div class=box><h2>${level ? t('edit') : t('palAdd')}</h2><form id=fm data-id="${escapeHtml(level?.id)}"><div class=warn id=wn></div>
 ${levelSearchBox()}
 ${section('s1', levelFields(levelData, true))}
-${section('s2', formField('pos', rankPosition, 'number', `min=1 max=${maximum} step=1 aria-describedby=fm-pos-hint`, rankPositionHint(maximum)) + `<div><label for=fm-ap>${t(kind == 'platform' ? 'apPlatform' : 'ap')}</label><input id=fm-ap name=ap type=text readonly tabindex=-1 value="${escapeHtml(aredlTopValue(levelData.ar))}" class=ro></div>`)}
+${section('s2', formField('pos', rankPosition, 'number', `min=1 max=${maximum} step=1 aria-describedby=fm-pos-hint`, rankPositionHint(maximum)) + `<div><label for=fm-ap>${t(kind == 'platform' ? 'apPlatform' : 'ap')}</label><input id=fm-ap name=ap type=text readonly tabindex=-1 value="${escapeHtml(aredlTopValue(levelData.ar))}" class=ro></div><div id=fm-gdl-field${kind == 'platform' ? ' hidden' : ''}><label for=fm-gdl>${t('gdlTop')}</label><input id=fm-gdl type=text readonly tabindex=-1 value="${escapeHtml(kind == 'platform' || levelData.gdl == null ? '—' : '#' + levelData.gdl)}" class=ro></div>`)}
 ${section('s3', formField('attC', levelData.attC, 'number', 'min=0 step=1') + formField('attN', levelData.attN, 'number', 'min=0 step=1') + durationInput('tN', levelData.tN) + durationInput('tP', levelData.tP) + durationInput('tPC', levelData.tPC) + formField('attT', totalAttempts(levelData), 'number', 'readonly tabindex=-1') + formField('tT', durationClock(totalSeconds(levelData)), 'text', 'readonly tabindex=-1'))}
 ${section('s4', formField('date', levelData.date, 'date') + formField('link', levelData.link))}
 <fieldset><legend>${t('s5')}</legend><div class=grid>${formField('enj', levelData.enj, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}${formField('lik', levelData.lik, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}</div><label for=tgq style="margin-top:12px">${t('tags')}</label><input id=tgq placeholder="${t('tgs')}" autocomplete=off><div id=tgr class=tgr></div><div id=tgs>${(levelData.tags || []).map(tagChip).join('')}</div></fieldset>
@@ -267,4 +267,19 @@ async function fillAredlPosition(f) {
     const ar = aredlStatus(level);
     q('ap').value = aredlTopValue(ar);
     w.textContent = ar.s == 'r' ? `${t('found')} · #${ar.p}` : '';
+}
+
+async function fillDemonlistPosition(f) {
+    const field = qs('#fm-gdl-field'), input = qs('#fm-gdl');
+    if (!field || !input)
+        return;
+    field.hidden = f.elements.kind.value == 'platform';
+    try {
+        await loadDemonlist();
+        const level = { kind: f.elements.kind.value, levelId: f.elements.lid.value };
+        matchWithDemonlist([level]);
+        input.value = level.gdl == null ? '—' : '#' + level.gdl;
+    }
+    catch {
+    }
 }

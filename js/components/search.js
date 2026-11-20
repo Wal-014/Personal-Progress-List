@@ -180,6 +180,7 @@ function pickLevel(f, l) {
     if (f.id == 'fm') {
         updateRankPositionRange(f);
         fillAredlPosition(f);
+        fillDemonlistPosition(f);
     }
 }
 

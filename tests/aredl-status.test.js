@@ -91,7 +91,7 @@ test('cards show ranking metadata only for a position or pending placement', () 
 });
 
 function fixture(extra = {}) {
-    return loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/sheet.js', 'js/gd.js', 'js/api.js'], {
+    return loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/sheet.js', 'js/gd.js', 'js/demonlist.js', 'js/api.js'], {
         localStorage: { gar: JSON.stringify(lists) }, ui: { lang: 'en' }, ...extra
     });
 }

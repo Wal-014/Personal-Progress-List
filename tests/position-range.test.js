@@ -9,7 +9,7 @@ function fixture() {
         document: { querySelector: key => nodes[key], body: {}, addEventListener() {} },
         window: { addEventListener() {} },
         FormData: class extends URLSearchParams { constructor(form) { super(form.entries); } },
-        matchWithAredl() {}, closeModal() {}, render() {}
+        matchWithAredl() {}, matchWithDemonlist() {}, closeModal() {}, render() {}
     });
     f.app(`profile = emptyProfile(); ui.lang = 'en'; ui.tab = 'classic';
         profile.levels = Array.from({ length: 6 }, (_, i) => ({ id: 'c' + i, name: 'Classic', kind: 'classic' }));

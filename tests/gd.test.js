@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadScripts } from './load-scripts.js';
 
-const { context, app } = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js', 'js/sheet.js', 'js/relay.js', 'js/gd.js'], { localStorage: {}, AbortSignal, URLSearchParams });
+const { context, app } = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/demonlist.js', 'js/api.js', 'js/sheet.js', 'js/relay.js', 'js/gd.js'], { localStorage: {}, AbortSignal, URLSearchParams });
 
 const result = extra => ({ levelId: '10565740', name: 'Bloodbath', creator: 'Riot', diff: 'Extreme Demon', rating: 'rated', kind: 'classic', downloads: 193000000, ...extra });
 const RELAY = app('LEVEL_RELAY_API');
@@ -73,7 +73,7 @@ test('fillRatings fills difficulty and rating of saved levels without one, ten I
 const freshSearch = (rows = [], remote = []) => {
     let now = 1000;
     const asked = [];
-    const scripts = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js', 'js/sheet.js', 'js/relay.js', 'js/gd.js'], {
+    const scripts = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/demonlist.js', 'js/api.js', 'js/sheet.js', 'js/relay.js', 'js/gd.js'], {
         localStorage: {}, AbortSignal, URLSearchParams, Date: { now: () => now },
         fetch: async url => {
             asked.push(url);

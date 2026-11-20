@@ -86,6 +86,8 @@ function cleanMigrationData(source, localId) {
         named(entry);
         if (!['classic', 'platform'].includes(entry.kind))
             set(entry, 'kind', 'classic');
+        if (entry.gdl != null && (entry.kind == 'platform' || !Number.isInteger(entry.gdl) || entry.gdl < 1 || entry.gdl > 100000))
+            set(entry, 'gdl', null);
         if (entry.notes != null)
             set(entry, 'notes', cut(String(entry.notes).replaceAll(String.fromCharCode(0), ''), 5000));
         if (entry.link != null)
