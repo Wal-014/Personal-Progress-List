@@ -177,8 +177,10 @@ function pickLevel(f, l) {
     qs('#lf-diffT').textContent = difficultyLabel(l);
     set('kindT', t(l.kind));
     qs('#gdq').setCustomValidity('');
-    if (f.id == 'fm')
+    if (f.id == 'fm') {
+        updateRankPositionRange(f);
         fillAredlPosition(f);
+    }
 }
 
 /** Read-only level fields filled by the search: name, ID, creator, difficulty and, in the level form, the list. */
