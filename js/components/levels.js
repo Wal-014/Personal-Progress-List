@@ -5,8 +5,6 @@
 /** Enjoyment or appeal meter on a scale from -10 to 10. */
 function meter(v, lab = '') {
     const hd = b => `<div class=mh>${lab ? `<span>${lab}</span>` : ''}${b}</div>`;
-    if (v == null)
-        return hd('<b>-</b>') + '<div class="meter"></div>';
     const p = Math.abs(v) * 5, c = v >= 0 ? `hsl(${160 - v * 11} 100% 55%)` : `hsl(0 ${40 - v * 6}% ${52 + v * 2}%)`;
     return hd(`<b style="color:${c}">${v > 0 ? '+' : ''}${escapeHtml(v)}</b>`) + `<div class="meter ${v >= 8 ? 'g' : ''}" style="color:${c}"><i style="background:${c};left:${v >= 0 ? 50 : 50 - p}%;width:${p}%"></i></div>`;
 }
@@ -78,22 +76,28 @@ function deathHistogram(deaths) {
 }
 
 function detail(level) {
+    const recorded = value => value != null && (typeof value != 'string' || value.trim() !== '');
+    const values = Object.fromEntries(['attN', 'attC', 'tN', 'tP', 'tPC'].map(key => [key, recorded(level[key]) ? level[key] : null]));
     const deaths = level.deaths || {};
     const percentages = Object.keys(deaths).map(Number).sort((a, b) => a - b);
     const bestPercent = percentages.at(-1);
-    const statCell = (key, value, className = '') => `<div class="st ${className}"><small>${t(key)}</small><b>${escapeHtml(value)}</b></div>`;
+    const statCell = (key, value, className = '') => recorded(value) ? `<div class="st ${className}"><small>${t(key)}</small><b>${escapeHtml(value)}</b></div>` : '';
     const thumbnail = fullThumbUrl(level);
-    const section = (key, body) => `<fieldset><legend>${t(key)}</legend>${body}</fieldset>`;
+    const grid = body => body ? `<div class=grid>${body}</div>` : '';
+    const section = (key, body) => body ? `<fieldset><legend>${t(key)}</legend>${body}</fieldset>` : '';
     const link = safeUrl(level.link);
     const videoId = youtubeId(link);
     const histogram = deathHistogram(deaths);
+    const sections = [
+        section('sa', grid(statCell('attT', totalAttempts(values), 'big') + statCell('attN', values.attN) + statCell('attC', values.attC) + statCell('best', percentages.length ? `${bestPercent}% ×${deaths[bestPercent]}` : null))),
+        section('sT', grid(statCell('tT', formatDuration(totalSeconds(values)), 'big') + statCell('tN', formatDuration(values.tN)) + statCell('tP', formatDuration(values.tP)) + statCell('tPC', formatDuration(values.tPC)))),
+        section('s4', grid(statCell('date', recorded(level.date) ? formatDate(level.date) : null)) + (videoId ? `<a class=yt target=_blank rel=noopener href="${escapeHtml(link)}"><img src="https://img.youtube.com/vi/${videoId}/hqdefault.jpg" alt=""><span>${ICONS.play}</span></a>` : link ? `<p><a style="color:var(--a)" target=_blank rel=noopener href="${escapeHtml(link)}">${ICONS.play} ${t('link')}</a></p>` : '')),
+        section('s5', grid(['enj', 'lik'].map(key => recorded(level[key]) ? `<div class=st><small>${t(key)}</small>${meter(level[key])}</div>` : '').join(''))),
+        section('sh', `${(level.tags || []).map(name => tagFilterChip(name, true)).join('')}${recorded(level.notes) ? `<p style="white-space:pre-wrap">${escapeHtml(level.notes)}</p>` : ''}`),
+        section('dh', histogram)
+    ].join('');
     return `<div class=box>${thumbnail ? `<div class=hero style="background-image:url('${thumbnail}')"></div>` : ''}<h2>${escapeHtml(level.name)}</h2><p class=by>${escapeHtml(orDash(level.creator))} · ID ${escapeHtml(orDash(level.levelId))} · ${escapeHtml(difficultyLabel(level))} · ${aredlLabel(level)}</p>
-<div class=dgrid>${section('sa', `<div class=grid>${statCell('attT', orDash(totalAttempts(level)), 'big')}${statCell('attN', orDash(level.attN))}${statCell('attC', orDash(level.attC))}${statCell('best', percentages.length ? `${bestPercent}% ×${deaths[bestPercent]}` : '-')}</div>`)}
-${section('sT', `<div class=grid>${statCell('tT', orDash(formatDuration(totalSeconds(level))), 'big')}${statCell('tN', orDash(formatDuration(level.tN)))}${statCell('tP', orDash(formatDuration(level.tP)))}${statCell('tPC', orDash(formatDuration(level.tPC)))}</div>`)}
-${section('s4', `<div class=grid>${statCell('date', orDash(formatDate(level.date)))}</div>${videoId ? `<a class=yt target=_blank rel=noopener href="${escapeHtml(link)}"><img src="https://img.youtube.com/vi/${videoId}/hqdefault.jpg" alt=""><span>${ICONS.play}</span></a>` : link ? `<p><a style="color:var(--a)" target=_blank rel=noopener href="${escapeHtml(link)}">${ICONS.play} ${t('link')}</a></p>` : ''}`)}
-${section('s5', `<div class=grid><div class=st><small>${t('enj')}</small>${meter(level.enj)}</div><div class=st><small>${t('lik')}</small>${meter(level.lik)}</div></div>`)}
-${(level.tags?.length || level.notes) ? section('sh', `${(level.tags || []).map(name => tagFilterChip(name, true)).join('')}${level.notes ? `<p style="white-space:pre-wrap">${escapeHtml(level.notes)}</p>` : ''}`) : ''}
-${histogram ? section('dh', histogram) : ''}
+<div${sections ? ' class=dgrid' : ''}>${sections || `<p class=by>${t('noAdditionalDetails')}</p>`}
 </div><p class=dgb>${canEdit() ? `<button class=blue data-act=edit data-id="${escapeHtml(level.id)}">${ICONS.edit} ${t('edit')}</button>` : ''} <button data-act=lvclose>${t('close')}</button></p></div>`;
 }
 
