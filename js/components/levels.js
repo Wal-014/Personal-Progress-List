@@ -43,6 +43,8 @@ function pickListLevel(row, id) {
 
 function listSelectionControls() {
     const selection = currentLevelSelection();
+    if (!canEdit() || (!selection && !profile.levels.some(level => level.kind == ui.tab && matchesListFilters(level, ui.q, ui.tagFilter))))
+        return '';
     return `<div class=list-selection><button type=button data-act=list-select aria-pressed=${!!selection}>${t(selection ? 'cancel' : 'selectLevels')}</button>${selection ? `<output>${t('levelSelectionCount').replace('{n}', selection.ids.size)}</output><button type=button class=dg data-act=list-delete${selection.ids.size ? '' : ' disabled'}>${t('del')}</button>` : ''}</div>`;
 }
 
@@ -106,7 +108,7 @@ function list() {
     const firstStepLevels = listLevels.filter(level => isPre(level) && isShown(level));
     const reorderable = canReorder();
     const hasMatches = listLevels.some(isShown);
-    return `${canEdit() && (currentLevelSelection() || hasMatches) ? listSelectionControls() : ''}<div id=lst>${rankedLevels.map((level, index) => isShown(level) ? card(level, index, rankedLevels.length, reorderable) : '').join('')}</div>${unplacedLevels.length ? `<h2 class=grp>${t('unplaced')}</h2>` + unplacedLevels.map(level => card(level)).join('') : ''}${firstStepLevels.length ? `<h2 class=grp>${t('first')}</h2>` + firstStepLevels.map(level => card(level, 'pre')).join('') : ''}${!listLevels.length ? canEdit() ? emptyList({ icon: ICONS.actionAdd, title: t('emptyListTitle'), text: t('emptyListText'), action: 'add' }) : `<p class=by>${t('publicNoLevels')}</p>` : !hasMatches ? `<p class=by>${t('noMatch')}</p>` : ''}`;
+    return `<div id=lst>${rankedLevels.map((level, index) => isShown(level) ? card(level, index, rankedLevels.length, reorderable) : '').join('')}</div>${unplacedLevels.length ? `<h2 class=grp>${t('unplaced')}</h2>` + unplacedLevels.map(level => card(level)).join('') : ''}${firstStepLevels.length ? `<h2 class=grp>${t('first')}</h2>` + firstStepLevels.map(level => card(level, 'pre')).join('') : ''}${!listLevels.length ? canEdit() ? emptyList({ icon: ICONS.actionAdd, title: t('emptyListTitle'), text: t('emptyListText'), action: 'add' }) : `<p class=by>${t('publicNoLevels')}</p>` : !hasMatches ? `<p class=by>${t('noMatch')}</p>` : ''}`;
 }
 
 function youtubeId(url) {
@@ -249,7 +251,7 @@ function setListTagFilter() {
 function lcol() {
     const options = listTagOptions(profile.levels.filter(level => level.kind == ui.tab), ui.tagFilter);
     const modes = ['classic', 'platform'].map(kind => `<button type=button data-act=tab data-v=${kind} aria-pressed=${ui.tab == kind}${ui.tab == kind ? ' disabled' : ''}><img src="assets/modes/${kind}.svg" alt="" width=32 height=32> ${t(kind)}</button>`).join('');
-    return `<div class=mode-switch role=group aria-label="${t('lists')}">${modes}</div><div class=lh><label class=list-search>${ICONS.listSearch}<input id=q type=search placeholder="${t('search')}" aria-label="${t('search')}" value="${escapeHtml(ui.q)}"></label><details class=ms><summary>${ICONS.listFilter}<span class=filter-label>${escapeHtml(listTagSummary())}</span>${ICONS.chevronDown}</summary><div class=msp>${options.length ? options.map(name => `<label><input type=checkbox name=tagf value="${escapeHtml(name)}"${ui.tagFilter.includes(name) ? ' checked' : ''}><i class=tag-dot aria-hidden=true style="${tagStyle(name)}"></i><span class=filter-label>${escapeHtml(name)}</span></label>`).join('') : `<span class=by>${t('noListTags')}</span>`}</div></details><button type=button class=list-clear data-act=ct aria-label="${t('clearTags')}" title="${t('clearTags')}"${ui.tagFilter.length ? '' : ' hidden'}>${ICONS.listClear}</button>${canEdit() ? `<button type=button class=list-add data-act=add>${ICONS.actionAdd} ${t('palAdd')}</button>` : ''}</div><div id=lw>${list()}</div>`;
+    return `<div class=mode-switch role=group aria-label="${t('lists')}">${modes}</div><div class=lh><label class=list-search>${ICONS.listSearch}<input id=q type=search placeholder="${t('search')}" aria-label="${t('search')}" value="${escapeHtml(ui.q)}"></label><details class=ms><summary>${ICONS.listFilter}<span class=filter-label>${escapeHtml(listTagSummary())}</span>${ICONS.chevronDown}</summary><div class=msp>${options.length ? options.map(name => `<label><input type=checkbox name=tagf value="${escapeHtml(name)}"${ui.tagFilter.includes(name) ? ' checked' : ''}><i class=tag-dot aria-hidden=true style="${tagStyle(name)}"></i><span class=filter-label>${escapeHtml(name)}</span></label>`).join('') : `<span class=by>${t('noListTags')}</span>`}</div></details><button type=button class=list-clear data-act=ct aria-label="${t('clearTags')}" title="${t('clearTags')}"${ui.tagFilter.length ? '' : ' hidden'}>${ICONS.listClear}</button>${canEdit() ? `<button type=button class=list-add data-act=add>${ICONS.actionAdd} ${t('palAdd')}</button>` : ''}</div><div id=list-actions>${listSelectionControls()}</div><div id=lw>${list()}</div>`;
 }
 
 /** Right column with level details, an editing form or an empty prompt. */
@@ -299,6 +301,9 @@ const scrollSel = () => qs('.lv.sel')?.scrollIntoView({ block: 'center', behavio
 /** Redraws the list while preserving scroll and search text. */
 function renderList() {
     qs('#lw').innerHTML = list();
+    const actions = qs('#list-actions');
+    if (actions)
+        actions.innerHTML = listSelectionControls();
     initSort();
 }
 
@@ -312,14 +317,14 @@ function renderPanel() {
 /** Selects a level without rebuilding the list. */
 function selectLevel(id) {
     if (innerWidth <= 900)
-        ui.listReturnY = window.scrollY;
+        ui.listReturnY = qs('#lw').scrollTop;
     ui.sel = id;
     ui.edit = 0;
     document.querySelectorAll('.lv.sel').forEach(c => c.classList.remove('sel'));
     qs(`.lv[data-id="${CSS.escape(id)}"]`)?.classList.add('sel');
     renderPanel();
+    qs('.rcol').scrollTop = 0;
     if (innerWidth <= 900) {
-        scrollTo({ top: 0 });
         qs('.rcol [data-act=lvclose]')?.focus({ preventScroll: true });
     }
 }

@@ -169,7 +169,7 @@ const ACTIONS = {
         render();
         if (returnId && innerWidth <= 900) {
             qs(`.lv[data-id="${CSS.escape(returnId)}"]`)?.focus({ preventScroll: true });
-            scrollTo({ top: ui.listReturnY || 0 });
+            qs('#lw').scrollTop = ui.listReturnY || 0;
         }
     },
     tgadd(a) {

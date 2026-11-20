@@ -16,6 +16,10 @@ function controlSelector(el) {
 function render() {
     const focused = controlSelector(document.activeElement);
     const listScrollTop = ui.renderedTab == ui.tab ? qs('#lw')?.scrollTop : 0, isLevelList = isListTab();
+    const contentSelector = ui.tab == 'wish' && ui.wl ? '.legacy-surface > .wl' : '.legacy-surface';
+    const contentScroll = ui.renderedTab == ui.tab && (ui.tab == 'stats' || (ui.tab == 'wish' && ui.renderedWishlist == ui.wl))
+        ? qs(contentSelector)?.scrollTop : 0;
+    ui.renderedWishlist = ui.wl;
     const changedMode = isLevelList && ['classic', 'platform'].includes(ui.renderedTab) && ui.renderedTab != ui.tab;
     ui.renderedTab = ui.tab;
     const screen = !canEdit() && !viewing.identity ? publicViewScreen() : ui.tab == 'wish' ? currentWishlist() ? wishView() : wishlistsIndex() : isLevelList ? `<div class=split><div class=lcol>${lcol()}</div><div class="rcol ${ui.sel ? 'has' : ''}">${panel()}</div></div>` : ui.tab == 'stats' ? stats() : home();
@@ -29,6 +33,8 @@ function render() {
     document.documentElement.lang = ui.lang;
     if (listScrollTop && qs('#lw'))
         qs('#lw').scrollTop = listScrollTop;
+    if (contentScroll && qs(contentSelector))
+        qs(contentSelector).scrollTop = contentScroll;
     initSort();
     initWishlistSort();
     renderTagSuggestions();
