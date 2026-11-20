@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { loadScripts } from './load-scripts.js';
 
 const createApp = () => {
-    const { app, context } = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/components/deaths-input.js', 'js/components/levels.js'], {
+    const { app, context } = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/components/deaths-input.js', 'js/components/duration-input.js', 'js/components/levels.js'], {
         localStorage: {},
         FormData: class extends URLSearchParams {
             constructor(form) {
@@ -59,42 +59,44 @@ test('removeFromOrder removes every occurrence across lists without removing lev
     assert.deepEqual(plain(app('profile.order')), { classic: ['first', 'last'], platform: ['other'], extra: [] });
 });
 
+const durationForm = entries => ({ entries, elements: Object.fromEntries(entries.map(([name, value]) => [name, { value, setCustomValidity() {} }])) });
+
 const filledEntries = [
     ['name', '  Test level  '], ['kind', 'platform'], ['lid', '123'], ['creator', 'Creator'],
     ['diff', 'Hard'], ['rating', 'epic'], ['attC', '0'], ['attN', '12'], ['date', '2026-10-26'],
-    ['link', 'https://example.com/video'], ['enj', '15'], ['lik', '-12'], ['tN', '1h 30m 5s'],
-    ['tP', '2m'], ['tPC', '0s'], ['notes', '  Keep spacing  '], ['tg', 'First'], ['tg', 'Second'],
+    ['link', 'https://example.com/video'], ['enj', '15'], ['lik', '-12'], ['tN_h', '1'], ['tN_m', '30'], ['tN_s', '5'],
+    ['tP_h', ''], ['tP_m', '2'], ['tP_s', ''], ['tPC_h', ''], ['tPC_m', ''], ['tPC_s', '0'], ['notes', '  Keep spacing  '], ['tg', 'First'], ['tg', 'Second'],
     ['dth', '63:6'], ['dth', '100:1'], ['dth', '0:0'], ['as', 'r'], ['ap', '0'], ['pos', '2']
 ];
 
 test('levelFromForm preserves fields, converts units, clamps ratings and keeps all tags', () => {
     const { app, plain } = createApp();
-    const input = { entries: structuredClone(filledEntries) };
+    const input = durationForm(structuredClone(filledEntries));
     assert.deepEqual(plain(app('levelFromForm')(input)), {
         name: 'Test level', kind: 'platform', levelId: '123', creator: 'Creator', diff: 'Hard', rating: 'epic',
         attC: 0, attN: 12, date: '2026-10-26', link: 'https://example.com/video', enj: 10, lik: -10,
         tN: 5405, tP: 120, tPC: 0, notes: '  Keep spacing  ', tags: ['First', 'Second'],
         deaths: { 0: 0, 63: 6, 100: 1 }
     });
-    assert.deepEqual(input, { entries: filledEntries });
+    assert.deepEqual(input.entries, filledEntries);
 });
 
 test('levelFromForm keeps empty values null and ignores legacy status fields', () => {
     const { app, plain } = createApp();
     const entries = filledEntries.filter(([key]) => !['tg', 'dth', 'pos'].includes(key)).map(([key]) => [key, '']);
-    assert.deepEqual(plain(app('levelFromForm')({ entries })), {
+    assert.deepEqual(plain(app('levelFromForm')(durationForm(entries))), {
         name: '', kind: '', levelId: null, creator: null, diff: null, rating: null,
         attC: null, attN: null, date: null, link: null, enj: null, lik: null,
         tN: null, tP: null, tPC: null, notes: '', tags: [], deaths: {}
     });
     const pending = filledEntries.map(([key, value]) => [key, key == 'as' ? 'p' : value]);
-    assert.equal('ar' in app('levelFromForm')({ entries: pending }), false);
+    assert.equal('ar' in app('levelFromForm')(durationForm(pending)), false);
 });
 
 test('chip data feeds the existing histogram with zero counts preserved', () => {
     const { app, plain } = createApp();
     const entries = filledEntries.filter(([key]) => key != 'dth').concat([['dth', '24:270'], ['dth', '40:82'], ['dth', '0:0']]);
-    const level = app('levelFromForm')({ entries });
+    const level = app('levelFromForm')(durationForm(entries));
     assert.deepEqual(plain(level.deaths), { 0: 0, 24: 270, 40: 82 });
     const histogram = app('deathHistogram')(level.deaths);
     assert.match(histogram, /data-hp="24" data-hn="270"/);
