@@ -3505,6 +3505,15 @@ body::before {
   mask-repeat: repeat;
 }
 
+/* Pale highlights sit against the ambient washes instead of darkening the outlines. */
+[data-theme=porcelain][data-bg=celestial] body::after {
+  background:
+    radial-gradient(ellipse at 88% 5%, #f2fcff, transparent 48%),
+    radial-gradient(ellipse at 20% 10%, #f8efff, transparent 46%),
+    linear-gradient(135deg, #b2a6ce, #a1bfce 60%, #b6a8cf);
+  opacity: .82;
+}
+
 [data-bg=celestial][data-motif=stars] body::after { mask-image: var(--stars); }
 [data-bg=celestial][data-motif=moons] body::after { mask-image: var(--moons); }
 
