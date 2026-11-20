@@ -22,16 +22,18 @@ function homeStats() {
 }
 
 function home() {
-    return `${canEdit() ? '' : publicIdentityCard()}<div class=hcontent><section class=hlists><div class=hsection-head><h2>${t(canEdit() ? 'lists' : 'publicLists')}</h2>${canEdit() ? `<button class=hadd data-act=add><span aria-hidden=true>+</span>${t('palAdd')}</button>` : ''}</div><div class=hcards>${homeListCard('classic')}${homeListCard('platform')}</div></section><div class=hpreviews>${homeWishlists()}${homeStats()}</div></div>`;
+    return `<div class=hcontent><section class=hlists><div class=hsection-head><h2>${t(canEdit() ? 'lists' : 'publicLists')}</h2>${canEdit() ? `<button class=hadd data-act=add><span aria-hidden=true>+</span>${t('palAdd')}</button>` : ''}</div><div class=hcards>${homeListCard('classic')}${homeListCard('platform')}</div></section><div class=hpreviews>${homeWishlists()}${homeStats()}</div></div>`;
 }
 
 function profileSwitcher() {
     if (!canEdit())
-        return publicIdentityCard();
-    const localButton = `<button data-act=localdata>${t('localData')}</button>`;
-    if (account.status == 'signed-in') {
-        const own = account.profile;
-        return `<div class="psw cloud-account"><button class="obj pbtn" popovertarget=amenu>${cubeIcon(own.color, own.secondary_color)}<span class=info><span class=nm>${escapeHtml(own.display_name)}</span>${own.username ? `<span class=by>@${escapeHtml(own.username)}</span>` : ''}<span class=by data-cloud-status>${escapeHtml(cloudStatusSentence())}</span></span></button>${accountMenu()}<span data-cloud-retry>${cloudRetryButton()}</span>${Object.values(store.profs).some(hasRealLocalData) ? localButton : ''}</div>`;
-    }
-    return `<div class=guest-account><div class=guest-row><div class="obj pbtn">${localProfileSummary(store.cur, false)}</div><button class=pri data-act=asignin>${t('accountSignIn')}</button>${localButton}</div><p class=by>${t('localGuestHint')}</p></div>`;
+        return viewing.identity ? publicIdentityCard() : '';
+    const signedIn = account.status == 'signed-in' && account.profile, own = signedIn ? account.profile : store.profs[store.cur];
+    const menuId = signedIn ? 'amenu' : 'pmenu';
+    const pill = `<button id=profile-pill class=profile-pill popovertarget=${menuId}>${cubeIcon(own.color, signedIn ? own.secondary_color : own.secondaryColor)}<span>${escapeHtml(signedIn ? own.display_name : own.name)}</span>${ICONS.chevronDown}</button>`;
+    if (signedIn)
+        return pill + accountMenu();
+    const row = (act, key, extra = '') => `<button class=pma data-act=${act} ${extra}>${t(key)}</button>`;
+    const choices = Object.entries(store.profs).map(([id, p]) => `<div class=profile-choice><button class=pma data-act=localuse data-id="${escapeHtml(id)}"${id == store.cur ? ' aria-pressed=true' : ''}>${cubeIcon(p.color, p.secondaryColor)}<span>${escapeHtml(p.name)}</span></button><button class=pma data-act=localdelete data-id="${escapeHtml(id)}" aria-label="${t('localDelete')}: ${escapeHtml(p.name)}"${id == store.cur ? ' disabled' : ''}>${ICONS.del}</button></div>`).join('');
+    return `${pill}<div id=pmenu class=pmenu popover>${choices}${row('pnew', 'newProfile')}${row('pedit', 'pedit')}${row('localbackup', 'localBackup', `data-id="${escapeHtml(store.cur)}"`)}${row('localimport', 'localImport')}${row('localdata', 'localData')}${row('asignin', account.status == 'loading' ? 'accountLoading' : 'accountSignIn', account.status == 'loading' ? 'disabled aria-busy=true' : '')}${row('tags', 'tagsT')}<p class=by>${t('localGuestHint')}</p></div>`;
 }

@@ -1,6 +1,6 @@
 {
-  "name": "Personal Ranked Progress",
-  "short_name": "PRP",
+  "name": "Personal Progress List",
+  "short_name": "PPL",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#26337e",

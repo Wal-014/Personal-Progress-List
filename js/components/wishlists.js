@@ -75,7 +75,7 @@ function wishView() {
     const w = currentWishlist(), p = wishlistProgress(w);
     const summary = ['todo', 'prog', 'done'].map(s => `<span>${wishlistIcon(s)} ${t('st_' + s)}: ${w.items.filter(i => i.status == s).length}</span>`).join('');
     const line = p.s == 'done' ? t('wAllDone') : t('wDoneN').replace('{d}', () => p.d).replace('{n}', () => p.n);
-    return `<div class="wh${p.s == 'done' ? ' done' : ''}"><div class=info><h2>${escapeHtml(w.name)}</h2><span class=by>${line}</span>${progressBar(w, ui.wishFx)}<div class=wsummary>${summary}</div></div>${canEdit() ? `<div class=wa><button class=pri data-act=wadd>${t('addLevel')}</button><button data-act=wren>${t('wren')}</button><button class=dg data-act=wdelL>${t('wdelL')}</button></div>` : ''}</div>${w.items.length ? `<div class=wl>${w.items.map(wishlistCard).join('')}</div>` : canEdit() ? emptyList({ icon: ICONS.wish, title: t('emptyWishTitle'), text: t('emptyWishText'), action: 'wadd' }) : `<p class=by>${t('publicNoLevels')}</p>`}`;
+    return `<div class="wh${p.s == 'done' ? ' done' : ''}"><div class=info><span class=by>${line}</span>${progressBar(w, ui.wishFx)}<div class=wsummary>${summary}</div></div>${canEdit() ? `<div class=wa><button class=pri data-act=wadd>${t('addLevel')}</button><button data-act=wren>${t('wren')}</button><button class=dg data-act=wdelL>${t('wdelL')}</button></div>` : ''}</div>${w.items.length ? `<div class=wl>${w.items.map(wishlistCard).join('')}</div>` : canEdit() ? emptyList({ icon: ICONS.wish, title: t('emptyWishTitle'), text: t('emptyWishText'), action: 'wadd' }) : `<p class=by>${t('publicNoLevels')}</p>`}`;
 }
 
 /** Form for adding or editing a wishlist level, including a non-drag position control. */

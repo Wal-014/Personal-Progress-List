@@ -34,3 +34,26 @@ ${cloudUser ? `<button data-act=localbring data-id="${eid}"${migrated || !cloudS
     };
     return `<div class="box sm local-data"><h2>${t('localData')}</h2><p class=by>${t('localBackupHint')}</p>${Object.keys(store.profs).map(row).join('')}<p class=dgb><button data-act=localimport>${t('localImport')}</button><button class=pri data-act=close>${t('close')}</button></p></div>`;
 }
+
+async function editLocalProfile(create) {
+    if (!canEdit() || cloudUser)
+        return;
+    const id = store.cur, own = store.profs[id];
+    const selected = await askProfile(t(create ? 'newProfile' : 'pedit'), create ? { name: '', color: nextProfileColor(), secondaryColor: DEFAULT_SECONDARY_COLOR } : own);
+    if (!selected || !canEdit() || cloudUser || store.cur != id)
+        return;
+    if (create) {
+        const next = newId('p');
+        store.profs[next] = { ...selected, data: emptyProfile() };
+        activateProfile(next);
+        ui.sel = ui.wl = null;
+        ui.edit = 0;
+    }
+    else {
+        own.name = selected.name;
+        own.color = selected.color;
+        own.secondaryColor = selected.secondaryColor;
+    }
+    save();
+    render();
+}

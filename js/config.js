@@ -3,6 +3,13 @@
  */
 
 const ICONS = {
+    navHome: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.5 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M3 10 12 3l9 7M5 9v12h5v-7h4v7h5V9"/></svg>',
+    navLists: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.5 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M8 6h13M8 12h13M8 18h13M3 6h1M3 12h1M3 18h1"/></svg>',
+    navWish: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.5 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M6 3h12v18l-6-4-6 4Z"/></svg>',
+    navStats: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.5 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M4 21V11h4v10M10 21V3h4v18M16 21v-7h4v7"/></svg>',
+    navSettings: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.5 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="m9 3-1 3-3 1 1 3-2 2 2 2-1 3 3 1 1 3h6l1-3 3-1-1-3 2-2-2-2 1-3-3-1-1-3ZM9 12a3 3 0 1 0 6 0 3 3 0 1 0-6 0"/></svg>',
+    menu: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.5 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M3 6h18M3 12h18M3 18h18"/></svg>',
+    chevronDown: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.5 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="m6 9 6 6 6-6"/></svg>',
     person: '<svg class=i viewBox="0 0 24 24" aria-hidden=true><circle cx=12 cy=7 r=4 fill="#fff" stroke="#000" stroke-width=2.5 /><path d="M3 22v-3a9 9 0 0 1 18 0v3Z" fill="#fff" stroke="#000" stroke-width=2.5 /></svg>',
     settings: '<svg class=i viewBox="0 0 24 24" aria-hidden=true><path d="m9 2-1 4-4 1-2 5 3 3v5l5 2 3-3 5 1 4-5-2-4 1-5-5-3-4 1Z" fill="#d2d9ff" stroke="#000" stroke-width=2.5 stroke-linejoin=round /><circle cx=12 cy=12 r=4 fill="#000" /></svg>',
     logout: '<svg class=i viewBox="0 0 24 24" aria-hidden=true><path d="M13 3H3v18h10M9 12h12m-5-5 5 5-5 5" fill=none stroke="#000" stroke-width=6 stroke-linejoin=round /><path d="M13 3H3v18h10M9 12h12m-5-5 5 5-5 5" fill=none stroke="#fff" stroke-width=3 stroke-linejoin=round /></svg>',

@@ -78,21 +78,23 @@ function cloudStatusSentence() {
     return t(cloudSync.status == 'saving' ? 'cloudSaving' : 'cloudSaved');
 }
 
-function cloudStatus() {
-    const icon = cloudSync.status == 'saved' ? ICONS.check : cloudSync.status == 'saving' ? ICONS.sync : ICONS.warning;
-    return `<span id=cloudst class="cloudst ${cloudSync.status}" role=status aria-atomic=true>${icon}<span class=cloudtxt>${escapeHtml(cloudStatusSentence())}</span>${cloudRetryButton(true)}</span>`;
+function cloudRetryButton() {
+    return ['offline', 'error'].includes(cloudSync.status)
+        ? `<button data-act=csync class="xs-txt cloudretry">${ICONS.retry}<span>${t('cloudRetry')}</span></button>` : '';
 }
 
-function cloudRetryButton(header = false) {
-    const label = header ? cloudStatusSentence() + ' · ' + t('cloudRetry') : t('cloudRetry');
-    return ['offline', 'error'].includes(cloudSync.status)
-        ? `<button data-act=csync class="xs-txt cloudretry" aria-label="${escapeHtml(label)}">${ICONS.retry}${header ? `<span class=cloudwarn>${ICONS.warning}</span>` : ''}<span class=retrytxt>${t('cloudRetry')}</span></button>` : '';
+function cloudHeaderStatus() {
+    if (!canEdit() || account.status != 'signed-in' || cloudSync.status == 'saved')
+        return '';
+    const saving = cloudSync.status == 'saving';
+    const label = t(saving ? 'cloudSaving' : cloudSync.status == 'offline' ? 'cloudOfflineShort' : 'cloudErrorShort');
+    return `<span class=cloud-indicator role=status aria-atomic=true title="${escapeHtml(cloudStatusSentence())}">${saving ? ICONS.sync : ICONS.warning}<span>${label}</span></span>${cloudRetryButton()}`;
 }
 
 function renderCloudStatus() {
-    const chip = qs('#cloudst');
-    if (chip)
-        chip.outerHTML = cloudStatus();
+    const header = qs('#cloud-header');
+    if (header)
+        header.innerHTML = cloudHeaderStatus();
     const accountCard = qs('[data-cloud-status]');
     if (accountCard)
         accountCard.textContent = cloudStatusSentence();

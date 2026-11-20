@@ -216,18 +216,19 @@ test('pull defers full rendering while a form, dialog or dropdown is open', asyn
 
 test('status sentences announce pending counts, errors and retry accessibly', async () => {
     const page = await ready();
-    assert.match(page.app('cloudStatus()'), /role=status aria-atomic=true/); assert.match(page.app('cloudStatus()'), /Saved/);
-    assert.ok(page.app('cloudStatus().includes(ICONS.check)'));
-    page.app(`cloudSync.status = 'saving'`); assert.match(page.app('cloudStatus()'), /Saving…/);
-    assert.ok(page.app('cloudStatus().includes(ICONS.sync)'));
-    page.app(`cloudSync.status = 'offline'; cloudSync.pending = 1`);
-    assert.match(page.app('cloudStatus()'), /Offline · 1 change waiting/); assert.match(page.app('cloudStatus()'), /data-act=csync[^>]*aria-label="Offline · 1 change waiting · Retry"/);
-    assert.match(page.app('cloudStatus()'), /class=cloudtxt/);
-    assert.doesNotMatch(page.app('cloudStatus()'), /style=/);
-    assert.ok(page.app('cloudStatus().includes(ICONS.warning)'));
-    page.app('cloudSync.pending = 3'); assert.match(page.app('cloudStatus()'), /3 changes waiting/);
-    page.app(`cloudSync.status = 'error'; cloudSync.error = '<reason>'`); assert.match(page.app('cloudStatus()'), /Not saved: &lt;reason&gt;/);
-    assert.ok(page.app('cloudStatus().includes(ICONS.warning)'));
+    page.load(['js/components/account-ui.js']);
+    const menu = () => page.app('accountMenu()');
+    assert.match(menu(), /role=status aria-atomic=true/);
+    assert.match(menu(), /Saved/);
+    page.app("cloudSync.status = 'saving'");
+    assert.match(menu(), /Saving\u2026/);
+    page.app("cloudSync.status = 'offline'; cloudSync.pending = 1");
+    assert.match(menu(), /Offline \u00b7 1 change waiting/);
+    assert.match(menu(), /data-act=csync/);
+    page.app('cloudSync.pending = 3');
+    assert.match(menu(), /3 changes waiting/);
+    page.app("cloudSync.status = 'error'; cloudSync.error = '<reason>'");
+    assert.match(menu(), /Not saved: &lt;reason&gt;/);
 });
 
 test('saves during an active push are sent afterwards and sign-out ignores stale responses', async () => {
@@ -341,13 +342,11 @@ test('account Home and shell hide local file actions and show the account colour
     const page = await ready(); page.load(['js/components/home.js', 'js/components/shell.js', 'js/components/account-ui.js']);
     page.app(`account.status = 'signed-in'`);
     let html = page.app('profileSwitcher()');
-    assert.match(html, /obj pbtn/); assert.match(html, /Player/); assert.match(html, /#123456/); assert.match(html, /Saved/);
+    assert.match(html, /class=profile-pill/); assert.match(html, /Player/); assert.match(html, /#123456/); assert.match(html, /Saved/);
     assert.doesNotMatch(html, /data-act=(?:imp|exp|psel)|popovertarget=pmenu/);
     assert.doesNotMatch(html.slice(0, html.indexOf('<div id=amenu')), /Choose a username/);
-    assert.doesNotMatch(page.app('paletteButtons()'), /data-act=exp/);
     assert.doesNotMatch(page.app('pauseUI()'), /data-act=imp/);
-    page.context.alerts = () => []; page.context.accountButton = () => '';
-    html = page.app('topBar()'); assert.equal((html.match(/id=cloudst/g) || []).length, 1);
+    assert.equal((html.match(/data-cloud-status/g) || []).length, 1);
     page.app(`account.profile.username = 'player'`); assert.match(page.app('profileSwitcher()'), /@player/);
     page.app(`cloudSync.status = 'offline'; cloudSync.pending = 1`);
     html = page.app('profileSwitcher()');
@@ -358,7 +357,7 @@ test('account Home and shell hide local file actions and show the account colour
     page.app(`account.status = 'signed-out'; stopCloudSync(true)`);
     page.context.localProfileSummary = () => 'Local';
     assert.match(page.app('profileSwitcher()'), /data-act=localdata/);
-    assert.doesNotMatch(page.app('profileSwitcher()'), /data-act=imp/); assert.doesNotMatch(page.app('paletteButtons()'), /data-act=exp/);
+    assert.doesNotMatch(page.app('profileSwitcher()'), /data-act=imp/);
 });
 
 test('conflict notices name at most three entries and keep valid selections', async () => {
@@ -386,15 +385,15 @@ test('Home status and retry controls update when the separate cloud chip is abse
 
 test('saves debounce for one second and update status without a full render', async () => {
     const page = await ready();
-    page.nodes['#cloudst'] = { outerHTML: '' }; page.nodes['[data-cloud-status]'] = { textContent: '' };
+    page.nodes['[data-cloud-status]'] = { textContent: '' };
     const before = page.draws, pushes = page.server.calls.filter(call => call.name === 'sync_push').length;
     page.app(`profile.levels.push(${JSON.stringify(level())}); save();`); await page.tick(500);
     page.app(`profile.levels[0].attN = 99; save();`); await page.tick(999);
     assert.equal(page.server.calls.filter(call => call.name === 'sync_push').length, pushes);
-    assert.equal(page.draws, before); assert.match(page.nodes['#cloudst'].outerHTML, /Saving…/);
+    assert.equal(page.draws, before);
     assert.equal(page.nodes['[data-cloud-status]'].textContent, 'Saving…');
     await page.tick(1); assert.equal(page.server.rows('levels')[0].attempts_normal, 99);
-    assert.match(page.nodes['#cloudst'].outerHTML, /Saved/);
+    assert.match(page.nodes['[data-cloud-status]'].textContent, /Saved/);
 });
 
 test('parent deletion cascades and a second device can confirm missing child deletes', async () => {
@@ -712,4 +711,26 @@ test('appearance fields synchronize independently and survive reload with legacy
     a.app("applyCloudSettings({ theme: 'night', background: null })");
     assert.equal(a.app('ui.theme'), 'graphite');
     assert.equal(a.app('ui.background'), 'orbital');
+});
+
+
+test('header sync problems update live and disappear when saved or viewing another profile', async () => {
+    const page = await ready();
+    page.app("account.status = 'signed-in'");
+    page.nodes['#cloud-header'] = { innerHTML: '' };
+    assert.equal(page.app('cloudHeaderStatus()'), '');
+    for (const status of ['saving', 'offline', 'error']) {
+        page.app(`setCloudStatus('${status}', '<reason>')`);
+        const html = page.nodes['#cloud-header'].innerHTML;
+        assert.match(html, /role=status/);
+        assert.ok(html.includes(page.app(`t('${status == 'saving' ? 'cloudSaving' : status == 'offline' ? 'cloudOfflineShort' : 'cloudErrorShort'}')`)));
+        assert.equal(html.includes('data-act=csync'), status != 'saving');
+        assert.doesNotMatch(html, /<reason>/);
+    }
+    page.app("setCloudStatus('saved')");
+    assert.equal(page.nodes['#cloud-header'].innerHTML, '');
+    page.app("viewing = { identity: {} }; setCloudStatus('error', 'Private error')");
+    assert.equal(page.nodes['#cloud-header'].innerHTML, '');
+    page.app("viewing = null; account.status = 'signed-out'");
+    assert.equal(page.app('cloudHeaderStatus()'), '');
 });

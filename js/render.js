@@ -1,5 +1,5 @@
 /**
- * Draws the whole app (top bar, active screen and navigation).
+ * Draws the whole app (shared shell and active screen).
  */
 
 /** Selector that finds the same control again after the page is rebuilt, or null when there is none. */
@@ -8,7 +8,7 @@ function controlSelector(el) {
         return null;
     if (el.id)
         return '#' + CSS.escape(el.id);
-    const attrs = ['data-act', 'data-id', 'data-v', 'data-wp', 'name'].filter(a => el.hasAttribute(a));
+    const attrs = ['data-act', 'data-id', 'data-v', 'data-wp', 'popovertarget', 'name'].filter(a => el.hasAttribute(a));
     return attrs.length ? el.tagName.toLowerCase() + attrs.map(a => `[${a}="${CSS.escape(el.getAttribute(a))}"]`).join('') : null;
 }
 
@@ -17,11 +17,9 @@ function render() {
     const focused = controlSelector(document.activeElement);
     const listScrollTop = ui.renderedTab == ui.tab ? qs('#lw')?.scrollTop : 0, isLevelList = isListTab();
     ui.renderedTab = ui.tab;
-    const onHome = ui.tab == 'home' && (canEdit() || viewing.identity);
     const screen = !canEdit() && !viewing.identity ? publicViewScreen() : ui.tab == 'wish' ? currentWishlist() ? wishView() : wishlistsIndex() : isLevelList ? `<div class=split><div class=lcol>${lcol()}</div><div class="rcol ${ui.sel ? 'has' : ''}">${panel()}</div></div>` : ui.tab == 'stats' ? stats() : home();
-    qs('#app').innerHTML = onHome
-        ? `<div class=hl>${homeHeader()}<aside class=hside>${homeNavigation()}${homeUtilities()}</aside><main class=home>${screen}</main></div>`
-        : `${topBar()}<main class="${isLevelList ? 'wide' : ''}">${screen}</main>${navBars(isLevelList)}`;
+    qs('#app').innerHTML = sharedShell(screen);
+    syncDrawer();
     document.documentElement.dataset.theme = ui.theme;
     document.documentElement.dataset.bg = ui.background;
     document.documentElement.dataset.motif = ui.tab == 'classic' ? 'stars' : ui.tab == 'platform' ? 'moons' : 'mixed';

@@ -15,7 +15,7 @@ function createApp(globals = {}, { emailAuth = true } = {}) {
     nodes['#md'] = element({ innerHTML: '' });
     nodes['#md dialog'] = element({ querySelector: () => null, addEventListener() {}, showModal() {}, close() {} });
     const env = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/account.js', 'js/components/dialogs.js', 'js/components/account-ui.js', 'js/events.js'], {
-        document, window: { addEventListener() {} }, renderTagSuggestions() {}, ui: { lang: 'en' }, cloudSync: { pending: 0 }, cloudUser: null, queueMicrotask: () => {}, ...globals
+        document, window: { addEventListener() {} }, renderTagSuggestions() {}, ui: { lang: 'en' }, cloudSync: { pending: 0 }, cloudUser: null, queueMicrotask: () => {}, cloudStatusSentence: () => 'Saved', cloudRetryButton: () => '', ...globals
     }, withEmailAuth(emailAuth));
     return { ...env, document, nodes, listeners };
 }
@@ -54,22 +54,15 @@ function signedIn(app, extra = '') {
     app(`account = { status: 'signed-in', user: { id: 'owner', email: 'owner@example.test', identities: [{ provider: 'email' }] }, profile: { display_name: 'Player', username: 'player', color: '#123456', secondary_color: '#abcdef', bio: 'Hello', country: 'CR', created_at: '2026-10-10T12:00:00Z', ${extra} } }`);
 }
 
-test('account button reflects startup and every account status', () => {
+test('account menu preserves profile, sharing, settings, local data, tags and sync hooks', () => {
     const { app } = createApp();
-    assert.equal(app('accountButton()'), '');
-    for (const status of ['idle', 'signed-out', 'loading']) {
-        app(`account.status = '${status}'`);
-        const html = app('accountButton()');
-        assert.match(html, /fill="#8a8fa3"/);
-        assert.equal(html.includes('aria-busy=true'), status === 'loading');
-        if (status !== 'loading') assert.match(html, /data-act=asignin/);
-    }
-    app(`account = { status: 'signed-in', profile: { display_name: 'Player', username: 'player', color: '#123456', secondary_color: '#abcdef' } }`);
-    const html = app('accountButton()');
-    assert.match(html, /popovertarget=amenu/);
-    assert.doesNotMatch(html, /beta-chip|>Beta</);
-    assert.match(html, /Account \u00b7 Player/);
-    for (const action of ['aprofile', 'aedit', 'asettings', 'asignout']) assert.ok(html.includes('data-act=' + action));
+    signedIn(app);
+    const html = app('accountMenu()');
+    for (const action of ['aprofile', 'aedit', 'ashare', 'asettings', 'asignout', 'localdata', 'tags'])
+        assert.match(html, new RegExp('data-act=' + action));
+    assert.match(html, /data-cloud-status/);
+    assert.match(html, /data-cloud-retry/);
+    assert.match(html, /Saved/);
 });
 
 test('Google settings share one request and only accept an explicit true', async () => {
@@ -114,7 +107,7 @@ test('menu, profile card, forms and confirmation panel escape all hostile user v
     signedIn(app);
     app('Object.assign(account.profile, { display_name: hostile, username: hostile, bio: hostile }); account.user.email = hostile');
     const escaped = app('escapeHtml(hostile)');
-    for (const template of ['accountButton()', 'profileCard()', 'profileForm()', 'confirmationPanel(hostile)']) {
+    for (const template of ['accountMenu()', 'profileCard()', 'profileForm()', 'confirmationPanel(hostile)']) {
         const html = app(template);
         assert.equal(html.includes(hostile), false, template);
         assert.ok(html.includes(escaped), template);

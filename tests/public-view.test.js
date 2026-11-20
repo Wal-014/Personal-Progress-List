@@ -40,7 +40,7 @@ for (const username of ['', 'ab', 'UPPER', 'a-b', 'a'.repeat(21), '<img src=x on
         assert.deepEqual(p.calls, []);
         assert.match(p.html(), /This profile does not exist or is private\./);
         assert.match(p.html(), /Go to my progress/);
-        assert.match(p.html(), /<h1>Personal Ranked Progress<\/h1>/);
+        assert.match(p.html(), /<h1>Personal Progress List<\/h1>/);
         assert.doesNotMatch(p.html(), /<h1>@/);
     });
 }
@@ -49,7 +49,7 @@ for (const label of ['missing', 'private']) test(label + ' profiles have the sam
     const p = page('?user=player', { data: null });
     await p.app('initPublicView()');
     assert.match(p.html(), /This profile does not exist or is private\./);
-    assert.match(p.html(), /<h1>@player<\/h1>/);
+    assert.match(p.html(), /<h1>Personal Progress List<\/h1>/);
 });
 
 test('offline and RPC failures show the connection screen', async () => {
@@ -217,8 +217,8 @@ test('a first-time signed-out visitor sees the demo guest card and local data', 
     assert.equal(p.app('cloudUser'), null);
     assert.equal(p.app('profile'), p.context.window.DEMO_PROFILE);
     assert.equal(p.app('store.cur'), 'p1');
-    assert.match(p.html(), /class=guest-account/);
+    assert.match(p.html(), /class=profile-pill/);
     assert.match(p.html(), /data-act=asignin/);
     assert.match(p.html(), /data-act=localdata/);
-    assert.doesNotMatch(p.html(), /id=pmenu|popovertarget=pmenu/);
+    assert.match(p.html(), /id=pmenu/);
 });

@@ -12,11 +12,11 @@ function homeApp() {
         'js/components/account-ui.js', 'js/render.js', 'js/events.js'], {
         document, window: { addEventListener() {} }, localStorage: {},
         publicUsernameValid: true, alerts: () => [], account: { status: 'signed-out' }, cloudUser: null, viewing: { identity: null },
-        localProfileSummary: () => 'Local profile', publicIdentityCard: () => '<div class=profile-card>Public player</div>',
+        cloudHeaderStatus: () => '', localProfileSummary: () => 'Local profile', publicIdentityCard: () => '<div class=profile-card>Public player</div>',
         initSort() {}, initWishlistSort() {}, renderTagSuggestions() {}, finishAccountSignIn() {},
         lcol: () => 'List content', panel: () => 'Level panel', publicViewScreen: () => 'Loading public profile'
     });
-    loaded.app("profile = JSON.parse(JSON.stringify(window.DEMO_PROFILE)); store = { cur: 'demo', profs: { demo: { data: profile } } }; ui.lang = 'en'; ui.tab = 'home'");
+    loaded.app("profile = JSON.parse(JSON.stringify(window.DEMO_PROFILE)); store = { cur: 'demo', profs: { demo: { name: 'Demo', color: '#123456', data: profile } } }; ui.lang = 'en'; ui.tab = 'home'");
     Object.assign(loaded.context, { lcol: () => 'List content', panel: () => 'Level panel' });
     return { ...loaded, root };
 }
@@ -64,7 +64,7 @@ test('Platformer has its own icon and fallback art is absent when a thumbnail UR
     assert.match(card, /class=hghost/);
     assert.ok(card.includes(icon));
     assert.ok(!card.includes(app('ICONS.wish')));
-    const menu = app('homeNavigation()').match(/<div id=hlists[\s\S]*?<\/div>/)[0];
+    const menu = app('shellNavigation()').match(/<div id=hlists[\s\S]*?<\/div>/)[0];
     assert.ok(menu.includes(icon));
     assert.ok(!menu.includes(app('ICONS.wish')));
 });
@@ -101,7 +101,7 @@ test('View all omits a count when the preview shows every wishlist', () => {
 
 test('Home navigation distinguishes own lists from public lists', () => {
     const { app } = homeApp();
-    const listsLabel = () => app('homeNavigation()').match(/<button popovertarget=hlists>[\s\S]*?<span>([^<]+)<\/span><\/button>/)[1];
+    const listsLabel = () => app('shellNavigation()').match(/<button popovertarget=hlists[^>]*>[\s\S]*?<span>([^<]+)<\/span><\/button>/)[1];
     assert.equal(listsLabel(), 'My lists');
     app("viewing = { identity: { display_name: 'Public player' } }");
     assert.equal(listsLabel(), 'Lists');
@@ -115,10 +115,10 @@ test('empty wishlist preview exposes creation to the owner and an empty message 
     const preview = app('homeWishlists()');
     assert.ok(preview.indexOf('No wishlists yet') < preview.indexOf('data-act=wnew'));
     app("viewing = { identity: { display_name: 'Public player' } }");
-    const html = app('home()');
+    const html = app('sharedShell(home())');
     assert.match(html, /Public player/);
     assert.doesNotMatch(html, /data-act=add|data-act=wnew/);
-    const utilities = app('homeUtilities()');
+    const utilities = app('shellFooter()');
     assert.match(utilities, /data-act=myprogress/);
     assert.match(utilities, /data-act=pause/);
     assert.doesNotMatch(utilities, /data-act=bell|data-act=tags|guest-account|id=syncst/);
@@ -151,36 +151,43 @@ test('stats summary and both screens share totals, include recorded zeros and ex
     });
 });
 
-test('render isolates Home chrome and preserves the list and statistics shells', () => {
+test('every screen uses the shared shell, active destination and page actions', () => {
     const { app, root } = homeApp();
-    app('render()');
-    assert.match(root.innerHTML, /^<div class=hl>/);
-    assert.match(root.innerHTML, /data-act=tab data-v=home aria-current=page/);
-    assert.match(root.innerHTML, /<nav class=hnav aria-label="Navigation"/);
-    assert.equal((root.innerHTML.match(/id=syncst/g) || []).length, 1);
-    assert.doesNotMatch(root.innerHTML, /class=toolbar|class=top|id=cloudst/);
-    for (const tab of ['classic', 'stats']) {
+    for (const tab of ['home', 'classic', 'platform', 'wish', 'stats']) {
         app(`ui.tab = '${tab}'; render()`);
-        assert.match(root.innerHTML, /class="top/);
-        assert.match(root.innerHTML, /class=toolbar/);
-        assert.doesNotMatch(root.innerHTML, /class=hl>/);
+        assert.match(root.innerHTML, /id=shell-sidebar/);
+        assert.match(root.innerHTML, /<h1>Personal Progress List<\/h1>/);
+        assert.doesNotMatch(root.innerHTML, /class=toolbar|class=tabbar|class=fab|class="top/);
+        const destination = ['classic', 'platform'].includes(tab) ? 'popovertarget=hlists' : 'data-act=tab data-v=' + tab;
+        assert.match(root.innerHTML, new RegExp(destination + ' aria-current=page'));
+        const title = app('shellPageTitle()');
+        if (tab == 'home') assert.equal(title, '');
+        else {
+            assert.match(title, /class=page-title/);
+            assert.ok(title.includes(app(`t('${tab}')`)));
+        }
+        if (['classic', 'platform'].includes(tab)) assert.match(title, /data-act=add/);
+        if (tab == 'wish') assert.match(title, /data-act=wnew/);
+        app("viewing = { identity: { display_name: 'Public player' } }; render()");
+        assert.match(root.innerHTML, /Public player/);
+        assert.match(root.innerHTML, new RegExp(destination + ' aria-current=page'));
+        assert.match(root.innerHTML, /data-act=myprogress/);
+        assert.doesNotMatch(root.innerHTML, /data-act=add|data-act=wnew|id=profile-pill/);
+        app('viewing = null');
     }
+    app("ui.tab = 'wish'; ui.wl = 'w1'; profile.wishlists = [{ id: 'w1', name: '<Goals>', items: [] }]");
+    assert.match(app('shellPageTitle()'), /&lt;Goals&gt;/);
+    assert.match(app('shellPageTitle()'), /data-act=tab data-v=wish/);
+    assert.doesNotMatch(app('shellPageTitle()'), /data-act=wnew/);
 });
 
-test('wishlist index renders every original card in status order using the sub-screen shell', () => {
-    const { app, root } = homeApp();
-    app(wishlistFixture);
-    app("ui.tab = 'wish'; ui.wl = null; render()");
-    assert.deepEqual([...root.innerHTML.matchAll(/data-act=wopen data-id="([^"]+)"/g)].map(match => match[1]), ['prog', 'prog2', 'todo', 'done']);
-    assert.match(root.innerHTML, /class="obj trig"/);
-    assert.match(root.innerHTML, /<h1>Wishlists<\/h1>/);
-    assert.match(root.innerHTML, /aria-label="Back"/);
-    assert.match(root.innerHTML, /class=toolbar/);
-    assert.match(root.innerHTML, /data-act=wnew/);
-    app("viewing = { username: 'player', identity: { display_name: 'Public player' } }; render()");
-    assert.match(root.innerHTML, /<h1>@player<\/h1>/);
-    assert.match(root.innerHTML, /data-act=myprogress/);
-    assert.doesNotMatch(root.innerHTML, /data-act=wnew/);
+test('local profile menu retains every action without sharing', () => {
+    const { app } = homeApp();
+    const html = app('profileSwitcher()');
+    for (const action of ['localuse', 'pnew', 'pedit', 'localdelete', 'localbackup', 'localimport', 'localdata', 'asignin', 'tags'])
+        assert.match(html, new RegExp('data-act=' + action));
+    assert.match(html, /id=profile-pill/);
+    assert.doesNotMatch(html, /data-act=ashare/);
 });
 
 test('signed-in Home provides exactly one account menu and live status hook without a cloud chip', () => {
@@ -253,4 +260,90 @@ test('render applies appearance and screen motifs without changing the saved bac
         assert.equal(context.document.documentElement.dataset.bg, 'celestial');
         assert.equal(context.document.documentElement.dataset.theme, 'nebula');
     }
+});
+
+
+test('drawer toggles inert content, traps focus and restores the menu on Escape and backdrop', () => {
+    const { app, context } = homeApp();
+    const nodes = {}, attributes = {};
+    const focusable = () => ({ focus() { context.document.activeElement = this; }, getClientRects: () => [1], closest: () => null });
+    const first = focusable(), last = focusable();
+    nodes['#shell-sidebar'] = { inert: false, setAttribute(key, value) { attributes[key] = value; }, removeAttribute(key) { delete attributes[key]; }, querySelectorAll: () => [first, last] };
+    nodes['#shell-menu'] = { ...focusable(), setAttribute(key, value) { attributes[key] = value; } };
+    nodes['.shell-content'] = { inert: false };
+    nodes['.drawer-backdrop'] = { hidden: true };
+    context.document.querySelector = selector => nodes[selector] || null;
+    context.document.querySelectorAll = () => [];
+    context.window.matchMedia = () => ({ matches: true });
+    app('setDrawer(true)');
+    assert.equal(app('ui.drawer'), true);
+    assert.equal(attributes['aria-expanded'], 'true');
+    assert.equal(nodes['.shell-content'].inert, true);
+    assert.equal(nodes['.drawer-backdrop'].hidden, false);
+    assert.equal(context.document.activeElement, first);
+    context.document.activeElement = last;
+    let prevented = false;
+    context.keyEvent = { key: 'Tab', shiftKey: false, preventDefault() { prevented = true; } };
+    app('drawerKeydown(keyEvent)');
+    assert.equal(prevented, true);
+    assert.equal(context.document.activeElement, first);
+    context.keyEvent = { key: 'Escape', preventDefault() {} };
+    app('drawerKeydown(keyEvent)');
+    assert.equal(nodes['.shell-content'].inert, false);
+    assert.equal(context.document.activeElement, nodes['#shell-menu']);
+    assert.equal(attributes['aria-expanded'], 'false');
+    app('ACTIONS.drawer(); ACTIONS.drawerclose()');
+    assert.equal(app('ui.drawer'), false);
+    app('setDrawer(true)');
+    context.window.matchMedia = () => ({ matches: false });
+    app('syncDrawer()');
+    assert.equal(app('ui.drawer'), false);
+    assert.equal(nodes['#shell-sidebar'].inert, false);
+    assert.equal(nodes['.shell-content'].inert, false);
+});
+
+
+test('focus selectors cover the drawer menu, profile pill and list chooser', () => {
+    const { app, context, root } = homeApp();
+    root.contains = () => true;
+    context.CSS = { escape: value => value };
+    for (const id of ['shell-menu', 'profile-pill']) {
+        context.control = { id };
+        assert.equal(app('controlSelector(control)'), '#' + id);
+    }
+    context.control = { tagName: 'BUTTON', hasAttribute: name => name == 'popovertarget', getAttribute: () => 'hlists' };
+    assert.equal(app('controlSelector(control)'), 'button[popovertarget="hlists"]');
+});
+
+test('the document title and manifest match the shared brand', async () => {
+    const { readFile } = await import('node:fs/promises');
+    assert.match(await readFile('index.html', 'utf8'), /<title>Personal Progress List<\/title>/);
+    const manifest = JSON.parse(await readFile('manifest.json', 'utf8'));
+    assert.equal(manifest.name, 'Personal Progress List');
+    assert.equal(manifest.short_name, 'PPL');
+});
+
+
+test('local menu protects the active profile and offers inactive deletion; loading disables sign-in', () => {
+    const { app } = homeApp();
+    app("store.profs.other = { name: '<Other>', color: '#123456', data: emptyProfile() }");
+    const html = app('profileSwitcher()');
+    assert.match(html, /data-act=localdelete data-id="demo"[^>]* disabled/);
+    assert.match(html, /data-act=localdelete data-id="other" aria-label="Delete from this device: &lt;Other&gt;">/);
+    app("account.status = 'loading'");
+    assert.match(app('profileSwitcher()'), /data-act=asignin disabled aria-busy=true>Loading account/);
+});
+
+
+test('legacy screens isolate content below the themed page title', () => {
+    const { app } = homeApp();
+    for (const tab of ['classic', 'platform', 'wish', 'stats']) {
+        app(`ui.tab = '${tab}'`);
+        const html = app("sharedShell('<p>Content</p>')");
+        assert.match(html, /class=legacy-surface><p>Content<\/p><\/div><\/main>/);
+        assert.ok(html.indexOf('class=page-title') < html.indexOf('class=legacy-surface'));
+    }
+    app("ui.tab = 'home'");
+    assert.doesNotMatch(app("sharedShell('Home')"), /class=legacy-surface/);
+    assert.ok(app('profileSwitcher()').includes(app('ICONS.chevronDown')));
 });
