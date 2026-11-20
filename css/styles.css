@@ -4059,12 +4059,30 @@ main.home {
       linear-gradient(var(--rim-fill, var(--color-surface)), var(--rim-fill, var(--color-surface))) padding-box,
       var(--rim-paint) border-box;
     box-shadow: none;
+
+    &:where([data-theme=porcelain] *) {
+      --rim-paint: linear-gradient(145deg, var(--metal-glint), var(--metal-edge) 42%, var(--metal-shade) 92%);
+      background:
+        linear-gradient(148deg, var(--rim-fill, var(--satin-light)), var(--rim-fill, var(--satin-base))) padding-box,
+        var(--rim-paint) border-box;
+    }
   }
 
   .hl .hcard-platform {
     --metal-edge: #89b5bf;
     --metal-shade: #538a99;
     --metal-glint: #e6faff;
+  }
+  [data-theme=porcelain] .hl .hcard-platform {
+    --metal-edge: #90aab7;
+    --metal-glint: #ebf3f5;
+    --metal-shade: #7293a4;
+    --satin-light: #f2f7f8;
+    --satin-base: #dfebef;
+  }
+  [data-theme=porcelain] .hcard-top {
+    background: linear-gradient(145deg, var(--satin-light), var(--satin-base));
+    border-color: var(--metal-edge);
   }
   .lh .list-add, .dgb .pri, .wa .pri {
     --rim-fill: var(--color-accent);
@@ -4118,7 +4136,16 @@ main.home {
       mask-composite: intersect, add, add, add;
     }
     .hl .hcard { --reflection-depth: 8px; }
-    [data-theme=porcelain] :is(.hcard, button, .ms summary, .trig)::before { --light-reflection-opacity: .24; }
+    [data-theme=porcelain] :is(.hcard, button, .ms summary, .trig)::before {
+      --reflection-depth: 3px;
+      opacity: .54;
+      background: linear-gradient(145deg, var(--metal-edge), var(--metal-glint) 34%, transparent 70%);
+      mask-image:
+        linear-gradient(to bottom, black, transparent var(--reflection-depth)),
+        linear-gradient(to right, black, transparent var(--reflection-depth));
+      mask-composite: add;
+    }
+    [data-theme=porcelain] .hl .hcard::before { --reflection-depth: 4px; }
   }
 
   /* Detail images supply their own background, so paint the same thin edge above it. */
@@ -4319,6 +4346,8 @@ main.home {
 }
 
 [data-theme=porcelain] .legacy-surface {
+  --satin-light: var(--color-surface);
+  --satin-base: var(--color-surface-elevated);
   --color-bg: var(--color-nebula-bg);
   --color-surface: var(--color-nebula-surface);
   --color-text: var(--color-nebula-text);
