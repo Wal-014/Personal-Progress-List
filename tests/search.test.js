@@ -72,6 +72,32 @@ function searchForm() {
     };
 }
 
+for (const [kind, label] of [['classic', 'Clásico'], ['platform', 'Plataforma']])
+    test(`search results show the ${kind} mode label`, () => {
+        const form = searchForm();
+        form.app(`levelSearch.results = [{ levelId: '1', name: 'Level', creator: 'Creator', kind: '${kind}' }]; renderLevelSearch()`);
+        assert.match(form.results.innerHTML, new RegExp(`<span class="gdmode ${kind}">${label}</span>`));
+        assert.doesNotMatch(form.results.innerHTML, / · Plataforma/);
+    });
+
+test('search results omit mode labels for missing or unknown kinds', () => {
+    const form = searchForm();
+    form.app(`levelSearch.results = [{ levelId: '1', name: 'Missing' }, { levelId: '2', name: 'Unknown', kind: 'other' }, { levelId: '3', name: 'Unsafe', kind: '<img src=x onerror=alert(1)>' }]; renderLevelSearch()`);
+    assert.equal((form.results.innerHTML.match(/class=gdc/g) || []).length, 3);
+    assert.doesNotMatch(form.results.innerHTML, /class="gdmode |onerror/);
+});
+
+test('switching language redraws both mode labels in English', () => {
+    const form = searchForm();
+    form.app(`levelSearch.results = [{ levelId: '1', name: 'Classic level', kind: 'classic' }, { levelId: '2', name: 'Platformer level', kind: 'platform' }]; renderLevelSearch()`);
+    assert.match(form.results.innerHTML, /class="gdmode classic">Clásico<\/span>/);
+    assert.match(form.results.innerHTML, /class="gdmode platform">Plataforma<\/span>/);
+    form.app("ui.lang = 'en'; renderLevelSearch()");
+    assert.match(form.results.innerHTML, /class="gdmode classic">Classic<\/span>/);
+    assert.match(form.results.innerHTML, /class="gdmode platform">Platformer<\/span>/);
+    assert.doesNotMatch(form.results.innerHTML, /Clásico|Plataforma/);
+});
+
 const searchMessages = {
     es: {
         busy: 'Buscando…', one: '1 resultado.', many: '2 resultados, los más parecidos primero.', none: 'Ningún nivel coincide.', suggestion: '¿Quisiste decir:',
