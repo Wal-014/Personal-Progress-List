@@ -107,8 +107,8 @@ test('comparison search requires the exact option in the selected mode; stale id
     app('setComparisonSearch({ dataset: { compareSlot: "0" }, value: "Platform" })');
     app('setComparisonSearch({ dataset: { compareSlot: "0" }, value: "Beta" })');
     assert.deepEqual(plainStats(app('ui.comparison.slots')), ['z', 'b']);
-    assert.match(app('comparisonHtml()'), /value="Beta · ID 123"/);
-    assert.doesNotMatch(app('comparisonHtml()'), /value="Platform"/);
+    assert.match(app('comparisonHtml()'), />Beta · ID 123<\/button>/);
+    assert.doesNotMatch(app('comparisonHtml()'), />Platform<\/button>/);
     app('clearComparisonSlot(0)');
     assert.deepEqual(plainStats(app('ui.comparison.slots')), [null, 'b']);
 });
@@ -330,9 +330,10 @@ export async function checkStatisticsBrowser(page) {
                 const { document } = globalThis;
                 const list = document.querySelector('.ranking-list').getBoundingClientRect();
                 const panel = document.querySelector('.compare-panel').getBoundingClientRect();
-                return { listX: list.x, listY: list.y, listWidth: list.width, panelX: panel.x, panelBottom: panel.bottom, panelWidth: panel.width };
+                const slots = [...document.querySelectorAll('.compare-slot')].map(slot => slot.getBoundingClientRect());
+                return panel.bottom <= list.top && slots[0].right <= slots[1].left;
             });
-            check(width >= 900 ? layout.panelX > layout.listX && layout.listWidth / (layout.listWidth + layout.panelWidth) >= .55 : layout.panelBottom <= layout.listY, 'Responsive comparison placement');
+            check(layout, 'Comparison slots sit side by side above the rankings');
             check(await page.locator('.compare-panel [role=status]').count() == 1, 'Empty comparison hint');
             const cards = page.locator('[data-act=compare-pick]');
             const firstName = await cards.nth(0).locator('.nm').textContent();
@@ -346,11 +347,11 @@ export async function checkStatisticsBrowser(page) {
             check(await cards.nth(0).getAttribute('aria-pressed') == 'true', 'First slot preserved');
             await cards.nth(2).click();
             check(await page.locator('.compare-row').count() == 0, 'Clicking a selected card removes it');
-            const secondOption = await page.locator('#compare-options option').nth(1).getAttribute('value');
+            const secondOption = await page.locator('.compare-slot.compare-2 .compare-options button').nth(1).textContent();
             await page.locator('#compare-search-1').fill('no exact match');
             check(await page.locator('.compare-row').count() == 0, 'Free search text is ignored');
             await page.locator('#compare-search-1').fill(secondOption);
-            check(await page.locator('.compare-row').count() == 3, 'Exact datalist value selects a level');
+            check(await page.locator('.compare-row').count() == 3, 'Exact search value selects a level');
             check(await page.locator('#compare-search-1').evaluate(element => element === element.ownerDocument.activeElement), 'Search focus restored');
             check(await page.locator('.compare-selection .nm').first().textContent() == firstName, 'Searching preserves first slot');
             await page.locator('[data-act=compare-clear][data-v="0"]').click();
@@ -360,7 +361,7 @@ export async function checkStatisticsBrowser(page) {
             await page.locator('[data-act=ranking-mode][data-v=platform]').click();
             check(await page.locator('.compare-panel').count() == 1, 'Mode change keeps comparison open');
             check(await page.locator('#compare-search-0').inputValue() == '' && await page.locator('#compare-search-1').inputValue() == '', 'Mode change empties both slots');
-            check(await page.locator('#compare-options option').count() == 2, 'Datalist contains only selected mode');
+            check(await page.locator('.compare-slot.compare-1 .compare-options button').count() == 2, 'Dropdown contains only selected mode');
             await page.locator('[data-act=compare-close]').click();
             check(await page.locator('.compare-panel').count() == 0, 'Close panel');
             check(await page.locator('[data-act=compare-toggle]').evaluate(element => element === element.ownerDocument.activeElement), 'Close returns focus to toggle');

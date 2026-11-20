@@ -55,8 +55,9 @@ function drawerKeydown(event) {
 
 function shellNavigation() {
     const navItem = (kind, label, icon) => `<button data-act=tab data-v=${kind}${kind == ui.tab ? ' aria-current=page' : ''}>${icon}<span>${t(label)}</span></button>`;
+    const expanded = ui.listsExpanded ?? isListTab();
     const choices = ['classic', 'platform'].map(kind => `<button class=pma data-act=tab data-v=${kind}>${ICONS[kind]}<span>${t(kind)}</span><b>${profile.levels.filter(level => level.kind == kind).length.toLocaleString(ui.lang)}</b></button>`).join('');
-    return `<nav class=shell-nav aria-label="${t('nav')}">${navItem('home', 'home', ICONS.navHome)}<button popovertarget=hlists${isListTab() ? ' aria-current=page' : ''}>${ICONS.navLists}<span>${t(canEdit() ? 'lists' : 'publicLists')}</span></button><div id=hlists class=pmenu popover>${choices}</div>${navItem('wish', 'wish', ICONS.navWish)}${navItem('stats', 'stats', ICONS.navStats)}</nav>`;
+    return `<nav class=shell-nav aria-label="${t('nav')}">${navItem('home', 'home', ICONS.navHome)}<button data-act=listchoices aria-expanded=${expanded} aria-controls=hlists${isListTab() ? ' aria-current=page' : ''}>${ICONS.navLists}<span>${t(canEdit() ? 'lists' : 'publicLists')}</span>${ICONS.chevronDown}</button><div id=hlists class=list-choices${expanded ? '' : ' hidden'}>${choices}</div>${navItem('wish', 'wish', ICONS.navWish)}${navItem('stats', 'stats', ICONS.navStats)}</nav>`;
 }
 
 function shellFooter() {
@@ -70,7 +71,7 @@ function shellPageTitle() {
     const title = isListTab() ? t(canEdit() ? 'lists' : 'publicLists') : wish ? wish.name : t(ui.tab);
     const icon = isListTab() ? ICONS.navLists : ui.tab == 'wish' ? ICONS.navWish : ICONS.navStats;
     const primary = !canEdit() ? '' : ui.tab == 'wish' && !wish ? `<button data-act=wnew>${ICONS.actionAdd}${t('palWish')}</button>` : '';
-    return `<div class=page-title>${wish ? `<button data-act=tab data-v=wish aria-label="${t('back2')}">${ICONS.actionBack}</button>` : ''}<h2>${icon}${escapeHtml(title)}</h2>${primary}</div>`;
+    return `<div class=page-title><button data-act=tab data-v=home aria-label="${t('home')}" title="${t('home')}">${ICONS.navHome}</button>${wish ? `<button data-act=tab data-v=wish aria-label="${t('back2')}">${ICONS.actionBack}</button>` : ''}<h2>${icon}${escapeHtml(title)}</h2>${primary}</div>`;
 }
 
 function sharedShell(screen) {
@@ -81,10 +82,10 @@ function sharedShell(screen) {
 
 const syncStatus = () => ui.sync ? `${ICONS.sync}<span>${t('syncing')}</span>` : '';
 
-/** Last AREDL update, how many levels are on the list, and the manual update button. */
+/** Last AREDL update, how many levels are on the list, in the active profile. */
 function aredlLine() {
     const last = +localStorage.gas, on = profile.levels.filter(l => l.ar?.s == 'r').length;
-    return `${last ? `${t('aredlUpd')} ${timeAgo(last)}` : t('aredlNever')} · ${t('aredlOn').replace('{n}', on).replace('{t}', profile.levels.length)} <button class=xs-txt data-act=sync ${ui.sync ? 'disabled' : ''}>${t(ui.sync ? 'syncing' : 'syncNow')}</button>`;
+    return `${last ? `${t('aredlUpd')} ${timeAgo(last)}` : t('aredlNever')} · ${t('aredlOn').replace('{n}', on).replace('{t}', profile.levels.length)}`;
 }
 
 /** Updates the sync chip and the pause menu line without redrawing the screen. */
@@ -106,5 +107,5 @@ function pauseUI() {
 ${canEdit() ? `<h3>AREDL</h3><p id=aredl class=by>${aredlLine()}</p>` : ''}
 <nav class=legal>${['terms', 'privacy', 'credits'].map(k => `<a class=lk data-act=legal data-v=${k} role=button tabindex=0>${t(k)}</a>`).join(' · ')}</nav>
 <p class=by>© ${new Date().getFullYear()} Retlaw · ${t('rights')} · v1.0.0</p>
-<p class=dgb><button class=pri data-act=close>${t('resume')}</button></p></div>`;
+<p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
 }

@@ -86,8 +86,8 @@ for (const publicView of [false, true]) {
 
     test(`detail keeps every section for a fully recorded level in ${mode} mode`, () => {
         const html = drawDetail({ attN: 12, attC: 3, tN: 60, tP: 120, tPC: 180, date: '2026-01-02', link: 'https://youtu.be/Ab_12-cDef3', enj: 8, lik: 3.5, tags: ['Recorded'], notes: 'A recorded note', deaths: { 63: 2, 90: 1 } });
-        assert.equal((html.match(/<details class=level-section open>/g) || []).length, 6);
-        for (const label of ['Attempts', 'Play time', 'Completion', 'Rating', 'Tags & notes', 'Deaths per percent'])
+        assert.equal((html.match(/<details class=level-section open>/g) || []).length, 5);
+        for (const label of [app("t('s3')"), 'Completion', 'Rating', 'Tags & notes', 'Deaths per percent'])
             assert.ok(html.includes(`<summary>${label}</summary>`), label);
         for (const text of ['<small>Total attempts</small><b>15</b>', '<small>Total time</small><b>0h 6m 0s</b>', 'Copy or StartPos playtime', '90% ×1', 'A recorded note', 'class=yt', 'class=hist'])
             assert.ok(html.includes(text), text);

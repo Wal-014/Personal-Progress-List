@@ -139,9 +139,9 @@ test('AREDL name lookups normalize each cached name once per array on first use'
 test('tagStyle paints a chip in its tag colour and drops anything that is not #rrggbb', () => {
     setGlobal('profile', { tags: [{ name: 'ok', color: '#12ab9F' }, { name: 'bad', color: 'red;background:url(x)' }] });
     const tagStyle = app('tagStyle');
-    assert.equal(tagStyle('ok'), 'color:#12ab9F;border-color:#12ab9F');
-    assert.equal(tagStyle('bad'), 'color:var(--fg);border-color:var(--fg)');
-    assert.equal(tagStyle('missing'), 'color:var(--fg);border-color:var(--fg)');
+    assert.equal(tagStyle('ok'), '--tag-color:#12ab9F');
+    assert.equal(tagStyle('bad'), '--tag-color:var(--fg)');
+    assert.equal(tagStyle('missing'), '--tag-color:var(--fg)');
 });
 
 test('ensureProfileDefaults drops imported wishlist statuses and deaths the app cannot render', () => {

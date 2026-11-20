@@ -76,7 +76,7 @@ const tagColor = n => {
 
 const tagStyle = n => {
     const c = tagColor(n);
-    return `color:${c};border-color:${c}`;
+    return `--tag-color:${c}`;
 };
 
 /** Levels tagged "Pre-Extremes" appear separately under "First steps". */

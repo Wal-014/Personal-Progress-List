@@ -45,7 +45,7 @@ function statCard(level, position, selectedLevels) {
 }
 
 function rankingControls(modeCount) {
-    return `<div class=ranking-controls>${statsSegments('ranking-mode', ui.rankingMode, ['classic', 'platform'].map(kind => [kind, t(kind)]), t('kind'))}${statsSegments('ranking-metric', ui.rankingMetric, Object.entries(LEVEL_METRICS).map(([key, metric]) => [key, t(metric.label)]), t('rankingMetric'))}<button type=button class=xs-txt data-act=ranking-order>${t(ui.rankingDirection == 'asc' ? 'lowestFirst' : 'highestFirst')}</button><button type=button class=xs-txt data-act=ranking-all>${ui.rankingAll ? t('topTen') : t('viewAll').replace('{n}', modeCount)}</button><button type=button class=xs-txt data-act=compare-toggle aria-pressed=${ui.comparison.open}>${t('compare')}</button></div>`;
+    return `<div class=ranking-controls>${statsSegments('ranking-mode', ui.rankingMode, ['classic', 'platform'].map(kind => [kind, t(kind)]), t('kind'))}${statsSegments('ranking-metric', ui.rankingMetric, Object.entries(LEVEL_METRICS).map(([key, metric]) => [key, t(metric.label)]), t('rankingMetric'))}<div class=ranking-order><button type=button class=xs-txt data-act=ranking-order>${t(ui.rankingDirection == 'asc' ? 'lowestFirst' : 'highestFirst')}</button><button type=button class=xs-txt data-act=ranking-all>${ui.rankingAll ? t('topTen') : t('viewAll').replace('{n}', modeCount)}</button></div><button type=button class=xs-txt data-act=compare-toggle aria-pressed=${ui.comparison.open}>${t('compare')}</button></div>`;
 }
 
 function rankingsHtml() {

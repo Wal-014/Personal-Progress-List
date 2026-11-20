@@ -117,6 +117,11 @@ const ACTIONS = {
         else
             render();
     },
+    listchoices(button) {
+        ui.listsExpanded = button.getAttribute('aria-expanded') != 'true';
+        button.setAttribute('aria-expanded', String(ui.listsExpanded));
+        qs('#hlists').hidden = !ui.listsExpanded;
+    },
     zi: () => zoomTimeline(1.5),
     zo: () => zoomTimeline(1 / 1.5),
     'ranking-mode': a => setRankingMode(a.dataset.v),
@@ -126,6 +131,10 @@ const ACTIONS = {
     'compare-toggle': () => toggleComparison(),
     'compare-close': () => closeComparison(),
     'compare-pick': (a, id) => pickComparisonLevel(id),
+    'compare-option': (button, id) => {
+        selectComparisonSlot(+button.dataset.v, id);
+        qs('[data-act=compare-clear][data-v="' + button.dataset.v + '"]')?.focus({ preventScroll: true });
+    },
     'compare-clear': a => clearComparisonSlot(+a.dataset.v),
     'timeline-metric': a => setTimelineMetric(a.dataset.v),
     add() {
@@ -399,7 +408,7 @@ document.body.onclick = e => {
     }
     if (a) {
         const k = a.dataset.act;
-        if (ui.drawer && a.closest('#shell-sidebar'))
+        if (ui.drawer && k != 'listchoices' && a.closest('#shell-sidebar'))
             setDrawer(false);
         if (a.closest('.pause') && ['wnew', 'tags', 'legal'].includes(k))
             closeModal();
@@ -446,8 +455,10 @@ document.body.oninput = e => {
         return deathInputChanged(e.target);
     if (['pf', 'pwf'].includes(e.target.form?.id))
         return accountFormInput(e.target);
-    if (e.target.dataset.compareSlot != null)
+    if (e.target.dataset.compareSlot != null) {
+        e.target.nextElementSibling.hidden = false;
         return setComparisonSearch(e.target);
+    }
     if (['fm', 'wf'].includes(e.target.form?.id))
         e.target.setCustomValidity(fieldError(e.target.name, e.target.value));
     if (e.target.form?.id == 'fm' && (/^(?:attC|attN|t(?:N|P|PC)_[hms])$/.test(e.target.name)))
@@ -534,6 +545,22 @@ document.addEventListener('focusout', e => durationBlur(e));
 document.onkeydown = e => {
     if (ui.drawer && drawerKeydown(e))
         return;
+    const picker = e.target.closest?.('.compare-picker');
+    if (picker && ['Escape', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
+        const input = picker.querySelector('input'), options = [...picker.querySelectorAll('button')];
+        e.preventDefault();
+        if (e.key == 'Escape') {
+            input.focus();
+            picker.querySelector('.compare-options').hidden = true;
+        }
+        else if (options.length) {
+            picker.querySelector('.compare-options').hidden = false;
+            const index = options.indexOf(e.target);
+            const next = e.key == 'ArrowDown' ? index + 1 : (index < 0 ? options.length : index) - 1;
+            options[(next + options.length) % options.length].focus();
+        }
+        return;
+    }
     if (e.target.dataset.duration)
         return durationKeydown(e);
     if (e.key == 'Enter' && e.target.dataset.deathField != null)

@@ -101,7 +101,7 @@ test('View all omits a count when the preview shows every wishlist', () => {
 
 test('Home navigation distinguishes own lists from public lists', () => {
     const { app } = homeApp();
-    const listsLabel = () => app('shellNavigation()').match(/<button popovertarget=hlists[^>]*>[\s\S]*?<span>([^<]+)<\/span><\/button>/)[1];
+    const listsLabel = () => app('shellNavigation()').match(/<button data-act=listchoices[^>]*>[\s\S]*?<span>([^<]+)<\/span>/)[1];
     assert.equal(listsLabel(), 'My lists');
     app("viewing = { identity: { display_name: 'Public player' } }");
     assert.equal(listsLabel(), 'Lists');
@@ -158,7 +158,7 @@ test('every screen uses the shared shell, active destination and page actions', 
         assert.match(root.innerHTML, /id=shell-sidebar/);
         assert.match(root.innerHTML, /<h1>Personal Progress List<\/h1>/);
         assert.doesNotMatch(root.innerHTML, /class=toolbar|class=tabbar|class=fab|class="top/);
-        const destination = ['classic', 'platform'].includes(tab) ? 'popovertarget=hlists' : 'data-act=tab data-v=' + tab;
+        const destination = ['classic', 'platform'].includes(tab) ? 'aria-controls=hlists' : 'data-act=tab data-v=' + tab;
         assert.match(root.innerHTML, new RegExp(destination + ' aria-current=page'));
         const title = app('shellPageTitle()');
         if (tab == 'home') assert.equal(title, '');
