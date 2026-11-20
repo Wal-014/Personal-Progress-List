@@ -468,6 +468,17 @@ test('an unmatched transfer starts as unplaced with no AREDL position', () => {
     assert.deepEqual(JSON.parse(JSON.stringify(f.context.profile.levels[0].ar)), { s: 'n' });
 });
 
+for (const kind of ['classic', 'platform'])
+    test(`an unlisted rated Extreme Demon transferred to ${kind} awaits placement`, () => {
+        const f = fixture();
+        f.load(['js/api.js']);
+        f.app("aredlCache = [{ k: 'd', i: 1, n: 'Other', p: 1 }]");
+        f.item.diff = 'Extreme Demon';
+        f.item.rating = 'rated';
+        f.app('transferWishlistItem')('i1', kind);
+        assert.deepEqual({ ...f.context.profile.levels[0].ar }, { s: 'p', p: null });
+    });
+
 test('controlSelector restores the specific status button and percentage input', () => {
     const f = fixture();
     f.load(['js/render.js']);
