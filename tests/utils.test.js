@@ -11,14 +11,14 @@ for (const [kind, listName] of [['classic', 'AREDL'], ['platform', 'AREPL']]) {
         assert.equal(label({ kind, ar: { s: 'r', p: 42 } }), `${listName} #42`);
         assert.equal(label({ kind, ar: { s: 'r', p: 0 } }), `${listName} #0`);
         assert.equal(label({ kind, ar: { s: 'r', p: '<&' } }), `${listName} #&lt;&amp;`);
-        assert.equal(label({ kind, ar: { s: 'r' } }), `${listName} · On the list`);
-        assert.equal(label({ kind, ar: { s: 'r', p: null } }), `${listName} · On the list`);
-        assert.equal(label({ kind, ar: { s: 'p' } }), 'Not placed yet');
-        assert.equal(label({ kind, ar: { s: 'n' } }), 'Not on list');
+        assert.equal(label({ kind, ar: { s: 'r' } }), `${listName} —`);
+        assert.equal(label({ kind, ar: { s: 'r', p: null } }), `${listName} —`);
+        assert.equal(label({ kind, ar: { s: 'p' } }), `${listName} · Awaiting placement`);
+        assert.equal(label({ kind, ar: { s: 'n' } }), `${listName} —`);
         for (const status of [undefined, null, '', 'unknown', 0, false])
-            assert.equal(label({ kind, ar: { s: status } }), `${listName} -`);
-        assert.equal(label({ kind, ar: null }), `${listName} -`);
-        assert.equal(label({ kind }), `${listName} -`);
+            assert.equal(label({ kind, ar: { s: status } }), `${listName} —`);
+        assert.equal(label({ kind, ar: null }), `${listName} —`);
+        assert.equal(label({ kind }), `${listName} —`);
     });
 }
 

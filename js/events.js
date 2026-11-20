@@ -323,10 +323,6 @@ function renameTag(input) {
     });
 }
 
-function clearAredlPosition(form) {
-    form.elements.ap.value = '';
-}
-
 async function importProfile(file) {
     const text = await file.text();
     let data;
@@ -446,9 +442,6 @@ document.body.onchange = e => {
         return setTagColor(input);
     if (ds.tn != null)
         return renameTag(input);
-    // Only a level on the list has a position
-    if (input.form?.id == 'fm' && input.name == 'as' && input.value != 'r')
-        return clearAredlPosition(input.form);
     if (input.id == 'fi') {
         if (input.files[0])
             importProfile(input.files[0]);

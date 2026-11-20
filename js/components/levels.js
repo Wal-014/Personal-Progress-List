@@ -23,7 +23,7 @@ function tagFilterChip(name, focusable) {
 function card(l, i, n, reorderable) {
     const u = thumbUrl(l), rank = i == 'pre' ? ICONS.classic : i != null ? i + 1 : '—';
     const podium = i === 0 ? ' top1' : i === 1 ? ' top2' : i === 2 ? ' top3' : '';
-    const meta = [l.creator ? t('by') + ' ' + escapeHtml(l.creator) : '', escapeHtml(formatDate(l.date)), aredlLabel(l)].filter(Boolean).join(' · ');
+    const meta = [l.creator ? t('by') + ' ' + escapeHtml(l.creator) : '', escapeHtml(formatDate(l.date)), l.ar?.s == 'p' || l.ar?.s == 'r' && l.ar.p != null ? aredlLabel(l) : ''].filter(Boolean).join(' · ');
     return `<div class="obj lv${podium}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${u ? ` style="--th:url('${u}')"` : ''}>${u ? '<i class=th aria-hidden=true></i>' : ''}${canEdit() && reorderable ? `<span class=grip aria-hidden=true title="${t('dragHint')}">${ICONS.grip}</span>` : ''}<span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + (i + 1) + ' / ' + n : t('unplaced')}">${rank}</span><div class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>${meta}</span>${l.tags?.length ? `<div>${l.tags.map(name => tagFilterChip(name)).join('')}</div>` : ''}</div>${difficultyFace(l)}</div>`;
 }
 
@@ -116,17 +116,18 @@ function formField(key, value, type = 'text', attrs = '') {
     return `<div><label for=fm-${key}>${t(key)}</label>${type == 'number' && !attrs.includes('readonly') ? `<div class=num><button type=button class=blue data-act=step data-d=-1 aria-label="−1">−</button><input id=fm-${key} name=${key} type=number ${attrs} value="${escapeHtml(value)}"><button type=button class=blue data-act=step data-d=1 aria-label="+1">+</button></div>` : `<input id=fm-${key} name=${key} type=${type} ${attrs} value="${escapeHtml(value)}"${attrs.includes('readonly') ? ' class=ro' : ''}>`}</div>`;
 }
 
+const aredlTopValue = ar => ar?.s == 'r' && ar.p != null ? '#' + ar.p : ar?.s == 'p' ? t('pending') : '—';
+
 /** Form for adding a level or editing one. */
 function levelForm(level) {
     const kind = level?.kind || (isListTab() ? ui.tab : 'classic');
     const levelData = level || { tags: [], ar: { s: 'n' }, kind };
     const rankPosition = rankedIds(kind).indexOf(level?.id) + 1 || '';
     const section = (key, body) => `<fieldset><legend>${t(key)}</legend><div class=grid>${body}</div></fieldset>`;
-    const selectField = (label, name, options) => `<div><label for=fm-${name}>${label}</label><select id=fm-${name} name=${name}>${options}</select></div>`;
     return `<div class=box><h2>${level ? t('edit') : t('palAdd')}</h2><form id=fm data-id="${escapeHtml(level?.id)}"><div class=warn id=wn></div>
 ${levelSearchBox()}
 ${section('s1', levelFields(levelData, true))}
-${section('s2', formField('pos', rankPosition, 'number', 'min=1 step=1') + selectField('AREDL', 'as', [['r', t('onl')], ['n', t('notin')], ['p', t('pending')]].map(([k, v]) => `<option value=${k} ${levelData.ar?.s == k ? 'selected' : ''}>${v}</option>`).join('')) + formField('ap', levelData.ar?.p, 'number', 'readonly tabindex=-1'))}
+${section('s2', formField('pos', rankPosition, 'number', 'min=1 step=1') + `<div><label for=fm-ap>${t(kind == 'platform' ? 'apPlatform' : 'ap')}</label><input id=fm-ap name=ap type=text readonly tabindex=-1 value="${escapeHtml(aredlTopValue(levelData.ar))}" class=ro></div>`)}
 ${section('s3', formField('attC', levelData.attC, 'number', 'min=0 step=1') + formField('attN', levelData.attN, 'number', 'min=0 step=1') + formField('tN', formatDuration(levelData.tN), 'text', 'placeholder="1h 30m 0s"') + formField('tP', formatDuration(levelData.tP)) + formField('tPC', formatDuration(levelData.tPC)) + formField('attT', totalAttempts(levelData), 'number', 'readonly tabindex=-1') + formField('tT', formatDuration(totalSeconds(levelData)), 'text', 'readonly tabindex=-1'))}
 ${section('s4', formField('date', levelData.date, 'date') + formField('link', levelData.link))}
 <fieldset><legend>${t('s5')}</legend><div class=grid>${formField('enj', levelData.enj, 'number', 'min=-10 max=10')}${formField('lik', levelData.lik, 'number', 'min=-10 max=10')}</div><label for=tgq style="margin-top:12px">${t('tags')}</label><input id=tgq placeholder="${t('tgs')}" autocomplete=off><div id=tgr class=tgr></div><div id=tgs>${(levelData.tags || []).map(tagChip).join('')}</div></fieldset>
@@ -144,8 +145,7 @@ function levelFromForm(form) {
         diff: fields.diff || null, rating: fields.rating || null, attC: number('attC'), attN: number('attN'),
         date: fields.date || null, link: fields.link || null, enj: clamp('enj'), lik: clamp('lik'),
         tN: parseDuration(fields.tN), tP: parseDuration(fields.tP), tPC: parseDuration(fields.tPC),
-        notes: fields.notes, tags: data.getAll('tg'), deaths: parseDeaths(fields.deaths),
-        ar: { s: fields.as, p: fields.as == 'r' ? number('ap') : null }
+        notes: fields.notes, tags: data.getAll('tg'), deaths: parseDeaths(fields.deaths)
     };
 }
 
@@ -235,14 +235,18 @@ function selectLevel(id) {
         qs('.rcol').scrollIntoView({ behavior: 'smooth' });
 }
 
-/** Sets the form's AREDL or AREPL position from the picked level's ID, and says when the level is on the list. */
+/** Updates the automatic top field and found note from the picked level. */
 async function fillAredlPosition(f) {
     await loadAredlList();
     const q = k => f.elements[k], w = qs('#wn');
     if (!w)
         return;
-    const k = q('kind').value == 'platform' ? 'p' : 'd', m = aredlCache.find(x => x.k == k && String(x.i) == q('lid').value);
-    q('as').value = m ? 'r' : 'n';
-    q('ap').value = m ? m.p : '';
-    w.textContent = m ? `${t('found')} · #${m.p}` : '';
+    const level = { levelId: q('lid').value, name: q('name').value, kind: q('kind').value, rating: q('rating').value, diff: q('diff').value };
+    qs('label[for=fm-ap]').textContent = t(level.kind == 'platform' ? 'apPlatform' : 'ap');
+    // Without downloaded lists nothing is known, so the stored value stays on screen
+    if (!aredlCache.length)
+        return;
+    const ar = aredlStatus(level);
+    q('ap').value = aredlTopValue(ar);
+    w.textContent = ar.s == 'r' ? `${t('found')} · #${ar.p}` : '';
 }

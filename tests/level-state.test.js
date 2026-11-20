@@ -74,19 +74,19 @@ test('levelFromForm preserves fields, converts units, clamps ratings and keeps a
         name: 'Test level', kind: 'platform', levelId: '123', creator: 'Creator', diff: 'Hard', rating: 'epic',
         attC: 0, attN: 12, date: '2026-10-26', link: 'https://example.com/video', enj: 10, lik: -10,
         tN: 5405, tP: 120, tPC: 0, notes: '  Keep spacing  ', tags: ['First', 'Second'],
-        deaths: { 63: 6, 100: 1 }, ar: { s: 'r', p: 0 }
+        deaths: { 63: 6, 100: 1 }
     });
     assert.deepEqual(input, { entries: filledEntries });
 });
 
-test('levelFromForm keeps empty values null and drops positions outside the ranked status', () => {
+test('levelFromForm keeps empty values null and ignores legacy status fields', () => {
     const { app, plain } = createApp();
     const entries = filledEntries.filter(([key]) => !['tg', 'pos'].includes(key)).map(([key]) => [key, '']);
     assert.deepEqual(plain(app('levelFromForm')({ entries })), {
         name: '', kind: '', levelId: null, creator: null, diff: null, rating: null,
         attC: null, attN: null, date: null, link: null, enj: null, lik: null,
-        tN: null, tP: null, tPC: null, notes: '', tags: [], deaths: {}, ar: { s: '', p: null }
+        tN: null, tP: null, tPC: null, notes: '', tags: [], deaths: {}
     });
     const pending = filledEntries.map(([key, value]) => [key, key == 'as' ? 'p' : value]);
-    assert.deepEqual(plain(app('levelFromForm')({ entries: pending }).ar), { s: 'p', p: null });
+    assert.equal('ar' in app('levelFromForm')({ entries: pending }), false);
 });
