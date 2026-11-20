@@ -30,29 +30,11 @@ const parseDuration = x => {
     return m && (m[1] || m[2] || m[3]) ? +(m[1] || 0) * 3600 + +(m[2] || 0) * 60 + +(m[3] || 0) : null;
 };
 
-/** Parses "63% x4" lines into { percent: deaths }, summing repeated percentages. */
-const parseDeaths = x => {
-    const d = {};
-    for (const m of x.matchAll(/(\d+)\s*%\s*x\s*(\d+)/gi))
-        d[m[1]] = (d[m[1]] || 0) + +m[2];
-    return d;
-};
-
-/** Valid death line: «63% x4», with a percentage from 0 to 100. */
-const isDeathLine = x => {
-    const m = /^\s*(\d+)\s*%\s*x\s*(\d+)\s*$/i.exec(x);
-    return !!m && +m[1] <= 100;
-};
-
 /** Error checks for form fields that the browser cannot validate on its own. */
 const FIELD_CHECKS = {
     name: v => v.trim() ? '' : t('errName'),
     lid: v => !v.trim() || /^\d+$/.test(v.trim()) ? '' : t('errLid'),
-    tN: v => !v.trim() || parseDuration(v) != null ? '' : t('errTime'),
-    deaths: v => {
-        const bad = v.split('\n').filter(x => x.trim() && !isDeathLine(x));
-        return bad.length ? `${t('errDeaths')} ${bad.join(', ')}` : '';
-    }
+    tN: v => !v.trim() || parseDuration(v) != null ? '' : t('errTime')
 };
 FIELD_CHECKS.tP = FIELD_CHECKS.tPC = FIELD_CHECKS.tN;
 

@@ -2,7 +2,17 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadScripts } from './load-scripts.js';
 
-const { context, app } = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js', 'js/components/levels.js'], { localStorage: {} });
+const { context, app } = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js', 'js/components/deaths-input.js', 'js/components/levels.js'], { localStorage: {} });
+
+test('the level form reopens saved deaths as chips instead of a text field', () => {
+    const fixture = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js', 'js/components/deaths-input.js', 'js/components/levels.js', 'js/components/search.js'], { localStorage: {}, clearTimeout() {} });
+    fixture.app('profile = emptyProfile()');
+    const html = fixture.app('levelForm')({ id: 'saved', name: 'Level', kind: 'classic', tags: [], deaths: { 37: 82, 0: 0, 24: 135 } });
+    assert.deepEqual([...html.matchAll(/name=dth value="([^"]+)"/g)].map(match => match[1]), ['0:0', '24:135', '37:82']);
+    assert.doesNotMatch(html, /name=deaths/);
+    assert.match(html, /class=death-prompt role=status/);
+    assert.match(html, /data-act=dthcancel hidden/);
+});
 
 for (const url of [
     'https://www.youtube.com/watch?v=Ab_12-cDef3&t=42',
