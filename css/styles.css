@@ -4044,24 +4044,38 @@ main.home {
   min-width: 0;
 }
 
-/* Short highlights catch the frame edges; ranking colors are owned by the cards. */
+/* Two narrow faces give the frame a bevel at its actual display size. */
 .shell-brand-frame, .list-surface .rcol .hero {
-  border: 1px solid transparent;
-  background-color: var(--color-surface);
-  outline: 1px solid var(--metal-edge);
-  outline-offset: -1px;
   position: relative;
+  border: 1px solid var(--metal-edge);
+  border-top-color: var(--metal-glint);
+  border-bottom-color: var(--metal-shade);
+  box-shadow: none;
 }
-.shell-brand-frame::after, .list-surface .rcol .hero::after {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  pointer-events: none;
-  padding: 1px;
-  background: linear-gradient(115deg, transparent 6%, var(--metal-glint) 14%, transparent 32% 70%, var(--metal-glint) 83%, transparent);
-  mask: linear-gradient(white 0 0) content-box, linear-gradient(white 0 0);
-  mask-composite: exclude;
+@supports (mask-composite: exclude) {
+  .shell-brand-frame::after, .list-surface .rcol .hero::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    padding: 2px;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+      linear-gradient(122deg, transparent 10%, var(--metal-glint) 13%, transparent 19% 69%, var(--metal-glint) 74%, transparent 80%),
+      conic-gradient(from 45deg, var(--metal-edge), var(--metal-shade) 25%, var(--metal-edge) 55%, var(--metal-glint) 77%, var(--metal-edge));
+    mask: linear-gradient(white 0 0) content-box, linear-gradient(white 0 0);
+    mask-composite: exclude;
+  }
+  .shell-brand-frame::before, .list-surface .rcol .hero::before {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    pointer-events: none;
+    border-radius: calc(var(--radius-control) - 2px);
+    border: 1px solid var(--metal-shade);
+    border-right-color: var(--metal-glint);
+    border-bottom-color: var(--metal-edge);
+  }
 }
 
 @supports (background-clip: text) {
@@ -4074,7 +4088,8 @@ main.home {
 
 @media (forced-colors: active) {
   :root:not([data-theme=porcelain]) :is(.page-title h2, .hsection-head h2, .list-surface .box > h2) { color: CanvasText; }
-  .shell-brand-frame::after, .list-surface .rcol .hero::after { display: none; }
+  :is(.shell-brand-frame, .list-surface .rcol .hero)::before,
+  :is(.shell-brand-frame, .list-surface .rcol .hero)::after { display: none; }
 }
 
 @media (width < 1280px) {
