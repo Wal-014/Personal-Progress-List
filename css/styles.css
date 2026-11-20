@@ -4078,6 +4078,36 @@ main.home {
   }
 }
 
+/* Porcelain reflects light across the rim itself, including the Home card edges. */
+@media (forced-colors: none) {
+  [data-theme=porcelain] :is(.shell-brand-frame, .hl .hcard) {
+    --rim-mid: #ceae79;
+    --rim-shade: #a9804c;
+    --rim-light: #fff1cf;
+    --rim-angle: 125deg;
+    border: 3px solid transparent;
+    background:
+      linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+      linear-gradient(var(--rim-angle), var(--rim-mid) 3%, var(--rim-light) 13%, var(--rim-mid) 27%,
+        var(--rim-shade) 46%, var(--rim-light) 55%, var(--rim-mid) 74%, var(--rim-light) 93%) border-box;
+    box-shadow: none;
+  }
+
+  [data-theme=porcelain] .shell-brand-frame::before,
+  [data-theme=porcelain] .shell-brand-frame::after { content: none; }
+
+  [data-theme=porcelain] .hl .hcard-platform {
+    --rim-mid: #89b5bf;
+    --rim-shade: #538a99;
+    --rim-light: #e6faff;
+  }
+
+  [data-theme=porcelain] .hl .hcard:hover:not(:disabled):not([aria-disabled=true]) {
+    border-color: transparent;
+    --rim-angle: 140deg;
+  }
+}
+
 @supports (background-clip: text) {
   :root:not([data-theme=porcelain]) :is(.page-title h2, .hsection-head h2, .list-surface .box > h2) {
     color: transparent;
