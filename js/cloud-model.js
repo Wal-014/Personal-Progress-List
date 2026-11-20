@@ -42,7 +42,7 @@ function profileRows(data, settings) {
     });
     data.tags.forEach((tag, position) => add('tags', tag.name, { name: tag.name, color: tag.color, position }));
     if (settings != null)
-        add('user_settings', 'me', { lang: settings.lang, theme: settings.theme });
+        add('user_settings', 'me', { lang: settings.lang, theme: settings.theme, background: settings.background });
     return rows;
 }
 
@@ -97,7 +97,7 @@ function rowsProfile(rows) {
     data.tags = get('tags').sort((a, b) => a.position - b.position || compare(a.name, b.name))
         .map(row => ({ name: row.name, color: row.color }));
     const settings = get('user_settings')[0];
-    return { profile: data, settings: settings ? { lang: settings.lang, theme: settings.theme } : null };
+    return { profile: data, settings: settings ? { lang: settings.lang, theme: settings.theme, background: settings.background } : null };
 }
 
 function canonicalJson(value) {

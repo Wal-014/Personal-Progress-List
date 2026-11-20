@@ -7,7 +7,7 @@ const CLOUD_KEYS = {
     list_orders: ['kind'], wishlists: ['id'], wishlist_items: ['id'], tags: ['name'], user_settings: []
 };
 
-const currentSettings = () => ({ lang: ui.lang, theme: ui.theme });
+const currentSettings = () => ({ lang: ui.lang, theme: ui.theme, background: ui.background });
 const cloudRowKey = (table, row) => Object.fromEntries(CLOUD_KEYS[table].map(column => [column, row[column]]));
 const cloudMapKey = (table, row) => table + ':' + (table == 'user_settings' ? 'me' : CLOUD_KEYS[table].map(column => row[column]).join('/'));
 const cleanCloudRow = row => row == null ? null : Object.fromEntries(Object.entries(row).filter(([column]) => !['user_id', 'version', 'created_at', 'updated_at'].includes(column)));
@@ -52,12 +52,12 @@ function writeCloudCache() {
 function applyCloudSettings(settings) {
     if (!settings)
         return;
-    for (const [field, key] of [['lang', 'gl'], ['theme', 'gt']]) {
+    for (const [field, key] of [['lang', 'gl'], ['theme', 'gt'], ['background', 'gbg']]) {
         if (settings[field] == null)
             continue;
-        ui[field] = settings[field];
+        ui[field] = field == 'theme' ? themeOf(settings[field]) : field == 'background' ? backgroundOf(settings[field]) : settings[field];
         try {
-            localStorage[key] = settings[field];
+            localStorage[key] = ui[field];
         }
         catch {
         }

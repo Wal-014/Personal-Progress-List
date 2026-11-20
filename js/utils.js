@@ -89,5 +89,7 @@ const timeAgo = ms => {
     return s < 3600 ? f.format(-Math.round(s / 60), 'minute') : s < 86400 ? f.format(-Math.round(s / 3600), 'hour') : f.format(-Math.round(s / 86400), 'day');
 };
 
-/** Theme to use for a saved preference: the removed dark and light themes map to their closest new theme. */
-const themeOf = v => ({ dark: 'night', light: 'blue' })[v] || (THEMES.includes(v) ? v : 'blue');
+/** Preserve the closest palette when loading preferences from earlier releases. */
+const LEGACY_THEMES = { blue: 'nebula', night: 'graphite', synth: 'crimson', dark: 'graphite', light: 'porcelain' };
+const themeOf = v => THEMES.includes(v) ? v : Object.hasOwn(LEGACY_THEMES, v) ? LEGACY_THEMES[v] : 'nebula';
+const backgroundOf = v => BACKGROUNDS.includes(v) ? v : 'grid';

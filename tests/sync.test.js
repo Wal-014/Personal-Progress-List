@@ -200,11 +200,11 @@ test('sign-out clears cache and listeners; another account removes old account c
 });
 
 test('settings sync both ways and cached settings restore on an offline start', async () => {
-    const [a, b] = await pair(); a.app(`ui.lang = 'es'; ui.theme = 'night'; save();`); await a.app('pushCloud()');
-    await b.app('pullCloud()'); assert.deepEqual(plain(b.app('currentSettings()')), { lang: 'es', theme: 'night' });
-    assert.equal(b.storage.gl, 'es'); assert.equal(b.storage.gt, 'night');
+    const [a, b] = await pair(); a.app(`ui.lang = 'es'; ui.theme = 'graphite'; save();`); await a.app('pushCloud()');
+    await b.app('pullCloud()'); assert.deepEqual(plain(b.app('currentSettings()')), { lang: 'es', theme: 'graphite', background: 'grid' });
+    assert.equal(b.storage.gl, 'es'); assert.equal(b.storage.gt, 'graphite');
     b.server.failure = 'offline'; const reload = await ready(b.server, b.storage);
-    assert.equal(reload.app('ui.theme'), 'night'); assert.equal(reload.app('ui.lang'), 'es');
+    assert.equal(reload.app('ui.theme'), 'graphite'); assert.equal(reload.app('ui.lang'), 'es');
 });
 
 test('pull defers full rendering while a form, dialog or dropdown is open', async () => {
@@ -298,9 +298,9 @@ test('storage events ignore legacy data and reload the active account cache only
 test('language and theme actions save account preferences and Retry pulls remote changes', async () => {
     const page = await ready(); page.load(['js/events.js']);
     page.context.openModal = () => {};
-    page.app(`reopenPause = () => {}; ACTIONS.lang({ dataset: { v: 'es' }, closest: () => null }); ACTIONS.theme({ dataset: { v: 'night' } });`);
+    page.app(`reopenPause = () => {}; ACTIONS.lang({ dataset: { v: 'es' }, closest: () => null }); ACTIONS.theme({ dataset: { v: 'graphite' } });`);
     await page.app('pushCloud()');
-    assert.equal(page.server.rows('user_settings')[0].lang, 'es'); assert.equal(page.server.rows('user_settings')[0].theme, 'night');
+    assert.equal(page.server.rows('user_settings')[0].lang, 'es'); assert.equal(page.server.rows('user_settings')[0].theme, 'graphite');
     page.server.profile.display_name = 'Updated'; page.server.revision++;
     await page.app('ACTIONS.csync()'); assert.equal(page.app('account.profile.display_name'), 'Updated');
     const pulls = page.server.calls.filter(call => call.name === 'sync_pull').length;
@@ -427,8 +427,8 @@ test('offline session restoration preserves cached edits before the first profil
 test('account preference actions tolerate blocked storage', async () => {
     const page = await ready(); page.load(['js/events.js']);
     page.context.localStorage = new Proxy({}, { get() { throw Error('Storage blocked'); }, set() { throw Error('Storage blocked'); } });
-    page.app(`reopenPause = () => {}; ACTIONS.lang({ dataset: { v: 'es' }, closest: () => null }); ACTIONS.theme({ dataset: { v: 'night' } });`);
-    assert.equal(page.app('ui.lang'), 'es'); assert.equal(page.app('ui.theme'), 'night');
+    page.app(`reopenPause = () => {}; ACTIONS.lang({ dataset: { v: 'es' }, closest: () => null }); ACTIONS.theme({ dataset: { v: 'graphite' } });`);
+    assert.equal(page.app('ui.lang'), 'es'); assert.equal(page.app('ui.theme'), 'graphite');
 });
 
 test('saving only local changes adopts the revision without downloading the account', async () => {
@@ -455,7 +455,7 @@ function boot(page, user = { id: 'owner' }) {
 
 for (const online of [false, true]) test(`cached startup precedes the first render, with online=${online}`, async () => {
     const a = await ready();
-    a.app(`profile.levels.push(${JSON.stringify(level())}); ui.lang = 'es'; ui.theme = 'night'; save();`);
+    a.app(`profile.levels.push(${JSON.stringify(level())}); ui.lang = 'es'; ui.theme = 'graphite'; save();`);
     const page = device(a.server, a.storage); page.load(); page.context.navigator.onLine = online;
     const calls = a.server.calls.length, frames = boot(page);
     assert.equal(frames.length, 1);
@@ -463,7 +463,7 @@ for (const online of [false, true]) test(`cached startup precedes the first rend
     assert.equal(frames[0].account.status, 'signed-in');
     assert.equal(frames[0].account.profile.display_name, 'Player');
     assert.equal(frames[0].status.status, online ? 'saving' : 'offline');
-    assert.equal(page.app('ui.theme'), 'night'); assert.equal(page.app('ui.lang'), 'es');
+    assert.equal(page.app('ui.theme'), 'graphite'); assert.equal(page.app('ui.lang'), 'es');
     assert.equal(a.server.calls.length, calls);
     page.app(`profile.levels[0].attN = 70; save();`);
     await page.tick(1000);
@@ -692,4 +692,24 @@ test('a legacy cloud cache converts before merging with migrated server ratings 
     const c = await ready(a.server, storage);
     assert.equal(c.data().levels[0].enj, 6.5);
     assert.equal(c.data().ratingScale, 10);
+});
+
+test('appearance fields synchronize independently and survive reload with legacy normalization', async () => {
+    const [a, b] = await pair();
+    a.app("applyCloudSettings({ background: 'orbital' }); save()");
+    await a.app('pushCloud()');
+    await b.app('pullCloud()');
+    assert.equal(b.app('ui.background'), 'orbital');
+    b.app("applyCloudSettings({ theme: 'porcelain' }); save()");
+    await b.app('pushCloud()');
+    await a.app('pullCloud()');
+    assert.equal(a.app('ui.background'), 'orbital');
+    assert.equal(a.storage.gbg, 'orbital');
+    assert.equal(a.storage.gt, 'porcelain');
+    const reload = device(a.server, { ...a.storage, gt: 'night' });
+    assert.equal(reload.app('ui.theme'), 'graphite');
+    assert.equal(reload.app('ui.background'), 'orbital');
+    a.app("applyCloudSettings({ theme: 'night', background: null })");
+    assert.equal(a.app('ui.theme'), 'graphite');
+    assert.equal(a.app('ui.background'), 'orbital');
 });

@@ -13,7 +13,7 @@ const invalid = [
     ['profiles', 'color', 'red'], ['profiles', 'secondary_color', '#12345g'],
     ['profiles', 'bio', 'x'.repeat(301)], ['profiles', 'country', 'esp'],
     ['profiles', 'is_public', true],
-    ['user_settings', 'lang', 'fr'], ['user_settings', 'theme', 'light'],
+    ['user_settings', 'lang', 'fr'], ['user_settings', 'theme', 'light'], ['user_settings', 'background', 'unknown'],
     ['levels', 'id', ''], ['levels', 'id', 'x'.repeat(41)], ['levels', 'id', 'bad id'],
     ['levels', 'kind', 'unknown'], ['levels', 'name', ''],
     ['levels', 'name', 'x'.repeat(101)], ['levels', 'name', 'A\nB'],
@@ -61,7 +61,7 @@ describe('database constraints through the Data API', { skip: !enabled }, () => 
     before(async () => {
         ({ id: userId, client } = await context.createUser());
         for (const [table, row] of [
-            ['user_settings', { lang: 'en', theme: 'blue' }],
+            ['user_settings', { lang: 'en', theme: 'nebula', background: 'grid' }],
             ['levels', { id: 'level', kind: 'classic', name: 'Level' }],
             ['level_notes', { level_id: 'level', notes: 'Notes' }],
             ['list_orders', { kind: 'classic' }],

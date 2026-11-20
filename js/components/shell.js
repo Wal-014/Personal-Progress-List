@@ -69,10 +69,12 @@ function navBars(isList) {
 }
 
 function pauseUI() {
-    const sw = k => `<button class="swatch sw-${k}" data-act=theme data-v=${k} aria-pressed=${ui.theme == k}><i></i>${t(k)}</button>`;
+    const sw = k => `<button class=appearance-option data-act=theme data-v=${k} aria-pressed=${ui.theme == k}><i class="theme-preview sw-${k}" aria-hidden=true></i>${t(k)}</button>`;
+    const bg = k => `<button class=appearance-option data-act=background data-v=${k} aria-pressed=${ui.background == k}><i class="background-preview bg-${k}" aria-hidden=true></i>${t(k)}</button>`;
     const lang = ([k, n]) => `<button class="${ui.lang == k ? 'pri' : ''}" data-act=lang data-v=${k} aria-pressed=${ui.lang == k}>${FLAGS[k]}${n}</button>`;
     return `<div class="box sm pause"><h2>${t('pause')}</h2>
-<h3>${t('theme')}</h3><div class=swatches>${THEMES.map(sw).join('')}</div>
+<h3 id=colour-theme>${t('theme')}</h3><div class=appearance-options role=group aria-labelledby=colour-theme>${THEMES.map(sw).join('')}</div>
+<h3 id=background-design>${t('background')}</h3><div class=appearance-options role=group aria-labelledby=background-design>${BACKGROUNDS.map(bg).join('')}</div>
 <h3>${t('lang')}</h3><div class=lang>${[['es', 'Español'], ['en', 'English']].map(lang).join('')}</div>
 ${canEdit() ? `<div class=mob><h3>${t('more')}</h3><div class=palette>${paletteButtons()}</div></div>
 <h3>AREDL</h3><p id=aredl class=by>${aredlLine()}</p>` : ''}

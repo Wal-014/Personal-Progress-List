@@ -9,6 +9,18 @@ function reopenPause(selector) {
     qs('#md ' + selector)?.focus();
 }
 
+function setAppearance(field, value) {
+    if (cloudUser) {
+        applyCloudSettings({ [field]: value });
+        save();
+    }
+    else {
+        ui[field] = value;
+        localStorage[field == 'theme' ? 'gt' : 'gbg'] = value;
+    }
+    reopenPause(`[data-act=${field}][data-v=${value}]`);
+}
+
 /** Zooms the timeline by a factor, keeping the same date in the middle of the view. */
 function zoomTimeline(factor) {
     const w = qs('#tlw'), r = (w.scrollLeft + w.clientWidth / 2) / w.scrollWidth;
@@ -71,15 +83,8 @@ const ACTIONS = {
         render();
     },
     pause: () => openModal(pauseUI()),
-    theme(a) {
-        if (cloudUser) {
-            applyCloudSettings({ theme: a.dataset.v });
-            save();
-        }
-        else
-            ui.theme = localStorage.gt = a.dataset.v;
-        reopenPause(`[data-act=theme][data-v=${a.dataset.v}]`);
-    },
+    theme: a => setAppearance('theme', themeOf(a.dataset.v)),
+    background: a => setAppearance('background', backgroundOf(a.dataset.v)),
     bell: () => openModal(bellUI()),
     legal: a => openModal(legalUI(a.dataset.v)),
     ct() {

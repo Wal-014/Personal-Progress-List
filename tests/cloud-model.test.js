@@ -89,7 +89,7 @@ test('profileRows maps orders, wishlist positions and items, tag positions and o
         ],
         tags: [{ name: '星', color: '#abcdef', legacy: true }, { name: 'Focus', color: '#123456' }]
     };
-    const rows = convert(source, { lang: 'en', theme: 'night', legacy: true });
+    const rows = convert(source, { lang: 'en', theme: 'graphite', background: 'orbital', legacy: true });
     assert.deepEqual([...rows.keys()], [
         'list_orders:classic', 'list_orders:platform', 'wishlists:w2', 'wishlist_items:i1',
         'wishlist_items:i2', 'wishlists:w1', 'tags:星', 'tags:Focus', 'user_settings:me'
@@ -108,7 +108,7 @@ test('profileRows maps orders, wishlist positions and items, tag positions and o
     assert.equal(rows.get('wishlist_items:i2').row.progress, 100);
     assert.deepEqual(plain(rows.get('tags:星')), { table: 'tags', row: { name: '星', color: '#abcdef', position: 0 } });
     assert.deepEqual(plain(rows.get('tags:Focus').row), { name: 'Focus', color: '#123456', position: 1 });
-    assert.deepEqual(plain(rows.get('user_settings:me')), { table: 'user_settings', row: { lang: 'en', theme: 'night' } });
+    assert.deepEqual(plain(rows.get('user_settings:me')), { table: 'user_settings', row: { lang: 'en', theme: 'graphite', background: 'orbital' } });
     assert.equal(convert(empty()).has('user_settings:me'), false);
 });
 
@@ -164,7 +164,7 @@ test('rowsProfile rebuilds every field and ignores server and legacy columns in 
     };
     delete source.wishlists[0].items[1].kind;
     delete source.wishlists[0].items[1].pct;
-    const settings = { lang: 'es', theme: 'synth' };
+    const settings = { lang: 'es', theme: 'crimson', background: 'aurora' };
     const rows = [...app('profileRows')(source, settings).values()].map(({ table, row }) => ({
         table, row: { ...row, user_id: 'owner', version: 17, created_at: '2026-11-11T00:00:00Z', updated_at: '2026-11-12T00:00:00Z', legacy: 'discard' }
     }));
@@ -254,7 +254,7 @@ function seededRandom(seed) {
 test('250 seeded profiles round-trip after defaults and normalize randomly missing optional fields', () => {
     const { app, context } = createApp(), random = seededRandom(0xc10d), choose = values => values[Math.floor(random() * values.length)];
     for (let sample = 0; sample < 250; sample++) {
-        const source = empty(), settings = { lang: choose(['es', 'en']), theme: choose(['blue', 'night', 'synth']) };
+        const source = empty(), settings = { lang: choose(['es', 'en']), theme: choose(['nebula', 'graphite', 'ocean', 'amber', 'crimson', 'porcelain']), background: choose(['grid', 'aurora', 'celestial', 'orbital']) };
         const tagNames = ['Focus', '星 🎮', 'Éxito', 'Next/Goal'];
         source.tags = tagNames.slice(0, Math.floor(random() * 5)).map(name => ({ name, color: choose(['#123456', '#abcdef', '#00ff00']) }));
         source.levels = Array.from({ length: Math.floor(random() * 8) }, (_, index) => level({
@@ -351,7 +351,7 @@ test('rowChanges upserts parents before children, then deletes children before p
         ['tags:new', { table: 'tags', row: { name: 'new', color: '#123456' } }],
         ['wishlists:w', { table: 'wishlists', row: { id: 'w', name: 'Changed' } }],
         ['levels:n', { table: 'levels', row: { id: 'n', name: 'New' } }],
-        ['user_settings:me', { table: 'user_settings', row: { lang: 'en', theme: 'night' } }]
+        ['user_settings:me', { table: 'user_settings', row: { lang: 'en', theme: 'graphite', background: 'orbital' } }]
     ]);
     const snapshot = new Map([
         ['wishlists:removed', { version: 1, row: { id: 'removed' } }],
@@ -398,7 +398,7 @@ test('rowChanges treats array reorders as changes and handles the fixed settings
         ['list_orders:classic', { table: 'list_orders', row: { kind: 'classic', level_ids: ['b', 'a'] } }]
     ]), new Map([
         ['list_orders:classic', { version: 2, row: { level_ids: ['a', 'b'], kind: 'classic' } }],
-        ['user_settings:me', { version: 3, row: { lang: 'es', theme: 'blue' } }]
+        ['user_settings:me', { version: 3, row: { lang: 'es', theme: 'nebula' } }]
     ]))), [
         { key: 'list_orders:classic', table: 'list_orders', version: 2, row: { kind: 'classic', level_ids: ['b', 'a'] } },
         { key: 'user_settings:me', table: 'user_settings', version: 3, row: null }

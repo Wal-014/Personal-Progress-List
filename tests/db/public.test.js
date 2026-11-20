@@ -21,7 +21,7 @@ function username(user) {
 function fixtures(userId) {
     return [
         { table: 'profiles', key: { id: userId }, row: { id: userId, display_name: 'Player' }, patch: { display_name: 'Updated player' } },
-        { table: 'user_settings', key: { user_id: userId }, row: { lang: 'en', theme: 'blue' }, patch: { theme: 'night' } },
+        { table: 'user_settings', key: { user_id: userId }, row: { lang: 'en', theme: 'nebula', background: 'grid' }, patch: { theme: 'graphite' } },
         { table: 'levels', key: { user_id: userId, id: levelId }, row: { id: levelId, kind: 'classic', name: 'Level', attempts_normal: 42, deaths: { 75: 2 } }, patch: { name: 'Updated level' } },
         { table: 'level_notes', key: { user_id: userId, level_id: levelId }, row: { level_id: levelId, notes: 'Private journal sentinel' }, patch: { notes: 'Updated private journal' } },
         { table: 'list_orders', key: { user_id: userId, kind: 'classic' }, row: { kind: 'classic', level_ids: [levelId] }, patch: { level_ids: [] } },
