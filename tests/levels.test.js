@@ -2,7 +2,106 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadScripts } from './load-scripts.js';
 
-const { context, app } = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js', 'js/components/deaths-input.js', 'js/components/levels.js'], { localStorage: {} });
+const { context, app } = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js', 'js/components/search.js', 'js/components/deaths-input.js', 'js/components/levels.js'], { localStorage: {}, clearTimeout });
+
+for (const publicView of [false, true]) {
+    const mode = publicView ? 'public' : 'editable';
+    const drawDetail = (fields = {}, language = 'en') => {
+        app(`profile = emptyProfile(); viewing = ${publicView ? '{ username: "player" }' : 'null'}; ui.lang = '${language}'`);
+        assert.equal(app('canEdit()'), !publicView);
+        const level = { id: 'details', name: 'Level', kind: 'classic', ...fields };
+        const before = JSON.stringify(level);
+        const html = app('detail')(level);
+        assert.equal(JSON.stringify(level), before);
+        assert.equal(html.includes('data-act=edit'), !publicView);
+        return html;
+    };
+
+    test(`detail shows a translated empty message without optional sections in ${mode} mode`, () => {
+        for (const [language, message] of [['es', 'Sin datos adicionales'], ['en', 'No additional details']]) {
+            const html = drawDetail({}, language);
+            assert.ok(html.includes(`<p class=by>${message}</p>`));
+            assert.doesNotMatch(html, /<fieldset|<legend|class=(?:dgrid|grid|hist)\b/);
+            assert.match(html, /data-act=lvclose/);
+        }
+    });
+
+    test(`detail hides null, undefined and blank optional values in ${mode} mode`, () => {
+        for (const value of [null, undefined, '', ' \t\n ']) {
+            const fields = Object.fromEntries(['attN', 'attC', 'tN', 'tP', 'tPC', 'date', 'link', 'enj', 'lik', 'notes'].map(key => [key, value]));
+            const html = drawDetail({ ...fields, tags: [], deaths: {} });
+            assert.match(html, /No additional details/);
+            assert.doesNotMatch(html, /<fieldset|<legend|class=(?:dgrid|grid|hist)\b/);
+        }
+    });
+
+    test(`detail retains zero enjoyment and negative appeal in ${mode} mode`, () => {
+        const html = drawDetail({ enj: 0, lik: -3 });
+        assert.equal((html.match(/<fieldset>/g) || []).length, 1);
+        assert.match(html, /<legend>Rating<\/legend>/);
+        assert.match(html, /<small>Enjoyment<\/small><div class=mh><b[^>]*>0<\/b>/);
+        assert.match(html, /<small>Level appeal<\/small><div class=mh><b[^>]*>-3<\/b>/);
+        assert.doesNotMatch(html, /No additional details/);
+    });
+
+    test(`detail draws only recorded attempts and their total in ${mode} mode`, () => {
+        for (const attempts of [0, 12]) {
+            const html = drawDetail({ attN: attempts, deaths: {} });
+            assert.equal((html.match(/<fieldset>/g) || []).length, 1);
+            assert.equal((html.match(/class="st /g) || []).length, 2);
+            assert.ok(html.includes(`<small>Total attempts</small><b>${attempts}</b>`));
+            assert.ok(html.includes(`<small>Normal attempts</small><b>${attempts}</b>`));
+            assert.doesNotMatch(html, /Copy attempts|Best %|Deaths per percent|class=hist/);
+        }
+    });
+
+    test(`detail hides whitespace notes while preserving tags in ${mode} mode`, () => {
+        const html = drawDetail({ notes: ' \n\t ', tags: ['Recorded'] });
+        assert.equal((html.match(/<fieldset>/g) || []).length, 1);
+        assert.match(html, /<legend>Tags & notes<\/legend>/);
+        assert.match(html, /data-tag="Recorded"/);
+        assert.doesNotMatch(html, /white-space:pre-wrap|No additional details/);
+    });
+
+    test(`detail renders each optional cell independently in ${mode} mode`, () => {
+        const cases = [
+            [{ attC: 4 }, ['Total attempts', 'Copy attempts'], ['Normal attempts', 'Best %']],
+            [{ tN: 0 }, ['Total time', 'Normal time', '0h 0m 0s'], ['Practice time', 'Copy or StartPos playtime']],
+            [{ tP: 60 }, ['Total time', 'Practice time', '0h 1m 0s'], ['Normal time', 'Copy or StartPos playtime']],
+            [{ tPC: 5 }, ['Total time', 'Copy or StartPos playtime', '0h 0m 5s'], ['Normal time', 'Practice time']],
+            [{ date: '2026-01-02' }, ['Completion date', '02/01/2026'], ['class=yt', 'Video (YouTube)']],
+            [{ link: 'https://example.com/video' }, ['href="https://example.com/video"'], ['Completion date', 'class=grid']],
+            [{ enj: 0 }, ['Enjoyment'], ['Level appeal']],
+            [{ lik: -3 }, ['Level appeal'], ['Enjoyment']],
+            [{ notes: '<Recorded>' }, ['&lt;Recorded&gt;'], ['<Recorded>']],
+            [{ deaths: { 63: 2 } }, ['Best %', '63% ×2', 'class=hist'], ['Total attempts', 'Normal attempts', 'Copy attempts']]
+        ];
+        for (const [fields, present, absent] of cases) {
+            const html = drawDetail(fields);
+            for (const text of present) assert.ok(html.includes(text), text);
+            for (const text of absent) assert.equal(html.includes(text), false, text);
+            assert.doesNotMatch(html, /No additional details|<b>-<\/b>/);
+        }
+    });
+
+    test(`detail keeps every section for a fully recorded level in ${mode} mode`, () => {
+        const html = drawDetail({ attN: 12, attC: 3, tN: 60, tP: 120, tPC: 180, date: '2026-01-02', link: 'https://youtu.be/Ab_12-cDef3', enj: 8, lik: -3, tags: ['Recorded'], notes: 'A recorded note', deaths: { 63: 2, 90: 1 } });
+        assert.equal((html.match(/<fieldset>/g) || []).length, 6);
+        for (const label of ['Attempts', 'Play time', 'Completion', 'Rating', 'Tags & notes', 'Deaths per percent'])
+            assert.ok(html.includes(`<legend>${label}</legend>`), label);
+        for (const text of ['<small>Total attempts</small><b>15</b>', '<small>Total time</small><b>0h 6m 0s</b>', 'Copy or StartPos playtime', '90% ×1', 'A recorded note', 'class=yt', 'class=hist'])
+            assert.ok(html.includes(text), text);
+        assert.doesNotMatch(html, /No additional details|<b>-<\/b>/);
+    });
+}
+
+test('levelForm translates copy or StartPos playtime', () => {
+    app('profile = emptyProfile(); viewing = null');
+    for (const [language, label] of [['es', 'Tiempo en copia o StartPos'], ['en', 'Copy or StartPos playtime']]) {
+        app(`ui.lang = '${language}'`);
+        assert.ok(app('levelForm()').includes(label));
+    }
+});
 
 test('the level form reopens saved deaths as chips instead of a text field', () => {
     const fixture = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js', 'js/components/deaths-input.js', 'js/components/levels.js', 'js/components/search.js'], { localStorage: {}, clearTimeout() {} });

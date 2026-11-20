@@ -67,16 +67,11 @@ const thumbUrl = l => {
 
 const aredlLabel = l => {
     const listName = l.kind == 'platform' ? 'AREPL' : 'AREDL';
-    if (l.ar?.s == 'r') {
-        if (l.ar.p != null)
-            return `${listName} #${escapeHtml(l.ar.p)}`;
-        return `${listName} · ${t('onl')}`;
-    }
+    if (l.ar?.s == 'r' && l.ar.p != null)
+        return `${listName} #${escapeHtml(l.ar.p)}`;
     if (l.ar?.s == 'p')
-        return t('pending');
-    if (l.ar?.s == 'n')
-        return t('notin');
-    return listName + ' -';
+        return `${listName} · ${t('pending')}`;
+    return listName + ' —';
 };
 
 /** Tag colour from the active profile, falling back to the text colour. */
