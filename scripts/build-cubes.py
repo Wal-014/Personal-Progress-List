@@ -6,10 +6,9 @@ from tempfile import gettempdir
 import plistlib
 import re
 import time
-from urllib.request import Request, urlopen
+from http.client import HTTPSConnection
 from PIL import Image
 
-SOURCE = 'https://gdbrowser.com/iconkit/icons/'
 CACHE = Path(gettempdir()) / 'ppl-iconkit-sources'
 DEST = Path(__file__).resolve().parents[1] / 'assets' / 'cubes'
 SIZE = 80
@@ -21,14 +20,21 @@ def source(name):
     path = CACHE / name
     if not path.exists():
         for attempt in range(3):
+            connection = HTTPSConnection('gdbrowser.com', timeout=30)
             try:
-                with urlopen(Request(SOURCE + name, headers={'User-Agent': 'Personal-Progress-List/1.0'}), timeout=30) as response:
-                    path.write_bytes(response.read())
+                connection.request('GET', '/iconkit/icons/' + name, headers={'User-Agent': 'Personal-Progress-List/1.0'})
+                with connection.getresponse() as response:
+                    if response.status != 200:
+                        raise OSError(f'{name}: HTTP {response.status}')
+                    data = response.read()
+                path.write_bytes(data)
                 break
             except OSError:
                 if attempt == 2:
                     raise
                 time.sleep(1 + attempt)
+            finally:
+                connection.close()
     return path.read_bytes()
 
 
