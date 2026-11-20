@@ -84,7 +84,7 @@ function detail(level) {
     const statCell = (key, value, className = '') => recorded(value) ? `<div class="st ${className}"><small>${t(key)}</small><b>${escapeHtml(value)}</b></div>` : '';
     const thumbnail = fullThumbUrl(level);
     const grid = body => body ? `<div class=grid>${body}</div>` : '';
-    const section = (key, body) => body ? `<fieldset><legend>${t(key)}</legend>${body}</fieldset>` : '';
+    const section = (key, body) => body ? `<details class=level-section open><summary>${t(key)}</summary>${body}</details>` : '';
     const link = safeUrl(level.link);
     const videoId = youtubeId(link);
     const histogram = deathHistogram(deaths);
@@ -96,7 +96,7 @@ function detail(level) {
         section('sh', `${(level.tags || []).map(name => tagFilterChip(name, true)).join('')}${recorded(level.notes) ? `<p style="white-space:pre-wrap">${escapeHtml(level.notes)}</p>` : ''}`),
         section('dh', histogram)
     ].join('');
-    return `<div class=box>${thumbnail ? `<div class=hero style="background-image:url('${thumbnail}')"></div>` : ''}<h2>${escapeHtml(level.name)}</h2><p class=by>${escapeHtml(orDash(level.creator))} · ID ${escapeHtml(orDash(level.levelId))} · ${escapeHtml(difficultyLabel(level))} · ${aredlLabel(level)}${level.kind == 'platform' ? '' : ` · GDL ${escapeHtml(level.gdl == null ? '—' : '#' + level.gdl)}`}</p>
+    return `<div class=box>${thumbnail ? `<div class=hero style="background-image:url('${thumbnail}')"></div>` : ''}<h2>${escapeHtml(level.name)}</h2><p class=by>${difficultyFace(level)} ${escapeHtml(orDash(level.creator))} · ID ${escapeHtml(orDash(level.levelId))} · ${escapeHtml(difficultyLabel(level))} · ${aredlLabel(level)}${level.kind == 'platform' ? '' : ` · GDL ${escapeHtml(level.gdl == null ? '—' : '#' + level.gdl)}`}</p>
 <div${sections ? ' class=dgrid' : ''}>${sections || `<p class=by>${t('noAdditionalDetails')}</p>`}
 </div><p class=dgb>${canEdit() ? `<button class=blue data-act=edit data-id="${escapeHtml(level.id)}">${ICONS.edit} ${t('edit')}</button>` : ''} <button data-act=lvclose>${t('close')}</button></p></div>`;
 }
@@ -167,7 +167,7 @@ function levelFromForm(form) {
     };
 }
 
-const listTagSummary = () => t('tags') + ' · ' + (!ui.tagFilter.length ? t('f_all') : ui.tagFilter.length == 1 ? ui.tagFilter[0] : ui.tagFilter.length);
+const listTagSummary = () => !ui.tagFilter.length ? t('listFilters') : t('listFilters') + ' · ' + (ui.tagFilter.length == 1 ? ui.tagFilter[0] : ui.tagFilter.length);
 
 /** Updates the tag dropdown and its clear button in place, so an open dropdown keeps its state and focus. */
 function renderListTagFilters() {
@@ -175,7 +175,7 @@ function renderListTagFilters() {
     if (!dropdown)
         return;
     dropdown.querySelectorAll('input').forEach(input => input.checked = ui.tagFilter.includes(input.value));
-    dropdown.querySelector('summary').textContent = listTagSummary();
+    dropdown.querySelector('.filter-label').textContent = listTagSummary();
     qs('.lh [data-act=ct]').hidden = !ui.tagFilter.length;
 }
 
@@ -188,7 +188,8 @@ function setListTagFilter() {
 /** Left column: name search, tag filters and the list. */
 function lcol() {
     const options = listTagOptions(profile.levels.filter(level => level.kind == ui.tab), ui.tagFilter);
-    return `<div class=lh><input id=q type=search placeholder="${t('search')}" aria-label="${t('search')}" value="${escapeHtml(ui.q)}">${options.length ? `<details class=ms><summary>${escapeHtml(listTagSummary())}</summary><div class=msp>${options.map(name => `<label><input type=checkbox name=tagf value="${escapeHtml(name)}"${ui.tagFilter.includes(name) ? ' checked' : ''}><span class=chip style="${tagStyle(name)}">${escapeHtml(name)}</span></label>`).join('')}</div></details><button type=button class="xs dg" data-act=ct aria-label="${t('clearTags')}" title="${t('clearTags')}"${ui.tagFilter.length ? '' : ' hidden'}>${ICONS.del}</button>` : ''}</div><div id=lw>${list()}</div>`;
+    const modes = ['classic', 'platform'].map(kind => `<button type=button data-act=tab data-v=${kind} aria-pressed=${ui.tab == kind}${ui.tab == kind ? ' disabled' : ''}><img src="assets/modes/${kind}.svg" alt="" width=32 height=32> ${t(kind)}</button>`).join('');
+    return `<div class=mode-switch role=group aria-label="${t('lists')}">${modes}</div><div class=lh><label class=list-search>${ICONS.listSearch}<input id=q type=search placeholder="${t('search')}" aria-label="${t('search')}" value="${escapeHtml(ui.q)}"></label>${options.length ? `<details class=ms><summary>${ICONS.listFilter}<span class=filter-label>${escapeHtml(listTagSummary())}</span>${ICONS.chevronDown}</summary><div class=msp>${options.map(name => `<label><input type=checkbox name=tagf value="${escapeHtml(name)}"${ui.tagFilter.includes(name) ? ' checked' : ''}><i class=tag-dot aria-hidden=true style="background:${tagColor(name)}"></i><span class=filter-label>${escapeHtml(name)}</span></label>`).join('')}</div></details><button type=button class=list-clear data-act=ct aria-label="${t('clearTags')}" title="${t('clearTags')}"${ui.tagFilter.length ? '' : ' hidden'}>${ICONS.listClear}</button>` : ''}${canEdit() ? `<button type=button class=list-add data-act=add>+ ${t('palAdd')}</button>` : ''}</div><div id=lw>${list()}</div>`;
 }
 
 /** Right column with level details, an editing form or an empty prompt. */
@@ -242,15 +243,17 @@ function renderPanel() {
 
 /** Selects a level without rebuilding the list. */
 function selectLevel(id) {
+    if (innerWidth <= 900)
+        ui.listReturnY = window.scrollY;
     ui.sel = id;
     ui.edit = 0;
     document.querySelectorAll('.lv.sel').forEach(c => c.classList.remove('sel'));
     qs(`.lv[data-id="${CSS.escape(id)}"]`)?.classList.add('sel');
     renderPanel();
-    if (innerWidth <= 560)
+    if (innerWidth <= 900) {
         scrollTo({ top: 0 });
-    else if (innerWidth < 900)
-        qs('.rcol').scrollIntoView({ behavior: 'smooth' });
+        qs('.rcol [data-act=lvclose]')?.focus({ preventScroll: true });
+    }
 }
 
 /** Updates the automatic top field and found note from the picked level. */

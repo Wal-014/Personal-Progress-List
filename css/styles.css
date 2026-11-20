@@ -799,32 +799,268 @@ dialog.modal::backdrop {
   align-items: start;
 }
 
-.lh {
+.list-surface {
+  --bg1: var(--color-bg);
+  --bg2: var(--color-bg);
+  --gridc: var(--color-grid);
+  --obj: var(--color-surface);
+  --objb: var(--color-border);
+  --meta: var(--color-text-muted);
+  --fg: var(--color-text);
+  --go: var(--color-success);
+  --go1: var(--color-success);
+  --go2: var(--color-surface-elevated);
+  --cy: var(--color-secondary-light);
+  --ye: var(--color-warning);
+  --or: var(--color-mode-classic);
+  --pk: var(--color-accent);
+  --rd: var(--color-error);
+  --panel: var(--color-surface);
+  --panel-in: var(--color-surface-elevated);
+  --well: var(--color-bg);
+  --plab: var(--color-text);
+  --tool: var(--color-surface);
+  --pal: var(--color-surface-elevated);
+  --mut: var(--color-text-muted);
+  --ln: var(--color-border);
+  --a: var(--color-accent);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+}
+
+.list-surface .box, .list-surface .ph, .list-surface .lv {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  box-shadow: none;
+  background-image: none;
+}
+
+.list-surface :is(.nm, h2, .mode-switch button, .level-section summary) {
+  color: inherit;
+  font-family: var(--font-display);
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+}
+
+.list-surface .lv.sel {
+  border-color: var(--color-accent);
+  box-shadow: inset 4px 0 var(--color-accent);
+}
+
+.level-section {
+  min-width: 0;
+  padding: var(--space-12);
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-control);
+}
+
+.level-section summary {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.level-section[open] summary {
+  margin-bottom: var(--space-8);
+}
+
+.list-surface .dgrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: var(--space-12);
+}
+
+/* Shared list controls and the selected level's detail pane. */
+.mode-switch {
+  --mode-ink: var(--color-mode-classic);
   position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 12px;
+  isolation: isolate;
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 100%;
+  padding: 3px;
+  margin-bottom: var(--space-16);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
 }
 
-.lh #q {
-  flex: 1 1 160px;
-  min-width: 160px;
+.mode-switch button, .lh .list-add {
+  min-height: 44px;
+  padding: 6px 12px;
+  font: 600 1rem/1.25 var(--font-ui);
+  color: var(--color-text);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  box-shadow: none;
+  text-shadow: none;
 }
 
-.lh .ms {
-  max-width: min(220px, calc(100% - 40px));
+.mode-switch::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  /* Extend over the track border so both rounded ends share one contour. */
+  inset: -1px auto -1px -1px;
+  width: calc(50% + 1px);
+  pointer-events: none;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--mode-ink) 16%, var(--color-surface));
+  box-shadow: inset 0 0 0 1px var(--mode-ink);
+  transition: transform var(--motion-selection) var(--motion-easing);
 }
 
-.lh .ms summary, .lh .msp .chip {
+.mode-switch:has([data-v=platform][aria-pressed=true])::before {
+  transform: translateX(100%);
+}
+
+.mode-switch:has([data-v=platform][aria-pressed=true]) {
+  --mode-ink: var(--color-mode-platform);
+}
+
+.mode-switch button[aria-pressed=true] {
+  color: var(--color-text);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mode-switch::before { transition: none; }
+}
+
+.lh .list-add {
+  color: var(--color-bg);
+  background: var(--color-accent);
+  opacity: 1;
+}
+
+.split .rcol {
+  min-width: 0;
+  border-radius: var(--radius-panel);
+  overflow-wrap: anywhere;
+}
+
+.list-surface .lv:has(.th) {
+  color: var(--color-card-text);
+  --meta: var(--color-card-text);
+}
+
+.list-surface .lv > .th::before {
+  background: linear-gradient(90deg, rgb(0 0 0 / 92%), rgb(0 0 0 / 72%) 48%, rgb(0 0 0 / 36%)), var(--th) center / cover no-repeat;
+  opacity: 1;
+  mask-image: none;
+}
+
+.list-surface .rcol .hero {
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+
+.split .lv {
+  height: 104px;
+}
+
+.split .lv .info {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.split .lv :is(.nm,.by) {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.lh .msp .chip {
-  display: block;
+.lh {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: var(--space-16);
+  font-family: var(--font-ui);
+}
+
+.lh .list-search {
+  position: relative;
+  flex: 1 1 160px;
+  min-width: 0;
+  margin: 0;
+}
+
+.lh .list-search > svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--color-text-muted);
+}
+
+.lh .i { width: 20px; height: 20px; flex: none; }
+
+.lh #q, .lh .ms summary, .lh .list-clear, .lh .list-add {
+  box-sizing: border-box;
+  min-height: 44px;
+  margin: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: 600 1rem/1.25 var(--font-ui);
+  -webkit-text-stroke: 0;
+  box-shadow: none;
+}
+
+.lh #q { width: 100%; padding: 8px 12px 8px 40px; font-weight: 400; }
+.lh #q::placeholder { color: var(--color-text-muted); opacity: 1; }
+.lh .ms { max-width: min(100%, 16rem); }
+.lh .ms summary { display: flex; align-items: center; gap: 6px; padding: 8px 10px; list-style: none; }
+.lh .ms summary::-webkit-details-marker { display: none; }
+.lh .ms summary > svg:last-child { width: 16px; }
+.lh .ms[open] summary > svg:last-child { transform: rotate(180deg); }
+.lh .filter-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lh .ms[open] summary, .lh .ms:has(input:checked) summary { border-color: var(--color-accent); }
+.lh .list-clear { width: 44px; padding: 0; }
+.lh .list-add {
+  padding: 8px 14px;
+  background: var(--color-accent);
+  color: var(--color-bg);
+  border-color: transparent;
+}
+.lh :is(input, summary, button):focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.lh .ms .msp {
+  margin-top: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-elevated);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 20%);
+}
+.lh .ms .msp input[type=checkbox] {
+  all: revert;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  accent-color: var(--color-accent);
+}
+
+.lh .msp .tag-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+  border: 1px solid var(--color-border);
+}
+
+.lh .ms .msp label {
+  color: var(--color-text);
+  font: 500 0.95rem/1.3 var(--font-ui);
+}
+
+.lh .ms .msp label:is(:hover, :focus-within) {
+  color: var(--color-text);
+  background: var(--color-surface);
 }
 
 .lh [hidden] {
@@ -1032,8 +1268,10 @@ dialog.modal::backdrop {
 }
 
 /* Phones: the detail replaces the list instead of sitting under it */
-@media (max-width: 560px) {
-  .lh #q {
+@media (max-width: 900px) {
+  .split .lv { height: 96px; }
+
+  .lh .list-search {
     flex-basis: 100%;
   }
 
@@ -3112,6 +3350,26 @@ input.ro {
   font: 700 32px/1.1 var(--font-ui);
   color: var(--color-mode-classic);
   overflow-wrap: anywhere;
+}
+
+/* On light surfaces use gold as an accent and the theme ink for the value. */
+[data-theme=porcelain] .list-surface .level-section .st {
+  background: var(--color-surface);
+}
+
+[data-theme=porcelain] .list-surface .level-section .st b {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  text-shadow: none;
+}
+
+[data-theme=porcelain] .list-surface .level-section .st.big {
+  border-inline-start: 3px solid var(--rank-1);
+}
+
+[data-theme=porcelain] .list-surface .level-section .st.big b,
+[data-theme=porcelain] .hmetric:not(:first-child) b {
+  color: var(--color-text);
 }
 
 .hmetric:first-child b {

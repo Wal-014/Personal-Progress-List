@@ -3,6 +3,9 @@
  */
 
 const ICONS = {
+    listSearch: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.7 stroke-linecap=round stroke-linejoin=round aria-hidden=true><circle cx=10 cy=10 r=6.5 /><path d="m15 15 6 6"/></svg>',
+    listFilter: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.7 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M3 4h18l-7 8v6l-4 2v-8z"/></svg>',
+    listClear: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.7 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="m6 6 12 12M18 6 6 18"/></svg>',
     navHome: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.5 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M3 10 12 3l9 7M5 9v12h5v-7h4v7h5V9"/></svg>',
     navLists: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.5 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M8 6h13M8 12h13M8 18h13M3 6h1M3 12h1M3 18h1"/></svg>',
     navWish: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.5 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M6 3h12v18l-6-4-6 4Z"/></svg>',

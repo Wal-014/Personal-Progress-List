@@ -91,9 +91,9 @@ test('renaming a tag renames it inside the active filter', () => {
 test('the dropdown summary names one selected tag and counts several', () => {
     const { app } = createApp();
     const summary = selection => app(`ui.tagFilter = ${JSON.stringify(selection)}; listTagSummary()`);
-    assert.equal(summary([]), 'Tags · Todos');
-    assert.equal(summary(['Fluked']), 'Tags · Fluked');
-    assert.equal(summary(['Fluked', 'Rebeated']), 'Tags · 2');
+    assert.equal(summary([]), 'Filtros');
+    assert.equal(summary(['Fluked']), 'Filtros · Fluked');
+    assert.equal(summary(['Fluked', 'Rebeated']), 'Filtros · 2');
 });
 
 test('renderListTagFilters syncs the checkboxes, summary and clear button in place', () => {
@@ -103,7 +103,7 @@ test('renderListTagFilters syncs the checkboxes, summary and clear button in pla
     dom['.lh [data-act=ct]'] = clear;
     app('ui.tagFilter = ["B"]; renderListTagFilters()');
     assert.deepEqual(inputs.map(input => input.checked), [false, true]);
-    assert.equal(summary.textContent, 'Tags · B');
+    assert.equal(summary.textContent, 'Filtros · B');
     assert.equal(clear.hidden, false);
     app('ui.tagFilter = []; renderListTagFilters()');
     assert.deepEqual(inputs.map(input => input.checked), [false, false]);
@@ -121,9 +121,9 @@ test('the list header offers only its own tags, escaped, with the selection chec
     const classic = app('lcol()');
     assert.deepEqual([...classic.matchAll(/name=tagf value="([^"]*)"/g)].map(m => m[1]), ['B', 'x&quot;y']);
     assert.match(classic, /value="B" checked>/);
-    assert.match(classic, /<summary>Tags · B<\/summary>/);
+    assert.match(classic, /class=filter-label>Filtros · B<\/span>/);
     assert.match(classic, /data-act=ct aria-label="Quitar filtros de tags" title="Quitar filtros de tags">/);
-    assert.equal(classic.includes('Plat'), false);
+    assert.doesNotMatch(classic, /name=tagf value="Plat"/);
     app('ui.tab = "platform"; ui.tagFilter = []');
     const platform = app('lcol()');
     assert.deepEqual([...platform.matchAll(/name=tagf value="([^"]*)"/g)].map(m => m[1]), ['Plat']);

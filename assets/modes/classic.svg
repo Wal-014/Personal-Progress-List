@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="gold" x2=".34" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#fff6ac"/><stop offset=".48" stop-color="#ffe04b"/><stop offset="1" stop-color="#d68a05"/>
+    </linearGradient>
+  </defs>
+  <path d="M32 3 41 21.5 61 25 46.5 39.4 49.7 60 32 50.3 13.7 60 17 39.4 3 25 23 21.5Z" fill="url(#gold)" stroke="#a36a12" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M32 3 32 32 23 21.5Z" fill="#fff6bc"/>
+  <path d="m32 32 9-10.5L61 25Z" fill="#fff19b"/>
+  <path d="M61 25 46.5 39.4 32 32Z" fill="#efae12"/>
+  <path d="m32 32 14.5 7.4L49.7 60Z" fill="#ffce26"/>
+  <path d="M32 32 49.7 60 32 50.3Z" fill="#ca8507"/>
+  <path d="M32 32 13.7 60 17 39.4Z" fill="#f6ba12"/>
+  <path d="M32 32 17 39.4 3 25Z" fill="#dc9a0a"/>
+  <path d="m5.5 25 17.9-3L32 4.5" stroke="#fffbd7" fill="none" stroke-width="1.5" stroke-linecap="round"/>
+</svg>
