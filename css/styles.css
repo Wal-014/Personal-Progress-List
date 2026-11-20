@@ -4061,6 +4061,33 @@ main.home {
   min-width: 0;
 }
 
+.shell-paints { position: absolute; pointer-events: none; }
+.hsection-head h2 > .i { flex: none; width: 24px; height: 24px; color: var(--color-text); }
+
+@media (forced-colors: none) {
+  .nav-ink { stop-color: color-mix(in srgb, var(--color-text) 62%, var(--metal-shade)); }
+  .nav-glint { stop-color: var(--metal-glint); }
+  [data-theme=porcelain] .nav-glint { stop-color: color-mix(in srgb, var(--metal-edge) 66%, var(--color-text)); }
+
+  .hsection-head h2 > .i, :is(.shell-nav, .shell-footer) > button > .i {
+    stroke: url(#nav-metal) currentColor;
+    stroke-width: 1.8;
+  }
+
+  :is(.shell-nav, .shell-footer) > button:not([aria-current=page]) {
+    border: 1px solid transparent;
+    background:
+      linear-gradient(var(--nav-fill, var(--color-bg)), var(--nav-fill, var(--color-bg))) padding-box,
+      linear-gradient(125deg, color-mix(in srgb, var(--metal-edge) 32%, var(--color-bg)),
+        color-mix(in srgb, var(--metal-glint) 48%, var(--color-bg)) 19%,
+        color-mix(in srgb, var(--metal-shade) 32%, var(--color-bg)) 52%,
+        color-mix(in srgb, var(--metal-edge) 38%, var(--color-bg))) border-box;
+  }
+  :is(.shell-nav, .shell-footer) > button:not([aria-current=page]):hover {
+    --nav-fill: var(--color-surface-elevated);
+  }
+}
+
 /* A single hairline follows the existing radius. Layered backgrounds also work on inputs. */
 @media (forced-colors: none) {
   :root :is(.shell-brand-frame, .hl .hcard, .hl .hstats-surface, .hl .hwish-rows,

@@ -204,10 +204,10 @@ for (const [language, publicHeading, ownHeading] of [['en', 'Lists', 'My lists']
         const p = page();
         await p.app('initPublicView()');
         p.app(`ui.lang = '${language}'; render()`);
-        assert.ok(p.html().includes(`<h2>${publicHeading}</h2>`));
-        assert.ok(!p.html().includes(`<h2>${ownHeading}</h2>`));
+        assert.ok(p.html().includes(`<h2>${p.app('ICONS.navLists')}${publicHeading}</h2>`));
+        assert.ok(!p.html().includes(`<h2>${p.app('ICONS.navLists')}${ownHeading}</h2>`));
         p.app('viewing = null; store = { cur: "p1", profs: { p1: { name: "Local", data: profile } } }; render()');
-        assert.ok(p.html().includes(`<h2>${ownHeading}</h2>`));
+        assert.ok(p.html().includes(`<h2>${p.app('ICONS.navLists')}${ownHeading}</h2>`));
     });
 }
 
