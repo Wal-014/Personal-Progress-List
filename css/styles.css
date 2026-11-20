@@ -917,9 +917,6 @@ dialog.modal::backdrop {
   --mode-ink: var(--color-mode-platform);
 }
 
-.mode-switch [data-v=classic] span { color: var(--color-mode-classic); }
-.mode-switch [data-v=platform] span { color: var(--color-mode-platform); }
-
 .mode-switch button[aria-pressed=true] {
   color: var(--color-text);
   opacity: 1;

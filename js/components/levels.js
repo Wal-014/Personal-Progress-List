@@ -188,7 +188,7 @@ function setListTagFilter() {
 /** Left column: name search, tag filters and the list. */
 function lcol() {
     const options = listTagOptions(profile.levels.filter(level => level.kind == ui.tab), ui.tagFilter);
-    const modes = ['classic', 'platform'].map(kind => `<button type=button data-act=tab data-v=${kind} aria-pressed=${ui.tab == kind}${ui.tab == kind ? ' disabled' : ''}><span aria-hidden=true>${kind == 'classic' ? '&#9733;' : '&#9790;'}</span> ${t(kind)}</button>`).join('');
+    const modes = ['classic', 'platform'].map(kind => `<button type=button data-act=tab data-v=${kind} aria-pressed=${ui.tab == kind}${ui.tab == kind ? ' disabled' : ''}><img src="assets/modes/${kind}.png" alt="" width=32 height=32> ${t(kind)}</button>`).join('');
     return `<div class=mode-switch role=group aria-label="${t('lists')}">${modes}</div><div class=lh><input id=q type=search placeholder="${t('search')}" aria-label="${t('search')}" value="${escapeHtml(ui.q)}">${options.length ? `<details class=ms><summary>${escapeHtml(listTagSummary())}</summary><div class=msp>${options.map(name => `<label><input type=checkbox name=tagf value="${escapeHtml(name)}"${ui.tagFilter.includes(name) ? ' checked' : ''}><span class=chip style="${tagStyle(name)}">${escapeHtml(name)}</span></label>`).join('')}</div></details><button type=button class="xs dg" data-act=ct aria-label="${t('clearTags')}" title="${t('clearTags')}"${ui.tagFilter.length ? '' : ' hidden'}>${ICONS.del}</button>` : ''}${canEdit() ? `<button type=button class=list-add data-act=add>+ ${t('palAdd')}</button>` : ''}</div><div id=lw>${list()}</div>`;
 }
 
