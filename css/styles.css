@@ -3490,13 +3490,9 @@ body::before {
 }
 
 [data-bg=orbital] body::after {
-  --arc: transparent calc(100% - 1.5px), white calc(100% - .8px), transparent 100%;
-  mask-image:
-    radial-gradient(ellipse 28vw 33vh at 83% -12%, var(--arc)),
-    radial-gradient(ellipse 41vw 45vh at 108% 2%, var(--arc)),
-    radial-gradient(ellipse 30vw 40vh at 32% -19%, var(--arc)),
-    radial-gradient(ellipse 37vw 30vh at 108% 103%, var(--arc)),
-    radial-gradient(ellipse 32vw 36vh at 2% 103%, var(--arc));
+  mask-image: url('../assets/backgrounds/orbital.svg');
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
 }
 
 [data-bg=celestial] body::after {
