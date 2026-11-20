@@ -18,7 +18,7 @@ function homeWishlists() {
 function homeStats() {
     const summary = statsSummary();
     const metric = (icon, value, key) => `<div class=hmetric>${icon}<div><b>${value.toLocaleString(ui.lang)}</b><span>${t(key)}</span></div></div>`;
-    return `<section class=hstats><div class=hsection-head><h2>${ICONS.navStats}${t('stats')}</h2></div><div class=hstats-surface>${metric(ICONS.metricLevels, summary.levelCount, 'lv')}${metric(ICONS.metricAttempts, summary.attemptTotal, 'attT')}${metric(ICONS.metricHours, summary.playHours, 'hrs')}<button class=htext data-act=tab data-v=stats>${t('viewStats')}<span aria-hidden=true>→</span></button></div></section>`;
+    return `<section class=hstats><div class=hsection-head><h2>${t('stats')}</h2></div><div class=hstats-surface>${metric(ICONS.metricLevels, summary.levelCount, 'lv')}${metric(ICONS.metricAttempts, summary.attemptTotal, 'attT')}${metric(ICONS.metricHours, summary.playHours, 'hrs')}<button class=htext data-act=tab data-v=stats>${t('viewStats')}<span aria-hidden=true>→</span></button></div></section>`;
 }
 
 function home() {
