@@ -52,10 +52,10 @@ test('thumbnails are only requested for numeric level IDs', () => {
     assert.equal(app('fullThumbUrl')({ levelId: '../x' }), '');
 });
 
-test('saved themes from before the redesign map to the current ones', () => {
-    const themeOf = app('themeOf');
-    assert.equal(themeOf('dark'), 'night');
-    assert.equal(themeOf('light'), 'blue');
-    assert.equal(themeOf('synth'), 'synth');
-    assert.equal(themeOf('unknown'), 'blue');
+test('saved appearance preferences normalize independently', () => {
+    for (const [old, value] of Object.entries({ blue: 'nebula', night: 'graphite', synth: 'crimson', dark: 'graphite', light: 'porcelain', unknown: 'nebula', constructor: 'nebula' }))
+        assert.equal(app('themeOf')(old), value);
+    for (const value of app('THEMES')) assert.equal(app('themeOf')(value), value);
+    for (const value of app('BACKGROUNDS')) assert.equal(app('backgroundOf')(value), value);
+    for (const value of [null, undefined, 'night', 'unknown']) assert.equal(app('backgroundOf')(value), 'grid');
 });

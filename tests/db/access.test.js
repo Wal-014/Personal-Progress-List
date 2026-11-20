@@ -9,7 +9,7 @@ after(async () => context?.cleanup());
 function fixtures(userId) {
     return [
         { table: 'profiles', key: { id: userId }, row: { id: userId, display_name: 'Player' }, patch: { display_name: 'Updated' } },
-        { table: 'user_settings', key: { user_id: userId }, row: { lang: 'en', theme: 'blue' }, patch: { theme: 'night' } },
+        { table: 'user_settings', key: { user_id: userId }, row: { lang: 'en', theme: 'nebula', background: 'grid' }, patch: { theme: 'graphite' } },
         { table: 'levels', key: { user_id: userId, id: 'level' }, row: { id: 'level', kind: 'classic', name: 'Level' }, patch: { name: 'Updated level' } },
         { table: 'level_notes', key: { user_id: userId, level_id: 'level' }, row: { level_id: 'level', notes: 'Notes' }, patch: { notes: 'Updated notes' } },
         { table: 'list_orders', key: { user_id: userId, kind: 'classic' }, row: { kind: 'classic', level_ids: ['level'] }, patch: { level_ids: [] } },

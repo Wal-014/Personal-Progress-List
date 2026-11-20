@@ -1,12 +1,17 @@
 /**
  * Service worker for installation and offline use, fetching same-origin files from the network first with a cache fallback.
  */
-const CACHE = 'prp-1.12.0';
+const CACHE = 'prp-1.13.0';
 // vendor/supabase.js is intentionally omitted so visitors who never sign in never download it.
 const SHELL = [
   "./",
   "index.html",
+  "css/tokens.css",
   "css/styles.css",
+  "fonts/inter-latin.woff2",
+  "fonts/inter-latin-ext.woff2",
+  "fonts/oxanium-latin.woff2",
+  "fonts/oxanium-latin-ext.woff2",
   "data/demo-data.js",
   "manifest.json",
   "icon.svg",

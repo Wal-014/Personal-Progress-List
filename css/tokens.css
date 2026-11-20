@@ -1,0 +1,163 @@
+/* Shared appearance tokens; component rules belong in styles.css. */
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('../fonts/inter-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('../fonts/inter-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Oxanium';
+  font-style: normal;
+  font-weight: 600 800;
+  font-display: swap;
+  src: url('../fonts/oxanium-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Oxanium';
+  font-style: normal;
+  font-weight: 600 800;
+  font-display: swap;
+  src: url('../fonts/oxanium-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root, .sw-nebula {
+  --color-nebula-bg: #090D20;
+  --color-nebula-surface: #141A32;
+  --color-nebula-text: #F4F5FF;
+  --color-nebula-text-muted: #B8C1D9;
+  --color-nebula-accent: #B996FF;
+  --color-nebula-secondary-light: #62DDF5;
+  --color-nebula-surface-elevated: #202840;
+  --color-nebula-border: #56617C;
+  --color-nebula-success: #6EE7A2;
+  --color-nebula-warning: #F6CE72;
+  --color-nebula-error: #FF8DA1;
+  --color-nebula-info: #7DCBFF;
+  --color-nebula-mode-classic: #E9D094;
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-48: 48px;
+  --radius-control: 10px;
+  --radius-card: 12px;
+  --radius-panel: 16px;
+  --radius-pill: 999px;
+  --size-control: 44px;
+  --size-border: 1px;
+  --size-focus: 2px;
+  --motion-hover: 120ms;
+  --motion-selection: 180ms;
+  --motion-panel: 200ms;
+  --motion-easing: cubic-bezier(.2,.8,.2,1);
+  --font-ui: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-display: Oxanium, "Segoe UI", Arial, sans-serif;
+  --rank-1: #E8C45A;
+  --rank-2: #8BDCF2;
+  --rank-3: #7ADCA0;
+  --rank-4: #DCA060;
+  --rank-5: #ACB6C8;
+  --shadow-panel: 0 8px 24px var(--color-shadow);
+  --color-bg: var(--color-nebula-bg);
+  --color-surface: var(--color-nebula-surface);
+  --color-text: var(--color-nebula-text);
+  --color-text-muted: var(--color-nebula-text-muted);
+  --color-accent: var(--color-nebula-accent);
+  --color-secondary-light: var(--color-nebula-secondary-light);
+  --color-surface-elevated: var(--color-nebula-surface-elevated);
+  --color-border: var(--color-nebula-border);
+  --color-focus: var(--color-accent);
+  --color-success: var(--color-nebula-success);
+  --color-warning: var(--color-nebula-warning);
+  --color-error: var(--color-nebula-error);
+  --color-info: var(--color-nebula-info);
+  --color-card-overlay: var(--color-nebula-bg);
+  --color-card-text: var(--color-nebula-text);
+  --color-mode-classic: var(--color-nebula-mode-classic);
+  --color-mode-platform: var(--color-nebula-secondary-light);
+  --color-shadow: rgb(0 0 0 / 20%);
+  --color-grid: color-mix(in srgb, var(--color-text) 5%, transparent);
+  --color-motif: var(--color-text);
+  color-scheme: dark;
+}
+
+[data-theme=graphite], .sw-graphite {
+  --color-bg: #101216;
+  --color-surface: #1C2028;
+  --color-text: #F3F4F7;
+  --color-text-muted: #BBC2CE;
+  --color-accent: #BEC9E5;
+  --color-secondary-light: #7CCBDD;
+  --color-surface-elevated: #292F3A;
+  --color-border: #606B7E;
+}
+
+[data-theme=ocean], .sw-ocean {
+  --color-bg: #071823;
+  --color-surface: #112A39;
+  --color-text: #EFFBFF;
+  --color-text-muted: #ADCBD8;
+  --color-accent: #62DDF5;
+  --color-secondary-light: #A8ADFF;
+  --color-surface-elevated: #1C394B;
+  --color-border: #4C7188;
+}
+
+[data-theme=amber], .sw-amber {
+  --color-bg: #1A100C;
+  --color-surface: #2B1D17;
+  --color-text: #FFF6EC;
+  --color-text-muted: #D7BCA8;
+  --color-accent: #FFB66D;
+  --color-secondary-light: #E9D094;
+  --color-surface-elevated: #3C2B22;
+  --color-border: #806454;
+}
+
+[data-theme=crimson], .sw-crimson {
+  --color-bg: #1B0D17;
+  --color-surface: #2D1926;
+  --color-text: #FFF1F5;
+  --color-text-muted: #DAB5C4;
+  --color-accent: #FF92A7;
+  --color-secondary-light: #C5A3FF;
+  --color-surface-elevated: #402638;
+  --color-border: #866076;
+  --color-error: #FFAD75;
+}
+
+[data-theme=porcelain], .sw-porcelain {
+  --color-bg: #F3F5FB;
+  --color-surface: #FFFFFF;
+  --color-text: #182039;
+  --color-text-muted: #4D5B73;
+  --color-accent: #6941C6;
+  --color-secondary-light: #087A98;
+  --color-surface-elevated: #E8ECF5;
+  --color-border: #8591A8;
+  --color-success: #18733D;
+  --color-warning: #846000;
+  --color-error: #B62D49;
+  --color-info: #176A9E;
+  --color-mode-classic: var(--color-warning);
+  --color-mode-platform: var(--color-secondary-light);
+  color-scheme: light;
+}

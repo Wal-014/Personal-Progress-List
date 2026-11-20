@@ -22,7 +22,9 @@ function render() {
     qs('#app').innerHTML = onHome
         ? `<div class=hl>${homeHeader()}<aside class=hside>${homeNavigation()}${homeUtilities()}</aside><main class=home>${screen}</main></div>`
         : `${topBar()}<main class="${isLevelList ? 'wide' : ''}">${screen}</main>${navBars(isLevelList)}`;
-    document.documentElement.dataset.t = ui.theme;
+    document.documentElement.dataset.theme = ui.theme;
+    document.documentElement.dataset.bg = ui.background;
+    document.documentElement.dataset.motif = ui.tab == 'classic' ? 'stars' : ui.tab == 'platform' ? 'moons' : 'mixed';
     document.documentElement.lang = ui.lang;
     if (listScrollTop && qs('#lw'))
         qs('#lw').scrollTop = listScrollTop;

@@ -87,7 +87,7 @@ describe('per-account database limits', { skip: !enabled }, () => {
             client.from('level_tags').insert({ level_id: 'level-4999', tag_name: 'Budget' }),
             client.from('level_tags').update({ position: 2 }).eq('level_id', 'level-0'),
             client.from('profiles').update({ display_name: 'Over budget' }).not('id', 'is', null),
-            client.from('user_settings').insert({ lang: 'en', theme: 'blue' })
+            client.from('user_settings').insert({ lang: 'en', theme: 'nebula', background: 'grid' })
         ]) {
             const result = await query;
             assert.equal(result.status, 429);

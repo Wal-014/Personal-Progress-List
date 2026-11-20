@@ -18,7 +18,7 @@ const initialChanges = [
     { table: 'list_orders', key: { kind: 'classic' }, version: null, row: { kind: 'classic', level_ids: ['level'] } },
     { table: 'wishlists', key: { id: 'wishlist' }, version: null, row: { id: 'wishlist', name: 'Wishlist', item_ids: ['item'] } },
     { table: 'wishlist_items', key: { id: 'item' }, version: null, row: { id: 'item', wishlist_id: 'wishlist', name: 'Item', level_id: 123456789 } },
-    { table: 'user_settings', key: {}, version: null, row: { lang: 'en', theme: 'blue' } }
+    { table: 'user_settings', key: {}, version: null, row: { lang: 'en', theme: 'nebula', background: 'grid' } }
 ];
 
 describe('versioned database sync', { skip: !enabled }, () => {
@@ -70,7 +70,7 @@ describe('versioned database sync', { skip: !enabled }, () => {
             { table: 'list_orders', key: { kind: 'classic' }, version: 1, row: { kind: 'classic', level_ids: [] } },
             { table: 'wishlists', key: { id: 'wishlist' }, version: 1, row: { id: 'wishlist', name: 'Updated wishlist' } },
             { table: 'wishlist_items', key: { id: 'item' }, version: 1, row: { id: 'item', status: 'prog', progress: 42 } },
-            { table: 'user_settings', key: {}, version: 1, row: { theme: 'night' } }
+            { table: 'user_settings', key: {}, version: 1, row: { theme: 'graphite' } }
         ];
         const updated = ok(await client.rpc('sync_push', { changes: edits }));
         assert.deepEqual(updated.applied, edits.map(({ table, key }) => ({ table, key, version: 2 })));

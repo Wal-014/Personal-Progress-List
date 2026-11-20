@@ -215,3 +215,42 @@ test('popover geometry chooses below or above and stays inside narrow and short 
     const aboveViewport = place({ left: 100, top: -40, bottom: 0 }, { width: 800, height: 600 }, 180);
     assert.equal(aboveViewport.top, '12px');
 });
+
+test('pause menu exposes independent named appearance groups and pressed options', () => {
+    const { app } = homeApp();
+    app("ui.theme = 'porcelain'; ui.background = 'orbital'");
+    const html = app('pauseUI()');
+    assert.match(html, /role=group aria-labelledby=colour-theme/);
+    assert.match(html, /role=group aria-labelledby=background-design/);
+    assert.equal((html.match(/data-act=theme /g) || []).length, 6);
+    assert.equal((html.match(/data-act=background /g) || []).length, 4);
+    assert.match(html, /data-act=theme data-v=porcelain aria-pressed=true/);
+    assert.match(html, /data-act=background data-v=orbital aria-pressed=true/);
+});
+
+test('guest appearance actions persist independently and restore the clicked option', () => {
+    const { app, context } = homeApp();
+    app('reopenPause = selector => { globalThis.restored = selector; }');
+    app("ACTIONS.background({ dataset: { v: 'celestial' } }); ACTIONS.theme({ dataset: { v: 'porcelain' } })");
+    assert.equal(app('ui.background'), 'celestial');
+    assert.equal(context.localStorage.gbg, 'celestial');
+    assert.equal(context.localStorage.gt, 'porcelain');
+    assert.equal(context.restored, '[data-act=theme][data-v=porcelain]');
+    app("ACTIONS.background({ dataset: { v: 'orbital' } })");
+    assert.equal(app('ui.theme'), 'porcelain');
+    assert.equal(context.restored, '[data-act=background][data-v=orbital]');
+    const reloaded = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js'], { localStorage: context.localStorage });
+    assert.equal(reloaded.app('ui.theme'), 'porcelain');
+    assert.equal(reloaded.app('ui.background'), 'orbital');
+});
+
+test('render applies appearance and screen motifs without changing the saved background', () => {
+    const { app, context } = homeApp();
+    app("ui.background = 'celestial'");
+    for (const [tab, motif] of [['home', 'mixed'], ['classic', 'stars'], ['platform', 'moons']]) {
+        app(`ui.tab = '${tab}'; render()`);
+        assert.equal(context.document.documentElement.dataset.motif, motif);
+        assert.equal(context.document.documentElement.dataset.bg, 'celestial');
+        assert.equal(context.document.documentElement.dataset.theme, 'nebula');
+    }
+});
