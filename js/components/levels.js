@@ -116,22 +116,35 @@ function renderTagSuggestions() {
         qs('#tgr').innerHTML = profile.tags.filter(g => !sel.includes(g.name) && g.name.toLowerCase().includes(q)).map(g => `<span class=chip data-act=tgadd data-v="${escapeHtml(g.name)}" style="${tagStyle(g.name)}">+ ${escapeHtml(g.name)}</span>`).join('');
 }
 
-function formField(key, value, type = 'text', attrs = '') {
-    return `<div><label for=fm-${key}>${t(key)}</label>${type == 'number' && !attrs.includes('readonly') ? `<div class=num><button type=button class=blue data-act=step data-d=-1 aria-label="−1">−</button><input id=fm-${key} name=${key} type=number ${attrs} value="${escapeHtml(value)}"><button type=button class=blue data-act=step data-d=1 aria-label="+1">+</button></div>` : `<input id=fm-${key} name=${key} type=${type} ${attrs} value="${escapeHtml(value)}"${attrs.includes('readonly') ? ' class=ro' : ''}>`}</div>`;
+function formField(key, value, type = 'text', attrs = '', hint = '') {
+    return `<div><label for=fm-${key}>${t(key)}</label>${type == 'number' && !attrs.includes('readonly') ? `<div class=num><button type=button class=blue data-act=step data-d=-1 aria-label="−1">−</button><input id=fm-${key} name=${key} type=number ${attrs} value="${escapeHtml(value)}"><button type=button class=blue data-act=step data-d=1 aria-label="+1">+</button></div>` : `<input id=fm-${key} name=${key} type=${type} ${attrs} value="${escapeHtml(value)}"${attrs.includes('readonly') ? ' class=ro' : ''}>`}${hint ? `<small id=fm-${key}-hint class=by>${escapeHtml(hint)}</small>` : ''}</div>`;
 }
 
 const aredlTopValue = ar => ar?.s == 'r' && ar.p != null ? '#' + ar.p : ar?.s == 'p' ? t('pending') : '—';
+
+function maxRankPosition(kind, id) {
+    const ids = rankedIds(kind);
+    return ids.length + (ids.includes(id) ? 0 : 1);
+}
+
+const rankPositionHint = maximum => t('availablePositions').replace('{min}', 1).replace('{max}', maximum);
+
+function updateRankPositionRange(form) {
+    const maximum = maxRankPosition(form.elements.kind.value, form.dataset.id);
+    form.elements.pos.max = maximum;
+    qs('#fm-pos-hint').textContent = rankPositionHint(maximum);
+}
 
 /** Form for adding a level or editing one. */
 function levelForm(level) {
     const kind = level?.kind || (isListTab() ? ui.tab : 'classic');
     const levelData = level || { tags: [], ar: { s: 'n' }, kind };
-    const rankPosition = rankedIds(kind).indexOf(level?.id) + 1 || '';
+    const rankPosition = rankedIds(kind).indexOf(level?.id) + 1 || '', maximum = maxRankPosition(kind, level?.id);
     const section = (key, body) => `<fieldset><legend>${t(key)}</legend><div class=grid>${body}</div></fieldset>`;
     return `<div class=box><h2>${level ? t('edit') : t('palAdd')}</h2><form id=fm data-id="${escapeHtml(level?.id)}"><div class=warn id=wn></div>
 ${levelSearchBox()}
 ${section('s1', levelFields(levelData, true))}
-${section('s2', formField('pos', rankPosition, 'number', 'min=1 step=1') + `<div><label for=fm-ap>${t(kind == 'platform' ? 'apPlatform' : 'ap')}</label><input id=fm-ap name=ap type=text readonly tabindex=-1 value="${escapeHtml(aredlTopValue(levelData.ar))}" class=ro></div>`)}
+${section('s2', formField('pos', rankPosition, 'number', `min=1 max=${maximum} step=1 aria-describedby=fm-pos-hint`, rankPositionHint(maximum)) + `<div><label for=fm-ap>${t(kind == 'platform' ? 'apPlatform' : 'ap')}</label><input id=fm-ap name=ap type=text readonly tabindex=-1 value="${escapeHtml(aredlTopValue(levelData.ar))}" class=ro></div>`)}
 ${section('s3', formField('attC', levelData.attC, 'number', 'min=0 step=1') + formField('attN', levelData.attN, 'number', 'min=0 step=1') + formField('tN', formatDuration(levelData.tN), 'text', 'placeholder="1h 30m 0s"') + formField('tP', formatDuration(levelData.tP)) + formField('tPC', formatDuration(levelData.tPC)) + formField('attT', totalAttempts(levelData), 'number', 'readonly tabindex=-1') + formField('tT', formatDuration(totalSeconds(levelData)), 'text', 'readonly tabindex=-1'))}
 ${section('s4', formField('date', levelData.date, 'date') + formField('link', levelData.link))}
 <fieldset><legend>${t('s5')}</legend><div class=grid>${formField('enj', levelData.enj, 'number', 'min=-10 max=10')}${formField('lik', levelData.lik, 'number', 'min=-10 max=10')}</div><label for=tgq style="margin-top:12px">${t('tags')}</label><input id=tgq placeholder="${t('tgs')}" autocomplete=off><div id=tgr class=tgr></div><div id=tgs>${(levelData.tags || []).map(tagChip).join('')}</div></fieldset>

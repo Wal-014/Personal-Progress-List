@@ -278,13 +278,14 @@ function downloadLocalBackup(id) {
 
 function saveLevel(form) {
     const position = form.elements.pos.value, old = findLevel(form.dataset.id), level = old || { id: newId('n') };
-    Object.assign(level, levelFromForm(form));
+    const fields = levelFromForm(form), maximum = maxRankPosition(fields.kind, level.id);
+    Object.assign(level, fields);
     if (!old)
         profile.levels.push(level);
     matchWithAredl([level]);
     removeFromOrder(level.id);
     if (position && !isPre(level)) {
-        const order = profile.order[level.kind], before = rankedIds(level.kind)[Math.max(0, +position - 1)];
+        const order = profile.order[level.kind], before = rankedIds(level.kind)[Math.max(1, Math.min(maximum, +position)) - 1];
         order.splice(before ? order.indexOf(before) : order.length, 0, level.id);
     }
     save();
