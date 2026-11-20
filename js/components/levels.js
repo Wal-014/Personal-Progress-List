@@ -6,7 +6,7 @@
 function meter(v, lab = '') {
     const hd = b => `<div class=mh>${lab ? `<span>${lab}</span>` : ''}${b}</div>`;
     const p = v * 10, c = `hsl(${v * 12} 100% 55%)`;
-    return hd(`<b style="color:${c}">${escapeHtml(formatRating(v))}</b>`) + `<div class="meter ${v >= 8 ? 'g' : ''}" style="color:${c}"><i style="background:${c};left:0%;width:${p}%"></i></div>`;
+    return hd(`<b>${escapeHtml(formatRating(v))}</b>`) + `<div class="meter ${v >= 8 ? 'g' : ''}" style="color:${c}"><i style="background:${c};left:0%;width:${p}%"></i></div>`;
 }
 
 /**

@@ -52,34 +52,6 @@
   --dropdown-offset: translateY(-6px);
 }
 
-/* Light themes keep unmigrated components on Nebula until their own redesign. */
-[data-theme=porcelain] {
-  --bg1: var(--color-nebula-bg);
-  --bg2: var(--color-nebula-bg);
-  --gridc: color-mix(in srgb, var(--color-nebula-text) 5%, transparent);
-  --obj: var(--color-nebula-surface);
-  --objb: var(--color-nebula-border);
-  --meta: var(--color-nebula-text-muted);
-  --fg: var(--color-nebula-text);
-  --go: var(--color-nebula-success);
-  --go1: var(--color-nebula-success);
-  --go2: var(--color-nebula-surface-elevated);
-  --cy: var(--color-nebula-secondary-light);
-  --ye: var(--color-nebula-warning);
-  --or: var(--color-nebula-mode-classic);
-  --pk: var(--color-nebula-accent);
-  --rd: var(--color-nebula-error);
-  --panel: var(--color-nebula-surface);
-  --panel-in: var(--color-nebula-surface-elevated);
-  --well: var(--color-nebula-bg);
-  --plab: var(--color-nebula-text);
-  --tool: var(--color-nebula-surface);
-  --pal: var(--color-nebula-surface-elevated);
-  --mut: var(--color-nebula-text-muted);
-  --ln: var(--color-nebula-border);
-  --a: var(--color-nebula-accent);
-}
-
 /* ===== Base ===== */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -662,7 +634,7 @@ dialog.modal::backdrop {
 }
 
 .lk {
-  color: #fff;
+  color: var(--color-accent);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -797,35 +769,6 @@ dialog.modal::backdrop {
   grid-template-columns: minmax(340px, 1fr) minmax(0, 1.15fr);
   gap: 20px;
   align-items: start;
-}
-
-.list-surface {
-  --bg1: var(--color-bg);
-  --bg2: var(--color-bg);
-  --gridc: var(--color-grid);
-  --obj: var(--color-surface);
-  --objb: var(--color-border);
-  --meta: var(--color-text-muted);
-  --fg: var(--color-text);
-  --go: var(--color-success);
-  --go1: var(--color-success);
-  --go2: var(--color-surface-elevated);
-  --cy: var(--color-secondary-light);
-  --ye: var(--color-warning);
-  --or: var(--color-mode-classic);
-  --pk: var(--color-accent);
-  --rd: var(--color-error);
-  --panel: var(--color-surface);
-  --panel-in: var(--color-surface-elevated);
-  --well: var(--color-bg);
-  --plab: var(--color-text);
-  --tool: var(--color-surface);
-  --pal: var(--color-surface-elevated);
-  --mut: var(--color-text-muted);
-  --ln: var(--color-border);
-  --a: var(--color-accent);
-  color: var(--color-text);
-  font-family: var(--font-ui);
 }
 
 .list-surface .box, .list-surface .ph, .list-surface .lv {
@@ -1685,7 +1628,7 @@ input.ro {
 
 .gdm {
   margin: 8px 0 0;
-  font: bold 13px Arial, Helvetica, sans-serif;
+  font: 600 13px/1.4 var(--font-ui);
   color: var(--plab);
 }
 
@@ -2244,10 +2187,10 @@ input.ro {
   display: none;
   max-width: 240px;
   padding: 8px 10px;
-  font: bold 12px Arial, Helvetica, sans-serif;
-  color: #fff;
+  font: 600 12px/1.4 var(--font-ui);
+  color: var(--color-text);
   background: var(--tool);
-  border: 2px solid #000;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   box-shadow: 0 4px 0 rgba(0, 0, 0, .4);
   pointer-events: none;
@@ -3353,22 +3296,7 @@ input.ro {
   overflow-wrap: anywhere;
 }
 
-/* On light surfaces use gold as an accent and the theme ink for the value. */
-[data-theme=porcelain] .list-surface .level-section .st {
-  background: var(--color-surface);
-}
-
-[data-theme=porcelain] .list-surface .level-section .st b {
-  font-family: var(--font-ui);
-  font-weight: 700;
-  text-shadow: none;
-}
-
-[data-theme=porcelain] .list-surface .level-section .st.big {
-  border-inline-start: 3px solid var(--rank-1);
-}
-
-[data-theme=porcelain] .list-surface .level-section .st.big b,
+/* Keep secondary metric values readable on the light Home surface. */
 [data-theme=porcelain] .hmetric:not(:first-child) b {
   color: var(--color-text);
 }
@@ -4129,6 +4057,122 @@ main.home {
   }
 }
 
+/* Shared geometry and typography for content screens and native dialogs. */
+.list-surface, .legacy-surface, dialog.modal {
+  color: var(--color-text);
+  font-family: var(--font-ui);
+}
+
+:is(.list-surface, .legacy-surface, .modal) :is(h2, h3, legend, .nm, .stat-position) {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--color-text);
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+}
+
+:is(.list-surface, .legacy-surface, .modal) :is(.box, .stat-card, .wi, .wi .by) {
+  text-shadow: none;
+}
+
+:is(.list-surface, .legacy-surface, .modal) :is(.by, .meta, label, .lab, .mh, .hb, .st small, .kpi small) {
+  font-family: var(--font-ui);
+  color: var(--color-text-muted);
+}
+
+:is(.list-surface, .legacy-surface, .modal) :is(.st b, .mh b, .kpi b) {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-shadow: none;
+  -webkit-text-stroke: 0;
+}
+
+.list-surface .level-section .st, :is(.modal, .list-surface) fieldset, .legacy-surface .compare-panel {
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-card);
+}
+.list-surface .level-section .st { background: var(--color-surface); }
+[data-theme=porcelain] .level-section .st.big { border-inline-start: 3px solid var(--rank-1); }
+[data-theme=porcelain] .level-section .st.big b { color: var(--color-text); }
+.legacy-surface :is(.well, .kpi, .trig, .wi, .stat-card) { border-radius: var(--radius-card); }
+.legacy-surface .stat-card { background: var(--color-surface); }
+.legacy-surface :is(.wi, .stat-card, .compare-panel), .modal .obj { border-width: var(--size-border); }
+.legacy-surface .compare-panel { border-color: var(--color-border); }
+:is(.list-surface, .legacy-surface, .modal) :is(.meter, .pb, .hb .tr) {
+  background: var(--color-surface-elevated);
+  border: var(--size-border) solid var(--color-border);
+}
+
+:is(.modal, .legacy-surface, .list-surface) :is(input, textarea, select):not([type=checkbox], [type=radio], [type=color], [type=range]) {
+  font: 500 1rem/1.35 var(--font-ui);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: var(--size-border) solid var(--color-border);
+  border-radius: var(--radius-control);
+  box-shadow: none;
+}
+:is(.modal, .legacy-surface, .list-surface) :is(input, textarea)::placeholder { color: var(--color-text-muted); opacity: 1; }
+:is(.modal, .legacy-surface, .list-surface) :is(input, select, textarea):user-invalid {
+  outline: 2px solid var(--color-error);
+}
+
+:is(.modal, .legacy-surface, .rcol) button:where(:not(.gdc, .profile-swatch, .gbtn, .stat-card)),
+:is(.modal, .list-surface .rcol) .ms summary {
+  font: 600 .875rem/1.35 var(--font-ui);
+  letter-spacing: normal;
+  color: var(--color-text);
+  background: var(--color-surface-elevated);
+  border: var(--size-border) solid var(--color-border);
+  border-radius: var(--radius-control);
+  box-shadow: none;
+  text-shadow: none;
+  -webkit-text-stroke: 0;
+}
+:is(.modal, .list-surface .rcol) .ms summary, .modal button:where(:not(.profile-swatch)) { min-height: var(--size-control); }
+:is(.modal, .legacy-surface, .rcol) :where(button):is(.pri, .go, .blue) {
+  color: var(--color-bg);
+  background-color: var(--color-accent);
+}
+:is(.modal, .legacy-surface, .rcol) :where(button).dg {
+  background-color: var(--color-surface);
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
+:is(.modal, .legacy-surface, .list-surface .rcol) button[aria-pressed=true], :is(.modal, .list-surface .rcol) .ms[open] > summary {
+  color: var(--color-text);
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 18%, var(--color-surface));
+}
+
+:is(.modal, .list-surface) .gdr, :is(.modal, .list-surface .rcol) .ms .msp {
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: var(--size-border) solid var(--color-border);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-panel);
+}
+:is(.modal, .list-surface) .ms .msp label {
+  color: var(--color-text);
+  font: 500 .875rem/1.4 var(--font-ui);
+}
+:is(.modal, .list-surface) .ms .msp label:is(:hover, :focus-within, :has(:checked)) {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-accent) 13%, var(--color-surface));
+}
+:is(.modal, .list-surface .rcol) .ms .msp input[type=checkbox] {
+  all: revert;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-accent);
+}
+:is(.modal, .list-surface) .gdc :is(.nm, .by) { color: var(--color-card-text); }
+.modal .box :is(input, select, textarea, button, summary):focus-visible {
+  outline: var(--size-focus) solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 /* A single hairline follows the existing radius. Layered backgrounds also work on inputs. */
 @media (forced-colors: none) {
   :root :is(.shell-brand-frame, .hl .hcard, .hl .hstats-surface, .hl .hwish-rows,
@@ -4158,12 +4202,12 @@ main.home {
     --metal-shade: #538a99;
     --metal-glint: #e6faff;
   }
-  [data-theme=porcelain] :is(.hwish-rows, .hstats-surface, .trigs .trig, .legacy-surface :is(.well, .wh, .kpi)) {
+  [data-theme=porcelain] :is(.hwish-rows, .hstats-surface, .trigs .trig, .list-surface .rcol .box, .legacy-surface :is(.well, .wh, .kpi)) {
     --metal-edge: color-mix(in srgb, var(--color-accent) 38%, var(--color-surface));
     --metal-glint: color-mix(in srgb, var(--color-accent) 9%, var(--color-surface));
     --metal-shade: color-mix(in srgb, var(--color-accent) 60%, var(--color-surface));
   }
-  [data-theme=porcelain] :is(.hl .hcard, .hwish-rows, .hstats-surface, .trigs .trig, .legacy-surface :is(.well, .wh, .kpi)) {
+  [data-theme=porcelain] :is(.hl .hcard, .hwish-rows, .hstats-surface, .trigs .trig, .list-surface .rcol .box, .legacy-surface :is(.well, .wh, .kpi)) {
     --satin-light: color-mix(in srgb, var(--metal-edge) 7%, var(--color-surface));
     --satin-base: color-mix(in srgb, var(--metal-edge) 19%, var(--color-surface));
   }
@@ -4184,7 +4228,7 @@ main.home {
   }
   :is(.dgb, .wa) button { color: var(--color-text); text-shadow: none; -webkit-text-stroke: 0; }
   .dgb button.pri, .wa button.pri { color: var(--color-bg); }
-  .dgb button.dg, .wa button.dg { --rim-fill: #903239; color: white; }
+  .dgb button.dg, .wa button.dg { --rim-fill: var(--color-error); color: var(--color-bg); }
   :is(.hl .hadd, .lh .list-add, .wa button[data-act=wadd], .empty .pri) {
     --metal-edge: var(--action-edge);
     --metal-glint: var(--action-glint);
@@ -4447,31 +4491,6 @@ main.home {
 .profile-pill > .i:last-child {
   width: var(--space-16);
   height: var(--space-16);
-}
-
-[data-theme=porcelain] .legacy-surface {
-  --satin-light: var(--color-surface);
-  --satin-base: var(--color-surface-elevated);
-  --color-bg: var(--color-nebula-bg);
-  --color-surface: var(--color-nebula-surface);
-  --color-text: var(--color-nebula-text);
-  --color-text-muted: var(--color-nebula-text-muted);
-  --color-accent: var(--color-nebula-accent);
-  --color-secondary-light: var(--color-nebula-secondary-light);
-  --color-surface-elevated: var(--color-nebula-surface-elevated);
-  --color-border: var(--color-nebula-border);
-  --color-focus: var(--color-nebula-accent);
-  --color-success: var(--color-nebula-success);
-  --color-warning: var(--color-nebula-warning);
-  --color-error: var(--color-nebula-error);
-  --color-info: var(--color-nebula-info);
-  --color-mode-classic: var(--color-nebula-mode-classic);
-  --color-mode-platform: var(--color-nebula-secondary-light);
-  color-scheme: dark;
-  color: var(--color-text);
-  background: var(--color-bg);
-  border-radius: var(--radius-panel);
-  padding: var(--space-16);
 }
 
 .cloud-header, .cloud-indicator {
