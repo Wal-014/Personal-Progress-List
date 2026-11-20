@@ -837,7 +837,7 @@ dialog.modal::backdrop {
   background-image: none;
 }
 
-.list-surface :is(.nm, h2, .mode-switch button, .list-add, .level-section summary) {
+.list-surface :is(.nm, h2, .mode-switch button, .level-section summary) {
   color: inherit;
   font-family: var(--font-display);
   -webkit-text-stroke: 0;
@@ -974,28 +974,91 @@ dialog.modal::backdrop {
   position: relative;
   display: flex;
   flex-wrap: wrap;
+  gap: 8px;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 12px;
+  margin-bottom: var(--space-16);
+  font-family: var(--font-ui);
 }
 
-.lh #q {
+.lh .list-search {
+  position: relative;
   flex: 1 1 160px;
-  min-width: 160px;
+  min-width: 0;
+  margin: 0;
 }
 
-.lh .ms {
-  max-width: min(220px, calc(100% - 40px));
+.lh .list-search > svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--color-text-muted);
 }
 
-.lh .ms summary, .lh .msp .chip {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.lh .i { width: 20px; height: 20px; flex: none; }
+
+.lh #q, .lh .ms summary, .lh .list-clear, .lh .list-add {
+  box-sizing: border-box;
+  min-height: 44px;
+  margin: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: 600 1rem/1.25 var(--font-ui);
+  -webkit-text-stroke: 0;
+  box-shadow: none;
 }
 
-.lh .msp .chip {
-  display: block;
+.lh #q { width: 100%; padding: 8px 12px 8px 40px; font-weight: 400; }
+.lh #q::placeholder { color: var(--color-text-muted); opacity: 1; }
+.lh .ms { max-width: min(100%, 16rem); }
+.lh .ms summary { display: flex; align-items: center; gap: 6px; padding: 8px 10px; list-style: none; }
+.lh .ms summary::-webkit-details-marker { display: none; }
+.lh .ms summary > svg:last-child { width: 16px; }
+.lh .ms[open] summary > svg:last-child { transform: rotate(180deg); }
+.lh .filter-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lh .ms[open] summary, .lh .ms:has(input:checked) summary { border-color: var(--color-accent); }
+.lh .list-clear { width: 44px; padding: 0; }
+.lh .list-add {
+  padding: 8px 14px;
+  background: var(--color-accent);
+  color: var(--color-bg);
+  border-color: transparent;
+}
+.lh :is(input, summary, button):focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.lh .ms .msp {
+  margin-top: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-elevated);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 20%);
+}
+.lh .ms .msp input[type=checkbox] {
+  all: revert;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  accent-color: var(--color-accent);
+}
+
+.lh .msp .tag-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+  border: 1px solid var(--color-border);
+}
+
+.lh .ms .msp label {
+  color: var(--color-text);
+  font: 500 0.95rem/1.3 var(--font-ui);
+}
+
+.lh .ms .msp label:is(:hover, :focus-within) {
+  color: var(--color-text);
+  background: var(--color-surface);
 }
 
 .lh [hidden] {
@@ -1206,7 +1269,7 @@ dialog.modal::backdrop {
 @media (max-width: 900px) {
   .split .lv { height: 96px; }
 
-  .lh #q {
+  .lh .list-search {
     flex-basis: 100%;
   }
 
