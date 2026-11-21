@@ -389,6 +389,35 @@ for (const kind of ['classic', 'platform'])
             assert.deepEqual(calls, canceled ? ['render'] : ['save', 'render']);
         });
 
+test('the selected row scrolls without animation when reduced motion is requested', () => {
+    const calls = [];
+    const fixture = loadScripts(['js/components/levels.js'], {
+        qs: () => ({ scrollIntoView: options => calls.push(options.behavior) }),
+        prefersReducedMotion: () => true
+    });
+    fixture.app('scrollSel()');
+    assert.deepEqual(calls, ['instant']);
+});
+
+test('editable tag chips expose native form actions with an escaped name', () => {
+    app("profile = emptyProfile(); ui.lang = 'en'");
+    const html = app('tagChip')('A "quoted" tag');
+    assert.match(html, /<button type=button class=chip data-act=tgrm[^>]+aria-label="Delete · A &quot;quoted&quot; tag"/);
+    assert.match(html, /<input type=hidden name=tg value="A &quot;quoted&quot; tag"><\/button>/);
+});
+
+test('tag suggestions offer a keyboard button for an unused matching tag', () => {
+    const suggestions = { innerHTML: '' };
+    const nodes = { '#tgq': { value: 'Tag' }, '#tgr': suggestions };
+    const fixture = loadScripts(['js/config.js', 'js/utils.js', 'js/components/levels.js'], {
+        document: { querySelector: selector => nodes[selector], querySelectorAll: () => [{ value: 'Used Tag' }] },
+        profile: { tags: [{ name: 'Used Tag' }, { name: 'New Tag' }, { name: 'Other' }] }
+    });
+    fixture.app('renderTagSuggestions()');
+    assert.match(suggestions.innerHTML, /<button type=button class=chip data-act=tgadd data-v="New Tag"/);
+    assert.doesNotMatch(suggestions.innerHTML, /Used Tag|Other/);
+});
+
 test('initSort registers the grip filter and saves only updates on an unfiltered list', () => {
     const created = [], listNode = { parentElement: { scrollHeight: 500, clientHeight: 200 } };
     const fixture = loadScripts(['js/components/levels.js'], {
@@ -397,7 +426,8 @@ test('initSort registers the grip filter and saves only updates on an unfiltered
             assert.equal(selector, '#lst');
             return listNode;
         },
-        Sortable: function (element, options) { created.push({ element, options }); }
+        Sortable: function (element, options) { created.push({ element, options }); },
+        prefersReducedMotion: () => false
     });
     fixture.app('initSort()');
     assert.equal(created.length, 1);
@@ -413,6 +443,9 @@ test('initSort registers the grip filter and saves only updates on an unfiltered
     assert.equal(options.fallbackTolerance, 5);
     assert.equal(options.onUpdate, fixture.app('reorderList'));
     assert.equal('onEnd' in options, false);
+    fixture.context.prefersReducedMotion = () => true;
+    fixture.app('initSort()');
+    assert.equal(created.pop().options.animation, 0);
     for (const filters of ['ui.q = "level"; ui.tagFilter = []', 'ui.q = ""; ui.tagFilter = ["A"]']) {
         fixture.app(filters);
         fixture.app('initSort()');

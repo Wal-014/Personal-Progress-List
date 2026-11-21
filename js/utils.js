@@ -5,6 +5,8 @@
 /** Short form of document.querySelector. */
 const qs = s => document.querySelector(s);
 
+const prefersReducedMotion = () => globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
 const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 /** Level names are compared ignoring case, accents, spaces and symbols. */

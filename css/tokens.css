@@ -155,6 +155,7 @@
   --color-secondary-light: #087A98;
   --color-surface-elevated: #E8ECF5;
   --color-border: #8591A8;
+  --color-control-edge: color-mix(in srgb, var(--color-text-muted) 86%, var(--color-surface));
   --color-success: #18733D;
   --satin-light: #FFFAF0;
   --satin-base: #F6ECDA;

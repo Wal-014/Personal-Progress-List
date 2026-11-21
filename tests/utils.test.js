@@ -37,3 +37,11 @@ test('saved appearance preferences normalize independently', () => {
     for (const value of app('BACKGROUNDS')) assert.equal(app('backgroundOf')(value), value);
     for (const value of [null, undefined, 'night', 'unknown']) assert.equal(app('backgroundOf')(value), 'grid');
 });
+
+test('prefersReducedMotion reads the reduced-motion media query and tolerates a missing matchMedia', () => {
+    const queries = [];
+    const { app: withMedia } = loadScripts(['js/utils.js'], { matchMedia: query => (queries.push(query), { matches: true }) });
+    assert.equal(withMedia('prefersReducedMotion()'), true);
+    assert.deepEqual(queries, ['(prefers-reduced-motion: reduce)']);
+    assert.equal(loadScripts(['js/utils.js']).app('prefersReducedMotion()'), undefined);
+});
