@@ -632,6 +632,45 @@ dialog.modal::backdrop {
   flex: 1;
 }
 
+.ranking-status {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 12px;
+  align-items: baseline;
+  margin-bottom: 10px;
+  font: 600 13px/1.4 var(--font-ui);
+  color: var(--color-text);
+}
+
+.ranking-row {
+  display: contents;
+}
+
+.ranking-row > span {
+  color: var(--meta);
+}
+
+.ranking-row > .warn {
+  color: var(--ye);
+}
+
+.ranking-row .i {
+  width: 16px;
+  height: 16px;
+  margin-inline-end: 4px;
+  vertical-align: text-bottom;
+}
+
+.pause [data-act=rankrefresh] {
+  width: 100%;
+  min-height: 44px;
+}
+
+.pause [data-act=rankrefresh][aria-disabled=true] {
+  cursor: default;
+  filter: none;
+}
+
 .fl {
   width: 22px;
   height: 15px;

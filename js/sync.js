@@ -186,6 +186,7 @@ function stopCloudSync(clearCache) {
     ui.wl = null;
     cloudSync = { status: 'saved', pending: 0, error: '' };
     render();
+    autoSyncRankings();
 }
 
 function saveCloud() {
@@ -444,6 +445,7 @@ function pullCloud() {
             if (hadRevision)
                 notifyCloudChanges(names);
             maybeOfferMigration();
+            autoSyncRankings();
             return true;
         }
         catch (error) {

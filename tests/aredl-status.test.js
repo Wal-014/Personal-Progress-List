@@ -109,8 +109,9 @@ test('only details show external ranks, including pending, missing and escaped p
 });
 
 function fixture(extra = {}) {
-    return loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/sheet.js', 'js/gd.js', 'js/demonlist.js', 'js/api.js'], {
-        localStorage: { gar: JSON.stringify(lists) }, ui: { lang: 'en' }, ...extra
+    return loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/sheet.js', 'js/gd.js', 'js/demonlist.js', 'js/api.js', 'js/ranking-sync.js'], {
+        localStorage: { gar: JSON.stringify(lists) }, ui: { lang: 'en' }, store: { cur: 'p1' }, cloudUser: null, cloudSession: null,
+        renderRankingStatus() {}, ...extra
     });
 }
 
@@ -174,23 +175,23 @@ for (const failed of [false, true])
         ];
         const f = fixture({
             profile: { levels, wishlists: [] },
-            document: { querySelector: () => ({}) }, renderSyncStatus() {}, save() {},
+            document: { querySelector: () => ({}) }, save() {},
             fetch: async url => {
                 if (url == 'data/levels.json')
                     return { ok: true, json: async () => [[100, 'Old pending', '', 9, 0, 0], [102, 'Sheet Extreme', '', 10, 0, 0]] };
                 if (failed) throw Error('offline');
-                return { json: async () => url.includes('arepl/') ? [] : [{ level_id: 42, name: 'Bloodbath', position: 125 }] };
+                return { ok: true, json: async () => url.includes('arepl/') ? [] : [{ level_id: 42, name: 'Bloodbath', position: 125 }] };
             },
             fetchRelayLevelsById: async ids => ids.map(levelId => ({ levelId, diff: 'Extreme Demon', rating: 'rated' }))
         });
         const before = structuredClone(levels);
-        await f.app('syncWithAredl()');
+        await f.app('syncRankings({ force: true })');
         if (failed) assert.deepEqual(levels, before);
         else {
             assert.deepEqual(levels.map(l => ({ ...l.ar })), [{ s: 'n', p: null }, { s: 'p', p: null }, { s: 'p', p: null }, { s: 'p', p: null }, { s: 'r', p: 125 }]);
             assert.equal(levels[4].rating, 'rated', 'the AREDL ID is available for rating enrichment');
         }
-        assert.equal(f.app('ui.sync'), 0);
+        assert.equal(f.app('rankingSync.running'), false);
     });
 
 test('sync fetches the sheet only for metadata still missing from a saved level or wishlist item', async () => {
@@ -209,12 +210,14 @@ test('sync fetches the sheet only for metadata still missing from a saved level 
                     return { ok: true, json: async () => [[100, 'Sheet Level', 'Sheet Creator', 3, 0, 2], [42, 'Bloodbath', 'Sheet Publisher', 10, 0, 2]] };
                 }
                 if (url.includes('aredl/levels'))
-                    return { json: async () => [{ level_id: 42, name: 'Bloodbath', position: 125, publisher: 'Publisher' }] };
+                    return { ok: true, json: async () => [{ level_id: 42, name: 'Bloodbath', position: 125, publisher: 'Publisher' }] };
+                if (url.includes('arepl/levels'))
+                    return { ok: true, json: async () => [{ level_id: 45, name: 'Platform Trial', position: 12 }] };
                 return { ok: false, json: async () => [] };
             }
         });
-        await f.app('syncWithAredl()');
-        assert.ok(f.app('localStorage.gas'));
+        await f.app('syncRankings({ force: true })');
+        assert.ok(JSON.parse(f.context.localStorage.granks)['local:p1'].aredl);
         return sheetFetches;
     };
 

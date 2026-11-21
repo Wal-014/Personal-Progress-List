@@ -28,7 +28,7 @@ function page(query = '?user=player', response = { data: fixture() }, saved = {}
         MutationObserver: class { observe() {} }
     });
     env.context.loadCloud = async () => ({ rpc: async (name, args) => { calls.push([name, plain(args)]); if (response instanceof Error) throw response; return response; } });
-    env.context.autoSyncIfStale = () => calls.push('auto-sync');
+    env.context.startRankingSync = () => calls.push('auto-sync');
     env.context.initAccount = () => calls.push('account');
     env.context.restoreCloudSync = () => calls.push('restore');
     return { ...env, calls, writes, listeners, html: () => appNode.innerHTML };

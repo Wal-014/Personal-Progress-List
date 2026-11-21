@@ -532,7 +532,7 @@ for (const kind of ['classic', 'platform'])
     test(`an unlisted rated Extreme Demon transferred to ${kind} awaits placement`, () => {
         const f = fixture();
         f.load(['js/api.js']);
-        f.app("aredlCache = [{ k: 'd', i: 1, n: 'Other', p: 1 }]");
+        f.app(`aredlCache = [{ k: '${kind == 'classic' ? 'd' : 'p'}', i: 1, n: 'Other', p: 1 }]`);
         f.item.diff = 'Extreme Demon';
         f.item.rating = 'rated';
         f.app('transferWishlistItem')('i1', kind);

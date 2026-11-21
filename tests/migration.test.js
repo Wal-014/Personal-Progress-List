@@ -8,7 +8,7 @@ const level = (id, extra = {}) => ({ id, name: id, kind: 'classic', ...extra });
 const localProfile = (extra = {}) => ({ name: 'Local', color: '#123456', secondaryColor: '#abcdef', data: data(), ...extra });
 
 function device() {
-    const storage = { gl: 'en' }, nodes = {}, toasts = [], alerts = [], identities = [], opened = [], tasks = [];
+    const storage = { gl: 'en' }, nodes = {}, toasts = [], alerts = [], identities = [], opened = [], tasks = [], rankingChecks = [];
     let saves = 0, closed = 0, confirmed = true;
     const closeListeners = [];
     nodes['#md'] = { get innerHTML() { return this.html || ''; }, set innerHTML(value) { this.html = value; if (value) opened.push(value); } };
@@ -16,12 +16,13 @@ function device() {
         addEventListener: (name, work) => { if (name === 'close') closeListeners.push(work); },
         showModal() {}, close() { closed++; for (const work of closeListeners.splice(0)) work(); }, remove() {} };
     const document = { body: {}, querySelector: selector => nodes[selector] || null, addEventListener() {} };
-    const env = loadScripts(['data/demo-data.js', 'js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/account.js', 'js/cloud-model.js', ...syncScripts, 'js/components/dialogs.js', 'js/components/local-data.js', 'js/components/home.js', 'js/components/shell.js', 'js/components/account-ui.js', 'js/events.js'], {
+    const env = loadScripts(['data/demo-data.js', 'js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/account.js', 'js/cloud-model.js', ...syncScripts, 'js/demonlist.js', 'js/api.js', 'js/ranking-sync.js', 'js/components/dialogs.js', 'js/components/local-data.js', 'js/components/home.js', 'js/components/shell.js', 'js/components/account-ui.js', 'js/events.js'], {
         document, window: { addEventListener() {} }, localStorage: storage,
         queueMicrotask: task => tasks.push(task), setTimeout: task => tasks.push(task), clearTimeout() {},
-        navigator: { onLine: true }, render() {}, matchWithAredl() {}, renderTagSuggestions() {}, URL, Blob
+        navigator: { onLine: true }, render() {}, renderTagSuggestions() {}, URL, Blob
     });
     Object.assign(env.context, {
+        autoSyncRankings() { rankingChecks.push(env.app('store.cur')); },
         saveCloud() { saves++; }, showToast: message => toasts.push(message),
         saveOwnProfile: async fields => { identities.push(plain(fields)); return {}; },
         showDialog: async options => { alerts.push(options); return confirmed; }
@@ -32,7 +33,7 @@ function device() {
         storage.gdp = JSON.stringify({ cur: Object.keys(profs)[0], profs });
     };
     setup();
-    return { ...env, setup, storage, nodes, toasts, alerts, identities, opened, tasks, document,
+    return { ...env, setup, storage, nodes, toasts, alerts, identities, opened, tasks, document, rankingChecks,
         saves: () => saves, closed: () => closed, confirm: value => { confirmed = value; } };
 }
 
@@ -183,8 +184,8 @@ test('profile menu always provides local data for accounts and guests', () => {
 test('use on this device is available only signed out for inactive backups and persists the switch', () => {
     const d = device();
     d.setup({ a: localProfile(), b: localProfile({ name: 'Other', data: { ...data(), levels: [level('n2'), level('n3', { kind: 'platform' })] } }) });
-    d.load(['js/demonlist.js', 'js/api.js']);
     d.app("aredlCache = [{ k: 'd', n: 'n2', i: 123, p: 42 }, { k: 'p', n: 'n3', i: 456, p: 84 }]");
+    d.app('demonlistCache = [[123, 133], [456, 144]]');
     assert.doesNotMatch(d.app('localDataDialog()'), /data-act=localuse/);
     const cloud = d.app('profile');
     d.app("ACTIONS.localuse(null, 'b')");
@@ -205,6 +206,8 @@ test('use on this device is available only signed out for inactive backups and p
     assert.equal(d.app('profile.levels[0].ar?.p'), 42);
     assert.equal(d.app('profile.levels[1].ar?.p'), 84);
     assert.deepEqual(JSON.parse(d.storage.gdp).profs.b.data.levels.map(entry => entry.ar?.p), [42, 84]);
+    assert.deepEqual(JSON.parse(d.storage.gdp).profs.b.data.levels.map(entry => entry.gdl), [133, null]);
+    assert.deepEqual(d.rankingChecks, ['b']);
     assert.equal(d.closed(), 1);
     assert.equal(d.saves(), 0);
 });
@@ -220,12 +223,16 @@ for (const signed of [false, true]) test('import backup adds a local profile, si
     d.app('ACTIONS.localimport()');
     assert.equal(picked, 1);
     d.context.askProfile = async (title, values) => values;
+    d.app('aredlCache = [{ k: "d", n: "imported", i: 123, p: 76 }]; demonlistCache = [[123, 98]]');
     const imported = { ...data(), levels: [level('imported')], profileName: 'Backup', profileColor: '#123456', profileSecondaryColor: '#abcdef' };
     await d.app('importProfile')({ name: 'Backup.json', text: async () => JSON.stringify(imported) });
     const id = d.app("Object.keys(store.profs).find(id => id != 'a')");
     assert.ok(id);
     assert.equal(d.app('store.profs')[id].name, 'Backup');
     assert.equal(JSON.parse(d.storage.gdp).profs[id].data.levels[0].id, 'imported');
+    const savedLevel = JSON.parse(d.storage.gdp).profs[id].data.levels[0];
+    assert.deepEqual([savedLevel.ar?.p, savedLevel.gdl], signed ? [undefined, undefined] : [76, 98]);
+    assert.deepEqual(d.rankingChecks, signed ? [] : [id]);
     assert.equal(d.saves(), 0, 'import must never queue an account save');
     if (signed) {
         assert.equal(d.app('profile'), originalCloud);
