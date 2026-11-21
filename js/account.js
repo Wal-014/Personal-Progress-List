@@ -177,22 +177,31 @@ async function initAccount() {
     if (accountInitialized || !ACCOUNTS)
         return;
     accountInitialized = true;
-    try {
-        localStorage.removeItem('gbeta');
-    }
-    catch {
-    }
+    dropLegacyBeta();
     const { url, fragment } = accountUrlParams();
-    if (url.searchParams.has('beta')) {
-        url.searchParams.delete('beta');
-        history.replaceState(history.state, '', url.pathname + url.search + url.hash);
-    }
     const get = key => url.searchParams.get(key) || fragment.get(key);
     const hasAuth = ['code', 'token_hash', 'error', 'error_code', 'error_description'].some(key => url.searchParams.has(key) || fragment.has(key));
     if (!hasAuth && !hasCloudSession()) {
         setAccount({ status: 'idle' });
         return;
     }
+    reportAuthLink(await consumeAuthLink(get));
+}
+
+function dropLegacyBeta() {
+    try {
+        localStorage.removeItem('gbeta');
+    }
+    catch {
+    }
+    const url = new URL(location.href);
+    if (url.searchParams.has('beta')) {
+        url.searchParams.delete('beta');
+        history.replaceState(history.state, '', url.pathname + url.search + url.hash);
+    }
+}
+
+async function consumeAuthLink(get) {
     let linkError = get('error') || get('error_code') || get('error_description')
         ? { code: get('error_code') || get('error') } : null, codeWithoutSession = false;
     try {
@@ -203,16 +212,8 @@ async function initAccount() {
         // A code from an email link can only be exchanged in the browser that asked for it; elsewhere the client drops it silently
         codeWithoutSession = !!get('code') && !restored.data?.session;
         const token = get('token_hash'), type = get('type');
-        if (!linkError && token && ['email', 'signup', 'recovery', 'email_change'].includes(type)) {
-            const { data, error } = await client.auth.verifyOtp({ token_hash: token, type });
-            if (error)
-                linkError = error;
-            else if (type == 'recovery')
-                setAccount({ recovering: true });
-            // An email change needs both addresses to confirm; until then the user still has a pending new_email
-            else if (type == 'email_change')
-                showToast(t(data?.user?.new_email ? 'accountEmailOtherLink' : 'accountEmailUpdated'));
-        }
+        if (!linkError && token && ['email', 'signup', 'recovery', 'email_change'].includes(type))
+            linkError = await verifyEmailLink(client, token, type);
     }
     catch (error) {
         linkError = linkError || error;
@@ -220,6 +221,22 @@ async function initAccount() {
     finally {
         cleanAccountUrl();
     }
+    return { linkError, codeWithoutSession };
+}
+
+async function verifyEmailLink(client, token, type) {
+    const { data, error } = await client.auth.verifyOtp({ token_hash: token, type });
+    if (error)
+        return error;
+    if (type == 'recovery')
+        setAccount({ recovering: true });
+    // An email change needs both addresses to confirm; until then the user still has a pending new_email
+    else if (type == 'email_change')
+        showToast(t(data?.user?.new_email ? 'accountEmailOtherLink' : 'accountEmailUpdated'));
+    return null;
+}
+
+function reportAuthLink({ linkError, codeWithoutSession }) {
     if (linkError && cloudUser && authErrorKey(linkError) == 'authOffline')
         setCloudStatus('offline');
     else if (linkError)
