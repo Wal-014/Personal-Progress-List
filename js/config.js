@@ -8,6 +8,7 @@ const ICONS = {
     actionAdd: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.7 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M12 4v16M4 12h16"/></svg>',
     actionBack: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.7 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="m14 5-7 7 7 7"/></svg>',
     actionCheck: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.7 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="m4 12 5 5L20 6"/></svg>',
+    actionGlobe: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.7 stroke-linecap=round stroke-linejoin=round aria-hidden=true><circle cx=12 cy=12 r=9 /><ellipse cx=12 cy=12 rx=4 ry=9 /><path d="M3 12h18"/></svg>',
     actionPlay: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.7 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M7 4v16l13-8Z"/></svg>',
     actionLock: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.7 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14v11H5z"/></svg>',
     actionEdit: '<svg class=i viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.7 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="m4 20 4-1 12-12-3-3L5 16zM14 7l3 3"/></svg>',
@@ -57,6 +58,18 @@ const ICONS = {
 const THEMES = ['nebula', 'graphite', 'ocean', 'amber', 'crimson', 'porcelain'];
 const BACKGROUNDS = ['grid', 'aurora', 'celestial', 'orbital'];
 const COUNTRY_CODES = 'AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW'.split(' ');
+function countryFlag(code) {
+    return COUNTRY_CODES.includes(code) ? `<img class=flag src="assets/flags/${code.toLowerCase()}.svg" alt="" width=24 height=18 loading=lazy decoding=async>` : '';
+}
+
+function profileCountry(code) {
+    const flag = countryFlag(code);
+    if (!flag)
+        return '';
+    const name = new Intl.DisplayNames([ui.lang], { type: 'region' }).of(code);
+    return `<p class=profile-country>${flag}<span>${escapeHtml(name)}</span></p>`;
+}
+
 /** Preset profile colours by the translation key of their name, in the order used before profiles saved their own colour. */
 const PROFILE_PRESETS = { yellow: '#ffe94d', green: '#a6ff4d', pink: '#ff8af2', orange: '#ffb35c', cyan: '#7af6ff', red: '#ff7a8a', purple: '#c9a2ff' };
 const PROFILE_COLORS = Object.values(PROFILE_PRESETS);

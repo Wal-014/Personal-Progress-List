@@ -35,6 +35,8 @@ function zoomTimeline(factor) {
 
 function resizeOverlays() {
     syncDrawer();
+    if (viewing?.identity?.bio)
+        updatePublicBio();
     const menu = qs('.pmenu:popover-open');
     if (menu?.closest('[inert]'))
         menu.hidePopover();
@@ -67,6 +69,7 @@ const ACTIONS = {
     dthcancel: a => cancelDeathEdit(a),
     dthresolve: a => resolveDeath(a),
     myprogress: () => backToMyProgress(),
+    publicbio: a => togglePublicBio(a),
     ashare: () => shareDialog(),
     asharestate: a => setProfileVisibility(a),
     acopy: () => copyProfileLink(),
@@ -95,8 +98,9 @@ const ACTIONS = {
     agoogle: a => continueWithGoogle(a),
     aresend: a => resendAccountEmail(a),
     apw: a => toggleAccountPassword(a),
-    aprofile: () => openModal(profileCard()),
-    aedit: () => openProfileForm(),
+    aprofile: () => openProfileOverview(),
+    aprofileback: a => backToProfile(a),
+    aedit: a => openProfileForm(a),
     asettings: () => settingsDialog(),
     apassword: () => passwordDialog(),
     adelete: a => confirmAccountDeletion(a),
@@ -470,7 +474,7 @@ function runAction(button) {
         menu.hidePopover();
         opener.element?.focus({ preventScroll: true });
     }
-    const fromDrawer = ui.drawer && button.closest('#shell-sidebar') && k != 'listchoices';
+    const fromDrawer = ui.drawer && button.closest('#shell-sidebar') && !['listchoices', 'publicbio'].includes(k);
     if (fromDrawer && ['tab', 'localuse', 'myprogress'].includes(k))
         setDrawer(false);
     ACTIONS[k]?.(button, button.dataset.id);
@@ -590,6 +594,8 @@ document.body.oninput = e => {
 };
 document.body.onchange = e => {
     const input = e.target, ds = input.dataset;
+    if (input.id == 'pcountry')
+        return updateCountryPreview(input);
     if (input.name == 'tagf')
         return setListTagFilter();
     if (['gdrate', 'gddiff'].includes(input.name))
