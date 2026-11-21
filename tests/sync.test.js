@@ -14,7 +14,7 @@ function device(server = new FakeSyncServer(), storage = {}) {
     storage.gdp ||= JSON.stringify(local);
     storage.gl ||= 'en';
     storage.removeItem ||= function(key) { delete this[key]; };
-    const document = { visibilityState: 'visible', body: {}, querySelector: selector => nodes[selector] || (blocked ? {} : null),
+    const document = { visibilityState: 'visible', body: {}, documentElement: { dataset: {} }, querySelectorAll: () => [], querySelector: selector => nodes[selector] || (blocked ? {} : null),
         addEventListener(name, handler) { (listeners.document[name] ||= new Set()).add(handler); },
         removeEventListener(name, handler) { listeners.document[name]?.delete(handler); } };
     const window = {
@@ -218,7 +218,7 @@ test('status sentences announce pending counts, errors and retry accessibly', as
     const page = await ready();
     page.load(['js/components/account-ui.js']);
     const menu = () => page.app('accountMenu()');
-    assert.match(menu(), /role=status aria-atomic=true/);
+    assert.doesNotMatch(menu(), /role=status/);
     assert.match(menu(), /Saved/);
     page.app("cloudSync.status = 'saving'");
     assert.match(menu(), /Saving\u2026/);

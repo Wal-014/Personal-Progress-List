@@ -12,7 +12,7 @@ const createApp = () => {
         app('store = { cur: Object.keys(profs)[0], profs }');
     };
     const loadEvents = () => {
-        context.document = { body: {}, addEventListener() {} };
+        context.document = { body: {}, addEventListener() {}, querySelector: () => null };
         context.window = { addEventListener() {} };
         context.render = () => {};
         context.matchWithAredl = () => {};

@@ -4,8 +4,8 @@ let accountSignInPending = false;
 
 function accountMenu() {
     const own = account.profile;
-    const row = (act, icon, key) => `<button class=pma data-act=${act}>${icon}<span>${t(key)}</span></button>`;
-    return `<div id=amenu class="pmenu amenu" popover><div class=account-head>${cubeIcon(own.color, own.secondary_color)}<div class=info><span class=nm>${escapeHtml(own.display_name)}</span><span class=by>${own.username ? '@' + escapeHtml(own.username) : t('accountChooseUsername')}</span></div></div>${row('aprofile', ICONS.person, 'accountProfile')}${row('aedit', ICONS.edit, 'pedit')}${row('ashare', ICONS.exp, 'shareProfile')}${row('asettings', ICONS.settings, 'accountSettings')}${row('asignout', ICONS.logout, 'accountSignOut')}${row('localdata', ICONS.exp, 'localData')}<span class=by data-cloud-status role=status aria-atomic=true>${escapeHtml(cloudStatusSentence())}</span><span data-cloud-retry>${cloudRetryButton()}</span></div>`;
+    const row = (act, icon, key) => `<button class=pma data-act=${act}${act == 'aprofile' ? ' autofocus' : ''}>${icon}<span>${t(key)}</span></button>`;
+    return `<div id=amenu class="pmenu amenu" popover role=group aria-labelledby=profile-pill><div class=account-head>${cubeIcon(own.color, own.secondary_color)}<div class=info><span class=nm>${escapeHtml(own.display_name)}</span><span class=by>${own.username ? '@' + escapeHtml(own.username) : t('accountChooseUsername')}</span></div></div>${row('aprofile', ICONS.person, 'accountProfile')}${row('aedit', ICONS.edit, 'pedit')}${row('ashare', ICONS.exp, 'shareProfile')}${row('asettings', ICONS.settings, 'accountSettings')}${row('asignout', ICONS.logout, 'accountSignOut')}${row('localdata', ICONS.exp, 'localData')}<span class=by data-cloud-status>${escapeHtml(cloudStatusSentence())}</span><span data-cloud-retry>${cloudRetryButton()}</span></div>`;
 }
 
 function passwordField(id, labelKey, autocomplete) {
@@ -31,17 +31,18 @@ function openAuthDialog(mode = 'signin', note = '') {
     const slot = qs('#agoogle-slot');
     if (EMAIL_AUTH)
         qs('#af').querySelector('input').focus();
+    const initialFocus = document.activeElement;
     if (slot)
         googleSignInAvailable().then(available => {
             if (!slot.isConnected)
                 return;
             if (available) {
                 slot.innerHTML = googleButton() + (EMAIL_AUTH ? `<div class=auth-divider>${t('accountOr')}</div>` : '');
-                if (!EMAIL_AUTH)
+                if (!EMAIL_AUTH && document.activeElement == initialFocus)
                     slot.querySelector('button').focus();
             }
             else if (!EMAIL_AUTH)
-                accountMessage(slot.closest('.account-dialog'), '#amsg', t('authOffline'));
+                slot.closest('.account-dialog').querySelector('#amsg').textContent = t('authOffline');
         });
 }
 
@@ -69,7 +70,7 @@ async function accountPending(button, key, action) {
 }
 
 function confirmationPanel(email) {
-    return `<div class=account-confirmation><h3 tabindex=-1>${t('accountInbox')}</h3><p>${escapeHtml(t('accountConfirmationSent').replace('{email}', () => email))}</p><p id=amsg class="gdm warn" role=alert tabindex=-1></p><p class=dgb><button type=button data-act=aresend data-email="${escapeHtml(email)}">${t('accountResend')}</button><button class=pri type=button data-act=close>${t('close')}</button></p></div>`;
+    return `<div class=account-confirmation><h3 id=account-inbox tabindex=-1>${t('accountInbox')}</h3><p>${escapeHtml(t('accountConfirmationSent').replace('{email}', () => email))}</p><p id=amsg class="gdm warn" role=alert tabindex=-1></p><p class=dgb><button type=button data-act=aresend data-email="${escapeHtml(email)}">${t('accountResend')}</button><button class=pri type=button data-act=close>${t('close')}</button></p></div>`;
 }
 
 async function submitAuth(form) {
@@ -91,7 +92,9 @@ async function submitAuth(form) {
         }
         if (result.needsConfirmation) {
             form.innerHTML = confirmationPanel(email);
-            form.querySelector('h3').focus();
+            const heading = form.querySelector('h3');
+            form.closest?.('dialog')?.setAttribute('aria-labelledby', heading.id);
+            heading.focus();
             return;
         }
         closeModal();
@@ -140,9 +143,9 @@ function passwordDialog() {
 
 async function submitAccountPassword(form) {
     const password = form.elements.pnewpassword.value, confirmation = form.elements.pconfirm;
-    confirmation.setCustomValidity(password == confirmation.value ? '' : t('accountPasswordMismatch'));
-    if (!confirmation.reportValidity()) {
-        accountMessage(form, '#pwmsg', t('accountPasswordMismatch'));
+    if (password != confirmation.value) {
+        setFieldError(confirmation, t('accountPasswordMismatch'));
+        confirmation.focus();
         return;
     }
     return accountPending(form.querySelector('[type=submit]'), 'accountSaving', async () => {
@@ -196,8 +199,8 @@ function accountFormInput(input) {
     }
     if (input.id == 'pbio')
         qs('#bio-count').textContent = input.value.length + ' / 300';
-    if (input.form?.id == 'pwf')
-        input.form.elements.pconfirm.setCustomValidity('');
+    if (input.id == 'pnewpassword' && input.form.elements.pconfirm.getAttribute('aria-invalid') == 'true')
+        setFieldError(input.form.elements.pconfirm, '');
 }
 
 async function submitAccountProfile(form) {
@@ -211,9 +214,10 @@ async function submitAccountProfile(form) {
         if (!form.isConnected)
             return;
         if (result.error == 'usernameTaken') {
-            fields.pusername.setCustomValidity(t('usernameTaken'));
+            const message = t('usernameTaken');
+            fields.pusername.setCustomValidity(message);
+            setFieldError(fields.pusername, message);
             fields.pusername.focus();
-            fields.pusername.reportValidity();
             return;
         }
         if (result.error)
@@ -243,12 +247,10 @@ async function submitAccountEmail(form) {
 
 async function confirmAccountDeletion(button) {
     const email = account.user.email, ownerId = account.user.id;
-    const answer = await showDialog({ title: t('accountDelete'), msg: t('accountDeleteHint'), danger: 1, input: 1, label: t('accountDeleteConfirm').replace('{email}', () => email) });
+    const answer = await showDialog({ title: t('accountDelete'), msg: t('accountDeleteHint'), danger: 1, input: 1, label: t('accountDeleteConfirm').replace('{email}', () => email), validate: value => value.toLowerCase() == email.toLowerCase() ? '' : t('accountEmailMismatch') });
     if (answer == null)
         return;
     const root = button.closest('.account-dialog');
-    if (answer.trim().toLowerCase() != email.toLowerCase())
-        return accountMessage(root, '#settings-msg', t('accountEmailMismatch'));
     if (account.user?.id != ownerId)
         return;
     return accountPending(button, 'accountDeleting', async () => {

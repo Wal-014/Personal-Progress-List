@@ -21,6 +21,7 @@ function fixture(extra = {}) {
         matchMedia: () => ({ matches: false }),
         setTimeout: (fn, delay) => { timers.push({ fn, delay }); return timers.length; },
         clearTimeout: id => calls.push(['clear', id]),
+        queueMicrotask: run => run(),
         FormData: class { constructor(form) { return Object.entries(form.fields); } },
         ...extra
     });

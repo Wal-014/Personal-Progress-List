@@ -59,11 +59,19 @@ function drawerKeydown(event) {
     return false;
 }
 
+function setListChoices(button, open) {
+    ui.listsExpanded = open;
+    button.setAttribute('aria-expanded', String(open));
+    const choices = qs('#hlists');
+    choices.inert = !open;
+    (open ? choices.querySelector('button') : button)?.focus({ preventScroll: true });
+}
+
 function shellNavigation() {
     const navItem = (kind, label, icon) => `<button data-act=tab data-v=${kind}${kind == ui.tab ? ' aria-current=page' : ''}>${icon}<span>${t(label)}</span></button>`;
     const expanded = ui.listsExpanded;
     const choices = ['classic', 'platform'].map(kind => `<button class=pma data-act=tab data-v=${kind}${ui.tab == kind ? ' aria-current=page' : ''}>${ICONS[kind]}<span>${t(kind)}</span></button>`).join('');
-    return `<nav class=shell-nav aria-label="${t('nav')}">${navItem('home', 'home', ICONS.navHome)}<button data-act=listchoices aria-expanded=${expanded} aria-controls=hlists${isListTab() ? ' aria-current=page' : ''}>${ICONS.navLists}<span>${t(canEdit() ? 'lists' : 'publicLists')}</span>${ICONS.chevronDown}</button><div id=hlists class=list-choices${expanded ? '' : ' inert'}><div class=list-choices-inner>${choices}</div></div>${navItem('wish', 'wish', ICONS.navWish)}${navItem('stats', 'stats', ICONS.navStats)}</nav>`;
+    return `<nav class=shell-nav aria-label="${t('nav')}">${navItem('home', 'home', ICONS.navHome)}<button id=list-choices-trigger data-act=listchoices aria-expanded=${expanded} aria-controls=hlists${isListTab() ? ' aria-current=page' : ''}>${ICONS.navLists}<span>${t(canEdit() ? 'lists' : 'publicLists')}</span>${ICONS.chevronDown}</button><div id=hlists class=list-choices role=group aria-labelledby=list-choices-trigger${expanded ? '' : ' inert'}><div class=list-choices-inner>${choices}</div></div>${navItem('wish', 'wish', ICONS.navWish)}${navItem('stats', 'stats', ICONS.navStats)}</nav>`;
 }
 
 function shellFooter() {
@@ -80,9 +88,30 @@ function shellPageTitle() {
     return `<div class=page-title><button data-act=tab data-v=home aria-label="${t('home')}" title="${t('home')}">${ICONS.navHome}</button>${wish ? `<button data-act=tab data-v=wish aria-label="${t('back2')}">${ICONS.actionBack}</button>` : ''}<h2>${icon}${escapeHtml(title)}</h2>${primary}</div>`;
 }
 
+let notificationCount;
+
+function syncNotificationCount(count) {
+    let status = qs('#bell-status');
+    if (!status) {
+        status = document.createElement('span');
+        status.id = 'bell-status';
+        status.className = 'visually-hidden';
+        status.setAttribute('role', 'status');
+        document.body.appendChild(status);
+    }
+    if (notificationCount != null && notificationCount != count) {
+        const message = count ? t('bell') + ' (' + count + ')' : t('nonot');
+        queueMicrotask(() => {
+            const region = activeModal()?.querySelector('[data-bell-status]') || status;
+            region.textContent = message;
+        });
+    }
+    notificationCount = count;
+}
+
 function sharedShell(screen) {
     const count = canEdit() ? alerts().length : 0;
-    const utilities = canEdit() ? `<div class=shell-utilities><span id=cloud-header class=cloud-header>${cloudHeaderStatus()}</span><button class=sq data-act=bell aria-label="${t('bell')}${count ? ` (${count})` : ''}">${ICONS.bell}${count ? `<b class=bdg aria-hidden=true>${count}</b>` : ''}</button></div>` : '';
+    const utilities = canEdit() ? `<div class=shell-utilities><span id=cloud-header class=cloud-header>${cloudHeaderStatus()}</span><button class=sq data-act=bell aria-haspopup=dialog aria-label="${t('bell')}${count ? ` (${count})` : ''}">${ICONS.bell}${count ? `<b class=bdg aria-hidden=true>${count}</b>` : ''}</button></div>` : '';
     return `<div class=app-shell><svg class=shell-paints width="0" height="0" aria-hidden="true" focusable="false"><defs><linearGradient id="nav-metal" gradientUnits="userSpaceOnUse" x1="3" y1="2" x2="21" y2="22"><stop class="nav-ink"/><stop offset=".32" class="nav-ink"/><stop offset=".43" class="nav-glint"/><stop offset=".56" class="nav-ink"/><stop offset=".82" class="nav-glint"/><stop offset="1" class="nav-ink"/></linearGradient><linearGradient id="action-metal" gradientUnits="userSpaceOnUse" x1="4" y1="4" x2="20" y2="20"><stop class="action-edge"/><stop offset=".42" class="action-edge"/><stop offset=".55" class="action-glint"/><stop offset=".72" class="action-edge"/><stop offset="1" class="action-glint"/></linearGradient></defs></svg><aside id=shell-sidebar class=shell-sidebar aria-label="${t('nav')}"><div class=shell-identity>${profileSwitcher()}</div>${shellNavigation()}${shellFooter()}</aside><button class=drawer-backdrop data-act=drawerclose tabindex=-1 aria-label="${t('close')}" hidden></button><div class=shell-content><header class=shell-header><button id=shell-menu class=shell-menu data-act=drawer aria-expanded=false aria-controls=shell-sidebar aria-label="${t('nav')}">${ICONS.menu}</button><div class=shell-brand><span class=shell-brand-frame>${ICONS.app}</span><h1>Personal Progress List</h1></div>${utilities}</header><main class="shell-main${ui.tab == 'home' ? ' home hl' : isListTab() ? ' wide' : ''}">${shellPageTitle()}${ui.tab == 'home' ? screen : `<div class=${isListTab() ? 'list-surface' : 'legacy-surface'}>${screen}</div>`}</main></div></div>`;
 }
 

@@ -34,6 +34,6 @@ function profileSwitcher() {
     if (signedIn)
         return pill + accountMenu();
     const row = (act, key, extra = '') => `<button class=pma data-act=${act} ${extra}>${t(key)}</button>`;
-    const choices = Object.entries(store.profs).map(([id, p]) => `<div class=profile-choice><button class=pma data-act=localuse data-id="${escapeHtml(id)}"${id == store.cur ? ' aria-pressed=true' : ''}>${catalogCube(p.cubeId, p.color, p.secondaryColor)}<span>${escapeHtml(p.name)}</span></button></div>`).join('');
-    return `${pill}<div id=pmenu class=pmenu popover>${choices}${row('pedit', 'pedit')}${row('localbackup', 'localBackup', `data-id="${escapeHtml(store.cur)}"`)}${row('localimport', 'localImport')}${row('localdata', 'localData')}${row('asignin', account.status == 'loading' ? 'accountLoading' : 'accountSignIn', account.status == 'loading' ? 'disabled aria-busy=true' : '')}<p class=by>${t('localGuestHint')}</p></div>`;
+    const choices = Object.entries(store.profs).map(([id, p]) => `<div class=profile-choice><button class=pma data-act=localuse data-id="${escapeHtml(id)}"${id == store.cur ? ' aria-pressed=true autofocus' : ''}>${catalogCube(p.cubeId, p.color, p.secondaryColor)}<span>${escapeHtml(p.name)}</span></button></div>`).join('');
+    return `${pill}<div id=pmenu class=pmenu popover role=group aria-labelledby=profile-pill>${choices}${row('pedit', 'pedit')}${row('localbackup', 'localBackup', `data-id="${escapeHtml(store.cur)}"`)}${row('localimport', 'localImport')}${row('localdata', 'localData')}${row('asignin', account.status == 'loading' ? 'accountLoading' : 'accountSignIn', account.status == 'loading' ? 'disabled aria-busy=true' : '')}<p class=by>${t('localGuestHint')}</p></div>`;
 }

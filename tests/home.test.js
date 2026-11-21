@@ -111,7 +111,7 @@ test('View all omits a count when the preview shows every wishlist', () => {
 
 test('Home navigation distinguishes own lists from public lists', () => {
     const { app } = homeApp();
-    const listsLabel = () => app('shellNavigation()').match(/<button data-act=listchoices[^>]*>[\s\S]*?<span>([^<]+)<\/span>/)[1];
+    const listsLabel = () => app('shellNavigation()').match(/<button[^>]*data-act=listchoices[^>]*>[\s\S]*?<span>([^<]+)<\/span>/)[1];
     assert.equal(listsLabel(), 'My lists');
     app("viewing = { identity: { display_name: 'Public player' } }");
     assert.equal(listsLabel(), 'Lists');
@@ -245,17 +245,27 @@ test('pause menu exposes independent named appearance groups and pressed options
     assert.match(html, /data-act=background data-v=orbital aria-pressed=true/);
 });
 
-test('guest appearance actions persist independently and restore the clicked option', () => {
-    const { app, context } = homeApp();
-    app('reopenPause = selector => { globalThis.restored = selector; }');
+test('guest appearance actions persist independently and update the existing controls', () => {
+    const { app, context } = homeApp(), pressed = {};
+    const options = values => values.map(v => ({
+        dataset: { v }, setAttribute: (key, value) => { assert.equal(key, 'aria-pressed'); pressed[v] = value; }
+    }));
+    const themes = options(['nebula', 'porcelain']), backgrounds = options(['grid', 'celestial', 'orbital']);
+    context.document.querySelectorAll = selector => selector.endsWith('theme]') ? themes : backgrounds;
+    context.openModal = () => assert.fail('appearance changes must leave the settings dialog intact');
+    context.render = () => assert.fail('appearance changes must leave the inline app form intact');
     app("ACTIONS.background({ dataset: { v: 'celestial' } }); ACTIONS.theme({ dataset: { v: 'porcelain' } })");
     assert.equal(app('ui.background'), 'celestial');
     assert.equal(context.localStorage.gbg, 'celestial');
     assert.equal(context.localStorage.gt, 'porcelain');
-    assert.equal(context.restored, '[data-act=theme][data-v=porcelain]');
+    assert.equal(pressed.porcelain, 'true');
+    assert.equal(pressed.nebula, 'false');
     app("ACTIONS.background({ dataset: { v: 'orbital' } })");
     assert.equal(app('ui.theme'), 'porcelain');
-    assert.equal(context.restored, '[data-act=background][data-v=orbital]');
+    assert.equal(pressed.orbital, 'true');
+    assert.equal(context.document.documentElement.dataset.theme, 'porcelain');
+    assert.equal(context.document.documentElement.dataset.bg, 'orbital');
+    assert.equal(pressed.celestial, 'false');
     const reloaded = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js'], { localStorage: context.localStorage });
     assert.equal(reloaded.app('ui.theme'), 'porcelain');
     assert.equal(reloaded.app('ui.background'), 'orbital');
