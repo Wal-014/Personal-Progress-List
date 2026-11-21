@@ -1930,10 +1930,22 @@ input.ro {
 
 .timeline-chart > svg { flex: none; }
 
-#tlw {
-  overflow-x: auto;
+.timeline-plot {
+  position: relative;
   flex: 1;
   min-width: 0;
+}
+
+.timeline-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+#tlw {
+  position: relative;
+  overflow-x: auto;
 }
 
 #timeline-data summary {
@@ -4980,6 +4992,10 @@ input[type=checkbox]:checked::after {
 .shell-main > .legacy-surface, .list-surface #lw, .list-surface .rcol, .legacy-surface > .wl {
   overflow: auto;
   overscroll-behavior: contain;
+}
+.shell-main > .legacy-surface:has(> #rankings-well) {
+  /* Keep the final well's rim clear of the scroll clip at fractional heights. */
+  padding-block-end: var(--space-4);
 }
 .legacy-surface:has(> .wh + .wl) {
   display: grid;
