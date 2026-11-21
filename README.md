@@ -1,5 +1,5 @@
 <p align="center">
-  <img alt="Personal Progress List - track and rank your hardest Geometry Dash levels" src="docs/brand/banner.png" width="880" />
+  <img alt="Personal Progress List - track and rank your hardest Geometry Dash levels" src="docs/brand/banner.jpg" width="880" />
 </p>
 
 <p align="center">
@@ -108,9 +108,9 @@ The first visit loads the demo profile from `data/demo-data.js`, which contains 
 Node is only used for the checks; the app itself has no dependencies to install. `eslint.config.js` reads the script list in `index.html` so that names shared between the classic scripts count as defined and no local variable can hide one of them. `tests/load-scripts.js` runs the scripts a test needs in one shared `vm` context, the same way the page does, and `tests/globals.test.js` fails when two scripts declare the same top-level name or when one is never used.
 
 The banner is drawn in `docs/brand/banner.html`. Regenerate it from the repository root with
-`npx -y playwright@1.63.0 screenshot --viewport-size "1280,640" "file:///<absolute path>/docs/brand/banner.html" docs/brand/banner.png`. The favicon source is `docs/brand/favicon.svg`; render it to `favicon.png` at 64x64 with a transparent background, for example with Playwright's `page.screenshot({ omitBackground: true })`.
+`npx -y playwright@1.63.0 screenshot --viewport-size "1280,640" "file:///<absolute path>/docs/brand/banner.html" docs/brand/banner.jpg`. The favicon source is `docs/brand/favicon.svg`; render it to `favicon.png` at 64x64 with a transparent background, for example with Playwright's `page.screenshot({ omitBackground: true })`.
 
-The promotional card, also the site's link preview image, is drawn in `docs/brand/card.html` from screenshots of the app in `docs/brand/card/` (demo profile, English, Classic blue theme). With the server above running, regenerate it with `npx -y playwright@1.63.0 screenshot --viewport-size "1200,630" "http://localhost:8000/docs/brand/card.html" docs/brand/card.png`. Retake the screenshots when the screens they show change. The existing banner and card PNGs still show the former Personal Ranked Progress name; their HTML sources use the new name.
+The promotional card, also the site's link preview image, is drawn in `docs/brand/card.html` from screenshots of the app in `docs/brand/card/` (demo profile, English, Classic blue theme). With the server above running, regenerate it with `npx -y playwright@1.63.0 screenshot --viewport-size "1200,630" "http://localhost:8000/docs/brand/card.html" docs/brand/card.jpg`. Retake the screenshots when the screens they show change. The existing banner and card images still show the former Personal Ranked Progress name; their HTML sources use the new name.
 
 ## Deployment
 
