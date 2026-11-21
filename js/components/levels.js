@@ -211,7 +211,7 @@ function levelForm(level) {
     const times = ['tN', 'tP', 'tPC'].map(key => durationInput(key, levelData[key])).join('');
     const totals = `<div class=level-totals><div>${readout('attT', 'attT', totalAttempts(levelData))}</div><div>${readout('tT', 'tT', durationClock(totalSeconds(levelData)))}</div></div>`;
     const section = (key, body) => `<fieldset><legend>${t(key)}</legend><div class=grid>${body}</div></fieldset>`;
-    return `<div class=box><h2${level ? ' tabindex=-1' : ''}>${level ? t('edit') : t('palAdd')}</h2><form id=fm data-id="${escapeHtml(level?.id)}"><div class=warn id=wn></div>
+    return `<div class=box><h2${level ? ' tabindex=-1' : ''}>${level ? t('edit') : t('palAdd')}</h2><form id=fm data-id="${escapeHtml(level?.id)}">
 ${levelSearchBox()}
 ${section('s1', levelFields(levelData, true))}
 ${section('s2', formField('pos', rankPosition, 'number', `min=1 max=${maximum} step=1 aria-describedby=fm-pos-hint`, rankPositionHint(maximum)) + ranks)}
@@ -347,6 +347,7 @@ function renderList() {
     if (actions)
         actions.innerHTML = listSelectionControls();
     initSort();
+    refreshScrollFades();
 }
 
 function renderPanel() {
@@ -376,20 +377,18 @@ function selectLevel(id) {
         focusLevelPanel();
 }
 
-/** Updates the automatic top field and found note from the picked level. */
+/** Updates the automatic top field from the picked level. */
 async function fillAredlPosition(f) {
     await loadAredlList();
-    const q = k => f.elements[k], w = qs('#wn');
-    if (!w)
+    if (!f.isConnected)
         return;
+    const q = k => f.elements[k];
     const level = { levelId: q('lid').value, name: q('name').value, kind: q('kind').value, rating: q('rating').value, diff: q('diff').value };
     qs('label[for=fm-ap]').textContent = t(level.kind == 'platform' ? 'apPlatform' : 'ap');
     // Without downloaded lists nothing is known, so the stored value stays on screen
     if (!aredlCache.length)
         return;
-    const ar = aredlStatus(level);
-    q('ap').value = aredlTopValue(ar);
-    w.textContent = ar.s == 'r' ? `${t('found')} · #${ar.p}` : '';
+    q('ap').value = aredlTopValue(aredlStatus(level));
 }
 
 async function fillDemonlistPosition(f) {

@@ -528,11 +528,12 @@ document.body.onsubmit = e => {
     else
         saveLevel(e.target);
 };
-document.addEventListener('scroll', e => {
-    const pane = e.target;
-    if (pane.matches?.('#lw, .shell-main > .legacy-surface, .legacy-surface > .wl'))
-        pane.classList.toggle('scrolled-edge', pane.scrollTop > 0);
-}, { capture: true, passive: true });
+function onPaneScroll({ target: pane }) {
+    if (pane.matches?.(SCROLL_PANES))
+        updateScrollFades(pane);
+}
+
+document.addEventListener('scroll', onPaneScroll, { capture: true, passive: true });
 
 const invalidForms = new WeakSet();
 
