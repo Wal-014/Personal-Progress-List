@@ -161,7 +161,7 @@ for (const signed of [true, false]) test('home and menus expose accounts, signed
     const card = d.app('profileSwitcher()');
     assert.ok(card.includes('data-act=localdata'));
     assert.equal(card.includes('data-act=asignin'), !signed);
-    assert.equal(card.includes('data-act=pnew'), !signed);
+    assert.equal(card.includes('data-act=pnew'), false);
     assert.equal(card.includes('data-act=pedit'), !signed);
     assert.equal(card.includes('popovertarget=amenu'), signed);
     assert.equal((card.match(/id=amenu/g) || []).length, signed ? 1 : 0);
@@ -482,7 +482,7 @@ test('migration rejects invalid GDL positions and platformer positions', () => {
 });
 
 
-test('local profile creation and editing preserve progress and persist names and both colours', async () => {
+test('editing the local profile preserves progress and persists its name and both colours', async () => {
     const d = device();
     d.setup({ a: localProfile({ data: { ...data(), levels: [level('kept')] } }) });
     d.app("cloudUser = null; account.status = 'signed-out'; activateProfile('a')");
@@ -492,16 +492,10 @@ test('local profile creation and editing preserve progress and persist names and
     assert.equal(d.app('profile.levels[0].id'), 'kept');
     assert.equal(JSON.parse(d.storage.gdp).profs.a.secondaryColor, '#112233');
     assert.match(d.app('profileSwitcher()'), /&lt;Renamed&gt;/);
-    d.app("ui.sel = 'kept'; ui.wl = 'old'; ui.edit = 1");
-    await d.app('ACTIONS.pnew()');
-    assert.notEqual(d.app('store.cur'), 'a');
-    assert.equal(d.app('profile.levels.length'), 0);
-    assert.equal(d.app('ui.sel'), null);
-    assert.equal(d.app('ui.edit'), 0);
-    assert.equal(JSON.parse(d.storage.gdp).profs.a.data.levels[0].id, 'kept');
+    assert.equal(d.app('ACTIONS.pnew'), undefined);
     const before = d.storage.gdp;
     d.context.askProfile = async () => null;
-    await d.app('ACTIONS.pnew()');
+    await d.app('ACTIONS.pedit()');
     assert.equal(d.storage.gdp, before);
     d.app("cloudUser = 'owner'");
     d.context.askProfile = async () => { throw Error('Account must not edit local identity'); };

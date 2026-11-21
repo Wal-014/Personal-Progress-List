@@ -108,7 +108,7 @@ const flush = () => new Promise(resolve => setImmediate(resolve));
 test('askProfile preserves untouched colours exactly and defaults invalid values', async () => {
     const { app, context, load } = createApp();
     load(['js/components/dialogs.js']);
-    context.showDialog = ({ enhance }) => enhance({ querySelector: () => ({}) })('Player');
+    context.showDialog = ({ enhance }) => enhance({ querySelector: () => ({ querySelector: () => ({ hidden: true }) }) })('Player');
     const ask = app('askProfile');
     assert.deepEqual({ ...await ask('Edit profile', { name: 'Player', color: '#FFE94D', secondaryColor: '#ABCDEF' }) }, { name: 'Player', cubeId: 2, color: '#FFE94D', secondaryColor: '#ABCDEF' });
     assert.deepEqual({ ...await ask('New profile', { name: 'Player', color: null, secondaryColor: 'invalid' }) }, { name: 'Player', cubeId: 2, color: '#ffe94d', secondaryColor: '#5ef0ff' });
@@ -143,7 +143,7 @@ test('the profile dialog changes only the colour group that was edited', () => {
     const primary = colourGroup('color'), secondary = colourGroup('secondaryColor'), preview = {}, fieldset = { querySelector: () => preview };
     let read;
     context.showDialog = ({ enhance }) => {
-        read = enhance({ querySelector: () => fieldset });
+        read = enhance({ querySelector: selector => selector === '.profile-colors' ? fieldset : { querySelector: () => ({ hidden: true }) } });
         return new Promise(() => {});
     };
     app('askProfile')('Edit profile', { name: 'Player', color: '#ffe94d', secondaryColor: '#5ef0ff' });

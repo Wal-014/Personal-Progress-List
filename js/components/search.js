@@ -166,6 +166,8 @@ function pickLevel(f, l) {
     const set = (k, v) => {
         if (f.elements[k])
             f.elements[k].value = v ?? '';
+        if (f.elements[k + 'Display'])
+            f.elements[k + 'Display'].value = v ?? '';
     };
     set('name', l.name);
     set('lid', l.levelId);
@@ -186,7 +188,7 @@ function pickLevel(f, l) {
 
 /** Read-only level fields filled by the search: name, ID, creator, difficulty and, in the level form, the list. */
 function levelFields(o, withKind) {
-    const ro = (k, label, v) => `<div><label for=lf-${k}>${t(label)}</label><input id=lf-${k} name=${k} value="${escapeHtml(v)}" readonly class=ro></div>`;
+    const ro = (k, label, v) => `<div><label for=lf-${k}>${t(label)}</label><output id=lf-${k} name=${k}Display class=level-info-value>${escapeHtml(v)}</output><input type=hidden name=${k} value="${escapeHtml(v)}"></div>`;
     return ro('name', 'name', o.name) + ro('lid', 'lid', o.levelId) + ro('creator', 'creator', o.creator)
         + `<div><span class=lab>${t('diff')}</span><div class=fdiff>${difficultyFace(o, 'lf-face')}<span id=lf-diffT>${o.levelId || o.name ? escapeHtml(difficultyLabel(o)) : ''}</span></div></div>`
         + `<input type=hidden name=diff value="${escapeHtml(o.diff)}"><input type=hidden name=rating value="${escapeHtml(o.rating)}">`

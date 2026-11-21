@@ -99,13 +99,13 @@ test('form and detail show classic GDL values, hide platformer GDL and escape va
             const html = f.app('levelForm')(level);
             assert.ok(html.includes(`<div id=fm-gdl-field${kind == 'platform' ? ' hidden' : ''}>`));
             assert.ok(html.includes(lang == 'en' ? 'Top in Global Demonlist' : 'Top en Global Demonlist'));
-            assert.match(html, /id=fm-gdl type=text readonly tabindex=-1/);
-            assert.equal(f.app('detail')(level).includes('GDL #387'), kind == 'classic');
+            assert.ok(html.includes(`<output id=fm-gdl name=gdl>${kind == 'platform' ? '—' : '#387'}</output>`));
+            assert.equal(f.app('detail')(level).includes('<dt>GDL</dt><dd>#387</dd>'), kind == 'classic');
         }
     }
-    assert.ok(f.app('detail')({ name: 'Empty', kind: 'classic' }).includes('GDL \u2014'));
-    assert.ok(f.app('levelForm')({ name: 'Empty', kind: 'classic' }).includes('value="\u2014" class=ro'));
-    assert.ok(f.app('detail')({ name: 'Unsafe', gdl: '<img>' }).includes('GDL #&lt;img&gt;'));
+    assert.ok(f.app('detail')({ name: 'Empty', kind: 'classic' }).includes('<dt>GDL</dt><dd>\u2014</dd>'));
+    assert.ok(f.app('levelForm')({ name: 'Empty', kind: 'classic' }).includes('<output id=fm-gdl name=gdl>\u2014</output>'));
+    assert.ok(f.app('detail')({ name: 'Unsafe', gdl: '<img>' }).includes('<dt>GDL</dt><dd>#&lt;img&gt;</dd>'));
 });
 
 test('picked results toggle GDL visibility and update from cached IDs', async () => {

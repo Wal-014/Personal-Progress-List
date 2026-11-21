@@ -59,15 +59,6 @@ const thumbUrl = l => {
     return url ? url + '/small' : '';
 };
 
-const aredlLabel = l => {
-    const listName = l.kind == 'platform' ? 'AREPL' : 'AREDL';
-    if (l.ar?.s == 'r' && l.ar.p != null)
-        return `${listName} #${escapeHtml(l.ar.p)}`;
-    if (l.ar?.s == 'p')
-        return `${listName} · ${t('pending')}`;
-    return listName + ' —';
-};
-
 /** Tag colour from the active profile, falling back to the text colour. */
 const tagColor = n => {
     const c = profile.tags?.find(g => g.name == n)?.color;
@@ -80,6 +71,7 @@ const tagStyle = n => {
 };
 
 /** Levels tagged "Pre-Extremes" appear separately under "First steps". */
+const TAG_NAME_LIMIT = 24;
 const PRE_TAG = 'Pre-Extremes';
 const isPre = l => (l.tags || []).includes(PRE_TAG);
 

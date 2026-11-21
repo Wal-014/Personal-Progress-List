@@ -36,8 +36,7 @@ window.addEventListener('resize', () => syncDrawer());
 const ACTIONS = {
     drawer: () => setDrawer(!ui.drawer),
     drawerclose: () => setDrawer(false),
-    pnew: () => editLocalProfile(true),
-    pedit: () => editLocalProfile(false),
+    pedit: () => editLocalProfile(),
     dthadd: a => addDeath(a),
     dthedit: a => editDeath(a),
     dthremove: a => removeDeath(a),
@@ -117,6 +116,9 @@ const ACTIONS = {
         else
             render();
     },
+    'list-select': () => toggleLevelSelection(),
+    'list-pick': (row, id) => pickListLevel(row, id),
+    'list-delete': () => deleteSelectedLevels(),
     listchoices(button) {
         ui.listsExpanded = button.getAttribute('aria-expanded') != 'true';
         button.setAttribute('aria-expanded', String(ui.listsExpanded));
@@ -167,7 +169,7 @@ const ACTIONS = {
         render();
         if (returnId && innerWidth <= 900) {
             qs(`.lv[data-id="${CSS.escape(returnId)}"]`)?.focus({ preventScroll: true });
-            scrollTo({ top: ui.listReturnY || 0 });
+            qs('#lw').scrollTop = ui.listReturnY || 0;
         }
     },
     tgadd(a) {
@@ -211,8 +213,8 @@ const ACTIONS = {
     },
     tadd() {
         const n = qs('#nn').value.trim();
-        if (!n || profile.tags.some(g => g.name == n))
-            return showAlert(t(n ? 'tagExists' : 'tagEmpty'));
+        const error = tagNameError(n);
+        if (error) return showAlert(error);
         profile.tags.push({ name: n, color: qs('#nc').value });
         save();
         render();
@@ -334,11 +336,29 @@ function setTagColor(input) {
     render();
 }
 
+function updateTagPreview(input) {
+    const label = input.parentElement.querySelector('.tag-swatch');
+    const name = input.value.trim();
+    label.querySelector('span').textContent = name || t('newTag');
+    label.title = name ? t('color') + ' \u00b7 ' + name : t('color');
+    label.querySelector('input').setAttribute('aria-label', label.title);
+}
+
+function tagNameError(name, current) {
+    if (!name) return t('tagEmpty');
+    if (name.length > TAG_NAME_LIMIT) return t('tagNameLimit').replace('{n}', TAG_NAME_LIMIT);
+    if (profile.tags.some(tag => tag !== current && tag.name === name)) return t('tagExists');
+    return '';
+}
+
 function renameTag(input) {
     const tag = profile.tags[input.dataset.tn], name = input.value.trim();
-    if (!name || profile.tags.some(x => x != tag && x.name == name)) {
+    if (name === tag.name) return;
+    const error = tagNameError(name, tag);
+    if (error) {
         input.value = tag.name;
-        return showAlert(t(name ? 'tagExists' : 'tagEmpty'));
+        updateTagPreview(input);
+        return showAlert(error);
     }
     const rename = () => {
         const wasPre = tag.name == PRE_TAG;
@@ -355,8 +375,10 @@ function renameTag(input) {
     askConfirm(t('preTagConfirm')).then(ok => {
         if (ok)
             rename();
-        else
+        else {
             input.value = tag.name;
+            updateTagPreview(input);
+        }
     });
 }
 
@@ -399,7 +421,7 @@ document.body.onclick = e => {
     const g = e.target.closest('[data-tag]'), a = e.target.closest('[data-act]'), c = e.target.closest('[data-id]');
     if (e.target.classList.contains('modal'))
         return closeModal();
-    if (g) {
+    if (g && a?.dataset.act !== 'list-pick') {
         ui.tagFilter = [g.dataset.tag];
         if (!isListTab())
             ui.tab = 'classic';
@@ -450,7 +472,17 @@ document.body.onsubmit = e => {
     else
         saveLevel(e.target);
 };
+document.addEventListener('scroll', e => {
+    const pane = e.target;
+    if (pane.matches?.('#lw, .shell-main > .legacy-surface, .legacy-surface > .wl'))
+        pane.classList.toggle('scrolled-edge', pane.scrollTop > 0);
+}, { capture: true, passive: true });
+
 document.body.oninput = e => {
+    if (e.target.dataset.tn != null || e.target.id == 'nn')
+        updateTagPreview(e.target);
+    if (e.target.dataset.tc != null || e.target.id == 'nc')
+        e.target.parentElement.style.setProperty('--tag-color', e.target.value);
     if (e.target.dataset.deathField != null)
         return deathInputChanged(e.target);
     if (['pf', 'pwf'].includes(e.target.form?.id))

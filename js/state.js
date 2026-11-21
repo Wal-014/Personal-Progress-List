@@ -38,7 +38,7 @@ const canEdit = () => !viewing;
 
 /** Interface state: screen, selection, search, statistics views (rankings, comparison, timeline), theme and language. */
 let ui = {
-    tab: 'home', wl: null, wishFx: null, q: '', tagFilter: [], z: 28, lang: localStorage.gl || 'es', theme: themeOf(localStorage.gt), background: backgroundOf(localStorage.gbg),
+    tab: 'home', listsExpanded: false, wl: null, wishFx: null, q: '', tagFilter: [], z: 28, lang: localStorage.gl || 'es', theme: themeOf(localStorage.gt), background: backgroundOf(localStorage.gbg),
     rankingMode: 'classic', rankingMetric: 'att', rankingDirection: 'desc', rankingAll: false,
     comparison: { open: false, slots: [null, null] }, timelineMetric: 'att'
 };
@@ -47,6 +47,7 @@ const isListTab = () => ['classic', 'platform'].includes(ui.tab);
 
 /** Clears the name search and the tag filter, so the next list opens unfiltered. */
 function resetListFilters() {
+    ui.levelSelection = null;
     ui.q = '';
     ui.tagFilter = [];
 }
@@ -85,6 +86,7 @@ function nextProfileColor() {
 const findLevel = id => profile.levels.find(l => l.id == id);
 
 function activateProfile(id) {
+    ui.levelSelection = null;
     store.cur = id;
     profile = store.profs[id].data;
     ensureProfileDefaults();

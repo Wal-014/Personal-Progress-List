@@ -9,20 +9,73 @@ function meter(v, lab = '') {
     return hd(`<b>${escapeHtml(formatRating(v))}</b>`) + `<div class="meter ${v >= 8 ? 'g' : ''}" style="color:${c}"><i style="background:${c};left:0%;width:${p}%"></i></div>`;
 }
 
-/**
- * Chip that filters the list by its tag. Only chips outside a level card are focusable: the card is already a button, and a control nested in a button is lost to screen readers.
- * The replacer function keeps "$" patterns in a tag name literal.
- */
-function tagFilterChip(name, focusable) {
-    return `<span class=chip data-tag="${escapeHtml(name)}" style="${tagStyle(name)}"${focusable ? ` role=button tabindex=0 aria-label="${escapeHtml(t('filterTag').replace('{t}', () => name))}"` : ''}>${escapeHtml(name)}</span>`;
+/** Escapes the detail tag and preserves literal "$" patterns in its accessible label. */
+function tagFilterChip(name) {
+    const label = t('filterTag').replace('{t}', () => name);
+    return `<span class=chip data-tag="${escapeHtml(name)}" style="${tagStyle(name)}" role=button tabindex=0 aria-label="${escapeHtml(label)}">${escapeHtml(name)}</span>`;
+}
+
+function currentLevelSelection() {
+    const selection = ui.levelSelection;
+    return selection && canEdit() && selection.profile === profile && selection.kind === ui.tab ? selection : null;
+}
+
+function toggleLevelSelection() {
+    if (!canEdit() || !isListTab())
+        return;
+    ui.levelSelection = currentLevelSelection() ? null : { profile, kind: ui.tab, ids: new Set() };
+    renderList();
+    qs('[data-act=list-select]')?.focus({ preventScroll: true });
+}
+
+function pickListLevel(row, id) {
+    const selection = currentLevelSelection();
+    if (!selection || findLevel(id)?.kind !== selection.kind)
+        return;
+    if (selection.ids.has(id))
+        selection.ids.delete(id);
+    else
+        selection.ids.add(id);
+    row.setAttribute('aria-pressed', String(selection.ids.has(id)));
+    qs('.list-selection output').textContent = t('levelSelectionCount').replace('{n}', selection.ids.size);
+    qs('[data-act=list-delete]').disabled = !selection.ids.size;
+}
+
+function listSelectionControls() {
+    const selection = currentLevelSelection();
+    if (!canEdit() || (!selection && !profile.levels.some(level => level.kind == ui.tab && matchesListFilters(level, ui.q, ui.tagFilter))))
+        return '';
+    return `<div class=list-selection><button type=button data-act=list-select aria-pressed=${!!selection}>${t(selection ? 'cancel' : 'selectLevels')}</button>${selection ? `<output>${t('levelSelectionCount').replace('{n}', selection.ids.size)}</output><button type=button class=dg data-act=list-delete${selection.ids.size ? '' : ' disabled'}>${t('del')}</button>` : ''}</div>`;
+}
+
+async function deleteSelectedLevels() {
+    const selection = currentLevelSelection();
+    if (!selection)
+        return;
+    const ids = new Set(profile.levels.filter(level => level.kind === selection.kind && selection.ids.has(level.id)).map(level => level.id));
+    if (!ids.size || !await askConfirm(t('confirmDeleteSelected').replace('{n}', ids.size), t('del')) || currentLevelSelection() !== selection)
+        return;
+    profile.levels = profile.levels.filter(level => !ids.has(level.id));
+    profile.order[selection.kind] = profile.order[selection.kind].filter(id => !ids.has(id));
+    if (ids.has(ui.sel)) {
+        ui.sel = null;
+        ui.edit = 0;
+    }
+    ui.levelSelection = null;
+    save();
+    render();
+    (qs('[data-act=list-select]') || qs('.list-add'))?.focus({ preventScroll: true });
 }
 
 /** A level row in the list, drawn as an editor object. */
 function card(l, i, n, reorderable) {
+    const selection = currentLevelSelection();
+    const selectionAttrs = selection ? ` data-act=list-pick aria-pressed=${selection.ids.has(l.id)}` : '';
     const u = thumbUrl(l), rank = i == 'pre' ? ICONS.classic : i != null ? i + 1 : '—';
     const podium = i === 0 ? ' top1' : i === 1 ? ' top2' : i === 2 ? ' top3' : '';
-    const meta = [l.creator ? t('by') + ' ' + escapeHtml(l.creator) : '', escapeHtml(formatDate(l.date)), l.ar?.s == 'p' || l.ar?.s == 'r' && l.ar.p != null ? aredlLabel(l) : ''].filter(Boolean).join(' · ');
-    return `<div class="obj lv${podium}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${u ? ` style="--th:url('${u}')"` : ''}>${u ? '<i class=th aria-hidden=true></i>' : ''}${canEdit() && reorderable ? `<span class=grip aria-hidden=true title="${t('dragHint')}">${ICONS.grip}</span>` : ''}<span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + (i + 1) + ' / ' + n : t('unplaced')}">${rank}</span><div class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>${meta}</span>${l.tags?.length ? `<div>${l.tags.map(name => tagFilterChip(name)).join('')}</div>` : ''}</div>${difficultyFace(l)}</div>`;
+    const creator = l.creator ? `<span class=level-creator>${t('by')} ${escapeHtml(l.creator)}</span>` : '';
+    const date = l.date ? `<time class=level-date datetime="${escapeHtml(l.date)}">${escapeHtml(formatDate(l.date))}</time>` : '';
+    return `<div class="obj lv${podium}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${selectionAttrs}${u ? ` style="--th:url('${u}')"` : ''}>${u ? '<i class=th aria-hidden=true></i>' : ''}${canEdit() && reorderable ? `<span class=grip aria-hidden=true title="${t('dragHint')}">${ICONS.grip}</span>` : ''}<span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + (i + 1) + ' / ' + n : t('unplaced')}">${rank}</span><div class=info><div class=level-title><span class=nm>${escapeHtml(l.name)}</span>${creator}</div>${date}</div>${difficultyFace(l)}${selection ? `<span class=selection-mark aria-hidden=true>${ICONS.actionCheck}</span>` : ''}</div>`;
 }
 
 /** Ids of the ranked levels of a list, in order: Pre-Extremes levels and ids of deleted levels have no rank. */
@@ -42,7 +95,7 @@ function listTagOptions(levels, selectedTags) {
 
 /** Only the full list can be reordered: a filtered one hides levels, so its order cannot be saved. */
 function canReorder() {
-    return canEdit() && !ui.q && !ui.tagFilter.length;
+    return canEdit() && !currentLevelSelection() && !ui.q && !ui.tagFilter.length;
 }
 
 /** List body grouped into ranked, unplaced and first-step levels. */
@@ -54,10 +107,13 @@ function list() {
     const unplacedLevels = listLevels.filter(level => !orderedIds.includes(level.id) && !isPre(level) && isShown(level));
     const firstStepLevels = listLevels.filter(level => isPre(level) && isShown(level));
     const reorderable = canReorder();
-    return `<div id=lst>${rankedLevels.map((level, index) => isShown(level) ? card(level, index, rankedLevels.length, reorderable) : '').join('')}</div>${unplacedLevels.length ? `<h2 class=grp>${t('unplaced')}</h2>` + unplacedLevels.map(level => card(level)).join('') : ''}${firstStepLevels.length ? `<h2 class=grp>${t('first')}</h2>` + firstStepLevels.map(level => card(level, 'pre')).join('') : ''}${!listLevels.length ? canEdit() ? emptyList({ icon: ICONS.actionAdd, title: t('emptyListTitle'), text: t('emptyListText'), action: 'add' }) : `<p class=by>${t('publicNoLevels')}</p>` : !listLevels.some(isShown) ? `<p class=by>${t('noMatch')}</p>` : ''}`;
+    const hasMatches = listLevels.some(isShown);
+    return `<div id=lst>${rankedLevels.map((level, index) => isShown(level) ? card(level, index, rankedLevels.length, reorderable) : '').join('')}</div>${unplacedLevels.length ? `<h2 class=grp>${t('unplaced')}</h2>` + unplacedLevels.map(level => card(level)).join('') : ''}${firstStepLevels.length ? `<h2 class=grp>${t('first')}</h2>` + firstStepLevels.map(level => card(level, 'pre')).join('') : ''}${!listLevels.length ? canEdit() ? emptyList({ icon: ICONS.actionAdd, title: t('emptyListTitle'), text: t('emptyListText'), action: 'add' }) : `<p class=by>${t('publicNoLevels')}</p>` : !hasMatches ? `<p class=by>${t('noMatch')}</p>` : ''}`;
 }
 
 function youtubeId(url) {
+    if (!/^https?:\/\/(?:(?:www\.|m\.)?youtube\.com|youtu\.be)\//i.test(url))
+        return;
     return (/(?:v=|youtu\.be\/|shorts\/|embed\/)([\w-]{11})/.exec(url) || [])[1];
 }
 
@@ -92,10 +148,14 @@ function detail(level) {
         section('s3', grid(statCell('attN', values.attN) + statCell('attC', values.attC) + statCell('best', percentages.length ? `${bestPercent}% ×${deaths[bestPercent]}` : null) + statCell('tN', formatDuration(values.tN)) + statCell('tP', formatDuration(values.tP)) + statCell('tPC', formatDuration(values.tPC))) + grid(statCell('attT', totalAttempts(values), 'big') + statCell('tT', formatDuration(totalSeconds(values)), 'big'))),
         section('s4', grid(statCell('date', recorded(level.date) ? formatDate(level.date) : null)) + (videoId ? `<a class=yt target=_blank rel=noopener href="${escapeHtml(link)}"><img src="https://img.youtube.com/vi/${videoId}/hqdefault.jpg" alt=""><span>${ICONS.actionPlay}</span></a>` : link ? `<p><a style="color:var(--a)" target=_blank rel=noopener href="${escapeHtml(link)}">${ICONS.actionPlay} ${t('link')}</a></p>` : '')),
         section('s5', grid(['enj', 'lik'].map(key => recorded(level[key]) ? `<div class=st><small>${t(key)}</small>${meter(level[key])}</div>` : '').join(''))),
-        section('sh', `${(level.tags || []).map(name => tagFilterChip(name, true)).join('')}${recorded(level.notes) ? `<p style="white-space:pre-wrap">${escapeHtml(level.notes)}</p>` : ''}`),
+        section('sh', `${(level.tags || []).map(tagFilterChip).join('')}${recorded(level.notes) ? `<p style="white-space:pre-wrap">${escapeHtml(level.notes)}</p>` : ''}`),
         section('dh', histogram)
     ].join('');
-    return `<div class=box>${thumbnail ? `<div class=hero style="background-image:url('${thumbnail}')"></div>` : ''}<h2>${escapeHtml(level.name)}</h2><p class=by>${difficultyFace(level)} ${t('creator')}: ${escapeHtml(orDash(level.creator))} · ID ${escapeHtml(orDash(level.levelId))} · ${escapeHtml(difficultyLabel(level))} · ${aredlLabel(level)}${level.kind == 'platform' ? '' : ` · GDL ${escapeHtml(level.gdl == null ? '—' : '#' + level.gdl)}`}</p>
+    const fact = (label, value) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`;
+    const identity = fact(t('creator'), orDash(level.creator)) + fact('ID', orDash(level.levelId)) + fact(t('diff'), difficultyLabel(level));
+    const ranks = fact(level.kind == 'platform' ? 'AREPL' : 'AREDL', aredlTopValue(level.ar)) + (level.kind == 'platform' ? '' : fact('GDL', level.gdl == null ? '—' : '#' + level.gdl));
+    return `<div class=box>${thumbnail ? `<div class=hero style="background-image:url('${thumbnail}')"></div>` : ''}<h2>${escapeHtml(level.name)}</h2>
+<div class=level-identity><dl>${identity}</dl></div><dl class=detail-ranks>${ranks}</dl>
 <div${sections ? ' class=dgrid' : ''}>${sections || `<p class=by>${t('noAdditionalDetails')}</p>`}
 </div><p class=dgb>${canEdit() ? `<button class=blue data-act=edit data-id="${escapeHtml(level.id)}">${ICONS.actionEdit} ${t('edit')}</button>` : ''} <button data-act=lvclose>${t('close')}</button></p></div>`;
 }
@@ -140,12 +200,17 @@ function levelForm(level) {
     const kind = level?.kind || (isListTab() ? ui.tab : 'classic');
     const levelData = level || { tags: [], ar: { s: 'n' }, kind };
     const rankPosition = rankedIds(kind).indexOf(level?.id) + 1 || '', maximum = maxRankPosition(kind, level?.id);
+    const readout = (field, label, value) => `<label for=fm-${field}>${t(label)}</label><output id=fm-${field} name=${field}>${escapeHtml(value)}</output>`;
+    const ranks = `<div class=level-ranks><div>${readout('ap', kind == 'platform' ? 'apPlatform' : 'ap', aredlTopValue(levelData.ar))}</div><div id=fm-gdl-field${kind == 'platform' ? ' hidden' : ''}>${readout('gdl', 'gdlTop', kind == 'platform' || levelData.gdl == null ? '—' : '#' + levelData.gdl)}</div></div>`;
+    const attempts = ['attN', 'attC'].map(key => formField(key, levelData[key], 'number', 'min=0 step=1')).join('');
+    const times = ['tN', 'tP', 'tPC'].map(key => durationInput(key, levelData[key])).join('');
+    const totals = `<div class=level-totals><div>${readout('attT', 'attT', totalAttempts(levelData))}</div><div>${readout('tT', 'tT', durationClock(totalSeconds(levelData)))}</div></div>`;
     const section = (key, body) => `<fieldset><legend>${t(key)}</legend><div class=grid>${body}</div></fieldset>`;
     return `<div class=box><h2>${level ? t('edit') : t('palAdd')}</h2><form id=fm data-id="${escapeHtml(level?.id)}"><div class=warn id=wn></div>
 ${levelSearchBox()}
 ${section('s1', levelFields(levelData, true))}
-${section('s2', formField('pos', rankPosition, 'number', `min=1 max=${maximum} step=1 aria-describedby=fm-pos-hint`, rankPositionHint(maximum)) + `<div><label for=fm-ap>${t(kind == 'platform' ? 'apPlatform' : 'ap')}</label><input id=fm-ap name=ap type=text readonly tabindex=-1 value="${escapeHtml(aredlTopValue(levelData.ar))}" class=ro></div><div id=fm-gdl-field${kind == 'platform' ? ' hidden' : ''}><label for=fm-gdl>${t('gdlTop')}</label><input id=fm-gdl type=text readonly tabindex=-1 value="${escapeHtml(kind == 'platform' || levelData.gdl == null ? '—' : '#' + levelData.gdl)}" class=ro></div>`)}
-${section('s3', formField('attC', levelData.attC, 'number', 'min=0 step=1') + formField('attN', levelData.attN, 'number', 'min=0 step=1') + durationInput('tN', levelData.tN) + durationInput('tP', levelData.tP) + durationInput('tPC', levelData.tPC) + `<div class=level-totals>` + formField('attT', totalAttempts(levelData), 'number', 'readonly tabindex=-1') + formField('tT', durationClock(totalSeconds(levelData)), 'text', 'readonly tabindex=-1') + '</div>')}
+${section('s2', formField('pos', rankPosition, 'number', `min=1 max=${maximum} step=1 aria-describedby=fm-pos-hint`, rankPositionHint(maximum)) + ranks)}
+${section('s3', `<div class=level-attempts>${attempts}</div><div class=level-times>${times}</div>${totals}`)}
 ${section('s4', formField('date', levelData.date, 'date') + formField('link', levelData.link))}
 <fieldset><legend>${t('s5')}</legend><div class=grid>${formField('enj', levelData.enj, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}${formField('lik', levelData.lik, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}</div><label for=tgq style="margin-top:12px">${t('tags')}</label><input id=tgq placeholder="${t('tgs')}" autocomplete=off><div id=tgr class=tgr></div><div id=tgs>${(levelData.tags || []).map(tagChip).join('')}</div></fieldset>
 <fieldset><legend>${t('s6')}</legend><label for=fm-notes>${t('notes')}</label><textarea id=fm-notes name=notes rows=3>${escapeHtml(levelData.notes)}</textarea>${deathsInput(levelData.deaths)}</fieldset>
@@ -188,7 +253,7 @@ function setListTagFilter() {
 function lcol() {
     const options = listTagOptions(profile.levels.filter(level => level.kind == ui.tab), ui.tagFilter);
     const modes = ['classic', 'platform'].map(kind => `<button type=button data-act=tab data-v=${kind} aria-pressed=${ui.tab == kind}${ui.tab == kind ? ' disabled' : ''}><img src="assets/modes/${kind}.svg" alt="" width=32 height=32> ${t(kind)}</button>`).join('');
-    return `<div class=mode-switch role=group aria-label="${t('lists')}">${modes}</div><div class=lh><label class=list-search>${ICONS.listSearch}<input id=q type=search placeholder="${t('search')}" aria-label="${t('search')}" value="${escapeHtml(ui.q)}"></label><details class=ms><summary>${ICONS.listFilter}<span class=filter-label>${escapeHtml(listTagSummary())}</span>${ICONS.chevronDown}</summary><div class=msp>${options.length ? options.map(name => `<label><input type=checkbox name=tagf value="${escapeHtml(name)}"${ui.tagFilter.includes(name) ? ' checked' : ''}><i class=tag-dot aria-hidden=true style="${tagStyle(name)}"></i><span class=filter-label>${escapeHtml(name)}</span></label>`).join('') : `<span class=by>${t('noListTags')}</span>`}</div></details><button type=button class=list-clear data-act=ct aria-label="${t('clearTags')}" title="${t('clearTags')}"${ui.tagFilter.length ? '' : ' hidden'}>${ICONS.listClear}</button>${canEdit() ? `<button type=button class=list-add data-act=add>${ICONS.actionAdd} ${t('palAdd')}</button>` : ''}</div><div id=lw>${list()}</div>`;
+    return `<div class=mode-switch role=group aria-label="${t('lists')}">${modes}</div><div class=lh><label class=list-search>${ICONS.listSearch}<input id=q type=search placeholder="${t('search')}" aria-label="${t('search')}" value="${escapeHtml(ui.q)}"></label><details class=ms><summary>${ICONS.listFilter}<span class=filter-label>${escapeHtml(listTagSummary())}</span>${ICONS.chevronDown}</summary><div class=msp>${options.length ? options.map(name => `<label><input type=checkbox name=tagf value="${escapeHtml(name)}"${ui.tagFilter.includes(name) ? ' checked' : ''}><i class=tag-dot aria-hidden=true style="${tagStyle(name)}"></i><span class=filter-label>${escapeHtml(name)}</span></label>`).join('') : `<span class=by>${t('noListTags')}</span>`}</div></details><button type=button class=list-clear data-act=ct aria-label="${t('clearTags')}" title="${t('clearTags')}"${ui.tagFilter.length ? '' : ' hidden'}>${ICONS.listClear}</button>${canEdit() ? `<button type=button class=list-add data-act=add>${ICONS.actionAdd} ${t('palAdd')}</button>` : ''}</div><div id=list-actions>${listSelectionControls()}</div><div id=lw>${list()}</div>`;
 }
 
 /** Right column with level details, an editing form or an empty prompt. */
@@ -221,8 +286,16 @@ function reorderList(evt) {
 }
 
 function initSort() {
-    if (qs('#lst') && canReorder())
-        new Sortable(qs('#lst'), { animation: 180, filter: startsAwayFromGrip, preventOnFilter: false, fallbackTolerance: 5, onUpdate: reorderList });
+    const listNode = qs('#lst');
+    if (!listNode || !canReorder())
+        return;
+    const pane = listNode.parentElement;
+    const scrollPane = pane.scrollHeight > pane.clientHeight;
+    new Sortable(listNode, {
+        animation: 180, filter: startsAwayFromGrip, preventOnFilter: false, fallbackTolerance: 5,
+        scroll: scrollPane ? pane : true, bubbleScroll: !scrollPane,
+        forceAutoScrollFallback: true, scrollSensitivity: 80, scrollSpeed: 14, onUpdate: reorderList
+    });
 }
 
 const scrollSel = () => qs('.lv.sel')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -230,6 +303,9 @@ const scrollSel = () => qs('.lv.sel')?.scrollIntoView({ block: 'center', behavio
 /** Redraws the list while preserving scroll and search text. */
 function renderList() {
     qs('#lw').innerHTML = list();
+    const actions = qs('#list-actions');
+    if (actions)
+        actions.innerHTML = listSelectionControls();
     initSort();
 }
 
@@ -243,14 +319,14 @@ function renderPanel() {
 /** Selects a level without rebuilding the list. */
 function selectLevel(id) {
     if (innerWidth <= 900)
-        ui.listReturnY = window.scrollY;
+        ui.listReturnY = qs('#lw').scrollTop;
     ui.sel = id;
     ui.edit = 0;
     document.querySelectorAll('.lv.sel').forEach(c => c.classList.remove('sel'));
     qs(`.lv[data-id="${CSS.escape(id)}"]`)?.classList.add('sel');
     renderPanel();
+    qs('.rcol').scrollTop = 0;
     if (innerWidth <= 900) {
-        scrollTo({ top: 0 });
         qs('.rcol [data-act=lvclose]')?.focus({ preventScroll: true });
     }
 }

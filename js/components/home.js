@@ -6,7 +6,7 @@ function homeListCard(kind) {
     const lead = findLevel(rankedIds(kind)[0]), url = lead ? thumbUrl(lead) : '';
     return `<div class="hcard hcard-${kind}" data-act=tab data-v=${kind} role=button tabindex=0${url ? ` style="--th:url('${url}')"` : ''}>
 <div class=hcard-top>${lead ? `<span class=hbadge>#1</span><span class=hlead>${escapeHtml(lead.name)}</span>${difficultyFace(lead)}` : `<span class=hlead>${t(levels.length ? 'unplaced' : 'listEmpty')}</span>`}</div>
-<div class=hcard-body>${url ? '' : `<span class=hghost aria-hidden=true>${ICONS[kind]}</span>`}<div class=hcard-copy><h3>${t(kind)}</h3><div class=hcard-rule></div><p>${ICONS.metricLevels}<span>${levels.length.toLocaleString(ui.lang)} ${t('lv')}${attempts > 0 ? ` · ${attempts.toLocaleString(ui.lang)} ${t('att')}` : ''}</span></p></div></div></div>`;
+<div class=hcard-body><span class=hghost aria-hidden=true>${ICONS[kind]}</span>${url ? '<i class=hcover aria-hidden=true></i>' : ''}<div class=hcard-copy><h3>${t(kind)}</h3><div class=hcard-rule></div><p>${ICONS.metricLevels}<span>${levels.length.toLocaleString(ui.lang)} ${t('lv')}${attempts > 0 ? ` · ${attempts.toLocaleString(ui.lang)} ${t('att')}` : ''}</span></p></div></div></div>`;
 }
 
 function homeWishlists() {
@@ -35,5 +35,5 @@ function profileSwitcher() {
         return pill + accountMenu();
     const row = (act, key, extra = '') => `<button class=pma data-act=${act} ${extra}>${t(key)}</button>`;
     const choices = Object.entries(store.profs).map(([id, p]) => `<div class=profile-choice><button class=pma data-act=localuse data-id="${escapeHtml(id)}"${id == store.cur ? ' aria-pressed=true' : ''}>${catalogCube(p.cubeId, p.color, p.secondaryColor)}<span>${escapeHtml(p.name)}</span></button></div>`).join('');
-    return `${pill}<div id=pmenu class=pmenu popover>${choices}${row('pnew', 'newProfile')}${row('pedit', 'pedit')}${row('localbackup', 'localBackup', `data-id="${escapeHtml(store.cur)}"`)}${row('localimport', 'localImport')}${row('localdata', 'localData')}${row('asignin', account.status == 'loading' ? 'accountLoading' : 'accountSignIn', account.status == 'loading' ? 'disabled aria-busy=true' : '')}<p class=by>${t('localGuestHint')}</p></div>`;
+    return `${pill}<div id=pmenu class=pmenu popover>${choices}${row('pedit', 'pedit')}${row('localbackup', 'localBackup', `data-id="${escapeHtml(store.cur)}"`)}${row('localimport', 'localImport')}${row('localdata', 'localData')}${row('asignin', account.status == 'loading' ? 'accountLoading' : 'accountSignIn', account.status == 'loading' ? 'disabled aria-busy=true' : '')}<p class=by>${t('localGuestHint')}</p></div>`;
 }
