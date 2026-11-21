@@ -170,10 +170,10 @@ function tagsUI() {
         const colorLabel = t('color') + (existing ? ' &middot; ' + name : '');
         const reserved = existing && tag.name == PRE_TAG;
         return `<div class=trow><label class="tag-swatch chip" style="--tag-color:${color}" title="${colorLabel}"><span>${name || t('newTag')}</span><input type=color ${existing ? 'data-tc=' + index : 'id=nc'} value="${color}" aria-label="${colorLabel}"></label>
-<input ${existing ? 'data-tn=' + index : 'id=nn'} value="${name}" placeholder="${t('newTag')}" aria-label="${t(existing ? 'name' : 'newTag')}"${reserved ? ' aria-describedby=tg-pre' : ''}>
+<input ${existing ? 'data-tn=' + index : 'id=nn'} value="${name}" maxlength="${TAG_NAME_LIMIT}" placeholder="${t('newTag')}" aria-label="${t(existing ? 'name' : 'newTag')}" aria-describedby="tag-limit${reserved ? ' tg-pre' : ''}">
 ${existing ? `<button class="xs dg" data-act=tdel data-i=${index} aria-label="${t('del')} &middot; ${name}">${ICONS.listClear}</button>` : `<button class=pri data-act=tadd>${t('add')}</button>`}</div>${reserved ? `<small id=tg-pre class=by>${t('preTagHint')}</small>` : ''}`;
     };
-    return `<div class="box tag-manager"><h2>${ICONS.navTags} ${t('tagsT')}</h2>${profile.tags.map(row).join('')}${row({ name: '' })}<p class=dgb><button data-act=close>${t('close')}</button></p></div>`;
+    return `<div class="box tag-manager"><h2>${ICONS.navTags} ${t('tagsT')}</h2><p id=tag-limit class=by>${t('tagNameLimit').replace('{n}', TAG_NAME_LIMIT)}</p>${profile.tags.map(row).join('')}${row({ name: '' })}<p class=dgb><button data-act=close>${t('close')}</button></p></div>`;
 }
 
 let toastTimer = null;

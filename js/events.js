@@ -213,8 +213,8 @@ const ACTIONS = {
     },
     tadd() {
         const n = qs('#nn').value.trim();
-        if (!n || profile.tags.some(g => g.name == n))
-            return showAlert(t(n ? 'tagExists' : 'tagEmpty'));
+        const error = tagNameError(n);
+        if (error) return showAlert(error);
         profile.tags.push({ name: n, color: qs('#nc').value });
         save();
         render();
@@ -344,12 +344,21 @@ function updateTagPreview(input) {
     label.querySelector('input').setAttribute('aria-label', label.title);
 }
 
+function tagNameError(name, current) {
+    if (!name) return t('tagEmpty');
+    if (name.length > TAG_NAME_LIMIT) return t('tagNameLimit').replace('{n}', TAG_NAME_LIMIT);
+    if (profile.tags.some(tag => tag !== current && tag.name === name)) return t('tagExists');
+    return '';
+}
+
 function renameTag(input) {
     const tag = profile.tags[input.dataset.tn], name = input.value.trim();
-    if (!name || profile.tags.some(x => x != tag && x.name == name)) {
+    if (name === tag.name) return;
+    const error = tagNameError(name, tag);
+    if (error) {
         input.value = tag.name;
         updateTagPreview(input);
-        return showAlert(t(name ? 'tagExists' : 'tagEmpty'));
+        return showAlert(error);
     }
     const rename = () => {
         const wasPre = tag.name == PRE_TAG;
