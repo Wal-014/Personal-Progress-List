@@ -195,7 +195,7 @@ test('comparison calculates neutral differences, larger side and relative or fix
     assert.match(app('comparisonMetricHtml(LEVEL_METRICS.enj, findLevel("b"), findLevel("a"))'), /class=compare-gap>→ 7\.5/);
     assert.match(app('comparisonMetricHtml(LEVEL_METRICS.att, findLevel("a"), findLevel("b"))'), /class=compare-gap>=<\/small>/);
     assert.match(app('comparisonMetricHtml(LEVEL_METRICS.enj, findLevel("b"), findLevel("a"))'), /class=compare-value>7\.5<\/span>/);
-    assert.match(app('comparisonMetricHtml(LEVEL_METRICS.enj, findLevel("b"), findLevel("a"))'), /compare-track compare-2"><i style="width:75%"/);
+    assert.match(app('comparisonMetricHtml(LEVEL_METRICS.enj, findLevel("b"), findLevel("a"))'), /compare-track compare-2"><i data-pct="75"/);
 });
 
 test('timeline selects dated levels with the active metric and keeps recorded zero', () => {

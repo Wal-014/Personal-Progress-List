@@ -5,14 +5,14 @@
 /** Enjoyment or appeal meter on a scale from 0 to 10. */
 function meter(v, lab = '') {
     const hd = b => `<div class=mh>${lab ? `<span>${lab}</span>` : ''}${b}</div>`;
-    const p = v * 10, c = `hsl(${v * 12} 100% 55%)`;
-    return hd(`<b>${escapeHtml(formatRating(v))}</b>`) + `<div class="meter ${v >= 8 ? 'g' : ''}" style="color:${c}"><i style="background:${c};left:0%;width:${p}%"></i></div>`;
+    const p = v * 10;
+    return hd(`<b>${escapeHtml(formatRating(v))}</b>`) + `<div class="meter ${v >= 8 ? 'g' : ''}" data-pct="${escapeHtml(p)}"><i></i></div>`;
 }
 
 /** Escapes the detail tag and preserves literal "$" patterns in its accessible label. */
 function tagFilterChip(name) {
     const label = t('filterTag').replace('{t}', () => name);
-    return `<span class=chip data-tag="${escapeHtml(name)}" style="${tagStyle(name)}" role=button tabindex=0 aria-label="${escapeHtml(label)}">${escapeHtml(name)}</span>`;
+    return `<span class=chip data-tag="${escapeHtml(name)}" ${tagColorAttr(name)} role=button tabindex=0 aria-label="${escapeHtml(label)}">${escapeHtml(name)}</span>`;
 }
 
 function currentLevelSelection() {
@@ -77,7 +77,7 @@ function card(l, i, n, reorderable) {
     const rankContent = hasEmblem ? `<img src="assets/ranks/${l.kind === 'platform' ? 'platformer' : 'classic'}-${rank}.webp" width=68 height=80 alt="" decoding=async draggable=false>` : rank;
     const creator = l.creator ? `<span class=level-creator>${t('by')} ${escapeHtml(l.creator)}</span>` : '';
     const date = l.date ? `<time class=level-date datetime="${escapeHtml(l.date)}">${escapeHtml(formatDate(l.date))}</time>` : '';
-    return `<div class="obj lv${hasEmblem ? ' rank-' + rank : ''}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${selectionAttrs}${canMove ? ' aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"' : ''}${u ? ` style="--th:url('${u}')"` : ''}>${u ? '<i class=th aria-hidden=true></i>' : ''}${canMove ? `<span class=grip aria-hidden=true title="${t('dragHint')}"></span>` : ''}<span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + rank + ' / ' + n : t('unplaced')}">${rankContent}</span><div class=info><div class=level-title><span class=nm>${escapeHtml(l.name)}</span>${creator}</div>${date}</div>${difficultyFace(l)}${selection ? `<span class=selection-mark aria-hidden=true>${ICONS.actionCheck}</span>` : ''}</div>`;
+    return `<div class="obj lv${hasEmblem ? ' rank-' + rank : ''}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${selectionAttrs}${canMove ? ' aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"' : ''}${u ? ` data-th="${escapeHtml(u)}"` : ''}>${u ? '<i class=th aria-hidden=true></i>' : ''}${canMove ? `<span class=grip aria-hidden=true title="${t('dragHint')}"></span>` : ''}<span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + rank + ' / ' + n : t('unplaced')}">${rankContent}</span><div class=info><div class=level-title><span class=nm>${escapeHtml(l.name)}</span>${creator}</div>${date}</div>${difficultyFace(l)}${selection ? `<span class=selection-mark aria-hidden=true>${ICONS.actionCheck}</span>` : ''}</div>`;
 }
 
 /** Ids of the ranked levels of a list, in order: Pre-Extremes levels and ids of deleted levels have no rank. */
@@ -129,7 +129,7 @@ function deathHistogram(deaths) {
     let barsHtml = '';
     let axisHtml = '';
     for (let percent = firstPercent; percent <= lastPercent; percent++) {
-        barsHtml += `<b data-hp="${percent}" data-hn="${escapeHtml(deaths[percent] || 0)}"><i style="height:${(deaths[percent] || 0) / maxDeaths * 100}%"></i></b>`;
+        barsHtml += `<b data-hp="${percent}" data-hn="${escapeHtml(deaths[percent] || 0)}"><i data-pct="${escapeHtml((deaths[percent] || 0) / maxDeaths * 100)}"></i></b>`;
         axisHtml += `<span>${percent % 10 == 0 || lastPercent - firstPercent < 12 ? percent + '%' : ''}</span>`;
     }
     return barsHtml ? `<div class=hist>${barsHtml}</div><div class=ax>${axisHtml}</div>` : '';
@@ -150,22 +150,22 @@ function detail(level) {
     const histogram = deathHistogram(deaths);
     const sections = [
         section('s3', grid(statCell('attN', values.attN) + statCell('attC', values.attC) + statCell('best', percentages.length ? `${bestPercent}% ×${deaths[bestPercent]}` : null) + statCell('tN', formatDuration(values.tN)) + statCell('tP', formatDuration(values.tP)) + statCell('tPC', formatDuration(values.tPC))) + grid(statCell('attT', totalAttempts(values), 'big') + statCell('tT', formatDuration(totalSeconds(values)), 'big'))),
-        section('s4', grid(statCell('date', recorded(level.date) ? formatDate(level.date) : null)) + (videoId ? `<a class=yt target=_blank rel=noopener href="${escapeHtml(link)}"><img src="https://img.youtube.com/vi/${videoId}/hqdefault.jpg" alt=""><span>${ICONS.actionPlay}</span></a>` : link ? `<p><a style="color:var(--a)" target=_blank rel=noopener href="${escapeHtml(link)}">${ICONS.actionPlay} ${t('link')}</a></p>` : '')),
+        section('s4', grid(statCell('date', recorded(level.date) ? formatDate(level.date) : null)) + (videoId ? `<a class=yt target=_blank rel=noopener href="${escapeHtml(link)}"><img src="https://img.youtube.com/vi/${videoId}/hqdefault.jpg" alt=""><span>${ICONS.actionPlay}</span></a>` : link ? `<p><a class=level-link target=_blank rel=noopener href="${escapeHtml(link)}">${ICONS.actionPlay} ${t('link')}</a></p>` : '')),
         section('s5', grid(['enj', 'lik'].map(key => recorded(level[key]) ? `<div class=st><small>${t(key)}</small>${meter(level[key])}</div>` : '').join(''))),
-        section('sh', `${(level.tags || []).map(tagFilterChip).join('')}${recorded(level.notes) ? `<p style="white-space:pre-wrap">${escapeHtml(level.notes)}</p>` : ''}`),
+        section('sh', `${(level.tags || []).map(tagFilterChip).join('')}${recorded(level.notes) ? `<p class=level-notes>${escapeHtml(level.notes)}</p>` : ''}`),
         section('dh', histogram)
     ].join('');
     const fact = (label, value) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`;
     const identity = fact(t('creator'), orDash(level.creator)) + fact('ID', orDash(level.levelId)) + fact(t('diff'), difficultyLabel(level));
     const externalRank = level.ar?.s == 'n' ? t('listRankUnlisted') : level.ar?.s == 'r' && level.ar.p == null ? t('listRankListed') : aredlTopValue(level.ar);
     const ranks = fact(level.kind == 'platform' ? 'AREPL' : 'AREDL', externalRank) + (level.kind == 'platform' ? '' : fact('GDL', level.gdl == null ? '—' : '#' + level.gdl));
-    return `<div class=box>${thumbnail ? `<div class=hero style="background-image:url('${thumbnail}')"></div>` : ''}<h2 id=level-panel-heading tabindex=-1>${escapeHtml(level.name)}</h2>
+    return `<div class=box>${thumbnail ? `<div class=hero data-th="${escapeHtml(thumbnail)}"></div>` : ''}<h2 id=level-panel-heading tabindex=-1>${escapeHtml(level.name)}</h2>
 <div class=level-identity><dl>${identity}</dl></div><dl class=detail-ranks>${ranks}</dl>
 <div${sections ? ' class=dgrid' : ''}>${sections || `<p class=by>${t('noAdditionalDetails')}</p>`}
 </div><p class=dgb>${canEdit() ? `<button class=blue data-act=edit data-id="${escapeHtml(level.id)}">${ICONS.actionEdit} ${t('edit')}</button>` : ''} <button data-act=lvclose>${t('close')}</button></p></div>`;
 }
 
-const tagChip = n => `<button type=button class=chip data-act=tgrm data-v="${escapeHtml(n)}" aria-label="${escapeHtml(t('del') + ' · ' + n)}" style="${tagStyle(n)}">${escapeHtml(n)} ${ICONS.listClear}<input type=hidden name=tg value="${escapeHtml(n)}"></button>`;
+const tagChip = n => `<button type=button class=chip data-act=tgrm data-v="${escapeHtml(n)}" aria-label="${escapeHtml(t('del') + ' · ' + n)}" ${tagColorAttr(n)}>${escapeHtml(n)} ${ICONS.listClear}<input type=hidden name=tg value="${escapeHtml(n)}"></button>`;
 
 function updateTotals(f) {
     const q = k => f.elements[k], n = k => q(k).value === '' ? null : +q(k).value, a = n('attN'), c = n('attC');
@@ -177,7 +177,7 @@ function updateTotals(f) {
 function renderTagSuggestions() {
     const q = (qs('#tgq')?.value || '').toLowerCase(), sel = [...document.querySelectorAll('#tgs input')].map(i => i.value);
     if (qs('#tgr'))
-        qs('#tgr').innerHTML = profile.tags.filter(g => !sel.includes(g.name) && g.name.toLowerCase().includes(q)).map(g => `<button type=button class=chip data-act=tgadd data-v="${escapeHtml(g.name)}" style="${tagStyle(g.name)}">+ ${escapeHtml(g.name)}</button>`).join('');
+        qs('#tgr').innerHTML = profile.tags.filter(g => !sel.includes(g.name) && g.name.toLowerCase().includes(q)).map(g => `<button type=button class=chip data-act=tgadd data-v="${escapeHtml(g.name)}" ${tagColorAttr(g.name)}>+ ${escapeHtml(g.name)}</button>`).join('');
 }
 
 function formField(key, value, type = 'text', attrs = '', hint = '') {
@@ -217,7 +217,7 @@ ${section('s1', levelFields(levelData, true))}
 ${section('s2', formField('pos', rankPosition, 'number', `min=1 max=${maximum} step=1 aria-describedby=fm-pos-hint`, rankPositionHint(maximum)) + ranks)}
 ${section('s3', `<div class=level-attempts>${attempts}</div><div class=level-times>${times}</div>${totals}`)}
 ${section('s4', formField('date', levelData.date, 'date') + formField('link', levelData.link))}
-<fieldset><legend>${t('s5')}</legend><div class=grid>${formField('enj', levelData.enj, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}${formField('lik', levelData.lik, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}</div><label for=tgq style="margin-top:12px">${t('tags')}</label><input id=tgq placeholder="${t('tgs')}" autocomplete=off><div id=tgr class=tgr></div><div id=tgs>${(levelData.tags || []).map(tagChip).join('')}</div></fieldset>
+<fieldset><legend>${t('s5')}</legend><div class=grid>${formField('enj', levelData.enj, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}${formField('lik', levelData.lik, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}</div><label for=tgq>${t('tags')}</label><input id=tgq placeholder="${t('tgs')}" autocomplete=off><div id=tgr class=tgr></div><div id=tgs>${(levelData.tags || []).map(tagChip).join('')}</div></fieldset>
 <fieldset><legend>${t('s6')}</legend><label for=fm-notes>${t('notes')}</label><textarea id=fm-notes name=notes rows=3>${escapeHtml(levelData.notes)}</textarea>${deathsInput(levelData.deaths)}</fieldset>
 <p class=dgb><button class=pri>${t('save')}</button> <button type=button data-act=${level ? 'lvclose' : 'close'}>${t('close')}</button> ${level ? `<button type=button class=dg data-act=del data-id="${escapeHtml(level.id)}">${t('del')}</button>` : ''}</p></form></div>`;
 }
@@ -258,7 +258,7 @@ function setListTagFilter() {
 function lcol() {
     const options = listTagOptions(profile.levels.filter(level => level.kind == ui.tab), ui.tagFilter);
     const modes = ['classic', 'platform'].map(kind => `<button type=button data-act=tab data-v=${kind} aria-pressed=${ui.tab == kind}${ui.tab == kind ? ' disabled' : ''}><img src="assets/modes/${kind}.svg" alt="" width=32 height=32> ${t(kind)}</button>`).join('');
-    return `<div class=mode-switch role=group aria-label="${t('lists')}">${modes}</div><div class=lh><label class=list-search>${ICONS.listSearch}<input id=q type=search placeholder="${t('search')}" aria-label="${t('search')}" value="${escapeHtml(ui.q)}"></label><details class=ms><summary>${ICONS.listFilter}<span class=filter-label>${escapeHtml(listTagSummary())}</span>${ICONS.chevronDown}</summary><div class=msp>${options.length ? options.map(name => `<label><input type=checkbox name=tagf value="${escapeHtml(name)}"${ui.tagFilter.includes(name) ? ' checked' : ''}><i class=tag-dot aria-hidden=true style="${tagStyle(name)}"></i><span class=filter-label>${escapeHtml(name)}</span></label>`).join('') : `<span class=by>${t('noListTags')}</span>`}</div></details><button type=button class=list-clear data-act=ct aria-label="${t('clearTags')}" title="${t('clearTags')}"${ui.tagFilter.length ? '' : ' hidden'}>${ICONS.listClear}</button>${canEdit() ? `<button type=button class=list-add data-act=add>${ICONS.actionAdd} ${t('palAdd')}</button>` : ''}</div><div><p id=list-reorder-hint class=by role=status${canEdit() && listFiltersActive() ? '' : ' hidden'}>${t('listReorderHint')}</p><div id=list-actions>${listSelectionControls()}</div></div><div id=lw>${list()}</div>`;
+    return `<div class=mode-switch role=group aria-label="${t('lists')}">${modes}</div><div class=lh><label class=list-search>${ICONS.listSearch}<input id=q type=search placeholder="${t('search')}" aria-label="${t('search')}" value="${escapeHtml(ui.q)}"></label><details class=ms><summary>${ICONS.listFilter}<span class=filter-label>${escapeHtml(listTagSummary())}</span>${ICONS.chevronDown}</summary><div class=msp>${options.length ? options.map(name => `<label><input type=checkbox name=tagf value="${escapeHtml(name)}"${ui.tagFilter.includes(name) ? ' checked' : ''}><i class=tag-dot aria-hidden=true ${tagColorAttr(name)}></i><span class=filter-label>${escapeHtml(name)}</span></label>`).join('') : `<span class=by>${t('noListTags')}</span>`}</div></details><button type=button class=list-clear data-act=ct aria-label="${t('clearTags')}" title="${t('clearTags')}"${ui.tagFilter.length ? '' : ' hidden'}>${ICONS.listClear}</button>${canEdit() ? `<button type=button class=list-add data-act=add>${ICONS.actionAdd} ${t('palAdd')}</button>` : ''}</div><div><p id=list-reorder-hint class=by role=status${canEdit() && listFiltersActive() ? '' : ' hidden'}>${t('listReorderHint')}</p><div id=list-actions>${listSelectionControls()}</div></div><div id=lw>${list()}</div>`;
 }
 
 function selectedListLevel() {

@@ -39,7 +39,7 @@ const wishlistIcon = status => ICONS[{ todo: 'actionLock', prog: 'actionPlay', d
 /** Optional transient motion is used by the open wishlist, never its home card. */
 const progressBar = (w, fx) => {
     const p = wishlistProgress(w);
-    return `<div class="pb${fx ? ' wfill' : ''}" aria-hidden=true><i style="width:${p.n ? p.d / p.n * 100 : 0}%;${fx ? `--from:${fx.ratio}%` : ''}"></i></div>`;
+    return `<div class="pb${fx ? ' wfill' : ''}" aria-hidden=true><i data-pct="${escapeHtml(p.n ? p.d / p.n * 100 : 0)}"${fx ? ` data-from="${escapeHtml(fx.ratio)}"` : ''}></i></div>`;
 };
 
 /** Three labelled status buttons remain available in every state. */
@@ -64,13 +64,13 @@ function progressRow(i) {
         return `<div class=wprog><span class=by>${canEdit() ? t('wTodoHint') : '0%'}</span></div>`;
     const pct = i.status == 'done' ? 100 : i.pct ?? 0, fx = ui.wishFx?.id == i.id ? ui.wishFx : null;
     const slot = !canEdit() ? `${pct}%` : i.status == 'done' ? transferSlot(i) : `<label class=wpct><input type=number min=0 max=100 step=1 inputmode=numeric data-wp="${escapeHtml(i.id)}" value="${pct}" aria-label="${escapeHtml(t('wPct').replace('{name}', () => i.name))}"><span>%</span></label>`;
-    return `<div class=wprog><div class="pb${fx ? ' wfill' : ''}" aria-hidden=true><i style="width:${pct}%;${fx ? `--from:${fx.from}%` : ''}"></i></div><div class=wslot>${slot}</div></div>`;
+    return `<div class=wprog><div class="pb${fx ? ' wfill' : ''}" aria-hidden=true><i data-pct="${escapeHtml(pct)}"${fx ? ` data-from="${escapeHtml(fx.from)}"` : ''}></i></div><div class=wslot>${slot}</div></div>`;
 }
 
 /** A wishlist card keeps the same grid areas across all statuses. */
 function wishlistCard(i) {
     const u = thumbUrl(i), id = escapeHtml(i.id), celebrate = ui.wishFx?.id == i.id;
-    return `<div class="obj wi s-${i.status}${celebrate ? ' celebrate' : ''}" data-id="${id}"${u ? ` style="--th:url('${u}')"` : ''}>${u ? '<i class=th aria-hidden=true></i>' : ''}${canEdit() ? `<span class=grip aria-hidden=true title="${t('dragHint')}"></span>` : ''}<span class="tg s-${i.status}" aria-hidden=true>${wishlistIcon(i.status)}</span><div class=info><span class=nm>${escapeHtml(i.name)}</span>${i.creator ? `<span class=by>${t('by')} ${escapeHtml(i.creator)}</span>` : ''}</div>${difficultyFace(i)}${statusControl(i)}${canEdit() ? `<div class=wact><button class=xs data-act=wedit data-id="${id}" aria-label="${t('edit')}">${ICONS.actionEdit}</button><button class="xs dg" data-act=wdel data-id="${id}" aria-label="${t('del')}">${ICONS.listClear}</button></div>` : ''}${progressRow(i)}${celebrate ? `<span class=wstamp aria-hidden=true>${ICONS.actionCheck} ${escapeHtml(t('st_done').toUpperCase())}</span>` : ''}</div>`;
+    return `<div class="obj wi s-${i.status}${celebrate ? ' celebrate' : ''}" data-id="${id}"${u ? ` data-th="${escapeHtml(u)}"` : ''}>${u ? '<i class=th aria-hidden=true></i>' : ''}${canEdit() ? `<span class=grip aria-hidden=true title="${t('dragHint')}"></span>` : ''}<span class="tg s-${i.status}" aria-hidden=true>${wishlistIcon(i.status)}</span><div class=info><span class=nm>${escapeHtml(i.name)}</span>${i.creator ? `<span class=by>${t('by')} ${escapeHtml(i.creator)}</span>` : ''}</div>${difficultyFace(i)}${statusControl(i)}${canEdit() ? `<div class=wact><button class=xs data-act=wedit data-id="${id}" aria-label="${t('edit')}">${ICONS.actionEdit}</button><button class="xs dg" data-act=wdel data-id="${id}" aria-label="${t('del')}">${ICONS.listClear}</button></div>` : ''}${progressRow(i)}${celebrate ? `<span class=wstamp aria-hidden=true>${ICONS.actionCheck} ${escapeHtml(t('st_done').toUpperCase())}</span>` : ''}</div>`;
 }
 
 function wishView() {
@@ -154,7 +154,9 @@ function setWishlistPercent(input) {
         return;
     item.pct = Math.max(0, Math.min(100, Math.round(+input.value || 0)));
     input.value = item.pct;
-    input.closest('.wi').querySelector('.wprog .pb i').style.width = item.pct + '%';
+    const bar = input.closest('.wi').querySelector('.wprog .pb i');
+    bar.dataset.pct = item.pct;
+    bar.style.setProperty('--pct', item.pct);
     save();
 }
 

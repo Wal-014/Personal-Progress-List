@@ -4,8 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <!-- style-src needs 'unsafe-inline' because the UI renders inline style attributes; scripts stay restricted -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://levelthumbs.prevter.me https://img.youtube.com; connect-src 'self' https://api.aredl.net https://api.demonlist.org https://ppl-level-relay.waquermaster.workers.dev https://mjgklvdnuhbnyucytaji.supabase.co; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://levelthumbs.prevter.me https://img.youtube.com; connect-src 'self' https://api.aredl.net https://api.demonlist.org https://ppl-level-relay.waquermaster.workers.dev https://mjgklvdnuhbnyucytaji.supabase.co; object-src 'none'; base-uri 'self'; form-action 'none'">
   <title>Personal Progress List</title>
   <meta name="description" content="Seguimiento visual de niveles completados de Geometry Dash: listas, estadísticas, línea de tiempo y wishlists.">
   <meta property="og:type" content="website">
@@ -36,6 +35,7 @@
   <!-- Load order matters: each classic script uses names defined by earlier scripts.
        Every script is deferred: the CSP meta tag stops Chrome from fetching ahead, so blocking scripts would download one at a time. -->
   <script src="js/config.js" defer></script>
+  <script src="js/data-styles.js" defer></script>
   <script src="js/i18n.js" defer></script>
   <script src="js/utils.js" defer></script>
   <script src="js/state.js" defer></script>

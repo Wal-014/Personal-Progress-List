@@ -40,7 +40,7 @@ function statCard(level, position, selectedLevels) {
     const thumbnail = thumbUrl(level);
     const slots = selectedLevels.flatMap((chosen, slotIndex) => chosen?.id == level.id ? [slotIndex] : []);
     const cardBody = `<span class=stat-position>${position == null ? '—' : '#' + position}${slots.length ? `<span class=stat-badges>${slots.map(comparisonBadge).join('')}</span>` : ''}</span>${statLevelIdentity(level)}<span class=stat-values>${Object.entries(LEVEL_METRICS).map(([key, metric]) => `<span${key == ui.rankingMetric ? ' class=ranked-metric' : ''}><small>${t(metric.label)}</small><b>${escapeHtml(levelMetricText(metric, metric.read(level)))}</b></span>`).join('')}</span>${difficultyFace(level)}`;
-    const attrs = `class="obj stat-card${slots.map(slotIndex => ' chosen-' + (slotIndex + 1)).join('')}"${thumbnail ? ` style="--th:url('${escapeHtml(thumbnail)}')"` : ''}`;
+    const attrs = `class="obj stat-card${slots.map(slotIndex => ' chosen-' + (slotIndex + 1)).join('')}"${thumbnail ? ` data-th="${escapeHtml(thumbnail)}"` : ''}`;
     return `<li>${ui.comparison.open ? `<button type=button ${attrs} data-act=compare-pick data-id="${escapeHtml(level.id)}" aria-pressed=${!!slots.length}>${cardBody}</button>` : `<div ${attrs}>${cardBody}</div>`}</li>`;
 }
 

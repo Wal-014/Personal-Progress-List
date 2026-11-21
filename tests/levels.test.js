@@ -178,7 +178,7 @@ test('detail renders keyboard-accessible tag filters with escaped translated lab
         context.lang = lang;
         app('ui.lang = lang');
         const html = app('detail')(level);
-        assert.ok(html.includes(`<div class=hero style="background-image:url('https://levelthumbs.prevter.me/thumbnail/4125776')"></div>`));
+        assert.ok(html.includes('<div class=hero data-th="https://levelthumbs.prevter.me/thumbnail/4125776"></div>'));
         const chips = html.match(/<span class=chip\b[^>]*>/g);
         assert.equal(chips.length, 2);
         for (const chip of chips) {
@@ -196,7 +196,7 @@ test('cards omit tags in both level lists', () => {
     app('profile = emptyProfile()');
     for (const kind of ['classic', 'platform']) {
         const html = app('card')({ id: 'tag-test', levelId: '4125776', name: 'Tagged level', kind, tags: ['first', 'second'] });
-        assert.ok(html.includes("--th:url('https://levelthumbs.prevter.me/thumbnail/4125776/small')"));
+        assert.ok(html.includes('data-th="https://levelthumbs.prevter.me/thumbnail/4125776/small"'));
         assert.match(html, /role=button tabindex=0/);
         assert.doesNotMatch(html, /data-tag=|class=chip/);
     }
@@ -481,11 +481,11 @@ test('initSort measures the pane only when choosing a card and updates auto-scro
     assert.equal(sortable.options.bubbleScroll, true);
 });
 
-test('rating meters fill from the left, use localized decimals and omit plus signs', () => {
+test('rating meters emit a fill percentage, use localized decimals and omit plus signs', () => {
     app("ui.lang = 'es'");
     for (const value of [0, 2.5, 8, 10]) {
         const html = app('meter')(value);
-        assert.ok(html.includes(`left:0%;width:${value * 10}%`));
+        assert.match(html, new RegExp(`<div class="meter [^"]*" data-pct="${value * 10}"><i></i>`));
         assert.doesNotMatch(html, /\+/);
         assert.equal(html.includes('class="meter g"'), value >= 8);
     }

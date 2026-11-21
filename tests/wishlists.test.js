@@ -165,12 +165,14 @@ for (const status of ['todo', 'done'])
 
 for (const [value, expected] of [['-5', 0], ['150', 100], ['63.6', 64], ['', 0]])
     test(`setWishlistPercent normalizes ${JSON.stringify(value)} and updates without rendering`, () => {
-        const f = fixture(), bar = { style: {} };
+        const f = fixture(), properties = {};
+        const bar = { dataset: {}, style: { setProperty: (name, value) => { properties[name] = value; } } };
         const input = { dataset: { wp: 'i1' }, value, closest: () => ({ querySelector: () => bar }) };
         f.app('setWishlistPercent')(input);
         assert.equal(f.item.pct, expected);
         assert.equal(String(input.value), String(expected));
-        assert.equal(bar.style.width, `${expected}%`);
+        assert.deepEqual(properties, { '--pct': expected });
+        assert.equal(bar.dataset.pct, expected);
         assert.deepEqual(f.calls, ['save']);
     });
 
@@ -316,7 +318,7 @@ test('wishView renders fixed card structure and state specific accessible contro
         assert.doesNotMatch(html, /data-wi=|<select/);
         if (status == 'todo') assert.match(html, /Set it to In progress/);
         if (status == 'done') assert.match(html, /data-v=platform>Add to Platformer/);
-        if (status == 'done') assert.match(html, /class=wprog><div class="pb" aria-hidden=true><i style="width:100%;/, 'a completed card shows a full bar whatever percentage was recorded');
+        if (status == 'done') assert.match(html, /class=wprog><div class="pb" aria-hidden=true><i data-pct="100"/, 'a completed card shows a full bar whatever percentage was recorded');
     }
     f.context.profile.levels.push({ kind: 'platform', levelId: '42', name: 'Level' });
     assert.match(f.app('wishView()'), /class=wadded/);
@@ -340,8 +342,8 @@ test('header shows three counts, completion and motion only for the celebrated c
     assert.match(html, /class="wh done"/);
     assert.match(html, /Wishlist completed!/);
     assert.equal((html.match(/class=wstamp/g) || []).length, 1);
-    assert.match(html, /--from:63%/);
-    assert.match(html, /<div class="pb wfill" aria-hidden=true><i style="width:100%;--from:33%">/, 'the header bar grows from its previous ratio');
+    assert.match(html, /data-from="63"/);
+    assert.match(html, /<div class="pb wfill" aria-hidden=true><i data-pct="100" data-from="33">/, 'the header bar grows from its previous ratio');
     f.context.ui.wishFx = null;
     assert.doesNotMatch(f.app('wishView()'), /class=wstamp|celebrate/);
     f.wishlist.items = [];
@@ -475,8 +477,8 @@ test('home progress bars remain static even while the open wishlist is celebrati
     const f = fixture();
     f.context.ui.wishFx = { id: 'i1', from: 63, ratio: 0 };
     const html = f.app('progressBar')(f.wishlist);
-    assert.match(html, /width:0%/);
-    assert.doesNotMatch(html, /wfill|--from/);
+    assert.match(html, /data-pct="0"/);
+    assert.doesNotMatch(html, /wfill|data-from/);
 });
 
 test('saving a new item keeps detected kind and starts without manual progress', () => {

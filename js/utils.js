@@ -67,10 +67,7 @@ const tagColor = n => {
     return isHexColor(c) ? c : 'var(--fg)';
 };
 
-const tagStyle = n => {
-    const c = tagColor(n);
-    return `--tag-color:${c}`;
-};
+const tagColorAttr = n => `data-tag-color="${escapeHtml(tagColor(n))}"`;
 
 /** Levels tagged "Pre-Extremes" appear separately under "First steps". */
 const TAG_NAME_LIMIT = 24;
