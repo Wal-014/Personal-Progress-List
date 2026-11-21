@@ -3498,16 +3498,19 @@ body::before {
     radial-gradient(ellipse at 93% 100%, color-mix(in srgb, var(--color-accent) 20%, transparent), transparent 40%);
 }
 
-:is([data-bg=celestial], [data-bg=orbital]) body::after {
+:is([data-bg=celestial], [data-bg=orbital]) body::after,
+[data-bg=celestial] #app::after {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(ellipse at 87% 7%, var(--color-secondary-light), transparent 43%),
-    radial-gradient(ellipse at 20% 10%, var(--color-accent), transparent 46%),
-    linear-gradient(135deg, transparent, color-mix(in srgb, var(--color-secondary-light) 20%, transparent) 58%, var(--color-accent));
+    radial-gradient(ellipse at 87% 7%, var(--motif-secondary, var(--color-secondary-light)), transparent 43%),
+    radial-gradient(ellipse at 20% 10%, var(--motif-accent, var(--color-accent)), transparent 46%),
+    linear-gradient(135deg, transparent,
+      color-mix(in srgb, var(--motif-secondary, var(--color-secondary-light)) 20%, transparent) 58%,
+      var(--motif-accent, var(--color-accent)));
 }
 
 [data-bg=orbital] body::after {
@@ -3516,32 +3519,58 @@ body::before {
   mask-repeat: no-repeat;
 }
 
-[data-bg=celestial] body::after {
-  --stars: url('../assets/backgrounds/stars.svg');
-  --moons: url('../assets/backgrounds/moons.svg');
+[data-bg=celestial] {
+  --celestial-active-opacity: 1;
+  --celestial-mixed-opacity: .55;
+  --celestial-inactive-opacity: .34;
+  --motif-accent: color-mix(in srgb, var(--color-accent) 93%, white);
+  --motif-secondary: color-mix(in srgb, var(--color-secondary-light) 93%, white);
   --sky-tile: clamp(540px, 72vw, 1040px);
-  mask-image: var(--stars), var(--moons);
+}
+
+[data-bg=celestial] :where(body, #app)::after {
   mask-size: var(--sky-tile) auto;
-  mask-position: right top;
   mask-repeat: repeat;
+  opacity: var(--celestial-mixed-opacity);
 }
 
-[data-bg=celestial][data-motif=stars] body::after {
-  --moons: url('../assets/backgrounds/moons-soft.svg');
+[data-bg=celestial] body::after {
+  mask-image: url('../assets/backgrounds/stars.svg');
+  mask-position: right top;
 }
 
-[data-bg=celestial][data-motif=moons] body::after {
-  --stars: url('../assets/backgrounds/stars-soft.svg');
+[data-bg=celestial] #app::after {
+  mask-image: url('../assets/backgrounds/moons.svg');
+  mask-position: right -125px;
 }
 
-[data-bg=celestial]:is([data-motif=stars], [data-motif=moons]) body::after {
-  mask-position: right top, right -125px;
+[data-bg=celestial][data-motif=stars] body::after,
+[data-bg=celestial][data-motif=moons] #app::after {
+  opacity: var(--celestial-active-opacity);
+}
+
+[data-bg=celestial][data-motif=moons] body::after,
+[data-bg=celestial][data-motif=stars] #app::after {
+  opacity: var(--celestial-inactive-opacity);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-bg=celestial] :where(body, #app)::after {
+    transition: opacity var(--motion-background) var(--motion-easing);
+  }
 }
 
 @media (max-width: 560px) {
-  [data-bg=celestial]:is([data-motif=stars], [data-motif=moons]) body::after {
+  [data-bg=celestial] {
     --sky-tile: min(330px, 90vw);
-    mask-position: right 10px top -12px, right 12px top 45px;
+  }
+
+  [data-bg=celestial] body::after {
+    mask-position: right 10px top -12px;
+  }
+
+  [data-bg=celestial] #app::after {
+    mask-position: right 12px top 45px;
   }
 }
 
@@ -3562,10 +3591,15 @@ body::before {
     var(--daylight);
 }
 
-[data-theme=porcelain]:is([data-bg=orbital], [data-bg=celestial]) body::after {
+[data-theme=porcelain][data-bg=celestial] {
+  --celestial-mixed-opacity: .60;
+  --celestial-inactive-opacity: .38;
+}
+
+[data-theme=porcelain][data-bg=celestial] :where(body, #app)::after {
   background: linear-gradient(115deg,
-    color-mix(in srgb, var(--color-accent) 62%, var(--color-surface)),
-    color-mix(in srgb, var(--color-secondary-light) 62%, var(--color-surface)));
+    color-mix(in srgb, var(--color-accent) 68%, var(--color-surface)),
+    color-mix(in srgb, var(--color-secondary-light) 68%, var(--color-surface)));
 }
 
 /* The orbital arcs are much thinner than the stars and moons, so they need a deeper tint to read in daylight. */
@@ -3738,7 +3772,7 @@ body::before {
 }
 
 @media (forced-colors: active) {
-  body::before, body::after, .hghost, .theme-preview, .background-preview {
+  body::before, body::after, [data-bg=celestial] #app::after, .hghost, .theme-preview, .background-preview {
     display: none;
   }
 
