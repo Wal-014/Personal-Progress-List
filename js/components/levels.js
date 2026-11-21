@@ -83,7 +83,7 @@ function card(l, i, n, reorderable) {
 /** Ids of the ranked levels of a list, in order: Pre-Extremes levels and ids of deleted levels have no rank. */
 const rankedIds = kind => profile.order[kind].filter(id => {
     const l = findLevel(id);
-    return l && !isPre(l);
+    return l?.kind === kind && !isPre(l);
 });
 
 function matchesListFilters(level, query, selectedTags) {
@@ -95,9 +95,11 @@ function listTagOptions(levels, selectedTags) {
     return [...new Set([...levels.flatMap(level => level.tags || []), ...selectedTags])].sort((a, b) => a.localeCompare(b));
 }
 
+const listFiltersActive = () => !!ui.q || !!ui.tagFilter.length;
+
 /** Only the full list can be reordered: a filtered one hides levels, so its order cannot be saved. */
 function canReorder() {
-    return canEdit() && !currentLevelSelection() && !ui.q && !ui.tagFilter.length;
+    return canEdit() && !currentLevelSelection() && !listFiltersActive();
 }
 
 /** List body grouped into ranked, unplaced and first-step levels. */
@@ -155,8 +157,9 @@ function detail(level) {
     ].join('');
     const fact = (label, value) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`;
     const identity = fact(t('creator'), orDash(level.creator)) + fact('ID', orDash(level.levelId)) + fact(t('diff'), difficultyLabel(level));
-    const ranks = fact(level.kind == 'platform' ? 'AREPL' : 'AREDL', aredlTopValue(level.ar)) + (level.kind == 'platform' ? '' : fact('GDL', level.gdl == null ? '—' : '#' + level.gdl));
-    return `<div class=box>${thumbnail ? `<div class=hero style="background-image:url('${thumbnail}')"></div>` : ''}<h2>${escapeHtml(level.name)}</h2>
+    const externalRank = level.ar?.s == 'n' ? t('listRankUnlisted') : level.ar?.s == 'r' && level.ar.p == null ? t('listRankListed') : aredlTopValue(level.ar);
+    const ranks = fact(level.kind == 'platform' ? 'AREPL' : 'AREDL', externalRank) + (level.kind == 'platform' ? '' : fact('GDL', level.gdl == null ? '—' : '#' + level.gdl));
+    return `<div class=box>${thumbnail ? `<div class=hero style="background-image:url('${thumbnail}')"></div>` : ''}<h2 id=level-panel-heading tabindex=-1>${escapeHtml(level.name)}</h2>
 <div class=level-identity><dl>${identity}</dl></div><dl class=detail-ranks>${ranks}</dl>
 <div${sections ? ' class=dgrid' : ''}>${sections || `<p class=by>${t('noAdditionalDetails')}</p>`}
 </div><p class=dgb>${canEdit() ? `<button class=blue data-act=edit data-id="${escapeHtml(level.id)}">${ICONS.actionEdit} ${t('edit')}</button>` : ''} <button data-act=lvclose>${t('close')}</button></p></div>`;
@@ -208,7 +211,7 @@ function levelForm(level) {
     const times = ['tN', 'tP', 'tPC'].map(key => durationInput(key, levelData[key])).join('');
     const totals = `<div class=level-totals><div>${readout('attT', 'attT', totalAttempts(levelData))}</div><div>${readout('tT', 'tT', durationClock(totalSeconds(levelData)))}</div></div>`;
     const section = (key, body) => `<fieldset><legend>${t(key)}</legend><div class=grid>${body}</div></fieldset>`;
-    return `<div class=box><h2>${level ? t('edit') : t('palAdd')}</h2><form id=fm data-id="${escapeHtml(level?.id)}"><div class=warn id=wn></div>
+    return `<div class=box><h2${level ? ' tabindex=-1' : ''}>${level ? t('edit') : t('palAdd')}</h2><form id=fm data-id="${escapeHtml(level?.id)}"><div class=warn id=wn></div>
 ${levelSearchBox()}
 ${section('s1', levelFields(levelData, true))}
 ${section('s2', formField('pos', rankPosition, 'number', `min=1 max=${maximum} step=1 aria-describedby=fm-pos-hint`, rankPositionHint(maximum)) + ranks)}
@@ -255,12 +258,17 @@ function setListTagFilter() {
 function lcol() {
     const options = listTagOptions(profile.levels.filter(level => level.kind == ui.tab), ui.tagFilter);
     const modes = ['classic', 'platform'].map(kind => `<button type=button data-act=tab data-v=${kind} aria-pressed=${ui.tab == kind}${ui.tab == kind ? ' disabled' : ''}><img src="assets/modes/${kind}.svg" alt="" width=32 height=32> ${t(kind)}</button>`).join('');
-    return `<div class=mode-switch role=group aria-label="${t('lists')}">${modes}</div><div class=lh><label class=list-search>${ICONS.listSearch}<input id=q type=search placeholder="${t('search')}" aria-label="${t('search')}" value="${escapeHtml(ui.q)}"></label><details class=ms><summary>${ICONS.listFilter}<span class=filter-label>${escapeHtml(listTagSummary())}</span>${ICONS.chevronDown}</summary><div class=msp>${options.length ? options.map(name => `<label><input type=checkbox name=tagf value="${escapeHtml(name)}"${ui.tagFilter.includes(name) ? ' checked' : ''}><i class=tag-dot aria-hidden=true style="${tagStyle(name)}"></i><span class=filter-label>${escapeHtml(name)}</span></label>`).join('') : `<span class=by>${t('noListTags')}</span>`}</div></details><button type=button class=list-clear data-act=ct aria-label="${t('clearTags')}" title="${t('clearTags')}"${ui.tagFilter.length ? '' : ' hidden'}>${ICONS.listClear}</button>${canEdit() ? `<button type=button class=list-add data-act=add>${ICONS.actionAdd} ${t('palAdd')}</button>` : ''}</div><div id=list-actions>${listSelectionControls()}</div><div id=lw>${list()}</div>`;
+    return `<div class=mode-switch role=group aria-label="${t('lists')}">${modes}</div><div class=lh><label class=list-search>${ICONS.listSearch}<input id=q type=search placeholder="${t('search')}" aria-label="${t('search')}" value="${escapeHtml(ui.q)}"></label><details class=ms><summary>${ICONS.listFilter}<span class=filter-label>${escapeHtml(listTagSummary())}</span>${ICONS.chevronDown}</summary><div class=msp>${options.length ? options.map(name => `<label><input type=checkbox name=tagf value="${escapeHtml(name)}"${ui.tagFilter.includes(name) ? ' checked' : ''}><i class=tag-dot aria-hidden=true style="${tagStyle(name)}"></i><span class=filter-label>${escapeHtml(name)}</span></label>`).join('') : `<span class=by>${t('noListTags')}</span>`}</div></details><button type=button class=list-clear data-act=ct aria-label="${t('clearTags')}" title="${t('clearTags')}"${ui.tagFilter.length ? '' : ' hidden'}>${ICONS.listClear}</button>${canEdit() ? `<button type=button class=list-add data-act=add>${ICONS.actionAdd} ${t('palAdd')}</button>` : ''}</div><div><p id=list-reorder-hint class=by role=status${canEdit() && listFiltersActive() ? '' : ' hidden'}>${t('listReorderHint')}</p><div id=list-actions>${listSelectionControls()}</div></div><div id=lw>${list()}</div>`;
+}
+
+function selectedListLevel() {
+    const level = ui.sel == null ? null : findLevel(ui.sel);
+    return level?.kind === ui.tab ? level : null;
 }
 
 /** Right column with level details, an editing form or an empty prompt. */
 function panel() {
-    const l = ui.sel ? findLevel(ui.sel) : null;
+    const l = selectedListLevel();
     return !l ? `<div class=ph>${t('pick')}</div>` : ui.edit && canEdit() ? levelForm(l) : detail(l);
 }
 
@@ -327,6 +335,9 @@ const scrollSel = () => qs('.lv.sel')?.scrollIntoView({ block: 'center', behavio
 /** Redraws the list while preserving scroll and search text. */
 function renderList() {
     qs('#lw').innerHTML = list();
+    const hint = qs('#list-reorder-hint');
+    if (hint)
+        hint.hidden = !canEdit() || !listFiltersActive();
     const actions = qs('#list-actions');
     if (actions)
         actions.innerHTML = listSelectionControls();
@@ -336,23 +347,28 @@ function renderList() {
 function renderPanel() {
     const r = qs('.rcol');
     r.innerHTML = panel();
-    r.classList.toggle('has', !!ui.sel);
+    r.classList.toggle('has', !!selectedListLevel());
+    r.dataset.level = ui.sel ?? '';
     renderTagSuggestions();
+}
+
+function focusLevelPanel() {
+    qs('.rcol .box > h2')?.focus();
 }
 
 /** Selects a level without rebuilding the list. */
 function selectLevel(id) {
-    if (innerWidth <= 900)
-        ui.listReturnY = qs('#lw').scrollTop;
+    if (findLevel(id)?.kind !== ui.tab)
+        return;
+    ui.listReturnY = qs('#lw').scrollTop;
     ui.sel = id;
     ui.edit = 0;
     document.querySelectorAll('.lv.sel').forEach(c => c.classList.remove('sel'));
     qs(`.lv[data-id="${CSS.escape(id)}"]`)?.classList.add('sel');
     renderPanel();
     qs('.rcol').scrollTop = 0;
-    if (innerWidth <= 900) {
-        qs('.rcol [data-act=lvclose]')?.focus({ preventScroll: true });
-    }
+    if (innerWidth <= 900)
+        focusLevelPanel();
 }
 
 /** Updates the automatic top field and found note from the picked level. */

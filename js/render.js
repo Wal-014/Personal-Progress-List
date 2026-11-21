@@ -18,14 +18,23 @@ function controlSelector(el) {
 function render() {
     const active = document.activeElement;
     const focused = active?.closest?.('[popover]') ? overlayOpener(active).selector : controlSelector(active);
-    const listScrollTop = ui.renderedTab == ui.tab ? qs('#lw')?.scrollTop : 0, isLevelList = isListTab();
+    const isLevelList = isListTab(), sameTab = ui.renderedTab == ui.tab;
+    const oldList = sameTab ? qs('#lw') : null, oldPanel = sameTab ? qs('.rcol.has') : null;
+    // The hidden mobile list reports a scroll position of zero while detail is open.
+    const listScrollTop = oldList?.getClientRects().length ? oldList.scrollTop : sameTab ? ui.listReturnY : 0;
+    ui.listReturnY = listScrollTop;
+    if (isLevelList && !selectedListLevel()) {
+        ui.sel = null;
+        ui.edit = 0;
+    }
+    const detailScrollTop = oldPanel && oldPanel.dataset.level === String(ui.sel) && !oldPanel.querySelector('#fm') && !ui.edit ? oldPanel.scrollTop : 0;
     const contentSelector = ui.tab == 'wish' && ui.wl ? '.legacy-surface > .wl' : '.legacy-surface';
     const contentScroll = ui.renderedTab == ui.tab && (ui.tab == 'stats' || (ui.tab == 'wish' && ui.renderedWishlist == ui.wl))
         ? qs(contentSelector)?.scrollTop : 0;
     ui.renderedWishlist = ui.wl;
     const changedMode = isLevelList && ['classic', 'platform'].includes(ui.renderedTab) && ui.renderedTab != ui.tab;
     ui.renderedTab = ui.tab;
-    const screen = !canEdit() && !viewing.identity ? publicViewScreen() : ui.tab == 'wish' ? currentWishlist() ? wishView() : wishlistsIndex() : isLevelList ? `<div class=split><div class=lcol>${lcol()}</div><div class="rcol ${ui.sel ? 'has' : ''}">${panel()}</div></div>` : ui.tab == 'stats' ? stats() : home();
+    const screen = !canEdit() && !viewing.identity ? publicViewScreen() : ui.tab == 'wish' ? currentWishlist() ? wishView() : wishlistsIndex() : isLevelList ? `<div class=split><div class=lcol>${lcol()}</div><div class="rcol ${ui.sel != null ? 'has' : ''}" data-level="${escapeHtml(ui.sel)}">${panel()}</div></div>` : ui.tab == 'stats' ? stats() : home();
     qs('#app').innerHTML = sharedShell(screen);
     if (changedMode)
         qs('.list-surface')?.classList.add('mode-enter');
@@ -36,6 +45,8 @@ function render() {
     document.documentElement.lang = ui.lang;
     if (listScrollTop && qs('#lw'))
         qs('#lw').scrollTop = listScrollTop;
+    if (detailScrollTop && qs('.rcol.has'))
+        qs('.rcol.has').scrollTop = detailScrollTop;
     if (contentScroll && qs(contentSelector))
         qs(contentSelector).scrollTop = contentScroll;
     initSort();

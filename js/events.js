@@ -97,6 +97,8 @@ const ACTIONS = {
         ui.sel = null;
         ui.edit = 0;
         render();
+        if (a.closest?.('.mode-switch'))
+            qs('#q')?.focus({ preventScroll: true });
     },
     pause: () => openModal(pauseUI()),
     theme: a => setAppearance('theme', themeOf(a.dataset.v)),
@@ -167,17 +169,18 @@ const ACTIONS = {
         render();
         if (openedFromDialog)
             scrollSel();
+        focusLevelPanel();
     },
     lvclose() {
-        const returnId = !ui.edit && ui.sel;
+        const wasEditing = ui.edit, returnId = ui.sel;
         if (!ui.edit)
             ui.sel = null;
         ui.edit = 0;
         render();
-        if (returnId && innerWidth <= 900) {
-            qs(`.lv[data-id="${CSS.escape(returnId)}"]`)?.focus({ preventScroll: true });
-            qs('#lw').scrollTop = ui.listReturnY || 0;
-        }
+        if (wasEditing)
+            qs('.rcol [data-act=edit]')?.focus();
+        else if (returnId != null && innerWidth <= 900)
+            (qs(`.lv[data-id="${CSS.escape(returnId)}"]`) || qs('#q'))?.focus({ preventScroll: true });
     },
     tgadd(a) {
         // tagChip escapes the tag name and tagColor only returns #rrggbb, so the HTML is safe
@@ -191,18 +194,23 @@ const ACTIONS = {
         renderTagSuggestions();
     },
     close: () => closeModal(),
-    del(a, id) {
-        askConfirm(t('confirm')).then(ok => {
-            if (!ok)
-                return;
-            profile.levels = profile.levels.filter(l => l.id != id);
-            removeFromOrder(id);
-            save();
-            closeModal();
+    async del(a, id) {
+        const deletionProfile = profile;
+        if (!canEdit() || !await askConfirm(t('confirm')) || profile !== deletionProfile || !canEdit())
+            return;
+        profile.levels = profile.levels.filter(l => l.id != id);
+        removeFromOrder(id);
+        const wasSelected = ui.sel == id;
+        currentLevelSelection()?.ids.delete(id);
+        if (wasSelected) {
             ui.sel = null;
             ui.edit = 0;
-            render();
-        });
+        }
+        save();
+        closeModal();
+        render();
+        if (wasSelected)
+            qs('.list-add')?.focus({ preventScroll: true });
     },
     tags: () => openModal(tagsUI()),
     tdel(a) {
@@ -333,11 +341,14 @@ function saveLevel(form) {
     }
     save();
     closeModal();
+    if (ui.tab !== level.kind)
+        resetListFilters();
     ui.sel = level.id;
     ui.edit = 0;
     ui.tab = level.kind;
     render();
     scrollSel();
+    focusLevelPanel();
 }
 
 function setTagColor(input) {
@@ -438,7 +449,13 @@ document.body.onclick = e => {
         if (!isListTab())
             ui.tab = 'classic';
         closeModal();
-        return render();
+        if (g.closest?.('.rcol') && innerWidth <= 900) {
+            ACTIONS.lvclose();
+            qs('.lh .ms summary')?.focus({ preventScroll: true });
+        }
+        else
+            render();
+        return;
     }
     if (a) {
         const k = a.dataset.act;
@@ -658,10 +675,6 @@ document.onkeydown = e => {
         }
         return;
     }
-    if (e.target.dataset.duration)
-        return durationKeydown(e);
-    if (e.key == 'Enter' && e.target.dataset.deathField != null)
-        return deathInputKeydown(e);
     if (e.key == 'Escape') {
         const dropdown = e.target.closest('.ms[open]');
         if (dropdown) {
@@ -671,7 +684,16 @@ document.onkeydown = e => {
             dropdown.querySelector('summary').focus();
             return;
         }
+        if (e.target.closest?.('.rcol.has') && innerWidth <= 900 && !qs('dialog[open]')) {
+            e.preventDefault();
+            ACTIONS.lvclose();
+            return;
+        }
     }
+    if (e.target.dataset.duration)
+        return durationKeydown(e);
+    if (e.key == 'Enter' && e.target.dataset.deathField != null)
+        return deathInputKeydown(e);
     if ((e.key == 'Enter' || e.key == ' ') && e.target.matches('[role=button]')) {
         e.preventDefault();
         e.target.click();

@@ -96,8 +96,8 @@ test('only details show external ranks, including pending, missing and escaped p
     const f = formFixture();
     const cases = [
         [{ s: 'r', p: 125 }, '#125'], [{ s: 'r', p: 0 }, '#0'], [{ s: 'r', p: '<&' }, '#&lt;&amp;'],
-        [{ s: 'p' }, 'Awaiting placement'], [{ s: 'r' }, '—'], [{ s: 'r', p: null }, '—'],
-        [{ s: 'n' }, '—'], [{ s: 'unknown' }, '—'], [null, '—'], [undefined, '—']
+        [{ s: 'p' }, 'Awaiting placement'], [{ s: 'r' }, 'On the list'], [{ s: 'r', p: null }, 'On the list'],
+        [{ s: 'n' }, 'Not on list'], [{ s: 'unknown' }, '—'], [null, '—'], [undefined, '—']
     ];
     for (const [kind, list] of [['classic', 'AREDL'], ['platform', 'AREPL']]) {
         for (const [ar, value] of cases) {

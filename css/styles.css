@@ -1005,7 +1005,7 @@ dialog.modal::backdrop {
 
 .lh #q { width: 100%; padding: 8px 12px 8px 40px; font-weight: 400; }
 .lh #q::placeholder { color: var(--color-text-muted); opacity: 1; }
-.lh .ms { max-width: min(100%, 16rem); }
+.lh .ms { min-width: 0; max-width: min(100%, 16rem); }
 .lh .ms summary { display: flex; align-items: center; gap: 6px; padding: 8px 10px; list-style: none; }
 .lh .ms summary::-webkit-details-marker { display: none; }
 .lh .ms summary > svg:last-child { width: 16px; }
@@ -1050,6 +1050,11 @@ dialog.modal::backdrop {
 
 .lh [hidden] {
   display: none;
+}
+
+#list-reorder-hint {
+  margin: 0 0 var(--space-8);
+  color: var(--color-text-muted);
 }
 
 #lw {
@@ -4833,6 +4838,7 @@ input[type=checkbox]:checked::after {
 }
 .list-surface .lcol {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto auto auto minmax(0, 1fr);
 }
 .list-surface .mode-switch { justify-self: start; }
