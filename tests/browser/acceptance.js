@@ -1,3 +1,47 @@
+export async function checkDrawerClose(page) {
+    const viewport = page.viewportSize();
+    const theme = await page.evaluate('ui.theme');
+    const sidebar = page.locator('#shell-sidebar');
+    const opener = page.locator('#shell-menu');
+    const close = sidebar.locator('[data-act=drawerclose]');
+    const results = [];
+    try {
+        for (const appearance of ['nebula', 'porcelain']) {
+            await page.evaluate('ui.theme = ' + JSON.stringify(appearance) + '; render()');
+            for (const [width, height] of [[390, 844], [1100, 800], [1440, 900]]) {
+                await page.setViewportSize({ width, height });
+                const label = appearance + ' ' + width + 'x' + height;
+                if (width >= 1280) {
+                    if (!await close.evaluate(button => button.ownerDocument.defaultView.getComputedStyle(button.parentElement).display === 'none' &&
+                        button.getClientRects().length === 0))
+                        throw new Error(label + ': the permanent sidebar shows a close button');
+                } else {
+                    await opener.press('Enter');
+                    await sidebar.waitFor();
+                    const ready = await close.evaluate(button => {
+                        const { top, bottom, width, height } = button.getBoundingClientRect();
+                        const profileTop = button.closest('#shell-sidebar').querySelector('.shell-identity').getBoundingClientRect().top;
+                        return top >= 0 && bottom <= profileTop && width >= 44 && height >= 44 &&
+                            button === button.ownerDocument.activeElement && button.matches(':focus-visible') &&
+                            button.ownerDocument.defaultView.getComputedStyle(button.querySelector('svg')).stroke.includes('#nav-metal');
+                    });
+                    if (!ready || !await close.isVisible())
+                        throw new Error(label + ': the close button should be visible above the profile and focused');
+                    await close.click();
+                    if (await sidebar.getAttribute('data-open') !== 'false' ||
+                        !await opener.evaluate(button => button === button.ownerDocument.activeElement))
+                        throw new Error(label + ': closing the drawer did not restore focus to the menu button');
+                }
+                results.push(label);
+            }
+        }
+    } finally {
+        if (viewport) await page.setViewportSize(viewport);
+        await page.evaluate('ui.theme = ' + JSON.stringify(theme) + '; render()');
+    }
+    return results;
+}
+
 /** Run against an already-open local app page with Playwright. */
 export default async function checkAcceptance(page) {
     const check = (condition, message) => { if (!condition) throw new Error(message); };
@@ -64,6 +108,8 @@ export default async function checkAcceptance(page) {
     `);
     try {
         await page.emulateMedia({ reducedMotion: 'reduce' });
+        await show('home');
+        await checkDrawerClose(page);
         for (const width of [360, 390, 1024, 1440]) {
             await page.setViewportSize({ width, height: 800 });
             for (const kind of ['classic', 'platform']) {
