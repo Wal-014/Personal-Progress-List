@@ -43,6 +43,8 @@ function timelineHtml(dataOpen = false) {
         return controls + `<p class=by>${t('timelineNoData')}</p>`;
     const dateX = index => 34 + index * dateSpacing;
     const chartWidth = data.dates.length * dateSpacing + 50;
+    const grid = `<svg class=timeline-grid aria-hidden=true width="100%" height=370>${data.grid.map(value => `<line x1=0 x2="100%" y1=${data.valueY(value)} y2=${data.valueY(value)} stroke="var(--ln)"${value == data.maximum ? '' : ' stroke-dasharray="4"'}/>`).join('')}
+<line x1=0 x2="100%" y1=290 y2=290 stroke="var(--ln)" stroke-width=2 /></svg>`;
     const points = timelinePoints(data, metric);
     const line = [...points].sort((a, b) => a[1] - b[1]).map(([, dateIndex, pointY]) => `${dateX(dateIndex)},${pointY}`).join(' ');
     const summaryDateFormat = new Intl.DateTimeFormat(ui.lang, { dateStyle: 'long', timeZone: 'UTC' });
@@ -58,9 +60,9 @@ function timelineHtml(dataOpen = false) {
         max: metric.tooltip(data.levels.reduce((maximum, level) => Math.max(maximum, metric.read(level)), -Infinity))
     };
     const summary = t('timelineSummary').replace(/\{(\w+)\}/g, (_, key) => summaryValues[key]);
-    return `${controls}<div class=timeline-chart role=img aria-label="${escapeHtml(summary)}"><svg aria-hidden=true width=58 height=370>${data.grid.map(value => `<text x=54 y=${data.valueY(value) + 4} font-size=10 text-anchor=end fill="var(--mut)">${escapeHtml(metric.short(value))}</text>`).join('')}</svg><div id=tlw tabindex=-1><svg aria-hidden=true width="${chartWidth}" height=370>${data.grid.map(value => `<line x1=0 x2=${chartWidth} y1=${data.valueY(value)} y2=${data.valueY(value)} stroke="var(--ln)" stroke-dasharray="${value == data.maximum ? '' : '4'}"/>`).join('')}<line x1=0 x2=${chartWidth} y1=290 y2=290 stroke="var(--ln)" stroke-width=2 />
+    return `${controls}<div class=timeline-chart role=img aria-label="${escapeHtml(summary)}"><svg aria-hidden=true width=58 height=370>${data.grid.map(value => `<text x=54 y=${data.valueY(value) + 4} font-size=10 text-anchor=end fill="var(--mut)">${escapeHtml(metric.short(value))}</text>`).join('')}</svg><div class=timeline-plot>${grid}<div id=tlw tabindex=-1><svg aria-hidden=true width="${chartWidth}" height=370>
 ${dateSpacing >= 24 ? data.dates.map((date, dateIndex) => `<text transform="rotate(-60 ${dateX(dateIndex)} 302)" x=${dateX(dateIndex)} y=302 font-size=10 text-anchor=end fill="var(--mut)" pointer-events="none">${escapeHtml(formatDate(date))}</text>`).join('') : ''}
-<polyline points="${line}" fill=none stroke="var(--obj)" stroke-width=6 stroke-linejoin=round pointer-events=none /><polyline points="${line}" fill=none stroke="var(--a)" stroke-width=3 stroke-linejoin=round pointer-events=none />${points.map(([level, dateIndex, pointY]) => `<rect class=pt data-id="${escapeHtml(level.id)}" x=${dateX(dateIndex) - 6} y=${pointY - 6} width=12 height=12 fill="var(--obj)" stroke="var(--a)" stroke-width=2.5 />${dateSpacing >= 60 ? `<text x=${dateX(dateIndex) + 10} y=${pointY + 4} font-size=11 font-weight=bold fill="var(--fg)" pointer-events="none">${escapeHtml(metric.short(metric.read(level)))}</text>` : ''}`).join('')}</svg></div></div>${timelineTable(points, metric, dataOpen)}`;
+<polyline points="${line}" fill=none stroke="var(--obj)" stroke-width=6 stroke-linejoin=round pointer-events=none /><polyline points="${line}" fill=none stroke="var(--a)" stroke-width=3 stroke-linejoin=round pointer-events=none />${points.map(([level, dateIndex, pointY]) => `<rect class=pt data-id="${escapeHtml(level.id)}" x=${dateX(dateIndex) - 6} y=${pointY - 6} width=12 height=12 fill="var(--obj)" stroke="var(--a)" stroke-width=2.5 />${dateSpacing >= 60 ? `<text x=${dateX(dateIndex) + 10} y=${pointY + 4} font-size=11 font-weight=bold fill="var(--fg)" pointer-events="none">${escapeHtml(metric.short(metric.read(level)))}</text>` : ''}`).join('')}</svg></div></div></div>${timelineTable(points, metric, dataOpen)}`;
 }
 
 function renderTimeline() {

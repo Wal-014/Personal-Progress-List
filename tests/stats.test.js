@@ -213,7 +213,7 @@ test('timeline selects dated levels with the active metric and keeps recorded ze
     assert.deepEqual(plainStats(app('timelineData().grid')), [10000, 20000, 21500]);
 });
 
-test('playtime timeline draws ten-hour grid lines and a solid maximum with short hour labels at high zoom', () => {
+test('playtime timeline labels ten-hour guides and shows short hour values at high zoom', () => {
     const app = statsApp();
     app(statsFixture);
     app('ui.timelineMetric = "time"; ui.z = 60');
@@ -222,13 +222,46 @@ test('playtime timeline draws ten-hour grid lines and a solid maximum with short
     assert.match(markup, />10h<\/text>/);
     assert.match(markup, />20h<\/text>/);
     assert.equal((markup.match(/>21\.5h<\/text>/g) || []).length, 2);
-    assert.equal((markup.match(/stroke-dasharray="4"/g) || []).length, 2);
-    assert.equal((markup.match(/stroke-dasharray=""/g) || []).length, 1);
     app('profile.levels = [{ id: "only", name: "Only", kind: "classic", date: "2025-01-01", tN: 72001 }]');
     assert.deepEqual(plainStats(app('timelineData().grid')), [36000, 72001]);
     app('profile.levels = []');
     assert.doesNotMatch(app('timelineHtml()'), /NaN|Infinity/);
 });
+
+for (const metric of ['att', 'time']) {
+    test(`${metric} timeline keeps full-width guides and axis fixed while the plot zooms`, () => {
+        const app = statsApp();
+        app(statsFixture);
+        app(`ui.timelineMetric = '${metric}'; findLevel('b').attN = 21500`);
+        const layersAt = zoom => {
+            app(`ui.z = ${zoom}`);
+            const markup = app('timelineHtml()');
+            const grid = markup.match(/<svg class=timeline-grid\b[^>]*>[\s\S]*?<\/svg>/)?.[0];
+            const plot = markup.match(/<div id=tlw tabindex=-1>(<svg\b[^>]*>[\s\S]*?<\/svg>)<\/div>/)?.[1];
+            assert.ok(grid && plot, 'The fixed grid and scrolling plot are separate SVGs');
+            return { grid, plot };
+        };
+        const minimum = layersAt(6), maximum = layersAt(160);
+        assert.equal(minimum.grid, maximum.grid);
+        assert.match(minimum.grid, /<svg\b[^>]*aria-hidden=true[^>]*width="100%"[^>]*height=370/);
+        assert.match(minimum.plot, /<svg\b[^>]*width="68"/);
+        assert.match(maximum.plot, /<svg\b[^>]*width="530"/);
+        const lines = minimum.grid.match(/<line\b[^>]*>/g);
+        assert.equal(lines.length, 4);
+        for (const line of lines)
+            assert.match(line, /\bx1=0 x2="100%"/);
+        for (const guide of lines.slice(0, 2))
+            assert.match(guide, /stroke-dasharray="4"/);
+        assert.match(lines[2], /y1=25 y2=25/);
+        assert.doesNotMatch(lines[2], /stroke-dasharray/);
+        assert.match(lines[3], /y1=290 y2=290[^>]*stroke-width=2/);
+        for (const { plot } of [minimum, maximum]) {
+            assert.doesNotMatch(plot, /<line\b/);
+            assert.match(plot, /<polyline\b/);
+            assert.match(plot, /<rect class=pt\b/);
+        }
+    });
+}
 
 test('timeline markers sit on the grid line of their value', () => {
     const app = statsApp();
