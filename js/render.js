@@ -67,6 +67,7 @@ function render() {
     syncDrawer();
     syncDocumentAttributes();
     restoreScroll(view);
+    refreshScrollFades();
     initSort();
     initWishlistSort();
     renderTagSuggestions();

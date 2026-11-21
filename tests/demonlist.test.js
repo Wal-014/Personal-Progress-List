@@ -51,7 +51,7 @@ for (const result of [{ ok: false }, { ok: true, json: async () => ({ data: { le
     });
 
 function formFixture() {
-    const nodes = Object.fromEntries(['#wn', '#lf-face', '#lf-diffT', '#gdq', 'label[for=fm-ap]', '#fm-gdl-field', '#fm-gdl', '#fm-pos-hint'].map(key => [key, { value: '#7', setCustomValidity() {} }]));
+    const nodes = Object.fromEntries(['#lf-face', '#lf-diffT', '#gdq', 'label[for=fm-ap]', '#fm-gdl-field', '#fm-gdl', '#fm-pos-hint'].map(key => [key, { value: '#7', setCustomValidity() {} }]));
     const f = fixture({ localStorage: { ggdl: '[[42,387]]' }, document: { querySelector: key => nodes[key], body: {}, addEventListener() {} }, window: { addEventListener() {} }, clearTimeout,
         FormData: class extends URLSearchParams { constructor(form) { super(form.entries); } },
         render() {}, save() {}, closeModal() {}, scrollSel() {}, renderTagSuggestions() {}, fetch: async () => { throw Error('offline'); } });
@@ -79,7 +79,7 @@ test('form and detail show classic GDL values, hide platformer GDL and escape va
 });
 
 test('picked results toggle GDL visibility and update from cached IDs', async () => {
-    const f = formFixture(), form = { id: 'fm', dataset: {}, elements: Object.fromEntries(['name', 'lid', 'creator', 'diff', 'rating', 'kind', 'kindT', 'ap', 'pos'].map(key => [key, { value: '' }])) };
+    const f = formFixture(), form = { id: 'fm', isConnected: true, dataset: {}, elements: Object.fromEntries(['name', 'lid', 'creator', 'diff', 'rating', 'kind', 'kindT', 'ap', 'pos'].map(key => [key, { value: '' }])) };
     for (const kind of ['classic', 'platform', 'classic']) {
         f.app('pickLevel')(form, { name: 'Level', levelId: '42', kind });
         await new Promise(resolve => setTimeout(resolve));
