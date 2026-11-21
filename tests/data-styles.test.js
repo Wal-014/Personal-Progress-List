@@ -30,13 +30,13 @@ function fixture(root = element()) {
 }
 
 test('applyDataStyles styles the root and matching descendants', () => {
-    const child = element({ 'data-th': thumb, 'data-tag-color': 'var(--fg)', 'data-pct': '100' });
+    const child = element({ 'data-th': thumb, 'data-th-small': `${thumb}/small`, 'data-tag-color': 'var(--fg)', 'data-pct': '100' });
     const root = element({ 'data-th': `${thumb}/small`, 'data-pct': '73.34567', 'data-from': '0', 'data-tag-color': '#12ab9F', 'data-swatch': '#abcdef' }, [child]);
     fixture().apply(root);
     assert.deepEqual(root.properties, {
         '--th': `url("${thumb}/small")`, '--pct': '73.34567', '--from': '0', '--tag-color': '#12ab9F', '--swatch': '#abcdef'
     });
-    assert.deepEqual(child.properties, { '--th': `url("${thumb}")`, '--tag-color': 'var(--fg)', '--pct': '100' });
+    assert.deepEqual(child.properties, { '--th': `url("${thumb}")`, '--th-small': `url("${thumb}/small")`, '--tag-color': 'var(--fg)', '--pct': '100' });
 });
 
 test('the data style allowlist ignores invalid values and unknown attributes', () => {
@@ -52,6 +52,7 @@ test('the data style allowlist ignores invalid values and unknown attributes', (
         'data-style': ['width:100%']
     };
     invalid['data-from'] = invalid['data-pct'];
+    invalid['data-th-small'] = invalid['data-th'];
     for (const [attribute, values] of Object.entries(invalid)) {
         for (const value of values) {
             const root = element({ [attribute]: value });
