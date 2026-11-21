@@ -419,7 +419,7 @@ test('tag suggestions offer a keyboard button for an unused matching tag', () =>
 });
 
 test('initSort registers the grip filter and saves only updates on an unfiltered list', () => {
-    const created = [], listNode = { parentElement: { scrollHeight: 500, clientHeight: 200 } };
+    const created = [], listNode = { parentElement: {} };
     const fixture = loadScripts(['js/components/levels.js'], {
         ui: { q: '', tagFilter: [] },
         qs(selector) {
@@ -434,8 +434,6 @@ test('initSort registers the grip filter and saves only updates on an unfiltered
     const { element, options } = created[0];
     assert.equal(element, listNode);
     assert.equal(options.animation, 180);
-    assert.equal(options.scroll, listNode.parentElement);
-    assert.equal(options.bubbleScroll, false);
     assert.equal(options.forceAutoScrollFallback, true);
     assert.ok(options.scrollSensitivity >= 60);
     assert.equal(options.filter, fixture.app('startsAwayFromGrip'));
@@ -455,6 +453,38 @@ test('initSort registers the grip filter and saves only updates on an unfiltered
     fixture.context.qs = () => null;
     fixture.app('initSort()');
     assert.equal(created.length, 1);
+});
+
+test('initSort measures the pane only when choosing a card and updates auto-scroll for each drag', () => {
+    let scrollHeight = 500, layoutReads = 0, sortable;
+    const pane = {
+        get scrollHeight() { layoutReads++; return scrollHeight; },
+        get clientHeight() { layoutReads++; return 200; }
+    };
+    const listNode = { parentElement: pane };
+    const fixture = loadScripts(['js/components/levels.js'], {
+        ui: { q: '', tagFilter: [] },
+        qs: () => listNode,
+        Sortable: class {
+            constructor(element, options) {
+                this.options = options;
+                sortable = this;
+            }
+            option(name, value) { this.options[name] = value; }
+        },
+        prefersReducedMotion: () => false
+    });
+    fixture.app('initSort()');
+    assert.equal(layoutReads, 0);
+
+    sortable.options.onChoose.call(sortable);
+    assert.equal(sortable.options.scroll, pane);
+    assert.equal(sortable.options.bubbleScroll, false);
+
+    scrollHeight = 200;
+    sortable.options.onChoose.call(sortable);
+    assert.equal(sortable.options.scroll, true);
+    assert.equal(sortable.options.bubbleScroll, true);
 });
 
 test('rating meters fill from the left, use localized decimals and omit plus signs', () => {
