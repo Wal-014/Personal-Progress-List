@@ -10,6 +10,13 @@ test('the service worker caches every script the page loads, so the app also sta
     assert.deepEqual(appScripts.filter(file => !shell.includes(file)), []);
 });
 
+test('the ranking coordinator loads after the API and before startup and is cached offline', () => {
+    const coordinator = 'js/ranking-sync.js';
+    assert.equal(appScripts[appScripts.indexOf('js/api.js') + 1], coordinator);
+    assert.ok(appScripts.indexOf(coordinator) < appScripts.indexOf('js/main.js'));
+    assert.ok(shell.includes(coordinator));
+});
+
 test('every file the service worker caches exists', () => {
     assert.deepEqual(shell.filter(file => file != './' && !existsSync(file)), []);
 });

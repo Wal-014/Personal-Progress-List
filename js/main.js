@@ -21,11 +21,7 @@
         initAccount();
         if (storeWasUnreadable)
             showAlert(t('dataUnreadable'));
-        autoSyncIfStale();
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState == 'visible')
-                autoSyncIfStale();
-        });
+        startRankingSync();
     }
     if ('serviceWorker' in navigator) {
         // Reload only when a new version replaces the one serving this page, not when the first install takes control
