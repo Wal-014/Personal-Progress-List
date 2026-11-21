@@ -256,6 +256,9 @@ test('initWishlistSort keeps controls clickable and requires the grip for touch 
     f.app('initWishlistSort()');
     const { options } = created[0];
     assert.equal(options.animation, 180);
+    f.context.matchMedia = () => ({ matches: true });
+    f.app('initWishlistSort()');
+    assert.equal(created.pop().options.animation, 0);
     assert.equal(options.preventOnFilter, false);
     assert.equal(options.fallbackTolerance, 5);
     assert.equal(options.onUpdate, f.app('reorderWishlist'));

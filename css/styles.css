@@ -389,7 +389,7 @@ input:user-invalid, select:user-invalid, textarea:user-invalid {
 .chip {
   --candy: color-mix(in oklab, var(--tag-color) 48%, var(--color-text-muted));
   background: color-mix(in oklab, var(--candy) 14%, var(--color-surface));
-  border: 1px solid var(--candy);
+  border: var(--size-border) solid var(--color-control-edge, var(--candy));
   color: var(--color-text);
   border-radius: var(--radius-pill);
   font: 600 .75rem/1.4 var(--font-ui);
@@ -912,6 +912,10 @@ dialog.modal::backdrop {
   --row-meta: var(--color-card-text);
 }
 
+[data-theme=porcelain] .list-surface .lv:has(.th) {
+  --row-selection: color-mix(in srgb, var(--color-accent) 70%, var(--color-card-text));
+}
+
 .list-surface .lv .nm { color: var(--row-ink); }
 .list-surface .lv :is(.level-creator, .level-date, .grip) { color: var(--row-meta); }
 
@@ -1112,7 +1116,8 @@ dialog.modal::backdrop {
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  box-shadow: inset 3px 0 var(--color-accent), inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 45%, transparent);
+  box-shadow: inset 3px 0 var(--row-selection, var(--color-accent)),
+    inset 0 0 0 1px color-mix(in srgb, var(--row-selection, var(--color-accent)) 45%, transparent);
 }
 
 /* The grip uses the left padding beyond the selection bar for its 44px touch target. */
@@ -4148,7 +4153,7 @@ main.home {
   outline: 2px solid var(--color-error);
 }
 
-:is(.modal, .legacy-surface, .rcol) button:where(:not(.gdc, .profile-swatch, .gbtn, .stat-card)),
+:is(.modal, .legacy-surface, .rcol) button:where(:not(.gdc, .profile-swatch, .gbtn, .stat-card, .chip)),
 :is(.modal, .list-surface .rcol) .ms summary {
   font: 600 .875rem/1.35 var(--font-ui);
   letter-spacing: normal;
@@ -4160,7 +4165,7 @@ main.home {
   text-shadow: none;
   -webkit-text-stroke: 0;
 }
-:is(.modal, .list-surface .rcol) .ms summary, .modal button:where(:not(.profile-swatch)) { min-height: var(--size-control); }
+:is(.modal, .list-surface .rcol) .ms summary, .modal button:where(:not(.profile-swatch, .chip)) { min-height: var(--size-control); }
 :is(.modal, .legacy-surface, .rcol) :where(button):is(.pri, .go, .blue) {
   color: var(--color-bg);
   background-color: var(--color-accent);
@@ -4308,6 +4313,17 @@ input[type=checkbox]:checked::after {
   .lh .ms:has(input:checked) summary, .pause .appearance-option[aria-pressed=true] {
     --rim-fill: color-mix(in srgb, var(--color-accent) 18%, var(--color-surface));
     --metal-edge: var(--color-accent);
+  }
+  [data-theme=porcelain] :is(.hl .hadd, .lh summary, .lh .list-clear, .lh .list-add, .pause .appearance-option,
+    input:where(:not([type]), [type=text], [type=number], [type=search], [type=email], [type=password], [type=url], [type=date], [type=checkbox]), textarea) {
+    --metal-edge: var(--color-control-edge);
+    --metal-glint: var(--color-control-edge);
+    --metal-shade: var(--color-text-muted);
+  }
+  .pause .appearance-option[aria-pressed=true] {
+    --metal-edge: var(--color-focus);
+    --metal-glint: var(--color-focus);
+    --metal-shade: var(--color-focus);
   }
 
   :is(.hcard, .hadd, .profile-pill, .appearance-option, .lh summary, .dgb button, .wa button):hover {

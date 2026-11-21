@@ -143,7 +143,7 @@ function setWishlistStatus(id, status) {
         setTimeout(() => {
             if (canOfferWishlistTransfer(w, item))
                 askTransfer(item, true);
-        }, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : WISHLIST_STAMP_MS);
+        }, prefersReducedMotion() ? 0 : WISHLIST_STAMP_MS);
     }
 }
 
@@ -212,5 +212,5 @@ function reorderWishlist(evt) {
 
 function initWishlistSort() {
     if (canEdit() && qs('.wl'))
-        new Sortable(qs('.wl'), { animation: 180, filter: evt => startsAwayFromGrip(evt) || !!evt.target.closest('button, input'), preventOnFilter: false, fallbackTolerance: 5, onUpdate: reorderWishlist });
+        new Sortable(qs('.wl'), { animation: prefersReducedMotion() ? 0 : 180, filter: evt => startsAwayFromGrip(evt) || !!evt.target.closest('button, input'), preventOnFilter: false, fallbackTolerance: 5, onUpdate: reorderWishlist });
 }

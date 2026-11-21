@@ -165,7 +165,7 @@ function detail(level) {
 </div><p class=dgb>${canEdit() ? `<button class=blue data-act=edit data-id="${escapeHtml(level.id)}">${ICONS.actionEdit} ${t('edit')}</button>` : ''} <button data-act=lvclose>${t('close')}</button></p></div>`;
 }
 
-const tagChip = n => `<span class=chip data-act=tgrm data-v="${escapeHtml(n)}" style="${tagStyle(n)}">${escapeHtml(n)} ${ICONS.listClear}<input type=hidden name=tg value="${escapeHtml(n)}"></span>`;
+const tagChip = n => `<button type=button class=chip data-act=tgrm data-v="${escapeHtml(n)}" aria-label="${escapeHtml(t('del') + ' · ' + n)}" style="${tagStyle(n)}">${escapeHtml(n)} ${ICONS.listClear}<input type=hidden name=tg value="${escapeHtml(n)}"></button>`;
 
 function updateTotals(f) {
     const q = k => f.elements[k], n = k => q(k).value === '' ? null : +q(k).value, a = n('attN'), c = n('attC');
@@ -177,7 +177,7 @@ function updateTotals(f) {
 function renderTagSuggestions() {
     const q = (qs('#tgq')?.value || '').toLowerCase(), sel = [...document.querySelectorAll('#tgs input')].map(i => i.value);
     if (qs('#tgr'))
-        qs('#tgr').innerHTML = profile.tags.filter(g => !sel.includes(g.name) && g.name.toLowerCase().includes(q)).map(g => `<span class=chip data-act=tgadd data-v="${escapeHtml(g.name)}" style="${tagStyle(g.name)}">+ ${escapeHtml(g.name)}</span>`).join('');
+        qs('#tgr').innerHTML = profile.tags.filter(g => !sel.includes(g.name) && g.name.toLowerCase().includes(q)).map(g => `<button type=button class=chip data-act=tgadd data-v="${escapeHtml(g.name)}" style="${tagStyle(g.name)}">+ ${escapeHtml(g.name)}</button>`).join('');
 }
 
 function formField(key, value, type = 'text', attrs = '', hint = '') {
@@ -324,13 +324,13 @@ function initSort() {
     const pane = listNode.parentElement;
     const scrollPane = pane.scrollHeight > pane.clientHeight;
     new Sortable(listNode, {
-        animation: 180, filter: startsAwayFromGrip, preventOnFilter: false, fallbackTolerance: 5,
+        animation: prefersReducedMotion() ? 0 : 180, filter: startsAwayFromGrip, preventOnFilter: false, fallbackTolerance: 5,
         scroll: scrollPane ? pane : true, bubbleScroll: !scrollPane,
         forceAutoScrollFallback: true, scrollSensitivity: 80, scrollSpeed: 14, onUpdate: reorderList
     });
 }
 
-const scrollSel = () => qs('.lv.sel')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+const scrollSel = () => qs('.lv.sel')?.scrollIntoView({ block: 'center', behavior: prefersReducedMotion() ? 'instant' : 'smooth' });
 
 /** Redraws the list while preserving scroll and search text. */
 function renderList() {
