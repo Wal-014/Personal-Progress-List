@@ -462,3 +462,22 @@ test('a failed vendor load returns an offline error and the next action retries'
     assert.equal(page.scripts.length, 2);
     assert.notEqual(page.scripts[0], page.scripts[1]);
 });
+
+test('a visitor on a public profile loads only their own account row and is signed out without one', async () => {
+    const page = accounts();
+    let syncs = 0;
+    page.context.canEdit = () => false;
+    page.context.startCloudSync = () => syncs++;
+    for (const [answer, expected] of [
+        [{ data: ownProfile, error: null }, { status: 'signed-in', profile: ownProfile }],
+        [{ data: null, error: null }, { status: 'signed-out', profile: null }],
+        [new Error('offline'), { status: 'signed-out', profile: null }]
+    ]) {
+        page.respond('maybeSingle', answer);
+        await page.app('applyAccountSession')('SIGNED_IN', { user });
+        const { status, profile, user: owner } = page.state();
+        assert.deepEqual({ status, profile: profile ?? null }, expected);
+        assert.equal(owner.id, user.id);
+    }
+    assert.equal(syncs, 0, 'a visitor never starts syncing');
+});

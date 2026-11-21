@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { loadScripts } from './load-scripts.js';
 import { parseCsv, toLevels, DIFFICULTIES, RATING_TIERS } from '../scripts/build-levels.js';
 
-const { app } = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js', 'js/sheet.js'], { localStorage: {} });
+const { app } = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/demonlist.js', 'js/api.js', 'js/sheet.js'], { localStorage: {} });
 
 test('parseCsv handles quoted commas, newlines, doubled quotes and CRLF', () => {
     assert.deepEqual(parseCsv('a,"b, c","say ""hi"""\r\n"two\nlines",,x\n'), [['a', 'b, c', 'say "hi"'], ['two\nlines', '', 'x']]);
@@ -67,7 +67,7 @@ test('findSheetLevels returns unfiltered ID and normalized substring matches', (
 test('loadSheetLevels caches a successful array and reports true even for an empty copy', async () => {
     for (const rows of [[], [[1, 'Level', '', 3, 0, 2]]]) {
         let calls = 0;
-        const fresh = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js', 'js/sheet.js'], { localStorage: {}, fetch: async () => { calls++; return { ok: true, json: async () => rows }; } });
+        const fresh = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/demonlist.js', 'js/api.js', 'js/sheet.js'], { localStorage: {}, fetch: async () => { calls++; return { ok: true, json: async () => rows }; } });
         assert.equal(await fresh.app('loadSheetLevels()'), true);
         assert.equal(await fresh.app('loadSheetLevels()'), true);
         assert.equal(calls, 1);
@@ -78,7 +78,7 @@ test('loadSheetLevels caches a successful array and reports true even for an emp
 test('loadSheetLevels reports false for network, HTTP, JSON and non-array failures and retries next time', async () => {
     for (const failure of ['network', 'http', 'json', 'shape']) {
         let calls = 0;
-        const fresh = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js', 'js/sheet.js'], { localStorage: {}, fetch: async () => {
+        const fresh = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/demonlist.js', 'js/api.js', 'js/sheet.js'], { localStorage: {}, fetch: async () => {
             if (++calls > 1)
                 return { ok: true, json: async () => [[1, 'Recovered', '', 3, 0, 2]] };
             if (failure == 'network')

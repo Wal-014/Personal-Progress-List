@@ -14,7 +14,7 @@ function device(server = new FakeSyncServer(), storage = {}) {
     storage.gdp ||= JSON.stringify(local);
     storage.gl ||= 'en';
     storage.removeItem ||= function(key) { delete this[key]; };
-    const document = { visibilityState: 'visible', body: {}, querySelector: selector => nodes[selector] || (blocked ? {} : null),
+    const document = { visibilityState: 'visible', body: {}, documentElement: { dataset: {} }, querySelectorAll: () => [], querySelector: selector => nodes[selector] || (blocked ? {} : null),
         addEventListener(name, handler) { (listeners.document[name] ||= new Set()).add(handler); },
         removeEventListener(name, handler) { listeners.document[name]?.delete(handler); } };
     const window = {
@@ -200,11 +200,11 @@ test('sign-out clears cache and listeners; another account removes old account c
 });
 
 test('settings sync both ways and cached settings restore on an offline start', async () => {
-    const [a, b] = await pair(); a.app(`ui.lang = 'es'; ui.theme = 'night'; save();`); await a.app('pushCloud()');
-    await b.app('pullCloud()'); assert.deepEqual(plain(b.app('currentSettings()')), { lang: 'es', theme: 'night' });
-    assert.equal(b.storage.gl, 'es'); assert.equal(b.storage.gt, 'night');
+    const [a, b] = await pair(); a.app(`ui.lang = 'es'; ui.theme = 'graphite'; save();`); await a.app('pushCloud()');
+    await b.app('pullCloud()'); assert.deepEqual(plain(b.app('currentSettings()')), { lang: 'es', theme: 'graphite', background: 'grid' });
+    assert.equal(b.storage.gl, 'es'); assert.equal(b.storage.gt, 'graphite');
     b.server.failure = 'offline'; const reload = await ready(b.server, b.storage);
-    assert.equal(reload.app('ui.theme'), 'night'); assert.equal(reload.app('ui.lang'), 'es');
+    assert.equal(reload.app('ui.theme'), 'graphite'); assert.equal(reload.app('ui.lang'), 'es');
 });
 
 test('pull defers full rendering while a form, dialog or dropdown is open', async () => {
@@ -216,18 +216,19 @@ test('pull defers full rendering while a form, dialog or dropdown is open', asyn
 
 test('status sentences announce pending counts, errors and retry accessibly', async () => {
     const page = await ready();
-    assert.match(page.app('cloudStatus()'), /role=status aria-atomic=true/); assert.match(page.app('cloudStatus()'), /Saved/);
-    assert.ok(page.app('cloudStatus().includes(ICONS.check)'));
-    page.app(`cloudSync.status = 'saving'`); assert.match(page.app('cloudStatus()'), /Saving…/);
-    assert.ok(page.app('cloudStatus().includes(ICONS.sync)'));
-    page.app(`cloudSync.status = 'offline'; cloudSync.pending = 1`);
-    assert.match(page.app('cloudStatus()'), /Offline · 1 change waiting/); assert.match(page.app('cloudStatus()'), /data-act=csync[^>]*aria-label="Offline · 1 change waiting · Retry"/);
-    assert.match(page.app('cloudStatus()'), /class=cloudtxt/);
-    assert.doesNotMatch(page.app('cloudStatus()'), /style=/);
-    assert.ok(page.app('cloudStatus().includes(ICONS.warning)'));
-    page.app('cloudSync.pending = 3'); assert.match(page.app('cloudStatus()'), /3 changes waiting/);
-    page.app(`cloudSync.status = 'error'; cloudSync.error = '<reason>'`); assert.match(page.app('cloudStatus()'), /Not saved: &lt;reason&gt;/);
-    assert.ok(page.app('cloudStatus().includes(ICONS.warning)'));
+    page.load(['js/components/account-ui.js']);
+    const menu = () => page.app('accountMenu()');
+    assert.doesNotMatch(menu(), /role=status/);
+    assert.match(menu(), /Saved/);
+    page.app("cloudSync.status = 'saving'");
+    assert.match(menu(), /Saving\u2026/);
+    page.app("cloudSync.status = 'offline'; cloudSync.pending = 1");
+    assert.match(menu(), /Offline \u00b7 1 change waiting/);
+    assert.match(menu(), /data-act=csync/);
+    page.app('cloudSync.pending = 3');
+    assert.match(menu(), /3 changes waiting/);
+    page.app("cloudSync.status = 'error'; cloudSync.error = '<reason>'");
+    assert.match(menu(), /Not saved: &lt;reason&gt;/);
 });
 
 test('saves during an active push are sent afterwards and sign-out ignores stale responses', async () => {
@@ -298,9 +299,9 @@ test('storage events ignore legacy data and reload the active account cache only
 test('language and theme actions save account preferences and Retry pulls remote changes', async () => {
     const page = await ready(); page.load(['js/events.js']);
     page.context.openModal = () => {};
-    page.app(`reopenPause = () => {}; ACTIONS.lang({ dataset: { v: 'es' }, closest: () => null }); ACTIONS.theme({ dataset: { v: 'night' } });`);
+    page.app(`reopenPause = () => {}; ACTIONS.lang({ dataset: { v: 'es' }, closest: () => null }); ACTIONS.theme({ dataset: { v: 'graphite' } });`);
     await page.app('pushCloud()');
-    assert.equal(page.server.rows('user_settings')[0].lang, 'es'); assert.equal(page.server.rows('user_settings')[0].theme, 'night');
+    assert.equal(page.server.rows('user_settings')[0].lang, 'es'); assert.equal(page.server.rows('user_settings')[0].theme, 'graphite');
     page.server.profile.display_name = 'Updated'; page.server.revision++;
     await page.app('ACTIONS.csync()'); assert.equal(page.app('account.profile.display_name'), 'Updated');
     const pulls = page.server.calls.filter(call => call.name === 'sync_pull').length;
@@ -338,24 +339,25 @@ test('write-only network failures keep increasing the retry delay after successf
 });
 
 test('account Home and shell hide local file actions and show the account colours and status', async () => {
-    const page = await ready(); page.load(['js/components/home.js', 'js/components/shell.js']);
+    const page = await ready(); page.load(['js/components/home.js', 'js/components/shell.js', 'js/components/account-ui.js']);
     page.app(`account.status = 'signed-in'`);
     let html = page.app('profileSwitcher()');
-    assert.match(html, /obj pbtn/); assert.match(html, /Player/); assert.match(html, /#123456/); assert.match(html, /Saved/);
-    assert.doesNotMatch(html, /data-act=(?:imp|exp|psel)|popovertarget=pmenu|Choose a username/);
-    assert.doesNotMatch(page.app('paletteButtons()'), /data-act=exp/);
+    assert.match(html, /class=profile-pill/); assert.match(html, /Player/); assert.match(html, /#123456/); assert.match(html, /Saved/);
+    assert.doesNotMatch(html, /data-act=(?:imp|exp|psel)|popovertarget=pmenu/);
+    assert.doesNotMatch(html.slice(0, html.indexOf('<div id=amenu')), /Choose a username/);
     assert.doesNotMatch(page.app('pauseUI()'), /data-act=imp/);
-    page.context.alerts = () => []; page.context.accountButton = () => '';
-    html = page.app('topBar()'); assert.equal((html.match(/id=cloudst/g) || []).length, 1);
+    assert.equal((html.match(/data-cloud-status/g) || []).length, 1);
     page.app(`account.profile.username = 'player'`); assert.match(page.app('profileSwitcher()'), /@player/);
     page.app(`cloudSync.status = 'offline'; cloudSync.pending = 1`);
     html = page.app('profileSwitcher()');
     assert.match(html, /Offline · 1 change waiting/); assert.match(html, /data-act=csync/);
-    assert.doesNotMatch(html, /<button[^>]*data-act=aprofile[^>]*>(?:(?!<\/button>)[\s\S])*<button/);
+    assert.match(html, /popovertarget=amenu/);
+    assert.equal((html.match(/id=amenu/g) || []).length, 1);
+    assert.doesNotMatch(html, /<button[^>]*popovertarget=amenu[^>]*>(?:(?!<\/button>)[\s\S])*<button/);
     page.app(`account.status = 'signed-out'; stopCloudSync(true)`);
     page.context.localProfileSummary = () => 'Local';
     assert.match(page.app('profileSwitcher()'), /data-act=localdata/);
-    assert.doesNotMatch(page.app('profileSwitcher()'), /data-act=imp/); assert.doesNotMatch(page.app('paletteButtons()'), /data-act=exp/);
+    assert.doesNotMatch(page.app('profileSwitcher()'), /data-act=imp/);
 });
 
 test('conflict notices name at most three entries and keep valid selections', async () => {
@@ -371,17 +373,27 @@ test('conflict notices name at most three entries and keep valid selections', as
     assert.equal(b.app('ui.sel'), null); assert.equal(b.app('ui.wl'), null);
 });
 
+test('Home status and retry controls update when the separate cloud chip is absent', async () => {
+    const page = await ready();
+    page.nodes['[data-cloud-status]'] = { textContent: '' };
+    page.nodes['[data-cloud-retry]'] = { innerHTML: '' };
+    page.app("cloudSync.status = 'offline'; cloudSync.pending = 1; renderCloudStatus()");
+    assert.equal(page.nodes['[data-cloud-status]'].textContent, 'Offline · 1 change waiting');
+    assert.match(page.nodes['[data-cloud-retry]'].innerHTML, /data-act=csync/);
+    assert.equal(page.nodes['#cloudst'], undefined);
+});
+
 test('saves debounce for one second and update status without a full render', async () => {
     const page = await ready();
-    page.nodes['#cloudst'] = { outerHTML: '' }; page.nodes['[data-cloud-status]'] = { textContent: '' };
+    page.nodes['[data-cloud-status]'] = { textContent: '' };
     const before = page.draws, pushes = page.server.calls.filter(call => call.name === 'sync_push').length;
     page.app(`profile.levels.push(${JSON.stringify(level())}); save();`); await page.tick(500);
     page.app(`profile.levels[0].attN = 99; save();`); await page.tick(999);
     assert.equal(page.server.calls.filter(call => call.name === 'sync_push').length, pushes);
-    assert.equal(page.draws, before); assert.match(page.nodes['#cloudst'].outerHTML, /Saving…/);
+    assert.equal(page.draws, before);
     assert.equal(page.nodes['[data-cloud-status]'].textContent, 'Saving…');
     await page.tick(1); assert.equal(page.server.rows('levels')[0].attempts_normal, 99);
-    assert.match(page.nodes['#cloudst'].outerHTML, /Saved/);
+    assert.match(page.nodes['[data-cloud-status]'].textContent, /Saved/);
 });
 
 test('parent deletion cascades and a second device can confirm missing child deletes', async () => {
@@ -414,8 +426,8 @@ test('offline session restoration preserves cached edits before the first profil
 test('account preference actions tolerate blocked storage', async () => {
     const page = await ready(); page.load(['js/events.js']);
     page.context.localStorage = new Proxy({}, { get() { throw Error('Storage blocked'); }, set() { throw Error('Storage blocked'); } });
-    page.app(`reopenPause = () => {}; ACTIONS.lang({ dataset: { v: 'es' }, closest: () => null }); ACTIONS.theme({ dataset: { v: 'night' } });`);
-    assert.equal(page.app('ui.lang'), 'es'); assert.equal(page.app('ui.theme'), 'night');
+    page.app(`reopenPause = () => {}; ACTIONS.lang({ dataset: { v: 'es' }, closest: () => null }); ACTIONS.theme({ dataset: { v: 'graphite' } });`);
+    assert.equal(page.app('ui.lang'), 'es'); assert.equal(page.app('ui.theme'), 'graphite');
 });
 
 test('saving only local changes adopts the revision without downloading the account', async () => {
@@ -442,7 +454,7 @@ function boot(page, user = { id: 'owner' }) {
 
 for (const online of [false, true]) test(`cached startup precedes the first render, with online=${online}`, async () => {
     const a = await ready();
-    a.app(`profile.levels.push(${JSON.stringify(level())}); ui.lang = 'es'; ui.theme = 'night'; save();`);
+    a.app(`profile.levels.push(${JSON.stringify(level())}); ui.lang = 'es'; ui.theme = 'graphite'; save();`);
     const page = device(a.server, a.storage); page.load(); page.context.navigator.onLine = online;
     const calls = a.server.calls.length, frames = boot(page);
     assert.equal(frames.length, 1);
@@ -450,7 +462,7 @@ for (const online of [false, true]) test(`cached startup precedes the first rend
     assert.equal(frames[0].account.status, 'signed-in');
     assert.equal(frames[0].account.profile.display_name, 'Player');
     assert.equal(frames[0].status.status, online ? 'saving' : 'offline');
-    assert.equal(page.app('ui.theme'), 'night'); assert.equal(page.app('ui.lang'), 'es');
+    assert.equal(page.app('ui.theme'), 'graphite'); assert.equal(page.app('ui.lang'), 'es');
     assert.equal(a.server.calls.length, calls);
     page.app(`profile.levels[0].attN = 70; save();`);
     await page.tick(1000);
@@ -655,4 +667,70 @@ test('the first pull after a cached restart still reports conflicts when a revis
     const restored = await ready(a.server, b.storage);
     assert.equal(restored.data().levels[0].attN, 20);
     assert.deepEqual(restored.toasts, ['Changed on another device: Level n1']);
+});
+
+test('a legacy cloud cache converts before merging with migrated server ratings without conflicts', async () => {
+    const a = await ready();
+    a.app(`profile.levels.push({ id: 'n1', name: 'Old rating', kind: 'classic', enj: 3, lik: -3 }); save()`);
+    await a.app('pushCloud()');
+    const storage = { ...a.storage }, cached = JSON.parse(storage['gcloud:owner']);
+    delete cached.profile.ratingScale;
+    storage['gcloud:owner'] = JSON.stringify(cached);
+    const old = a.server.rows('levels')[0];
+    await a.server.rpc('sync_push', { changes: [{ table: 'levels', key: { id: 'n1' }, version: old.version, row: { ...old, enjoyment: 6.5, liking: 3.5 } }] });
+    const b = device(a.server, storage); b.load();
+    b.app(`useCloudCache({ id: 'owner' }, ${JSON.stringify(a.server.profile)}, readCloudCache('owner'))`);
+    assert.equal(b.data().levels[0].enj, 6.5);
+    assert.equal(b.data().levels[0].lik, 3.5);
+    assert.equal(b.app("cloudSession.snapshot.get('levels:n1').row.enjoyment"), 3);
+    await b.start();
+    assert.deepEqual(b.toasts, []);
+    assert.equal(b.status().pending, 0);
+    assert.equal(b.data().levels[0].enj, 6.5);
+    assert.equal(b.data().levels[0].lik, 3.5);
+    const c = await ready(a.server, storage);
+    assert.equal(c.data().levels[0].enj, 6.5);
+    assert.equal(c.data().ratingScale, 10);
+});
+
+test('appearance fields synchronize independently and survive reload with legacy normalization', async () => {
+    const [a, b] = await pair();
+    a.app("applyCloudSettings({ background: 'orbital' }); save()");
+    await a.app('pushCloud()');
+    await b.app('pullCloud()');
+    assert.equal(b.app('ui.background'), 'orbital');
+    b.app("applyCloudSettings({ theme: 'porcelain' }); save()");
+    await b.app('pushCloud()');
+    await a.app('pullCloud()');
+    assert.equal(a.app('ui.background'), 'orbital');
+    assert.equal(a.storage.gbg, 'orbital');
+    assert.equal(a.storage.gt, 'porcelain');
+    const reload = device(a.server, { ...a.storage, gt: 'night' });
+    assert.equal(reload.app('ui.theme'), 'graphite');
+    assert.equal(reload.app('ui.background'), 'orbital');
+    a.app("applyCloudSettings({ theme: 'night', background: null })");
+    assert.equal(a.app('ui.theme'), 'graphite');
+    assert.equal(a.app('ui.background'), 'orbital');
+});
+
+
+test('header sync problems update live and disappear when saved or viewing another profile', async () => {
+    const page = await ready();
+    page.app("account.status = 'signed-in'");
+    page.nodes['#cloud-header'] = { innerHTML: '' };
+    assert.equal(page.app('cloudHeaderStatus()'), '');
+    for (const status of ['saving', 'offline', 'error']) {
+        page.app(`setCloudStatus('${status}', '<reason>')`);
+        const html = page.nodes['#cloud-header'].innerHTML;
+        assert.match(html, /role=status/);
+        assert.ok(html.includes(page.app(`t('${status == 'saving' ? 'cloudSaving' : status == 'offline' ? 'cloudOfflineShort' : 'cloudErrorShort'}')`)));
+        assert.equal(html.includes('data-act=csync'), status != 'saving');
+        assert.doesNotMatch(html, /<reason>/);
+    }
+    page.app("setCloudStatus('saved')");
+    assert.equal(page.nodes['#cloud-header'].innerHTML, '');
+    page.app("viewing = { identity: {} }; setCloudStatus('error', 'Private error')");
+    assert.equal(page.nodes['#cloud-header'].innerHTML, '');
+    page.app("viewing = null; account.status = 'signed-out'");
+    assert.equal(page.app('cloudHeaderStatus()'), '');
 });

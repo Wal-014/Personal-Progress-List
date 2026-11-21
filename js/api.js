@@ -115,50 +115,72 @@ async function enrichWishlist(w) {
         }
 }
 
-/** Fills id, publisher and AREDL position of the given levels from the cached lists. Returns the levels that matched. */
+function findAredlLevel(level) {
+    const kind = level.kind == 'platform' ? 'p' : 'd';
+    return (level.levelId && aredlCache.findLast(x => x.k == kind && String(x.i) == String(level.levelId)))
+        || aredlCache.findLast(x => x.k == kind && x.n.toLowerCase() == level.name.toLowerCase())
+        || findAredlByName(level.name, kind);
+}
+
+function aredlStatus(level) {
+    const match = findAredlLevel(level);
+    return match ? { s: 'r', p: match.p } : { s: RATING_TIERS.includes(level.rating) && level.diff == 'Extreme Demon' ? 'p' : 'n', p: null };
+}
+
+function fillAredlMetadata(level) {
+    const match = findAredlLevel(level);
+    if (match) {
+        level.levelId = level.levelId || String(match.i);
+        level.creator = level.creator || match.u;
+    }
+    return match;
+}
+
+/** Fills IDs, publishers and automatic statuses from the cached lists. Returns the levels that matched. */
 function matchWithAredl(levels) {
-    const by = new Map();
-    aredlCache.forEach(x => {
-        by.set(x.k + x.i, x);
-        by.set(x.k + x.n.toLowerCase(), x);
-    });
-    return levels.filter(l => {
-        const k = l.kind == 'platform' ? 'p' : 'd', x = (l.levelId && by.get(k + l.levelId)) || by.get(k + l.name.toLowerCase()) || findAredlByName(l.name, k);
-        if (x) {
-            l.levelId = l.levelId || String(x.i);
-            l.creator = l.creator || x.u;
-            l.ar = { s: 'r', p: x.p };
-        }
-        return !!x;
+    if (!aredlCache.length)
+        return [];
+    return levels.filter(level => {
+        const match = fillAredlMetadata(level);
+        level.ar = aredlStatus(level);
+        return !!match;
     });
 }
 
-/** Downloads AREDL positions and fills missing creators, difficulties and rating tiers of saved levels and wishlist items from the sheet, then asks GDHistory for ratings still missing. Only a manual update reports a failure. */
-async function syncWithAredl(manual) {
+/** Downloads AREDL positions, loads the sheet when saved levels or wishlist items still need metadata, then asks GDHistory for ratings still missing. */
+async function syncWithAredl() {
     if (ui.sync)
         return;
     ui.sync = 1;
-    renderSyncStatus();
+    const [aredl, gdl] = await Promise.allSettled([loadAredlList(true), loadDemonlist(true)]);
     try {
-        if (!await loadAredlList(true))
+        if (aredl.status == 'rejected' || !aredl.value)
             throw Error('no response');
-        await loadSheetLevels();
-        matchWithAredl(profile.levels);
-        profile.levels.forEach(l => fillFromSheet(l, l.kind == 'platform' ? 'p' : 'd'));
-        profile.wishlists.flatMap(w => w.items).forEach(l => fillFromSheet(l));
+        const levels = profile.levels;
+        levels.forEach(fillAredlMetadata);
+        if (levels.some(needsSheetFields) || profile.wishlists.some(w => w.items.some(needsSheetFields))) {
+            await loadSheetLevels();
+            // A profile change during the download can introduce levels that still need AREDL metadata first.
+            if (profile.levels !== levels)
+                profile.levels.forEach(fillAredlMetadata);
+            profile.levels.forEach(l => fillFromSheet(l, l.kind == 'platform' ? 'p' : 'd'));
+            profile.wishlists.flatMap(w => w.items).forEach(l => fillFromSheet(l));
+        }
         await fillRatings([...profile.levels, ...profile.wishlists.flatMap(w => w.items)]);
+        matchWithAredl(profile.levels);
         localStorage.gas = Date.now();
+    }
+    catch {
+        // Keep cached positions and leave the timestamp stale for the next retry.
+    }
+    if (gdl.status == 'fulfilled')
+        matchWithDemonlist(profile.levels);
+    if (gdl.status == 'fulfilled' || (aredl.status == 'fulfilled' && aredl.value))
         save();
-    }
-    catch (e) {
-        if (manual)
-            showAlert('AREDL: ' + e.message);
-    }
     ui.sync = 0;
-    // Redrawing would wipe a form, dialog or dropdown the user has open; the new data shows on the next render
-    if (!qs('form, dialog[open], .ms[open]'))
+    // Replacing a dragged row interrupts sorting. Show refreshed metadata on the next render.
+    if (!qs('form, dialog[open], .ms[open], .sortable-chosen'))
         render();
-    renderSyncStatus();
 }
 
 function autoSyncIfStale() {

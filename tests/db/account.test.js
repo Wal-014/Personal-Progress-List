@@ -13,7 +13,7 @@ test('delete_account removes only the caller and all their rows; anonymous execu
         ok(await client.auth.signInWithPassword({ email, password }));
         const other = await context.createUser();
         const fixtures = [
-            ['user_settings', { lang: 'en', theme: 'blue' }],
+            ['user_settings', { lang: 'en', theme: 'nebula', background: 'grid' }],
             ['levels', { id: 'level', kind: 'classic', name: 'Level' }],
             ['level_notes', { level_id: 'level', notes: 'Notes' }],
             ['list_orders', { kind: 'classic', level_ids: ['level'] }],

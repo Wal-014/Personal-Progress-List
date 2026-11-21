@@ -12,7 +12,7 @@ const LEVEL_METRICS = {
     },
     enj: {
         label: 'enj', read: level => level.enj ?? null,
-        format: value => `${value > 0 ? '+' : ''}${value}`, formatGap: String, range: [-10, 10]
+        format: formatRating, formatGap: formatRating, range: [0, 10]
     }
 };
 
@@ -40,12 +40,12 @@ function statCard(level, position, selectedLevels) {
     const thumbnail = thumbUrl(level);
     const slots = selectedLevels.flatMap((chosen, slotIndex) => chosen?.id == level.id ? [slotIndex] : []);
     const cardBody = `<span class=stat-position>${position == null ? '—' : '#' + position}${slots.length ? `<span class=stat-badges>${slots.map(comparisonBadge).join('')}</span>` : ''}</span>${statLevelIdentity(level)}<span class=stat-values>${Object.entries(LEVEL_METRICS).map(([key, metric]) => `<span${key == ui.rankingMetric ? ' class=ranked-metric' : ''}><small>${t(metric.label)}</small><b>${escapeHtml(levelMetricText(metric, metric.read(level)))}</b></span>`).join('')}</span>${difficultyFace(level)}`;
-    const attrs = `class="obj stat-card${slots.map(slotIndex => ' chosen-' + (slotIndex + 1)).join('')}"${thumbnail ? ` style="--th:url('${escapeHtml(thumbnail)}')"` : ''}`;
+    const attrs = `class="obj stat-card${slots.map(slotIndex => ' chosen-' + (slotIndex + 1)).join('')}"${thumbnail ? ` data-th="${escapeHtml(thumbnail)}"` : ''}`;
     return `<li>${ui.comparison.open ? `<button type=button ${attrs} data-act=compare-pick data-id="${escapeHtml(level.id)}" aria-pressed=${!!slots.length}>${cardBody}</button>` : `<div ${attrs}>${cardBody}</div>`}</li>`;
 }
 
 function rankingControls(modeCount) {
-    return `<div class=ranking-controls>${statsSegments('ranking-mode', ui.rankingMode, ['classic', 'platform'].map(kind => [kind, t(kind)]), t('kind'))}${statsSegments('ranking-metric', ui.rankingMetric, Object.entries(LEVEL_METRICS).map(([key, metric]) => [key, t(metric.label)]), t('rankingMetric'))}<button type=button class=xs-txt data-act=ranking-order>${t(ui.rankingDirection == 'asc' ? 'lowestFirst' : 'highestFirst')}</button><button type=button class=xs-txt data-act=ranking-all>${ui.rankingAll ? t('topTen') : t('viewAll').replace('{n}', modeCount)}</button><button type=button class=xs-txt data-act=compare-toggle aria-pressed=${ui.comparison.open}>${t('compare')}</button></div>`;
+    return `<div class=ranking-controls>${statsSegments('ranking-mode', ui.rankingMode, ['classic', 'platform'].map(kind => [kind, t(kind)]), t('kind'))}${statsSegments('ranking-metric', ui.rankingMetric, Object.entries(LEVEL_METRICS).map(([key, metric]) => [key, t(metric.label)]), t('rankingMetric'))}<div class=ranking-order role=group aria-label="${t('rankingOrder')}"><button type=button class=xs-txt data-act=ranking-order>${t(ui.rankingDirection == 'asc' ? 'lowestFirst' : 'highestFirst')}</button><button type=button class=xs-txt data-act=ranking-all>${ui.rankingAll ? t('topTen') : t('viewAll').replace('{n}', modeCount)}</button></div><button type=button class=xs-txt data-act=compare-toggle aria-pressed=${ui.comparison.open}>${t('compare')}</button></div>`;
 }
 
 function rankingsHtml() {

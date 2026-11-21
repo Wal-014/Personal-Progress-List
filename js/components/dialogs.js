@@ -23,31 +23,109 @@ const bellUI = () => {
     return `<div class=box><h2>${ICONS.bell} ${t('bell')}</h2>${A.length ? `<ul class=bl>${A.map(a => `<li>${a}</li>`).join('')}</ul>` : `<p>${t('nonot')}</p>`}<p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
 };
 
-const legalUI = k => `<div class="box sm"><h2>${t(k)}</h2><p style="white-space:pre-wrap">${escapeHtml(t(k + 'Txt'))}</p><p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
+const legalUI = k => `<div class="box sm"><h2>${t(k)}</h2><p class=dialog-message>${escapeHtml(t(k + 'Txt'))}</p><p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
+
+const dialogOpeners = new WeakMap();
+let dialogTitleId = 0;
+const dialogAnnouncements = '<div class=toast role=status></div><span class=visually-hidden data-bell-status role=status></span>';
+const activeModal = () => [...document.querySelectorAll('dialog.modal[open]')].at(-1);
+
+function overlayOpener(control = document.activeElement) {
+    const popover = control?.closest?.('[popover]');
+    const element = popover ? qs('[popovertarget="' + CSS.escape(popover.id) + '"]') : control;
+    return { element, selector: element && qs('#app') ? controlSelector(element) : null };
+}
+
+function restoreOverlayFocus(opener) {
+    const active = document.activeElement;
+    if (active && active != document.body && (qs('#app')?.contains(active) || active.closest?.('dialog[open]')))
+        return;
+    const target = opener.selector ? qs(opener.selector) : opener.element;
+    target?.focus({ preventScroll: true });
+}
+
+function keepModalTab(event) {
+    if (event.key != 'Tab' || event.defaultPrevented)
+        return;
+    const controls = [...event.currentTarget.querySelectorAll('button, input, select, textarea, summary, a[href], [tabindex]')]
+        .filter(control => control.tabIndex >= 0 && !control.matches(':disabled') && control.getClientRects().length);
+    const first = controls[0], last = controls.at(-1), active = document.activeElement;
+    const edge = event.shiftKey ? first : last, opposite = event.shiftKey ? last : first;
+    const beyond = event.shiftKey ? Node.DOCUMENT_POSITION_FOLLOWING : Node.DOCUMENT_POSITION_PRECEDING;
+    if (!edge || active == edge || (active.tabIndex < 0 && (active.compareDocumentPosition(edge) & beyond))) {
+        event.preventDefault();
+        opposite?.focus();
+    }
+}
+
+function setFieldError(input, message, feedback) {
+    const id = input.id || 'tag-name-' + input.dataset.tn;
+    const errorId = id + '-error';
+    const describedBy = (input.getAttribute('aria-describedby') || '').split(/\s+/).filter(value => value && value != errorId);
+    const error = feedback || qs('#' + CSS.escape(errorId));
+    if (message) {
+        const hint = error || document.createElement('p');
+        if (!error) {
+            hint.id = errorId;
+            hint.className = 'field-error';
+            hint.setAttribute('role', 'alert');
+            (input.closest('.trow, .password-field, .username-field, .gdq, .duration') || input).after(hint);
+        }
+        hint.textContent = message;
+        input.setAttribute('aria-invalid', 'true');
+        describedBy.push(errorId);
+    }
+    else {
+        if (error) error.textContent = '';
+        input.removeAttribute('aria-invalid');
+    }
+    if (describedBy.length) input.setAttribute('aria-describedby', describedBy.join(' '));
+    else input.removeAttribute('aria-describedby');
+}
 
 /** Promise-based replacement for alert, confirm and prompt. */
-function showDialog({ title, msg, input, def, ok, cancel, danger, label, extra = '', enhance }) {
+function showDialog({ title, msg, input, def, ok, cancel, danger, label, extra = '', enhance, validate }) {
     return new Promise(res => {
-        const m = document.createElement('dialog');
+        const opener = overlayOpener(), m = document.createElement('dialog');
+        const titleId = 'dgt-' + ++dialogTitleId;
         m.className = 'modal';
-        m.setAttribute('aria-labelledby', 'dgt');
-        m.innerHTML = `<div class="box sm"><h2 id=dgt>${escapeHtml(title || '')}</h2>${msg ? `<p style="white-space:pre-wrap">${escapeHtml(msg)}</p>` : ''}${input ? `${label ? `<label for=dgi>${escapeHtml(label)}</label>` : ''}<input id=dgi${label ? '' : ' aria-labelledby=dgt'} value="${escapeHtml(def || '')}" style="width:100%">` : ''}${extra}<p class=dgb>${cancel === false ? '' : `<button data-r=0>${t('cancel')}</button>`}<button class="${danger ? 'dg' : 'pri'}" data-r=1>${ok || t('ok2')}</button></p></div>`;
+        m.setAttribute('aria-labelledby', titleId);
+        m.innerHTML = `<div class="box sm"><h2 class=prompt-title id=${titleId}>${escapeHtml(title || '')}</h2>${msg ? `<p class=dialog-message>${escapeHtml(msg)}</p>` : ''}${input ? `${label ? `<label for=dgi>${escapeHtml(label)}</label>` : ''}<input id=dgi${label ? '' : ' aria-labelledby=' + titleId} value="${escapeHtml(def || '')}"><p id=dgi-error class=field-error role=alert></p>` : ''}${extra}<p class=dgb>${cancel === false ? '' : `<button data-r=0>${t('cancel')}</button>`}<button class="${danger ? ok ? 'dg bulk-delete' : 'dg' : 'pri'}" data-r=1>${ok || t('ok2')}</button></p></div>${dialogAnnouncements}`;
         const read = enhance?.(m);
         document.body.appendChild(m);
         m.showModal();
-        const i = m.querySelector('#dgi'), done = v => {
+
+        const i = m.querySelector('#dgi'), error = m.querySelector('#dgi-error'), canceled = i ? null : false;
+        const done = value => {
             m.close();
             m.remove();
-            res(v);
-        }, accept = () => {
-            if (i && !i.value.trim()) {
-                i.setCustomValidity(t('errName'));
-                return i.reportValidity();
-            }
-            done(read ? read(i.value.trim()) : i ? i.value.trim() : true);
+            restoreOverlayFocus(opener);
+            res(value);
         };
-        if (i) {
-            i.oninput = () => i.setCustomValidity('');
+        const accept = () => {
+            const value = i?.value.trim();
+            const message = i ? !value ? t('errName') : validate?.(value) : '';
+            if (message) {
+                setFieldError(i, message, error);
+                i.focus();
+                return;
+            }
+            done(read ? read(value) : i ? value : true);
+        };
+        m.addEventListener('keydown', keepModalTab);
+        m.addEventListener('cancel', event => {
+            event.preventDefault();
+            done(canceled);
+        });
+        m.addEventListener('close', () => {
+            m.remove();
+            restoreOverlayFocus(opener);
+            res(canceled);
+        });
+        if (i) i.oninput = () => setFieldError(i, '', error);
+        if (danger && cancel !== false)
+            m.querySelector('[data-r="0"]').focus();
+        else if (i) {
             i.focus();
             i.select();
         }
@@ -57,86 +135,176 @@ function showDialog({ title, msg, input, def, ok, cancel, danger, label, extra =
             e.stopPropagation();
             const r = e.target.dataset.r;
             if (r != null)
-                r == '1' ? accept() : done(i ? null : false);
+                r == '1' ? accept() : done(canceled);
         };
         m.onkeydown = e => {
             e.stopPropagation();
-            if (e.key == 'Enter') {
+            if (e.defaultPrevented) return;
+            if (e.key == 'Enter' && !e.target.closest('button, summary, .cube-catalog')) {
                 e.preventDefault();
                 accept();
             }
-            if (e.key == 'Escape')
-                done(i ? null : false);
         };
     });
 }
 
 const askText = (title, def) => showDialog({ title, input: 1, def });
 
+const profilePreview = selected => selected.cubeId ? catalogCube(selected.cubeId, selected.color, selected.secondaryColor) + `<small>${t('cube')} ${selected.cubeId}</small>` : cubeIcon(selected.color, selected.secondaryColor);
+
+function bindCubeCatalog(dialog, selected) {
+    const catalog = dialog.querySelector('.cube-catalog');
+    let page = Math.floor((selected.cubeId - 1) / CUBES_PER_PAGE);
+    const draw = () => {
+        const start = page * CUBES_PER_PAGE + 1, end = Math.min(start + CUBES_PER_PAGE - 1, CUBE_COUNT);
+        const tiles = Array.from({ length: end - start + 1 }, (_, offset) => {
+            const id = start + offset;
+            return `<button type=button data-cube=${id} aria-pressed=${id == selected.cubeId} aria-label="${t('cube')} ${id}">${catalogCube(id, selected.color, selected.secondaryColor)}<span>${id}</span></button>`;
+        }).join('');
+        const focusedCube = document.activeElement?.dataset?.cube;
+        const grid = catalog.querySelector('.cube-grid');
+        grid.innerHTML = tiles;
+        if (focusedCube) grid.querySelector('[data-cube="' + focusedCube + '"]')?.focus({ preventScroll: true });
+        catalog.querySelector('output').textContent = start + '–' + end + ' / ' + CUBE_COUNT;
+        catalog.querySelector('[data-page="-1"]').disabled = page == 0;
+        catalog.querySelector('[data-page="1"]').disabled = end == CUBE_COUNT;
+    };
+    const toggle = catalog.querySelector('[aria-controls]'), optionsPanel = catalog.querySelector('#cube-options');
+    function setCatalogOpen(open) {
+        optionsPanel.hidden = !open;
+        toggle.setAttribute('aria-expanded', String(open));
+        if (open) {
+            draw();
+            (optionsPanel.querySelector('[aria-pressed=true]') || optionsPanel.querySelector('[data-cube]')).focus();
+        }
+        else toggle.focus();
+    }
+    catalog.onkeydown = event => {
+        if (event.key == 'Escape' && !optionsPanel.hidden) {
+            event.preventDefault();
+            setCatalogOpen(false);
+        }
+    };
+    catalog.onclick = event => {
+        const button = event.target.closest('button');
+        if (!button) return;
+        if (button == toggle)
+            setCatalogOpen(optionsPanel.hidden);
+        else if (button.dataset.page) {
+            page += Number(button.dataset.page);
+            draw();
+            if (button.disabled) catalog.querySelector('.cube-grid button').focus();
+        }
+        else {
+            selected.cubeId = Number(button.dataset.cube);
+            catalog.querySelectorAll('[data-cube]').forEach(tile => tile.setAttribute('aria-pressed', String(tile == button)));
+            dialog.querySelector('.profile-preview').innerHTML = profilePreview(selected);
+        }
+    };
+    return () => { if (!optionsPanel.hidden) draw(); };
+}
+
 function profileColorFields(selected) {
     const colorGroup = (key, labelKey) => {
         const current = selected[key].toLowerCase(), labelId = 'profile-' + key;
-        const swatch = ([presetKey, c]) => `<label class=profile-swatch style="--swatch:${c}"><input type=radio name="profile-${key}" value="${c}" aria-label="${t(presetKey)}"${c == current ? ' checked' : ''}><span class=profile-color aria-hidden=true>${ICONS.check}</span></label>`;
+        const swatch = ([presetKey, c]) => `<label class=profile-swatch data-swatch="${escapeHtml(c)}"><input type=radio name="profile-${key}" value="${c}" aria-label="${t(presetKey)}"${c == current ? ' checked' : ''}><span class=profile-color aria-hidden=true>${ICONS.check}</span></label>`;
         return `<div><span class=lab id="${labelId}">${t(labelKey)}</span><div class=profile-swatches role=radiogroup aria-labelledby="${labelId}" data-color=${key}>${Object.entries(PROFILE_PRESETS).map(swatch).join('')}<span class="profile-swatch profile-custom" data-selected=${!PROFILE_COLORS.includes(current)}><input type=color value="${current}" aria-label="${t('customColor')}"><span class=profile-color aria-hidden=true>${ICONS.check}</span></span></div></div>`;
     };
-    return `<fieldset class=profile-colors><legend>${t('color')}</legend><div class=profile-colors-row><span class=profile-preview>${cubeIcon(selected.color, selected.secondaryColor)}</span><div class=profile-color-groups>${colorGroup('color', 'primaryColor')}${colorGroup('secondaryColor', 'secondaryColor')}</div></div></fieldset>`;
+    return `<fieldset class=profile-colors><legend>${t('color')}</legend><div class=profile-colors-row><span class=profile-preview>${profilePreview(selected)}</span><div class=profile-color-groups>${colorGroup('color', 'primaryColor')}${colorGroup('secondaryColor', 'secondaryColor')}</div></div></fieldset>`;
 }
 
-function bindProfileColors(root, selected) {
+function bindProfileColors(root, selected, onChange) {
     const fieldset = root.querySelector('.profile-colors');
     fieldset.oninput = e => {
         const group = e.target.closest('.profile-swatches'), custom = group.querySelector('[type=color]'), isCustom = e.target == custom;
         selected[group.dataset.color] = e.target.value;
         group.querySelectorAll('[type=radio]').forEach(radio => radio.checked = !isCustom && radio.value == e.target.value);
         custom.parentNode.dataset.selected = isCustom;
-        fieldset.querySelector('.profile-preview').innerHTML = cubeIcon(selected.color, selected.secondaryColor);
+        fieldset.querySelector('.profile-preview').innerHTML = profilePreview(selected);
+        onChange?.();
     };
 }
 
 /** Asks for a profile name and colours, sharing the prompt's validation and keyboard handling. */
-function askProfile(title, { name, color, secondaryColor }) {
-    const selected = { color: isHexColor(color) ? color : PROFILE_COLORS[0], secondaryColor: isHexColor(secondaryColor) ? secondaryColor : DEFAULT_SECONDARY_COLOR };
-    return showDialog({ title, input: 1, def: name, label: t('pname'), extra: profileColorFields(selected), enhance: m => {
-        bindProfileColors(m, selected);
+function askProfile(title, { name, color, secondaryColor, cubeId }) {
+    const selected = { cubeId: validCubeId(cubeId) ? cubeId : 2, color: isHexColor(color) ? color : PROFILE_COLORS[0], secondaryColor: isHexColor(secondaryColor) ? secondaryColor : DEFAULT_SECONDARY_COLOR };
+    return showDialog({ title, ok: t('save'), input: 1, def: name, label: t('pname'), extra: profileColorFields(selected) + `<div class=cube-catalog><button type=button id=cube-toggle aria-controls=cube-options aria-expanded=false>${t('selectIcon')}${ICONS.chevronDown}</button><div id=cube-options role=group aria-labelledby=cube-toggle hidden><div class=cube-pager><button type=button data-page="-1" aria-label="${t('previousPage')}">&lsaquo;</button><output></output><button type=button data-page="1" aria-label="${t('nextPage')}">&rsaquo;</button></div><div class=cube-grid></div></div></div>`, enhance: m => {
+        bindProfileColors(m, selected, bindCubeCatalog(m, selected));
         return name => ({ name, ...selected });
     } });
 }
 
-const askConfirm = title => showDialog({ title, danger: 1 });
+const askConfirm = (title, ok) => showDialog({ title, ok, danger: 1 });
 
 const showAlert = msg => showDialog({ title: msg, cancel: false });
 
 const openModal = h => {
-    qs('#md').innerHTML = `<dialog class=modal>${h}</dialog>`;
-    const d = qs('#md dialog'), title = d.querySelector('h2, h3');
+    const host = qs('#md'), previous = qs('#md dialog');
+    const opener = previous?.open ? dialogOpeners.get(previous) : overlayOpener();
+    host.innerHTML = '<dialog class=modal>' + h + dialogAnnouncements + '</dialog>';
+    const dialog = qs('#md dialog'), title = dialog.querySelector('h2, h3');
     if (title) {
         title.id = 'mdt';
-        d.setAttribute('aria-labelledby', 'mdt');
+        dialog.setAttribute('aria-labelledby', 'mdt');
     }
-    d.addEventListener('close', () => d.remove());
-    d.showModal();
+    dialogOpeners.set(dialog, opener);
+    dialog.addEventListener('keydown', keepModalTab);
+    dialog.addEventListener('cancel', event => {
+        event.preventDefault();
+        closeModal();
+    });
+    dialog.addEventListener('close', () => {
+        dialog.remove();
+        restoreOverlayFocus(opener);
+    });
+    dialog.showModal();
     // The add-level dialog lists the tags under its tag search, like the edit panel does after render()
     renderTagSuggestions();
 };
 
 const closeModal = () => {
-    qs('#md dialog')?.close();
+    const dialog = qs('#md dialog'), opener = dialog && dialogOpeners.get(dialog);
+    dialog?.close();
     qs('#md').innerHTML = '';
+    if (opener) restoreOverlayFocus(opener);
 };
 
 function tagsUI() {
-    return `<div class=box><h2>${ICONS.tag} ${t('tagsT')}</h2>${profile.tags.map((g, i) => `<p class=trow><input type=color data-tc=${i} value="${escapeHtml(g.color)}" aria-label="${t('color')} · ${escapeHtml(g.name)}"><input data-tn=${i} value="${escapeHtml(g.name)}" aria-label="${t('name')}"${g.name == PRE_TAG ? ' aria-describedby=tg-pre' : ''}><button class="xs dg" data-act=tdel data-i=${i} aria-label="${t('del')} · ${escapeHtml(g.name)}">${ICONS.del}</button></p>${g.name == PRE_TAG ? `<small id=tg-pre class=by style="display:block;margin:-4px 0 8px 54px">${t('preTagHint')}</small>` : ''}`).join('')}<p class=trow><input type=color id=nc value="#00e5ff" aria-label="${t('color')}"><input id=nn placeholder="${t('newTag')}" aria-label="${t('newTag')}"><button class=pri data-act=tadd>${t('add')}</button></p><p class=dgb><button data-act=close>${t('close')}</button></p></div>`;
+    const row = (tag, index) => {
+        const existing = index != null, name = escapeHtml(tag.name), color = isHexColor(tag.color) ? tag.color : '#947bd2';
+        const colorLabel = t('color') + (existing ? ' &middot; ' + name : '');
+        const reserved = existing && tag.name == PRE_TAG;
+        return `<div class=trow><label class="tag-swatch chip" data-tag-color="${escapeHtml(color)}" title="${colorLabel}"><span>${name || t('newTag')}</span><input type=color ${existing ? 'data-tc=' + index : 'id=nc'} value="${color}" aria-label="${colorLabel}"></label>
+<input ${existing ? 'data-tn=' + index : 'id=nn autofocus'} value="${name}" maxlength="${TAG_NAME_LIMIT}" placeholder="${t('newTag')}" aria-label="${t(existing ? 'name' : 'newTag')}" aria-describedby="tag-limit${reserved ? ' tg-pre' : ''}">
+${existing ? `<button class="xs dg" data-act=tdel data-i=${index} aria-label="${t('del')} &middot; ${name}">${ICONS.listClear}</button>` : `<button class=pri data-act=tadd>${t('add')}</button>`}</div>${reserved ? `<small id=tg-pre class=by>${t('preTagHint')}</small>` : ''}`;
+    };
+    return `<div class="box tag-manager"><h2>${ICONS.navTags} ${t('tagsT')}</h2><p id=tag-limit class=by>${t('tagNameLimit').replace('{n}', TAG_NAME_LIMIT)}</p>${profile.tags.map(row).join('')}${row({ name: '' })}<p class=dgb><button data-act=close>${t('close')}</button></p></div>`;
 }
 
-let toastTimer = null;
+let toastTimer = null, activeToast = null;
 
 /** Announces brief feedback outside the app so redraws preserve it. */
 function showToast(text) {
-    const toast = qs('#toast');
+    // A follow-up dialog opened in the same turn needs to own the announcement.
+    queueMicrotask(() => displayToast(text));
+}
+
+function displayToast(text) {
+    const toast = activeModal()?.querySelector('.toast') || qs('#toast');
     if (!toast)
         return;
     clearTimeout(toastTimer);
-    toast.textContent = text;
+
+    if (activeToast && activeToast != toast) {
+        activeToast.textContent = '';
+        activeToast.classList.remove('show');
+    }
+    activeToast = toast;
+    if (toast.textContent != text) toast.textContent = text;
     toast.classList.add('show');
-    toastTimer = setTimeout(() => toast.classList.remove('show'), 4000);
+    toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+        toast.textContent = '';
+        activeToast = null;
+    }, 4000);
 }

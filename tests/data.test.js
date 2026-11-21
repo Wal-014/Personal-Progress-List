@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { loadScripts } from './load-scripts.js';
 
 // state.js and api.js read localStorage when they load, so an empty one is provided
-const { context, app } = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js'], { localStorage: {} });
+const { context, app } = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/demonlist.js', 'js/api.js'], { localStorage: {} });
 
 test('an unreadable AREDL cache is dropped instead of breaking every AREDL lookup', () => {
     for (const [stored, expected] of [['{broken', []], ['{"k":"d"}', []], ['[{"k":"d","i":1}]', [{ k: 'd', i: 1 }]]]) {
-        const fresh = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js'], { localStorage: { gar: stored } });
+        const fresh = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/demonlist.js', 'js/api.js'], { localStorage: { gar: stored } });
         assert.deepEqual(JSON.parse(JSON.stringify(fresh.app('aredlCache'))), expected, stored);
     }
 });
@@ -108,7 +108,7 @@ test('AREDL name lookups use the replacement cache and drop names from the previ
 
 test('AREDL name lookups normalize each cached name once per array on first use', () => {
     const normalized = [];
-    const fresh = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/api.js'], {
+    const fresh = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/demonlist.js', 'js/api.js'], {
         localStorage: {}, recordNormalization: name => normalized.push(name)
     });
     fresh.app(`(() => {
@@ -136,12 +136,12 @@ test('AREDL name lookups normalize each cached name once per array on first use'
         assert.equal(normalized.filter(value => value === name).length, 2, name);
 });
 
-test('tagStyle paints a chip in its tag colour and drops anything that is not #rrggbb', () => {
+test('tagColorAttr emits the tag colour attribute and falls back for invalid colours', () => {
     setGlobal('profile', { tags: [{ name: 'ok', color: '#12ab9F' }, { name: 'bad', color: 'red;background:url(x)' }] });
-    const tagStyle = app('tagStyle');
-    assert.equal(tagStyle('ok'), 'color:#12ab9F;border-color:#12ab9F');
-    assert.equal(tagStyle('bad'), 'color:var(--fg);border-color:var(--fg)');
-    assert.equal(tagStyle('missing'), 'color:var(--fg);border-color:var(--fg)');
+    const tagColorAttr = app('tagColorAttr');
+    assert.equal(tagColorAttr('ok'), 'data-tag-color="#12ab9F"');
+    assert.equal(tagColorAttr('bad'), 'data-tag-color="var(--fg)"');
+    assert.equal(tagColorAttr('missing'), 'data-tag-color="var(--fg)"');
 });
 
 test('ensureProfileDefaults drops imported wishlist statuses and deaths the app cannot render', () => {
@@ -202,7 +202,7 @@ test('ensureProfileDefaults leaves consistent tags unchanged without saving', ()
     const localStorage = {};
     Object.defineProperty(localStorage, 'gdp', { set: () => { writes++; } });
     const fresh = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js'], { localStorage });
-    fresh.app(`profile = {
+    fresh.app(`profile = { ratingScale: 10,
         levels: [{ id: 'n1', tags: ['B', 'A'], deaths: {} }, { id: 'n2', tags: [], deaths: {} }],
         order: { classic: [], platform: [] }, wishlists: [],
         tags: [{ name: 'A', color: '#123456' }, { name: 'B', color: '#abcdef' }]

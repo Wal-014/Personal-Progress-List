@@ -10,13 +10,13 @@ const plain = value => {
         return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, plain(entry)]));
     return value;
 };
-const empty = () => ({ levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
+const empty = () => ({ ratingScale: 10, levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
 const level = (fields = {}) => ({
     id: 'n1', name: 'Étoile 星 🎮', kind: 'classic', levelId: '123456', creator: 'Creator',
     diff: 'Extreme Demon', rating: 'mythic', attN: 0, attC: 123, tN: 456, tP: 789, tPC: 10,
-    date: '2026-11-11', link: 'https://example.com/video', enj: -10, lik: 0,
+    date: '2026-11-11', link: 'https://example.com/video', enj: 2.5, lik: 0,
     notes: '  Private notes\n第二行  ', tags: ['Focus', '星'], deaths: { 0: 0, 43: 7, 100: 1 },
-    ar: { s: 'r', p: 42 }, ...fields
+    ar: { s: 'r', p: 42 }, gdl: 387, ...fields
 });
 const item = (fields = {}) => ({
     id: 'i1', name: 'Wishlist 星', levelId: '789', creator: 'Maker', diff: 'Hard', rating: 'featured',
@@ -50,8 +50,8 @@ test('profileRows maps every level field and keeps private notes in their own ro
             id: 'n1', name: 'Étoile 星 🎮', kind: 'classic', level_id: 123456, creator: 'Creator',
             difficulty: 'Extreme Demon', rating: 'mythic', attempts_normal: 0, attempts_copy: 123,
             time_normal: 456, time_practice: 789, time_practice_copy: 10, completed_on: '2026-11-11',
-            video_url: 'https://example.com/video', enjoyment: -10, liking: 0,
-            deaths: { 0: 0, 43: 7, 100: 1 }, aredl_status: 'r', aredl_position: 42
+            video_url: 'https://example.com/video', enjoyment: 2.5, liking: 0,
+            deaths: { 0: 0, 43: 7, 100: 1 }, aredl_status: 'r', aredl_position: 42, gdl_position: 387
         }
     });
     assert.deepEqual(plain(rows.get('level_notes:n1')), { table: 'level_notes', row: { level_id: 'n1', notes: '  Private notes\n第二行  ' } });
@@ -68,7 +68,7 @@ test('profileRows normalizes missing and empty level values without losing zeroe
             id: 'empty', name: null, kind: null, level_id: null, creator: null, difficulty: null,
             rating: null, attempts_normal: null, attempts_copy: null, time_normal: null,
             time_practice: null, time_practice_copy: null, completed_on: null, video_url: null,
-            enjoyment: null, liking: null, deaths: {}, aredl_status: null, aredl_position: null
+            enjoyment: null, liking: null, deaths: {}, aredl_status: null, aredl_position: null, gdl_position: null
         });
         assert.equal(rows.has('level_notes:empty'), false);
     }
@@ -89,7 +89,7 @@ test('profileRows maps orders, wishlist positions and items, tag positions and o
         ],
         tags: [{ name: '星', color: '#abcdef', legacy: true }, { name: 'Focus', color: '#123456' }]
     };
-    const rows = convert(source, { lang: 'en', theme: 'night', legacy: true });
+    const rows = convert(source, { lang: 'en', theme: 'graphite', background: 'orbital', legacy: true });
     assert.deepEqual([...rows.keys()], [
         'list_orders:classic', 'list_orders:platform', 'wishlists:w2', 'wishlist_items:i1',
         'wishlist_items:i2', 'wishlists:w1', 'tags:星', 'tags:Focus', 'user_settings:me'
@@ -108,7 +108,7 @@ test('profileRows maps orders, wishlist positions and items, tag positions and o
     assert.equal(rows.get('wishlist_items:i2').row.progress, 100);
     assert.deepEqual(plain(rows.get('tags:星')), { table: 'tags', row: { name: '星', color: '#abcdef', position: 0 } });
     assert.deepEqual(plain(rows.get('tags:Focus').row), { name: 'Focus', color: '#123456', position: 1 });
-    assert.deepEqual(plain(rows.get('user_settings:me')), { table: 'user_settings', row: { lang: 'en', theme: 'night' } });
+    assert.deepEqual(plain(rows.get('user_settings:me')), { table: 'user_settings', row: { lang: 'en', theme: 'graphite', background: 'orbital' } });
     assert.equal(convert(empty()).has('user_settings:me'), false);
 });
 
@@ -164,7 +164,7 @@ test('rowsProfile rebuilds every field and ignores server and legacy columns in 
     };
     delete source.wishlists[0].items[1].kind;
     delete source.wishlists[0].items[1].pct;
-    const settings = { lang: 'es', theme: 'synth' };
+    const settings = { lang: 'es', theme: 'crimson', background: 'aurora' };
     const rows = [...app('profileRows')(source, settings).values()].map(({ table, row }) => ({
         table, row: { ...row, user_id: 'owner', version: 17, created_at: '2026-11-11T00:00:00Z', updated_at: '2026-11-12T00:00:00Z', legacy: 'discard' }
     }));
@@ -187,7 +187,7 @@ test('rowsProfile supplies the exact level field set, empty notes and missing co
             ...empty(), levels: [{
                 id: 'n', kind: 'platform', name: 'Sparse', levelId: null, creator: null, diff: null,
                 rating: null, attN: null, attC: null, tN: null, tP: null, tPC: null, date: null,
-                link: null, enj: null, lik: null, notes: '', tags: [], deaths: {}, ar: { s: null, p: null }
+                link: null, enj: null, lik: null, gdl: null, notes: '', tags: [], deaths: {}, ar: { s: null, p: null }
             }]
         }, settings: null
     });
@@ -254,7 +254,7 @@ function seededRandom(seed) {
 test('250 seeded profiles round-trip after defaults and normalize randomly missing optional fields', () => {
     const { app, context } = createApp(), random = seededRandom(0xc10d), choose = values => values[Math.floor(random() * values.length)];
     for (let sample = 0; sample < 250; sample++) {
-        const source = empty(), settings = { lang: choose(['es', 'en']), theme: choose(['blue', 'night', 'synth']) };
+        const source = empty(), settings = { lang: choose(['es', 'en']), theme: choose(['nebula', 'graphite', 'ocean', 'amber', 'crimson', 'porcelain']), background: choose(['grid', 'aurora', 'celestial', 'orbital']) };
         const tagNames = ['Focus', '星 🎮', 'Éxito', 'Next/Goal'];
         source.tags = tagNames.slice(0, Math.floor(random() * 5)).map(name => ({ name, color: choose(['#123456', '#abcdef', '#00ff00']) }));
         source.levels = Array.from({ length: Math.floor(random() * 8) }, (_, index) => level({
@@ -264,7 +264,7 @@ test('250 seeded profiles round-trip after defaults and normalize randomly missi
             attN: choose([null, 0, 1000000000]), attC: choose([null, 0, 17]),
             tN: choose([null, 0, 12345]), tP: choose([null, 0, 42]), tPC: choose([null, 0, 60]),
             date: choose([null, '2026-11-11']), link: choose([null, 'https://example.com/🎮']),
-            enj: choose([null, -10, 0, 10]), lik: choose([null, -10, 0, 10]), notes: choose(['', '星\n  Notes  ']),
+            enj: choose([null, 0, 2.5, 10]), lik: choose([null, 0, 2.5, 10]), notes: choose(['', '星\n  Notes  ']),
             tags: Array.from({ length: Math.floor(random() * 7) }, () => choose(tagNames)),
             deaths: random() < 0.5 ? {} : { 0: 0, [Math.floor(random() * 100) + 1]: Math.floor(random() * 100) },
             ar: choose([{ s: null, p: null }, { s: 'n', p: null }, { s: 'p', p: null }, { s: 'r', p: 1 }])
@@ -351,7 +351,7 @@ test('rowChanges upserts parents before children, then deletes children before p
         ['tags:new', { table: 'tags', row: { name: 'new', color: '#123456' } }],
         ['wishlists:w', { table: 'wishlists', row: { id: 'w', name: 'Changed' } }],
         ['levels:n', { table: 'levels', row: { id: 'n', name: 'New' } }],
-        ['user_settings:me', { table: 'user_settings', row: { lang: 'en', theme: 'night' } }]
+        ['user_settings:me', { table: 'user_settings', row: { lang: 'en', theme: 'graphite', background: 'orbital' } }]
     ]);
     const snapshot = new Map([
         ['wishlists:removed', { version: 1, row: { id: 'removed' } }],
@@ -398,7 +398,7 @@ test('rowChanges treats array reorders as changes and handles the fixed settings
         ['list_orders:classic', { table: 'list_orders', row: { kind: 'classic', level_ids: ['b', 'a'] } }]
     ]), new Map([
         ['list_orders:classic', { version: 2, row: { level_ids: ['a', 'b'], kind: 'classic' } }],
-        ['user_settings:me', { version: 3, row: { lang: 'es', theme: 'blue' } }]
+        ['user_settings:me', { version: 3, row: { lang: 'es', theme: 'nebula' } }]
     ]))), [
         { key: 'list_orders:classic', table: 'list_orders', version: 2, row: { kind: 'classic', level_ids: ['b', 'a'] } },
         { key: 'user_settings:me', table: 'user_settings', version: 3, row: null }
@@ -447,4 +447,12 @@ test('mergeRow ignores all server columns, including when one side is null', () 
     for (const [local, remote] of [[{ value: 1, ...server }, null], [null, { value: 1, ...server }]])
         assert.deepEqual(plain(merge({ value: 0 }, local, remote)), { row: { value: 1 }, conflicts: [] });
     assert.deepEqual(plain(merge({ value: 0 }, null, null)), { row: null, conflicts: [] });
+});
+
+test('server decimal ratings remain numbers and are never converted as legacy profiles', () => {
+    const { app } = createApp();
+    app(`profile = rowsProfile([{ table: 'levels', row: { id: 'n1', enjoyment: 2.5, liking: 0 } }]).profile; ensureProfileDefaults(); ensureProfileDefaults()`);
+    assert.equal(app('profile.ratingScale'), 10);
+    assert.equal(app('profile.levels[0].enj'), 2.5);
+    assert.equal(app('profile.levels[0].lik'), 0);
 });

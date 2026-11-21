@@ -18,13 +18,14 @@ function page(query = '?user=player', response = { data: fixture() }, saved = {}
     const calls = [], writes = [], listeners = {};
     const storage = new Proxy({ gl: 'en', ...saved }, { set(target, key, value) { writes.push(key); target[key] = value; return true; } });
     const appNode = { innerHTML: '', contains: () => false };
-    const document = { body: {}, activeElement: null, documentElement: { dataset: {} }, visibilityState: 'visible',
+    const document = { body: {}, activeElement: null, documentElement: { nodeType: 1, dataset: {}, getAttribute: () => null, querySelectorAll: () => [] }, visibilityState: 'visible',
         querySelector: selector => selector == '#app' ? appNode : null, querySelectorAll: () => [],
         addEventListener: (name, fn) => { (listeners[name] ||= []).push(fn); } };
     const env = loadScripts(appScripts.filter(file => !file.startsWith('vendor/') && file != 'js/main.js'), {
         localStorage: storage, document, window: { addEventListener: (name, fn) => { listeners[name] = [fn]; } },
         location: new URL('https://example.test/app/' + query), URL, URLSearchParams,
-        navigator: { onLine: true }, history: { replaceState() {} }, setTimeout, clearTimeout, queueMicrotask
+        navigator: { onLine: true }, history: { replaceState() {} }, setTimeout, clearTimeout, queueMicrotask,
+        MutationObserver: class { observe() {} }
     });
     env.context.loadCloud = async () => ({ rpc: async (name, args) => { calls.push([name, plain(args)]); if (response instanceof Error) throw response; return response; } });
     env.context.autoSyncIfStale = () => calls.push('auto-sync');
@@ -40,7 +41,7 @@ for (const username of ['', 'ab', 'UPPER', 'a-b', 'a'.repeat(21), '<img src=x on
         assert.deepEqual(p.calls, []);
         assert.match(p.html(), /This profile does not exist or is private\./);
         assert.match(p.html(), /Go to my progress/);
-        assert.match(p.html(), /<h1>Personal Ranked Progress<\/h1>/);
+        assert.match(p.html(), /<h1>Personal Progress List<\/h1>/);
         assert.doesNotMatch(p.html(), /<h1>@/);
     });
 }
@@ -49,7 +50,7 @@ for (const label of ['missing', 'private']) test(label + ' profiles have the sam
     const p = page('?user=player', { data: null });
     await p.app('initPublicView()');
     assert.match(p.html(), /This profile does not exist or is private\./);
-    assert.match(p.html(), /<h1>@player<\/h1>/);
+    assert.match(p.html(), /<h1>Personal Progress List<\/h1>/);
 });
 
 test('offline and RPC failures show the connection screen', async () => {
@@ -142,7 +143,8 @@ test('restored sessions, including the owner, retain the public view without sta
         for (const event of ['INITIAL_SESSION', 'SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED'])
             await p.app(`applyAccountSession('${event}', { user: { id: 'owner' } })`);
         assert.equal(p.app('account.status'), 'signed-in');
-        assert.match(p.html(), /popovertarget=amenu/);
+        assert.doesNotMatch(p.html(), /popovertarget=amenu/);
+        assert.match(p.html(), /data-act=myprogress/);
         assert.doesNotMatch(p.html(), /id=cloudst/);
         assert.equal(p.app('cloudUser'), null);
         assert.equal(calls.includes('sync'), false);
@@ -203,10 +205,10 @@ for (const [language, publicHeading, ownHeading] of [['en', 'Lists', 'My lists']
         const p = page();
         await p.app('initPublicView()');
         p.app(`ui.lang = '${language}'; render()`);
-        assert.ok(p.html().includes(`<h2 class=sec>${publicHeading}</h2>`));
-        assert.ok(!p.html().includes(`<h2 class=sec>${ownHeading}</h2>`));
+        assert.ok(p.html().includes(`<h2>${p.app('ICONS.navLists')}${publicHeading}</h2>`));
+        assert.ok(!p.html().includes(`<h2>${p.app('ICONS.navLists')}${ownHeading}</h2>`));
         p.app('viewing = null; store = { cur: "p1", profs: { p1: { name: "Local", data: profile } } }; render()');
-        assert.ok(p.html().includes(`<h2 class=sec>${ownHeading}</h2>`));
+        assert.ok(p.html().includes(`<h2>${p.app('ICONS.navLists')}${ownHeading}</h2>`));
     });
 }
 
@@ -216,8 +218,8 @@ test('a first-time signed-out visitor sees the demo guest card and local data', 
     assert.equal(p.app('cloudUser'), null);
     assert.equal(p.app('profile'), p.context.window.DEMO_PROFILE);
     assert.equal(p.app('store.cur'), 'p1');
-    assert.match(p.html(), /class=guest-account/);
+    assert.match(p.html(), /class=profile-pill/);
     assert.match(p.html(), /data-act=asignin/);
     assert.match(p.html(), /data-act=localdata/);
-    assert.doesNotMatch(p.html(), /id=pmenu|popovertarget=pmenu/);
+    assert.match(p.html(), /id=pmenu/);
 });

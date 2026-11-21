@@ -1,26 +1,26 @@
 <!doctype html>
-<html lang="es">
+<html data-theme=nebula data-bg=grid lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <!-- style-src needs 'unsafe-inline' because the UI renders inline style attributes; scripts stay restricted -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://levelthumbs.prevter.me https://img.youtube.com; connect-src 'self' https://api.aredl.net https://ppl-level-relay.waquermaster.workers.dev https://mjgklvdnuhbnyucytaji.supabase.co; object-src 'none'; base-uri 'self'; form-action 'none'">
-  <title>Personal Ranked Progress</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://levelthumbs.prevter.me https://img.youtube.com; connect-src 'self' https://api.aredl.net https://api.demonlist.org https://ppl-level-relay.waquermaster.workers.dev https://mjgklvdnuhbnyucytaji.supabase.co; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>Personal Progress List</title>
   <meta name="description" content="Seguimiento visual de niveles completados de Geometry Dash: listas, estadísticas, línea de tiempo y wishlists.">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Personal Ranked Progress">
-  <meta property="og:title" content="Personal Ranked Progress">
+  <meta property="og:site_name" content="Personal Progress List">
+  <meta property="og:title" content="Personal Progress List">
   <meta property="og:description" content="Track the Geometry Dash levels you have beaten in lists you rank yourself, with attempts, play time, statistics and wishlists.">
   <meta property="og:url" content="https://wal-014.github.io/Personal-Progress-List/">
-  <meta property="og:image" content="https://wal-014.github.io/Personal-Progress-List/docs/brand/card.png">
+  <meta property="og:image" content="https://wal-014.github.io/Personal-Progress-List/docs/brand/card.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Personal Ranked Progress with Classic list, Bloodbath details and statistics screenshots.">
+  <meta property="og:image:alt" content="Personal Progress List with Classic list, Bloodbath details and statistics screenshots.">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
-  <meta name="theme-color" content="#26337e">
+  <meta name="theme-color" content="#090D20">
+  <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/styles.css">
   <script src="vendor/Sortable.min.js" defer></script>
   <script src="data/demo-data.js" defer></script>
@@ -35,9 +35,11 @@
   <!-- Load order matters: each classic script uses names defined by earlier scripts.
        Every script is deferred: the CSP meta tag stops Chrome from fetching ahead, so blocking scripts would download one at a time. -->
   <script src="js/config.js" defer></script>
+  <script src="js/data-styles.js" defer></script>
   <script src="js/i18n.js" defer></script>
   <script src="js/utils.js" defer></script>
   <script src="js/state.js" defer></script>
+  <script src="js/demonlist.js" defer></script>
   <script src="js/api.js" defer></script>
   <script src="js/sheet.js" defer></script>
   <script src="js/relay.js" defer></script>
@@ -50,6 +52,8 @@
   <script src="js/local-migration.js" defer></script>
   <script src="js/components/faces.js" defer></script>
   <script src="js/components/empty-list.js" defer></script>
+  <script src="js/components/deaths-input.js" defer></script>
+  <script src="js/components/duration-input.js" defer></script>
   <script src="js/components/levels.js" defer></script>
   <script src="js/components/wishlists.js" defer></script>
   <script src="js/components/search.js" defer></script>

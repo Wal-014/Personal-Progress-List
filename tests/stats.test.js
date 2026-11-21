@@ -2,24 +2,24 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadScripts } from './load-scripts.js';
 
-function statsApp() {
-    const document = { body: {}, addEventListener() {}, querySelector: () => null, querySelectorAll: () => [] };
-    const files = ['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js',
-        'js/components/timeline.js', 'js/components/rankings.js', 'js/components/compare.js', 'js/components/stats.js', 'js/events.js'];
-    const loaded = loadScripts(files, { localStorage: {}, document, window: { addEventListener() {} } });
+function statsApp(nodes = new Map()) {
+    const document = { body: {}, addEventListener() {}, querySelector: selector => nodes.get(selector) ?? null, querySelectorAll: () => [] };
+    const files = ['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js', 'js/components/empty-list.js',
+        'js/components/timeline.js', 'js/components/rankings.js', 'js/components/compare.js', 'js/components/stats.js', 'js/render.js', 'js/events.js'];
+    const loaded = loadScripts(files, { localStorage: {}, document, window: { addEventListener() {}, scrollTo() {} } });
     loaded.app('profile = emptyProfile(); ui.lang = "en"');
     return loaded.app;
 }
 
 const plainStats = value => JSON.parse(JSON.stringify(value));
 const statsFixture = `profile.levels = [
-    { id: 'b', name: 'Beta', kind: 'classic', attN: 10, tN: 36000, enj: -10, date: '2025-01-01', levelId: '123' },
-    { id: 'a', name: 'Alpha', kind: 'classic', attC: 10, tP: 77400, enj: 5, date: '2025-01-02' },
-    { id: 'z', name: 'Zero', kind: 'classic', attN: 0, tN: 0, enj: 0, date: '2025-01-03' },
+    { id: 'b', name: 'Beta', kind: 'classic', diff: 'Easy', attN: 10, tN: 36000, enj: 0, date: '2025-01-01', levelId: '123' },
+    { id: 'a', name: 'Alpha', kind: 'classic', diff: 'Hard', attC: 10, tP: 77400, enj: 7.5, date: '2025-01-02' },
+    { id: 'z', name: 'Zero', kind: 'classic', attN: 0, tN: 0, enj: 5, date: '2025-01-03' },
     { id: 'm', name: 'Missing', kind: 'classic', attN: null, enj: null, date: '2025-01-04' },
     { id: 'n', name: 'Absent', kind: 'classic' },
-    { id: 'u', name: 'Undated', kind: 'classic', attN: 20, enj: 8 },
-    { id: 'p', name: 'Platform', kind: 'platform', attN: 30, tN: 18000, date: '2025-01-01' }
+    { id: 'u', name: 'Undated', kind: 'classic', attN: 20, enj: 9 },
+    { id: 'p', name: 'Platform', kind: 'platform', diff: 'Hard', attN: 30, tN: 18000, date: '2025-01-01' }
 ]`;
 
 test('rankings sort both directions with alphabetical ties, preserving zero and excluding missing metrics', () => {
@@ -107,8 +107,8 @@ test('comparison search requires the exact option in the selected mode; stale id
     app('setComparisonSearch({ dataset: { compareSlot: "0" }, value: "Platform" })');
     app('setComparisonSearch({ dataset: { compareSlot: "0" }, value: "Beta" })');
     assert.deepEqual(plainStats(app('ui.comparison.slots')), ['z', 'b']);
-    assert.match(app('comparisonHtml()'), /value="Beta · ID 123"/);
-    assert.doesNotMatch(app('comparisonHtml()'), /value="Platform"/);
+    assert.match(app('comparisonHtml()'), />Beta · ID 123<\/button>/);
+    assert.doesNotMatch(app('comparisonHtml()'), />Platform<\/button>/);
     app('clearComparisonSlot(0)');
     assert.deepEqual(plainStats(app('ui.comparison.slots')), [null, 'b']);
 });
@@ -125,6 +125,29 @@ test('comparison search moves an already selected level between slots without du
     assert.deepEqual(plainStats(app('ui.comparison.slots')), ['a', 'b']);
     app('setComparisonSearch({ dataset: { compareSlot: "0" }, value: "Alpha" })');
     assert.deepEqual(plainStats(app('ui.comparison.slots')), ['a', 'b']);
+});
+
+test('comparison picker arrows wrap through the options and Escape returns to its search box', () => {
+    const app = statsApp(), focused = [];
+    const control = name => ({ name, focus() { focused.push(name); } });
+    const input = control('input'), list = { hidden: true }, options = ['first', 'second', 'third'].map(control);
+    const picker = { querySelector: selector => selector == 'input' ? input : list, querySelectorAll: () => options };
+    [input, ...options].forEach(el => el.closest = selector => selector == '.compare-picker' ? picker : null);
+    const press = (key, target) => {
+        const event = { key, target, prevented: false, preventDefault() { this.prevented = true; } };
+        return [app('comparePickerKeydown')(event), event.prevented];
+    };
+    assert.deepEqual(press('ArrowDown', input), [true, true]);
+    assert.equal(list.hidden, false);
+    press('ArrowDown', options[2]);
+    press('ArrowUp', options[0]);
+    press('ArrowUp', input);
+    assert.deepEqual(focused, ['first', 'first', 'third', 'third']);
+    assert.deepEqual(press('Escape', options[1]), [true, true]);
+    assert.equal(focused.at(-1), 'input');
+    assert.equal(list.hidden, true);
+    assert.deepEqual(press('Enter', options[1]), [false, false]);
+    assert.deepEqual(press('ArrowDown', { closest: () => null }), [false, false]);
 });
 
 test('filled comparison slots keep search inputs empty while their selection row identifies the level', () => {
@@ -161,18 +184,18 @@ test('comparison calculates neutral differences, larger side and relative or fix
     assert.deepEqual(row('time', 'a', 'b'), { values: [77400, 36000], shares: [100, 36000 / 774], difference: '11h 30m 0s', arrow: '←' });
     assert.deepEqual(row('att', 'z', 'u'), { values: [0, 20], shares: [0, 100], difference: '20', arrow: '→' });
     assert.deepEqual(row('att', 'z', 'z'), { values: [0, 0], shares: [0, 0], difference: '', arrow: '=' });
-    assert.deepEqual(row('enj', 'b', 'a'), { values: [-10, 5], shares: [0, 75], difference: '15', arrow: '→' });
-    assert.deepEqual(row('enj', 'z', 'u'), { values: [0, 8], shares: [50, 90], difference: '8', arrow: '→' });
+    assert.deepEqual(row('enj', 'b', 'a'), { values: [0, 7.5], shares: [0, 75], difference: '7.5', arrow: '→' });
+    assert.deepEqual(row('enj', 'z', 'u'), { values: [5, 9], shares: [50, 90], difference: '4', arrow: '→' });
     assert.deepEqual(row('att', 'm', 'b'), { values: [null, 10], shares: [null, 100], difference: null, arrow: null });
-    assert.deepEqual(row('enj', 'm', 'a'), { values: [null, 5], shares: [null, 75], difference: null, arrow: null });
+    assert.deepEqual(row('enj', 'm', 'a'), { values: [null, 7.5], shares: [null, 75], difference: null, arrow: null });
     app('ui.comparison.open = true; ui.comparison.slots = ["m", "b"]');
     assert.match(app('comparisonHtml()'), /class=compare-value>-<\/span>/);
     assert.match(app('comparisonHtml()'), /Difficulty/);
     assert.doesNotMatch(app('comparisonMetricHtml(LEVEL_METRICS.att, findLevel("m"), findLevel("b"))'), /class=compare-gap|compare-track compare-1"><i/);
-    assert.match(app('comparisonMetricHtml(LEVEL_METRICS.enj, findLevel("b"), findLevel("a"))'), /class=compare-gap>→ 15/);
+    assert.match(app('comparisonMetricHtml(LEVEL_METRICS.enj, findLevel("b"), findLevel("a"))'), /class=compare-gap>→ 7\.5/);
     assert.match(app('comparisonMetricHtml(LEVEL_METRICS.att, findLevel("a"), findLevel("b"))'), /class=compare-gap>=<\/small>/);
-    assert.match(app('comparisonMetricHtml(LEVEL_METRICS.enj, findLevel("b"), findLevel("a"))'), /class=compare-value>\+5<\/span>/);
-    assert.match(app('comparisonMetricHtml(LEVEL_METRICS.enj, findLevel("b"), findLevel("a"))'), /compare-track compare-2"><i style="width:75%"/);
+    assert.match(app('comparisonMetricHtml(LEVEL_METRICS.enj, findLevel("b"), findLevel("a"))'), /class=compare-value>7\.5<\/span>/);
+    assert.match(app('comparisonMetricHtml(LEVEL_METRICS.enj, findLevel("b"), findLevel("a"))'), /compare-track compare-2"><i data-pct="75"/);
 });
 
 test('timeline selects dated levels with the active metric and keeps recorded zero', () => {
@@ -228,6 +251,94 @@ test('timeline tooltip uses the current metric, formatted date and escaped user 
     assert.doesNotMatch(app('timelineTooltip(findLevel("a"))'), /<img/);
 });
 
+for (const [metric, ids, rows] of [
+    ['att', ['b', 'p', 'a', 'z'], [
+        ['01/01/2025', '&lt;b&gt;Beta&lt;/b&gt;', '10'], ['01/01/2025', 'Platform', '1,234'],
+        ['02/01/2025', 'Alpha', '10'], ['03/01/2025', 'Zero', '0']
+    ]],
+    ['time', ['p', 'b', 'a', 'z'], [
+        ['01/01/2025', 'Platform', '5h'], ['01/01/2025', '&lt;b&gt;Beta&lt;/b&gt;', '10h'],
+        ['02/01/2025', 'Alpha', '21.5h'], ['03/01/2025', 'Zero', '0h']
+    ]]
+]) {
+    test('timeline table matches the plotted ' + metric + ' points and their order', () => {
+        const app = statsApp();
+        app(statsFixture);
+        app("ui.timelineMetric = '" + metric + "'; findLevel('p').attN = 1234; findLevel('b').name = '<b>Beta</b>'");
+        const markup = app('timelineHtml()');
+        assert.deepEqual([...markup.matchAll(/<rect class=pt data-id="([^"]+)"/g)].map(match => match[1]), ids);
+        const details = markup.match(/<details([^>]*)>([\s\S]*?)<\/details>/);
+        assert.ok(details);
+        assert.doesNotMatch(details[1], /\bopen\b/);
+        assert.match(details[2], /<summary[^>]*>Show data<\/summary>/);
+        assert.match(details[2], /<table><caption>[^<]+<\/caption>/);
+        assert.deepEqual([...details[2].matchAll(/<th scope=col>([^<]+)<\/th>/g)].map(match => match[1]), ['Date', 'Level', 'Value']);
+        assert.deepEqual([...details[2].matchAll(/<tr><td>([^<]+)<\/td><td>([^<]+)<\/td><td>([^<]+)<\/td><\/tr>/g)].map(match => match.slice(1)), rows);
+    });
+}
+
+test('timeline exposes a localized chart summary and distinct zoom names', () => {
+    const app = statsApp();
+    app(statsFixture);
+    let markup = app('timelineHtml()');
+    const label = markup.match(/role=img aria-label="([^"]+)"/)[1];
+    assert.match(label, /Attempts per level.*\b4\b.*January 1, 2025.*January 3, 2025.*\b30\b/);
+    assert.equal((markup.match(/<svg aria-hidden=true/g) || []).length, 2);
+    assert.match(markup, /data-act=zo aria-label="Zoom out timeline"/);
+    assert.match(markup, /data-act=zi aria-label="Zoom in timeline"/);
+    app('ui.lang = "es"; ui.timelineMetric = "time"; profile.levels = [findLevel("z")]');
+    markup = app('timelineHtml()');
+    assert.match(markup, /aria-label="Tiempo de juego por nivel[^"]*\b1\b[^"]*3 de enero de 2025[^"]*3 de enero de 2025[^"]*0h/);
+    assert.match(markup, /<summary[^>]*>Ver datos<\/summary>/);
+});
+
+test('Statistics offers an add action only on an editable empty profile', () => {
+    const app = statsApp();
+    let markup = app('stats()');
+    assert.match(markup, /class=empty/);
+    assert.ok(markup.includes(app('ICONS.metricLevels')));
+    assert.match(markup, /<h3>No levels yet<\/h3><p>[^<]+<\/p><button[^>]*data-act=add>.* Add level<\/button>/);
+    assert.doesNotMatch(markup, /class=kpis|id=timeline-well/);
+    app('viewing = {}');
+    markup = app('stats()');
+    assert.equal(markup, '<p class=by>No levels yet</p>');
+});
+
+test('timeline keeps metric controls when levels lack a dated value', () => {
+    const app = statsApp();
+    app("profile.levels = [{ attN: 10 }, { date: '2025-01-01', tN: 20 }]");
+    const markup = app('timelineHtml()');
+    assert.equal((markup.match(/data-act=timeline-metric/g) || []).length, 2);
+    assert.match(markup, /No dated levels have this metric/);
+    assert.doesNotMatch(markup, /<svg|<details/);
+});
+
+test('timeline keeps its data disclosure open after metric changes, including an empty metric', () => {
+    const nodes = new Map();
+    const well = {
+        dataset: {},
+        set innerHTML(markup) {
+            const details = markup.match(/<details[^>]*>/);
+            nodes.set('#timeline-data', details ? { open: /\bopen\b/.test(details[0]) } : null);
+        }
+    };
+    nodes.set('#timeline-well', well);
+    const app = statsApp(nodes);
+    app(statsFixture);
+    well.innerHTML = app('timelineHtml()');
+    assert.equal(nodes.get('#timeline-data').open, false);
+    nodes.get('#timeline-data').open = true;
+    app('ACTIONS["timeline-metric"]({ dataset: { v: "time" } })');
+    assert.equal(nodes.get('#timeline-data').open, true);
+    app('profile.levels = [{ date: "2025-01-01", tN: 10 }]; setTimelineMetric("att")');
+    assert.equal(nodes.get('#timeline-data'), null);
+    app('setTimelineMetric("time")');
+    assert.equal(nodes.get('#timeline-data').open, true);
+    nodes.get('#timeline-data').open = false;
+    app('setTimelineMetric("time")');
+    assert.equal(nodes.get('#timeline-data').open, false);
+});
+
 test('rankings changes preserve metric, direction and comparison partner; all comparison states render', () => {
     const app = statsApp();
     app(statsFixture);
@@ -251,13 +362,20 @@ test('rankings changes preserve metric, direction and comparison partner; all co
 test('existing totals and distributions remain before rankings and count all modes', () => {
     const app = statsApp();
     app(statsFixture);
-    const markup = app('stats()');
+    const { mostAttemptsLevel, ...totals } = plainStats(app('statsSummary()'));
+    assert.deepEqual(totals, { levelCount: 7, attemptTotal: 70, playHours: 37, average: 14 });
+    assert.equal(mostAttemptsLevel.id, 'p');
+    const markup = app('stats()').replace(/<svg\b[^>]*aria-hidden=true[^>]*>[\s\S]*?<\/svg>/g, '');
     assert.match(markup, /<small>Levels<\/small><b>7<\/b>/);
     assert.match(markup, /<small>Total attempts<\/small><b>70<\/b>/);
     assert.match(markup, /<small>Hours<\/small><b>37<\/b>/);
     assert.match(markup, /<small>Attempts per level<\/small><b>14<\/b>/);
     assert.match(markup, /Most attempts<\/small><b>Platform · 30/);
-    assert.match(markup, /<span>2025<\/span>.*<b>5<\/b>/);
+    const counts = type => [...markup.match(new RegExp('<div class="well ' + type + '">([\\s\\S]+?)</div></div>'))[1]
+        .matchAll(/<div class=hb><span>([^<]+)<\/span>.*?<b>(\d+)<\/b>/g)]
+        .map(match => [match[1], Number(match[2])]);
+    assert.deepEqual(counts('d'), [['Easy', 1], ['Hard', 2], ['-', 4]]);
+    assert.deepEqual(counts('y'), [['2025', 5]]);
     assert.ok(markup.indexOf('class=kpis') < markup.indexOf('id=timeline-well'));
     assert.ok(markup.indexOf('By difficulty') < markup.indexOf('id=rankings-well'));
     assert.ok(markup.indexOf('By year') < markup.indexOf('id=rankings-well'));
@@ -330,9 +448,10 @@ export async function checkStatisticsBrowser(page) {
                 const { document } = globalThis;
                 const list = document.querySelector('.ranking-list').getBoundingClientRect();
                 const panel = document.querySelector('.compare-panel').getBoundingClientRect();
-                return { listX: list.x, listY: list.y, listWidth: list.width, panelX: panel.x, panelBottom: panel.bottom, panelWidth: panel.width };
+                const slots = [...document.querySelectorAll('.compare-slot')].map(slot => slot.getBoundingClientRect());
+                return panel.bottom <= list.top && slots[0].right <= slots[1].left;
             });
-            check(width >= 900 ? layout.panelX > layout.listX && layout.listWidth / (layout.listWidth + layout.panelWidth) >= .55 : layout.panelBottom <= layout.listY, 'Responsive comparison placement');
+            check(layout, 'Comparison slots sit side by side above the rankings');
             check(await page.locator('.compare-panel [role=status]').count() == 1, 'Empty comparison hint');
             const cards = page.locator('[data-act=compare-pick]');
             const firstName = await cards.nth(0).locator('.nm').textContent();
@@ -346,11 +465,11 @@ export async function checkStatisticsBrowser(page) {
             check(await cards.nth(0).getAttribute('aria-pressed') == 'true', 'First slot preserved');
             await cards.nth(2).click();
             check(await page.locator('.compare-row').count() == 0, 'Clicking a selected card removes it');
-            const secondOption = await page.locator('#compare-options option').nth(1).getAttribute('value');
+            const secondOption = await page.locator('.compare-slot.compare-2 .compare-options button').nth(1).textContent();
             await page.locator('#compare-search-1').fill('no exact match');
             check(await page.locator('.compare-row').count() == 0, 'Free search text is ignored');
             await page.locator('#compare-search-1').fill(secondOption);
-            check(await page.locator('.compare-row').count() == 3, 'Exact datalist value selects a level');
+            check(await page.locator('.compare-row').count() == 3, 'Exact search value selects a level');
             check(await page.locator('#compare-search-1').evaluate(element => element === element.ownerDocument.activeElement), 'Search focus restored');
             check(await page.locator('.compare-selection .nm').first().textContent() == firstName, 'Searching preserves first slot');
             await page.locator('[data-act=compare-clear][data-v="0"]').click();
@@ -360,7 +479,7 @@ export async function checkStatisticsBrowser(page) {
             await page.locator('[data-act=ranking-mode][data-v=platform]').click();
             check(await page.locator('.compare-panel').count() == 1, 'Mode change keeps comparison open');
             check(await page.locator('#compare-search-0').inputValue() == '' && await page.locator('#compare-search-1').inputValue() == '', 'Mode change empties both slots');
-            check(await page.locator('#compare-options option').count() == 2, 'Datalist contains only selected mode');
+            check(await page.locator('.compare-slot.compare-1 .compare-options button').count() == 2, 'Dropdown contains only selected mode');
             await page.locator('[data-act=compare-close]').click();
             check(await page.locator('.compare-panel').count() == 0, 'Close panel');
             check(await page.locator('[data-act=compare-toggle]').evaluate(element => element === element.ownerDocument.activeElement), 'Close returns focus to toggle');
@@ -405,4 +524,127 @@ export async function checkStatisticsBrowser(page) {
         }
     }
     return { results, errors: failures, environmentMessages: [...new Set(environmentMessages)] };
+}
+
+export async function checkStatisticsAndWishlistsBrowser(page, screenshotDirectory) {
+    const origin = 'http://localhost:8827';
+    const sizes = [[1366, 768], [390, 844], [360, 740], [1280, 900]];
+    const results = [], pageErrors = [];
+    page.on('pageerror', error => pageErrors.push(error.message));
+    await page.addInitScript(() => {
+        globalThis.localStorage.clear();
+        globalThis.navigator.serviceWorker.register = async () => ({});
+    });
+    await page.route('**/*', route => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
+    const tab = async name => {
+        const menu = page.locator('#shell-menu');
+        if (await menu.isVisible())
+            await menu.click();
+        await page.locator('#shell-sidebar [data-act=tab][data-v="' + name + '"]').click();
+    };
+    const noOverflow = async () => assert.ok(await page.evaluate(() => {
+        const { document, innerWidth } = globalThis;
+        return document.documentElement.scrollWidth <= innerWidth
+            && [...document.querySelectorAll('.legacy-surface, .kpi, .stat-card, .compare-slot, .wi, #timeline-data')]
+                .every(element => element.scrollWidth <= element.clientWidth);
+    }), 'Views and cards fit the viewport');
+    const active = selector => page.locator(selector).evaluate(element => element.ownerDocument.activeElement === element);
+    const overflowFreeText = selector => page.locator(selector).first().evaluate(element =>
+        element.scrollWidth <= element.clientWidth || globalThis.getComputedStyle(element).textOverflow === 'ellipsis');
+    const tabTo = async selector => {
+        await page.keyboard.press('Tab');
+        assert.ok(await active(selector), 'Tab focuses ' + selector);
+    };
+    const details = page.locator('#timeline-data');
+    const summary = page.locator('#timeline-data summary');
+    for (const [width, height] of sizes) {
+        for (const theme of ['nebula', 'porcelain']) {
+            const capture = async name => {
+                if (screenshotDirectory && width !== 1280)
+                    await page.screenshot({ path: `${screenshotDirectory}/${theme}-${width}-${name}.png`, animations: 'disabled' });
+            };
+            await page.setViewportSize({ width, height });
+            await page.goto(origin, { waitUntil: 'domcontentloaded' });
+            await page.evaluate(`ui.lang = 'en'; ui.theme = '${theme}'; render()`);
+            await tab('stats');
+            assert.equal(await page.locator('html').getAttribute('data-theme'), theme);
+            assert.match(await page.getByRole('img', { name: /Attempts per level.*Maximum/ }).getAttribute('aria-label'), /From .* to /);
+            assert.equal(await details.getAttribute('open'), null);
+            await noOverflow();
+            await capture('statistics-closed');
+            await page.locator('[data-act=timeline-metric][data-v=att]').focus();
+            for (const selector of ['[data-act=timeline-metric][data-v=time]', '[data-act=zo]', '[data-act=zi]', '#timeline-data summary'])
+                await tabTo(selector);
+            await page.keyboard.press('Enter');
+            assert.equal(await details.getAttribute('open'), '');
+            assert.equal(await details.locator('tbody tr').count(), await page.locator('#tlw .pt').count());
+            await noOverflow();
+            await capture('statistics-open');
+            for (const selector of [
+                '[data-act=ranking-mode][data-v=classic]', '[data-act=ranking-mode][data-v=platform]',
+                '[data-act=ranking-metric][data-v=att]', '[data-act=ranking-metric][data-v=time]', '[data-act=ranking-metric][data-v=enj]',
+                '[data-act=ranking-order]', '[data-act=ranking-all]', '[data-act=compare-toggle]'
+            ])
+                await tabTo(selector);
+            await page.locator('[data-act=timeline-metric][data-v=time]').focus();
+            await page.keyboard.press('Enter');
+            assert.ok(await active('[data-act=timeline-metric][data-v=time]'));
+            assert.equal(await details.getAttribute('open'), '');
+            await page.locator('[data-act=zi]').focus();
+            const zoom = await page.locator('.zoom .by').textContent();
+            await page.keyboard.press('Enter');
+            assert.ok(await active('[data-act=zi]'));
+            assert.notEqual(await page.locator('.zoom .by').textContent(), zoom);
+            assert.equal(await details.getAttribute('open'), '');
+            await summary.focus();
+            await page.keyboard.press('Space');
+            assert.equal(await details.getAttribute('open'), null);
+
+            await page.evaluate(`
+                statsSummary().mostAttemptsLevel.name = rankingData().ranked[0].name = 'LongUnbrokenLevelName'.repeat(10);
+                profile.wishlists[0].items[0].name = 'LongUnbrokenLevelName'.repeat(10);
+                setTimelineMetric('att');
+                render();
+            `);
+            await page.locator('[data-act=compare-toggle]').click();
+            await page.locator('[data-act=compare-pick]').first().click();
+            await summary.click();
+            assert.ok(await overflowFreeText('.kpi.sm b'));
+            assert.ok(await overflowFreeText('.stat-card .nm'));
+            assert.ok(await overflowFreeText('.compare-selection .nm'));
+            await noOverflow();
+
+            await tab('wish');
+            await noOverflow();
+            await capture('wishlists-index');
+            await page.locator('[data-act=wopen]').first().click();
+            assert.ok(await overflowFreeText('.wi .nm'));
+            if (width <= 900) {
+                const fits = await page.locator('.wi').first().evaluate(card =>
+                    card.querySelector('.info').getBoundingClientRect().bottom <= card.querySelector('.wseg').getBoundingClientRect().top);
+                assert.ok(fits, 'Wishlist name fits above its status controls');
+            }
+            await noOverflow();
+            await capture('wishlist-cards');
+
+            await page.evaluate('profile = emptyProfile(); ui.tab = "stats"; ui.wl = null; render()');
+            assert.equal(await page.locator('.kpis').count(), 0);
+            await noOverflow();
+            await capture('statistics-empty');
+            await page.locator('.empty [data-act=add]').press('Enter');
+            assert.ok(await page.locator('#md dialog #fm').isVisible());
+            assert.ok(await active('#gdq'));
+            await page.locator('#fm [data-act=close]').click();
+            await tab('wish');
+            assert.equal(await page.locator('.empty [data-act=wnew]').count(), 1);
+            await noOverflow();
+            await capture('wishlists-empty');
+            await page.locator('.empty [data-act=wnew]').press('Enter');
+            assert.ok(await page.getByRole('dialog', { name: 'Wishlist name' }).isVisible());
+            await page.keyboard.press('Escape');
+            results.push({ width, height, theme });
+        }
+    }
+    assert.deepEqual(pageErrors, []);
+    return results;
 }

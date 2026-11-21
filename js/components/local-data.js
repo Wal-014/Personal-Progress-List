@@ -6,7 +6,7 @@ function localProfileCounts(p) {
 
 function localProfileSummary(id, showActive = true) {
     const p = store.profs[id];
-    return `${cubeIcon(p.color, p.secondaryColor)}<span class=info><span class=nm>${escapeHtml(p.name)}</span><span class=by>${localProfileCounts(p)}</span>${showActive && id == store.cur ? `<span class=by>${t('localActive')}</span>` : ''}</span>`;
+    return `${catalogCube(p.cubeId, p.color, p.secondaryColor)}<span class=info><span class=nm>${escapeHtml(p.name)}</span><span class=by>${localProfileCounts(p)}</span>${showActive && id == store.cur ? `<span class=by>${t('localActive')}</span>` : ''}</span>`;
 }
 
 function migrationDialog(selectedId) {
@@ -17,7 +17,7 @@ function migrationDialog(selectedId) {
     const warning = profile.levels.length || profile.wishlists.length
         ? `<p class=warn>${t('migrationWarning').replace('{levels}', localDataCount('Levels', profile.levels.length)).replace('{wishlists}', localDataCount('Wishlists', profile.wishlists.length))}</p>` : '';
     return `<div class="box sm migration" id=migration><h2>${t('migrationTitle')}</h2><p class=by>${t('migrationHint')}</p>
-<fieldset><legend>${t('migrationChoose')}</legend>${offers.map(id => `<label class="obj local-choice"><input type=radio name=local-profile value="${escapeHtml(id)}"${id == selected ? ' checked' : ''}>${localProfileSummary(id)}</label>`).join('')}</fieldset>
+<fieldset><legend>${t('migrationChoose')}</legend>${offers.map(id => `<label class="obj local-choice"><input type=radio name=local-profile value="${escapeHtml(id)}"${id == selected ? ' checked autofocus' : ''}>${localProfileSummary(id)}</label>`).join('')}</fieldset>
 ${warning}<label class=local-identity><input type=checkbox id=migration-identity>${t('migrationIdentity')}</label>
 <p class=dgb><button data-act=migrationbackup>${t('localBackup')}</button><button data-act=migrationlater>${t('notNow')}</button><button class=pri data-act=migrationconfirm>${t('migrationBring')}</button></p></div>`;
 }
@@ -33,4 +33,19 @@ ${cloudUser ? `<button data-act=localbring data-id="${eid}"${migrated || !cloudS
 <button class=dg data-act=localdelete data-id="${eid}"${canDeleteLocalProfile(id) ? '' : ' disabled'}>${t('localDelete')}</button></div></div>`;
     };
     return `<div class="box sm local-data"><h2>${t('localData')}</h2><p class=by>${t('localBackupHint')}</p>${Object.keys(store.profs).map(row).join('')}<p class=dgb><button data-act=localimport>${t('localImport')}</button><button class=pri data-act=close>${t('close')}</button></p></div>`;
+}
+
+async function editLocalProfile() {
+    if (!canEdit() || cloudUser)
+        return;
+    const id = store.cur, own = store.profs[id];
+    const selected = await askProfile(t('pedit'), own);
+    if (!selected || !canEdit() || cloudUser || store.cur != id)
+        return;
+    own.name = selected.name;
+    own.cubeId = selected.cubeId;
+    own.color = selected.color;
+    own.secondaryColor = selected.secondaryColor;
+    save();
+    render();
 }

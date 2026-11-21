@@ -85,8 +85,8 @@ function setLevelFilter(input) {
 
 /** A result: the whole card picks the level. The thumbnail fills its background, black when there is none. */
 function resultCard(l, i) {
-    const u = thumbUrl(l);
-    return `<button type=button class=gdc data-act=gdpick data-i=${i}${u ? ` style="--th:url('${u}')"` : ''}><span class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by>ID ${escapeHtml(l.levelId)} · ${t('by')} ${escapeHtml(orDash(l.creator))}${l.kind == 'platform' ? ' · ' + t('platform') : ''}</span></span>${difficultyFace(l)}</button>`;
+    const u = thumbUrl(l), mode = ['classic', 'platform'].includes(l.kind) ? `<span class="gdmode ${escapeHtml(l.kind)}">${t('gdMode_' + l.kind)}</span>` : '';
+    return `<button type=button class=gdc data-act=gdpick data-i=${i}${u ? ` data-th="${escapeHtml(u)}"` : ''}><span class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by><span class=credit>ID ${escapeHtml(l.levelId)} · ${t('by')} ${escapeHtml(orDash(l.creator))}</span>${mode}</span></span>${difficultyFace(l)}</button>`;
 }
 
 /** Status text and warning for the sources this search could cover. */
@@ -166,6 +166,8 @@ function pickLevel(f, l) {
     const set = (k, v) => {
         if (f.elements[k])
             f.elements[k].value = v ?? '';
+        if (f.elements[k + 'Display'])
+            f.elements[k + 'Display'].value = v ?? '';
     };
     set('name', l.name);
     set('lid', l.levelId);
@@ -177,13 +179,16 @@ function pickLevel(f, l) {
     qs('#lf-diffT').textContent = difficultyLabel(l);
     set('kindT', t(l.kind));
     qs('#gdq').setCustomValidity('');
-    if (f.id == 'fm')
+    if (f.id == 'fm') {
+        updateRankPositionRange(f);
         fillAredlPosition(f);
+        fillDemonlistPosition(f);
+    }
 }
 
 /** Read-only level fields filled by the search: name, ID, creator, difficulty and, in the level form, the list. */
 function levelFields(o, withKind) {
-    const ro = (k, label, v) => `<div><label for=lf-${k}>${t(label)}</label><input id=lf-${k} name=${k} value="${escapeHtml(v)}" readonly class=ro></div>`;
+    const ro = (k, label, v) => `<div><label for=lf-${k}>${t(label)}</label><output id=lf-${k} name=${k}Display class=level-info-value>${escapeHtml(v)}</output><input type=hidden name=${k} value="${escapeHtml(v)}"></div>`;
     return ro('name', 'name', o.name) + ro('lid', 'lid', o.levelId) + ro('creator', 'creator', o.creator)
         + `<div><span class=lab>${t('diff')}</span><div class=fdiff>${difficultyFace(o, 'lf-face')}<span id=lf-diffT>${o.levelId || o.name ? escapeHtml(difficultyLabel(o)) : ''}</span></div></div>`
         + `<input type=hidden name=diff value="${escapeHtml(o.diff)}"><input type=hidden name=rating value="${escapeHtml(o.rating)}">`

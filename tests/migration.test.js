@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { loadScripts, syncScripts } from './load-scripts.js';
 
 const plain = value => JSON.parse(JSON.stringify(value));
-const data = () => ({ levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
+const data = () => ({ ratingScale: 10, levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
 const level = (id, extra = {}) => ({ id, name: id, kind: 'classic', ...extra });
 const localProfile = (extra = {}) => ({ name: 'Local', color: '#123456', secondaryColor: '#abcdef', data: data(), ...extra });
 
@@ -16,7 +16,7 @@ function device() {
         addEventListener: (name, work) => { if (name === 'close') closeListeners.push(work); },
         showModal() {}, close() { closed++; for (const work of closeListeners.splice(0)) work(); }, remove() {} };
     const document = { body: {}, querySelector: selector => nodes[selector] || null, addEventListener() {} };
-    const env = loadScripts(['data/demo-data.js', 'js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/account.js', 'js/cloud-model.js', ...syncScripts, 'js/components/dialogs.js', 'js/components/local-data.js', 'js/components/home.js', 'js/components/shell.js', 'js/events.js'], {
+    const env = loadScripts(['data/demo-data.js', 'js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/account.js', 'js/cloud-model.js', ...syncScripts, 'js/components/dialogs.js', 'js/components/local-data.js', 'js/components/home.js', 'js/components/shell.js', 'js/components/account-ui.js', 'js/events.js'], {
         document, window: { addEventListener() {} }, localStorage: storage,
         queueMicrotask: task => tasks.push(task), setTimeout: task => tasks.push(task), clearTimeout() {},
         navigator: { onLine: true }, render() {}, matchWithAredl() {}, renderTagSuggestions() {}, URL, Blob
@@ -88,7 +88,7 @@ test('cleaning counts each changed field and merges normalized tags without modi
     assert.equal(cleaned.adjusted, 21);
     const l = cleaned.data.levels[0];
     assert.equal(l.name, 'N'.repeat(100)); assert.equal(l.creator, 'C'.repeat(100)); assert.equal(l.notes.length, 5000);
-    assert.equal(l.link, ''); assert.equal(l.enj, -10); assert.equal(l.lik, 10);
+    assert.equal(l.link, ''); assert.equal(l.enj, 0); assert.equal(l.lik, 10);
     assert.deepEqual([l.attN, l.attC, l.tN, l.tP, l.tPC], [0, 1e9, 0, 1e9, 1e9]);
     assert.deepEqual(l.deaths, { 50: 3 }); assert.equal(l.levelId, null);
     assert.deepEqual(l.tags, ['Shared', 'X'.repeat(40)]);
@@ -161,28 +161,29 @@ for (const signed of [true, false]) test('home and menus expose accounts, signed
     const card = d.app('profileSwitcher()');
     assert.ok(card.includes('data-act=localdata'));
     assert.equal(card.includes('data-act=asignin'), !signed);
-    assert.equal(card.includes('cloud-account'), signed);
-    assert.doesNotMatch(card, /pmenu|data-act=(?:pnew|psel|pedit|pdelid)/);
-    assert.doesNotMatch(d.app('paletteButtons()'), /data-act=exp/);
+    assert.equal(card.includes('data-act=pnew'), false);
+    assert.equal(card.includes('data-act=pedit'), !signed);
+    assert.equal(card.includes('popovertarget=amenu'), signed);
+    assert.equal((card.match(/id=amenu/g) || []).length, signed ? 1 : 0);
     d.context.aredlLine = () => '';
     assert.doesNotMatch(d.app('pauseUI()'), /data-act=imp/);
-    for (const action of ['pnew', 'psel', 'pedit', 'pdelid', 'imp', 'exp'])
+    for (const action of ['psel', 'pdelid', 'imp', 'exp'])
         assert.equal(d.app('ACTIONS')[action], undefined);
 });
 
-test('account Home hides local data for demo-only backups and guests always see it', () => {
+test('profile menu always provides local data for accounts and guests', () => {
     const d = device();
     d.setup({ a: localProfile({ data: d.context.window.DEMO_PROFILE }) });
-    assert.doesNotMatch(d.app('profileSwitcher()'), /data-act=localdata/);
+    assert.match(d.app('profileSwitcher()'), /data-act=localdata/);
     d.app("account.status = 'signed-out'; cloudUser = null; activateProfile('a')");
-    assert.match(d.app('profileSwitcher()'), /guest-account/);
+    assert.match(d.app('profileSwitcher()'), /class=profile-pill/);
     assert.match(d.app('profileSwitcher()'), /data-act=localdata/);
 });
 
 test('use on this device is available only signed out for inactive backups and persists the switch', () => {
     const d = device();
     d.setup({ a: localProfile(), b: localProfile({ name: 'Other', data: { ...data(), levels: [level('n2'), level('n3', { kind: 'platform' })] } }) });
-    d.load(['js/api.js']);
+    d.load(['js/demonlist.js', 'js/api.js']);
     d.app("aredlCache = [{ k: 'd', n: 'n2', i: 123, p: 42 }, { k: 'p', n: 'n3', i: 456, p: 84 }]");
     assert.doesNotMatch(d.app('localDataDialog()'), /data-act=localuse/);
     const cloud = d.app('profile');
@@ -268,7 +269,7 @@ for (const [field, input, expected] of [
     ['name', '\u0001A\u007f', 'A'], ['creator', 'C'.repeat(101), 'C'.repeat(100)],
     ['notes', 'x'.repeat(5001), 'x'.repeat(5000)], ['link', 'data:text/plain,bad', ''],
     ['link', 'https://example.test/' + 'x'.repeat(500), ('https://example.test/' + 'x'.repeat(500)).slice(0, 500)],
-    ['enj', 11, 10], ['lik', -11, -10], ['attN', -1, 0], ['attC', 1e9 + 1, 1e9],
+    ['enj', 11, 10], ['lik', -11, 0], ['attN', -1, 0], ['attC', 1e9 + 1, 1e9],
     ['tN', -1, 0], ['tP', 1e9 + 1, 1e9], ['tPC', 1e9 + 1, 1e9],
     ['deaths', { 101: 1, 50: 2.5, 99: -1, 20: 10000001 }, { 20: 10000000 }],
     ['levelId', '123abc', null], ['levelId', '1234567890123', null], ['diff', 'malicious', null],
@@ -283,7 +284,7 @@ for (const [field, input, expected] of [
 
 test('unchanged valid rows stay unchanged and unknown metadata meets database constraints', () => {
     const d = device();
-    const good = level('n1', { name: 'Good', creator: 'Creator', levelId: '123', diff: 'Hard', rating: 'epic', date: '2026-11-12', link: 'HTTPS://example.test', notes: 'Note', deaths: { 50: 1 }, enj: -10, lik: 10, tN: 0, tP: 1e9, tPC: null });
+    const good = level('n1', { name: 'Good', creator: 'Creator', levelId: '123', diff: 'Hard', rating: 'epic', date: '2026-11-12', link: 'HTTPS://example.test', notes: 'Note', deaths: { 50: 1 }, enj: 0, lik: 10, tN: 0, tP: 1e9, tPC: null });
     d.context.source = { ...data(), levels: [good] };
     const result = plain(d.app('cleanMigrationData(source)'));
     assert.deepEqual(result.data.levels[0], good); assert.equal(result.adjusted, 0);
@@ -377,7 +378,7 @@ for (const addition of ['none', 'level', 'item', 'tag']) test(`real demo fixture
     if (addition === 'tag') demo.tags.push({ name: 'User tag', color: '#123456' });
     d.setup({ a: localProfile({ data: demo }) });
     assert.deepEqual(plain(d.app("localProfilesToOffer('owner')")), addition === 'none' ? [] : ['a']);
-    assert.equal(d.app('profileSwitcher()').includes('data-act=localdata'), addition !== 'none');
+    assert.match(d.app('profileSwitcher()'), /data-act=localdata/);
 });
 
 test('a missing or malformed demo definition does not block real profiles', () => {
@@ -436,7 +437,7 @@ for (const [lang, expected, toast] of [
     assert.equal(d.toasts[0], toast);
 });
 
-test('guest summary omits the active badge and keeps the hint below the compact card row', () => {
+test('guest menu keeps the local-only hint after its actions', () => {
     const d = device(); d.app("cloudUser = null; account.status = 'signed-out'");
     const html = d.app('profileSwitcher()');
     assert.doesNotMatch(html, /Active on this device/);
@@ -450,4 +451,54 @@ test('editing the first profile still counts as real data when startup reused th
     assert.deepEqual(plain(d.app("localProfilesToOffer('owner')")), []);
     d.app("store.profs.a.data.levels.push({ id: 'user-level', name: 'User level', kind: 'classic' })");
     assert.deepEqual(plain(d.app("localProfilesToOffer('owner')")), ['a']);
+});
+
+test('cleaning converts an inactive legacy profile once without changing its backup', () => {
+    const d = device(), source = data();
+    delete source.ratingScale;
+    source.levels = [-10, -3, 0, 10, null].map((value, i) => level('n' + i, { enj: value, lik: value }));
+    const before = structuredClone(source), cleaned = d.app('cleanMigrationData')(source, 'legacy').data;
+    assert.equal(cleaned.ratingScale, 10);
+    assert.deepEqual([...cleaned.levels].map(entry => entry.enj), [0, 3.5, 5, 10, null]);
+    assert.deepEqual([...cleaned.levels].map(entry => entry.lik), [0, 3.5, 5, 10, null]);
+    assert.deepEqual(plain(d.app('cleanMigrationData')(cleaned, 'legacy').data), plain(cleaned));
+    assert.deepEqual(source, before);
+    cleaned.levels[0].enj = 7.34;
+    assert.equal(d.app('cleanMigrationData')(cleaned, 'legacy').data.levels[0].enj, 7.3);
+});
+
+test('migration rejects invalid GDL positions and platformer positions', () => {
+    const d = device();
+    for (const value of [0, 100001, 1.5, '387', {}, -1]) {
+        d.context.source = { ...data(), levels: [level('n', { gdl: value })] };
+        assert.equal(d.app('cleanMigrationData(source).data.levels[0].gdl'), null);
+    }
+    for (const value of [1, 100000, null]) {
+        d.context.source = { ...data(), levels: [level('n', { gdl: value })] };
+        assert.equal(d.app('cleanMigrationData(source).data.levels[0].gdl'), value);
+    }
+    d.context.source = { ...data(), levels: [level('n', { kind: 'platform', gdl: 387 })] };
+    assert.equal(d.app('cleanMigrationData(source).data.levels[0].gdl'), null);
+});
+
+
+test('editing the local profile preserves progress and persists its name and both colours', async () => {
+    const d = device();
+    d.setup({ a: localProfile({ data: { ...data(), levels: [level('kept')] } }) });
+    d.app("cloudUser = null; account.status = 'signed-out'; activateProfile('a')");
+    d.context.askProfile = async () => ({ name: '<Renamed>', color: '#aabbcc', secondaryColor: '#112233' });
+    await d.app('ACTIONS.pedit()');
+    assert.equal(d.app('store.profs.a.name'), '<Renamed>');
+    assert.equal(d.app('profile.levels[0].id'), 'kept');
+    assert.equal(JSON.parse(d.storage.gdp).profs.a.secondaryColor, '#112233');
+    assert.match(d.app('profileSwitcher()'), /&lt;Renamed&gt;/);
+    assert.equal(d.app('ACTIONS.pnew'), undefined);
+    const before = d.storage.gdp;
+    d.context.askProfile = async () => null;
+    await d.app('ACTIONS.pedit()');
+    assert.equal(d.storage.gdp, before);
+    d.app("cloudUser = 'owner'");
+    d.context.askProfile = async () => { throw Error('Account must not edit local identity'); };
+    await d.app('ACTIONS.pedit()');
+    assert.equal(d.storage.gdp, before);
 });

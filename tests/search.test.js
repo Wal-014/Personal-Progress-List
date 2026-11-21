@@ -41,7 +41,7 @@ function searchForm() {
         return { '#gdq': input, '#gdr': results, '#gdm': message, '.gdclr': clear }[selector];
     }, querySelectorAll: () => [], addEventListener() {} };
     input.focus = () => { document.activeElement = input; };
-    const scripts = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/i18n.js', 'js/api.js', 'js/sheet.js', 'js/relay.js', 'js/gd.js', 'js/components/faces.js', 'js/components/search.js'], {
+    const scripts = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/i18n.js', 'js/demonlist.js', 'js/api.js', 'js/sheet.js', 'js/relay.js', 'js/gd.js', 'js/components/faces.js', 'js/components/search.js'], {
         document, localStorage: {}, AbortSignal, URLSearchParams, Date: { now: () => now }, window: { addEventListener() {} },
         setTimeout(callback, delay) { timers.set(++timerId, { at: now + delay, callback }); return timerId; },
         clearTimeout(id) { timers.delete(id); },
@@ -71,6 +71,32 @@ function searchForm() {
         }
     };
 }
+
+for (const [kind, label] of [['classic', 'Clásico'], ['platform', 'Plataforma']])
+    test(`search results show the ${kind} mode label`, () => {
+        const form = searchForm();
+        form.app(`levelSearch.results = [{ levelId: '1', name: 'Level', creator: 'Creator', kind: '${kind}' }]; renderLevelSearch()`);
+        assert.match(form.results.innerHTML, new RegExp(`<span class="gdmode ${kind}">${label}</span>`));
+        assert.doesNotMatch(form.results.innerHTML, / · Plataforma/);
+    });
+
+test('search results omit mode labels for missing or unknown kinds', () => {
+    const form = searchForm();
+    form.app(`levelSearch.results = [{ levelId: '1', name: 'Missing' }, { levelId: '2', name: 'Unknown', kind: 'other' }, { levelId: '3', name: 'Unsafe', kind: '<img src=x onerror=alert(1)>' }]; renderLevelSearch()`);
+    assert.equal((form.results.innerHTML.match(/class=gdc/g) || []).length, 3);
+    assert.doesNotMatch(form.results.innerHTML, /class="gdmode |onerror/);
+});
+
+test('switching language redraws both mode labels in English', () => {
+    const form = searchForm();
+    form.app(`levelSearch.results = [{ levelId: '1', name: 'Classic level', kind: 'classic' }, { levelId: '2', name: 'Platformer level', kind: 'platform' }]; renderLevelSearch()`);
+    assert.match(form.results.innerHTML, /class="gdmode classic">Clásico<\/span>/);
+    assert.match(form.results.innerHTML, /class="gdmode platform">Plataforma<\/span>/);
+    form.app("ui.lang = 'en'; renderLevelSearch()");
+    assert.match(form.results.innerHTML, /class="gdmode classic">Classic<\/span>/);
+    assert.match(form.results.innerHTML, /class="gdmode platform">Platformer<\/span>/);
+    assert.doesNotMatch(form.results.innerHTML, /Clásico|Plataforma/);
+});
 
 const searchMessages = {
     es: {

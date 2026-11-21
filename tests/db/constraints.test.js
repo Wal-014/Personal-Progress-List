@@ -13,7 +13,7 @@ const invalid = [
     ['profiles', 'color', 'red'], ['profiles', 'secondary_color', '#12345g'],
     ['profiles', 'bio', 'x'.repeat(301)], ['profiles', 'country', 'esp'],
     ['profiles', 'is_public', true],
-    ['user_settings', 'lang', 'fr'], ['user_settings', 'theme', 'light'],
+    ['user_settings', 'lang', 'fr'], ['user_settings', 'theme', 'light'], ['user_settings', 'background', 'unknown'],
     ['levels', 'id', ''], ['levels', 'id', 'x'.repeat(41)], ['levels', 'id', 'bad id'],
     ['levels', 'kind', 'unknown'], ['levels', 'name', ''],
     ['levels', 'name', 'x'.repeat(101)], ['levels', 'name', 'A\nB'],
@@ -21,9 +21,10 @@ const invalid = [
     ['levels', 'creator', 'x'.repeat(101)], ['levels', 'creator', 'A\tB'],
     ['levels', 'difficulty', 'unknown'], ['levels', 'rating', 'unknown'],
     ['levels', 'aredl_status', 'unknown'], ['levels', 'aredl_position', 0], ['levels', 'aredl_position', 100001],
+    ['levels', 'gdl_position', 0], ['levels', 'gdl_position', 100001],
     ['levels', 'video_url', 'javascript:alert(1)'], ['levels', 'video_url', `https://${'x'.repeat(493)}`],
-    ['levels', 'enjoyment', -11], ['levels', 'enjoyment', 11],
-    ['levels', 'liking', -11], ['levels', 'liking', 11],
+    ['levels', 'enjoyment', -0.1], ['levels', 'enjoyment', 10.1],
+    ['levels', 'liking', -0.1], ['levels', 'liking', 10.1],
     ['levels', 'deaths', []], ['levels', 'deaths', 1], ['levels', 'deaths', null],
     ['levels', 'deaths', { 101: 1 }], ['levels', 'deaths', { '05': 1 }],
     ['levels', 'deaths', { 5: -1 }], ['levels', 'deaths', { 5: 1.5 }],
@@ -60,7 +61,7 @@ describe('database constraints through the Data API', { skip: !enabled }, () => 
     before(async () => {
         ({ id: userId, client } = await context.createUser());
         for (const [table, row] of [
-            ['user_settings', { lang: 'en', theme: 'blue' }],
+            ['user_settings', { lang: 'en', theme: 'nebula', background: 'grid' }],
             ['levels', { id: 'level', kind: 'classic', name: 'Level' }],
             ['level_notes', { level_id: 'level', notes: 'Notes' }],
             ['list_orders', { kind: 'classic' }],
@@ -87,14 +88,14 @@ describe('database constraints through the Data API', { skip: !enabled }, () => 
         ok(await client.from('profiles').update({ username: 'player_123', is_public: true, display_name: 'x'.repeat(40), bio: 'x'.repeat(300), country: 'CR' }).not('id', 'is', null));
         const level = ok(await client.from('levels').update({
             name: 'x'.repeat(100), level_id: 123456789012, creator: 'x'.repeat(100), difficulty: 'Extreme Demon',
-            rating: 'mythic', aredl_status: 'r', aredl_position: 100000, attempts_normal: 1000000000, attempts_copy: 0,
+            rating: 'mythic', aredl_status: 'r', aredl_position: 100000, gdl_position: 100000, attempts_normal: 1000000000, attempts_copy: 0,
             time_normal: 0, time_practice: 1000000000, time_practice_copy: 0, completed_on: '2026-11-11',
-            video_url: 'HTTPS://example.test/video', enjoyment: -10, liking: 10, deaths
+            video_url: 'HTTPS://example.test/video', enjoyment: 0, liking: 10, deaths
         }).eq('id', 'level').select().single());
         assert.deepEqual(level.deaths, deaths);
         assert.equal(level.level_id, 123456789012);
         assert.equal(typeof level.level_id, 'number');
-        ok(await client.from('levels').update({ deaths: {}, difficulty: null, rating: null, video_url: null }).eq('id', 'level'));
+        ok(await client.from('levels').update({ gdl_position: null, deaths: {}, difficulty: null, rating: null, video_url: null }).eq('id', 'level'));
         ok(await client.from('level_notes').update({ notes: 'x'.repeat(5000) }).eq('level_id', 'level'));
         ok(await client.from('list_orders').update({ level_ids: Array(5000).fill('level') }).eq('kind', 'classic'));
         ok(await client.from('wishlists').update({ item_ids: Array(5000).fill('item') }).eq('id', 'wishlist'));
@@ -108,6 +109,18 @@ describe('database constraints through the Data API', { skip: !enabled }, () => 
         const anonymous = ok(await context.anon.from('levels').select('*').eq('user_id', userId));
         assert.deepEqual(anonymous, ok(await client.from('levels').select('*').eq('user_id', userId)));
         assert.equal(anonymous.length, 1);
+    });
+
+    test('ratings accept boundaries, decimals and null as JSON numbers', async () => {
+        for (const value of [0, 10, 2.5, null]) {
+            const row = ok(await client.from('levels').update({ enjoyment: value, liking: value }).eq('id', 'level').select().single());
+            assert.equal(row.enjoyment, value);
+            assert.equal(row.liking, value);
+            const pulled = ok(await client.rpc('sync_pull'));
+            const synced = pulled.levels.find(entry => entry.id === 'level');
+            assert.equal(synced.enjoyment, value);
+            assert.equal(synced.liking, value);
+        }
     });
 
     test('nonnumeric Geometry Dash IDs are rejected on both tables without changing the row', async () => {

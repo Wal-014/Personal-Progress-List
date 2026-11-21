@@ -9,6 +9,21 @@ function reopenPause(selector) {
     qs('#md ' + selector)?.focus();
 }
 
+function setAppearance(field, value) {
+    if (cloudUser) {
+        applyCloudSettings({ [field]: value });
+        save();
+    }
+    else {
+        ui[field] = value;
+        localStorage[field == 'theme' ? 'gt' : 'gbg'] = value;
+    }
+    document.documentElement.dataset[field == 'theme' ? 'theme' : 'bg'] = value;
+    document.querySelectorAll('#md .pause [data-act=' + field + ']').forEach(option => {
+        option.setAttribute('aria-pressed', String(option.dataset.v == value));
+    });
+}
+
 /** Zooms the timeline by a factor, keeping the same date in the middle of the view. */
 function zoomTimeline(factor) {
     const w = qs('#tlw'), r = (w.scrollLeft + w.clientWidth / 2) / w.scrollWidth;
@@ -18,8 +33,27 @@ function zoomTimeline(factor) {
     n.scrollLeft = r * n.scrollWidth - n.clientWidth / 2;
 }
 
+function resizeOverlays() {
+    syncDrawer();
+    const menu = qs('.pmenu:popover-open');
+    if (menu?.closest('[inert]'))
+        menu.hidePopover();
+    else if (menu)
+        placePopover({ target: menu, newState: 'open' });
+}
+
+window.addEventListener('resize', resizeOverlays);
+
 /** What each data-act value does when clicked. Handlers get the clicked element and its data-id. */
 const ACTIONS = {
+    drawer: () => setDrawer(!ui.drawer),
+    drawerclose: () => setDrawer(false),
+    pedit: () => editLocalProfile(),
+    dthadd: a => addDeath(a),
+    dthedit: a => editDeath(a),
+    dthremove: a => removeDeath(a),
+    dthcancel: a => cancelDeathEdit(a),
+    dthresolve: a => resolveDeath(a),
     myprogress: () => backToMyProgress(),
     ashare: () => shareDialog(),
     asharestate: a => setProfileVisibility(a),
@@ -36,7 +70,6 @@ const ACTIONS = {
         render();
     },
     localimport() {
-        closeModal();
         qs('#fi').click();
     },
     localbackup: (a, id) => downloadLocalBackup(id),
@@ -64,17 +97,12 @@ const ACTIONS = {
         ui.sel = null;
         ui.edit = 0;
         render();
+        if (a.closest?.('.mode-switch'))
+            qs('#q')?.focus({ preventScroll: true });
     },
     pause: () => openModal(pauseUI()),
-    theme(a) {
-        if (cloudUser) {
-            applyCloudSettings({ theme: a.dataset.v });
-            save();
-        }
-        else
-            ui.theme = localStorage.gt = a.dataset.v;
-        reopenPause(`[data-act=theme][data-v=${a.dataset.v}]`);
-    },
+    theme: a => setAppearance('theme', themeOf(a.dataset.v)),
+    background: a => setAppearance('background', backgroundOf(a.dataset.v)),
     bell: () => openModal(bellUI()),
     legal: a => openModal(legalUI(a.dataset.v)),
     ct() {
@@ -85,7 +113,8 @@ const ACTIONS = {
     },
     step(a) {
         const i = a.parentNode.querySelector('input'), mn = i.min === '' ? -1e9 : +i.min, mx = i.max === '' ? 1e9 : +i.max;
-        i.value = Math.max(mn, Math.min(mx, (+i.value || 0) + +a.dataset.d));
+        const step = Number(i.step) || 1, precision = (String(step).split('.')[1] || '').length;
+        i.value = Number(Math.max(mn, Math.min(mx, Math.round(((+i.value || 0) + +a.dataset.d * step) / step) * step)).toFixed(precision));
         i.dispatchEvent(new Event('input', { bubbles: true }));
     },
     lang(a) {
@@ -100,6 +129,10 @@ const ACTIONS = {
         else
             render();
     },
+    'list-select': () => toggleLevelSelection(),
+    'list-pick': (row, id) => pickListLevel(row, id),
+    'list-delete': () => deleteSelectedLevels(),
+    listchoices: button => setListChoices(button, !ui.listsExpanded),
     zi: () => zoomTimeline(1.5),
     zo: () => zoomTimeline(1 / 1.5),
     'ranking-mode': a => setRankingMode(a.dataset.v),
@@ -109,6 +142,10 @@ const ACTIONS = {
     'compare-toggle': () => toggleComparison(),
     'compare-close': () => closeComparison(),
     'compare-pick': (a, id) => pickComparisonLevel(id),
+    'compare-option': (button, id) => {
+        selectComparisonSlot(+button.dataset.v, id);
+        qs('[data-act=compare-clear][data-v="' + button.dataset.v + '"]')?.focus({ preventScroll: true });
+    },
     'compare-clear': a => clearComparisonSlot(+a.dataset.v),
     'timeline-metric': a => setTimelineMetric(a.dataset.v),
     add() {
@@ -132,12 +169,18 @@ const ACTIONS = {
         render();
         if (openedFromDialog)
             scrollSel();
+        focusLevelPanel();
     },
     lvclose() {
+        const wasEditing = ui.edit, returnId = ui.sel;
         if (!ui.edit)
             ui.sel = null;
         ui.edit = 0;
         render();
+        if (wasEditing)
+            qs('.rcol [data-act=edit]')?.focus();
+        else if (returnId != null && innerWidth <= 900)
+            (qs(`.lv[data-id="${CSS.escape(returnId)}"]`) || qs('#q'))?.focus({ preventScroll: true });
     },
     tgadd(a) {
         // tagChip escapes the tag name and tagColor only returns #rrggbb, so the HTML is safe
@@ -151,18 +194,23 @@ const ACTIONS = {
         renderTagSuggestions();
     },
     close: () => closeModal(),
-    del(a, id) {
-        askConfirm(t('confirm')).then(ok => {
-            if (!ok)
-                return;
-            profile.levels = profile.levels.filter(l => l.id != id);
-            removeFromOrder(id);
-            save();
-            closeModal();
+    async del(a, id) {
+        const deletionProfile = profile;
+        if (!canEdit() || !await askConfirm(t('confirm')) || profile !== deletionProfile || !canEdit())
+            return;
+        profile.levels = profile.levels.filter(l => l.id != id);
+        removeFromOrder(id);
+        const wasSelected = ui.sel == id;
+        currentLevelSelection()?.ids.delete(id);
+        if (wasSelected) {
             ui.sel = null;
             ui.edit = 0;
-            render();
-        });
+        }
+        save();
+        closeModal();
+        render();
+        if (wasSelected)
+            qs('.list-add')?.focus({ preventScroll: true });
     },
     tags: () => openModal(tagsUI()),
     tdel(a) {
@@ -179,15 +227,17 @@ const ACTIONS = {
         });
     },
     tadd() {
-        const n = qs('#nn').value.trim();
-        if (!n || profile.tags.some(g => g.name == n))
-            return showAlert(t(n ? 'tagExists' : 'tagEmpty'));
+        const input = qs('#nn'), n = input.value.trim(), error = tagNameError(n);
+        if (error) {
+            setFieldError(input, error);
+            input.focus();
+            return;
+        }
         profile.tags.push({ name: n, color: qs('#nc').value });
         save();
         render();
         openModal(tagsUI());
     },
-    sync: () => syncWithAredl(true),
     wnew() {
         askText(t('wname'), '').then(n => {
             if (!n)
@@ -263,7 +313,7 @@ const ACTIONS = {
 };
 
 function downloadLocalBackup(id) {
-    const pr = store.profs[id], u = URL.createObjectURL(new Blob([JSON.stringify({ ...pr.data, profileName: pr.name, profileColor: pr.color, profileSecondaryColor: pr.secondaryColor })], { type: 'application/json' })), x = document.createElement('a');
+    const pr = store.profs[id], u = URL.createObjectURL(new Blob([JSON.stringify({ ...pr.data, profileName: pr.name, profileCubeId: pr.cubeId, profileColor: pr.color, profileSecondaryColor: pr.secondaryColor })], { type: 'application/json' })), x = document.createElement('a');
     x.href = u;
     // Only characters that file systems reject are replaced, so accents and non-Latin names survive
     x.download = (pr.name.trim().replace(/[/:*?"<>|\s]+/g, '-') || 'profile') + '.json';
@@ -272,23 +322,33 @@ function downloadLocalBackup(id) {
 }
 
 function saveLevel(form) {
+    const durations = ['tN', 'tP', 'tPC'].map(field => readDuration(form, field));
+    if (durations.some(Number.isNaN)) {
+        form.reportValidity();
+        return;
+    }
     const position = form.elements.pos.value, old = findLevel(form.dataset.id), level = old || { id: newId('n') };
-    Object.assign(level, levelFromForm(form));
+    const fields = levelFromForm(form), maximum = maxRankPosition(fields.kind, level.id);
+    Object.assign(level, fields);
     if (!old)
         profile.levels.push(level);
     matchWithAredl([level]);
+    matchWithDemonlist([level]);
     removeFromOrder(level.id);
     if (position && !isPre(level)) {
-        const order = profile.order[level.kind], before = rankedIds(level.kind)[Math.max(0, +position - 1)];
+        const order = profile.order[level.kind], before = rankedIds(level.kind)[Math.max(1, Math.min(maximum, +position)) - 1];
         order.splice(before ? order.indexOf(before) : order.length, 0, level.id);
     }
     save();
     closeModal();
+    if (ui.tab !== level.kind)
+        resetListFilters();
     ui.sel = level.id;
     ui.edit = 0;
     ui.tab = level.kind;
     render();
     scrollSel();
+    focusLevelPanel();
 }
 
 function setTagColor(input) {
@@ -297,11 +357,28 @@ function setTagColor(input) {
     render();
 }
 
+function updateTagPreview(input) {
+    const label = input.parentElement.querySelector('.tag-swatch');
+    const name = input.value.trim();
+    label.querySelector('span').textContent = name || t('newTag');
+    label.title = name ? t('color') + ' \u00b7 ' + name : t('color');
+    label.querySelector('input').setAttribute('aria-label', label.title);
+}
+
+function tagNameError(name, current) {
+    if (!name) return t('tagEmpty');
+    if (name.length > TAG_NAME_LIMIT) return t('tagNameLimit').replace('{n}', TAG_NAME_LIMIT);
+    if (profile.tags.some(tag => tag !== current && tag.name === name)) return t('tagExists');
+    return '';
+}
+
 function renameTag(input) {
     const tag = profile.tags[input.dataset.tn], name = input.value.trim();
-    if (!name || profile.tags.some(x => x != tag && x.name == name)) {
-        input.value = tag.name;
-        return showAlert(t(name ? 'tagExists' : 'tagEmpty'));
+    if (name === tag.name) return;
+    const error = tagNameError(name, tag);
+    if (error) {
+        setFieldError(input, error);
+        return;
     }
     const rename = () => {
         const wasPre = tag.name == PRE_TAG;
@@ -318,13 +395,11 @@ function renameTag(input) {
     askConfirm(t('preTagConfirm')).then(ok => {
         if (ok)
             rename();
-        else
+        else {
             input.value = tag.name;
+            updateTagPreview(input);
+        }
     });
-}
-
-function clearAredlPosition(form) {
-    form.elements.ap.value = '';
 }
 
 async function importProfile(file) {
@@ -338,14 +413,15 @@ async function importProfile(file) {
     }
     if (!isValidProfileData(data))
         return showAlert(t('badFile'));
-    const selected = await askProfile(t('impP'), { name: data.profileName || file.name.replace(/\.json$/, ''), color: isHexColor(data.profileColor) ? data.profileColor : nextProfileColor(), secondaryColor: isHexColor(data.profileSecondaryColor) ? data.profileSecondaryColor : DEFAULT_SECONDARY_COLOR });
+    const selected = await askProfile(t('impP'), { ...(validCubeId(data.profileCubeId) ? { cubeId: data.profileCubeId } : {}), name: data.profileName || file.name.replace(/\.json$/, ''), color: isHexColor(data.profileColor) ? data.profileColor : nextProfileColor(), secondaryColor: isHexColor(data.profileSecondaryColor) ? data.profileSecondaryColor : DEFAULT_SECONDARY_COLOR });
     if (!selected)
         return;
     const id = newId('p');
+    delete data.profileCubeId;
     delete data.profileName;
     delete data.profileColor;
     delete data.profileSecondaryColor;
-    store.profs[id] = { name: selected.name, color: selected.color, secondaryColor: selected.secondaryColor, data };
+    store.profs[id] = { ...selected, data };
     if (!cloudUser) {
         activateProfile(id);
         ui.sel = ui.wl = null;
@@ -353,8 +429,56 @@ async function importProfile(file) {
     }
     localStorage.gdp = JSON.stringify(store);
     render();
-    if (cloudUser)
+    const localDataOpen = !!qs('#md .local-data');
+    if (cloudUser || localDataOpen) {
         openModal(localDataDialog());
+        if (localDataOpen) qs('#md [data-act=localimport]').focus();
+    }
+}
+
+function filterByTagChip(chip) {
+    ui.tagFilter = [chip.dataset.tag];
+    if (!isListTab())
+        ui.tab = 'classic';
+    closeModal();
+    if (chip.closest?.('.rcol') && innerWidth <= 900) {
+        ACTIONS.lvclose();
+        qs('.lh .ms summary')?.focus({ preventScroll: true });
+    }
+    else
+        render();
+}
+
+function runAction(button) {
+    const k = button.dataset.act;
+    const menu = button.closest(':popover-open');
+    if (menu) {
+        const opener = overlayOpener(button);
+        menu.hidePopover();
+        opener.element?.focus({ preventScroll: true });
+    }
+    const fromDrawer = ui.drawer && button.closest('#shell-sidebar') && k != 'listchoices';
+    if (fromDrawer && ['tab', 'localuse', 'myprogress'].includes(k))
+        setDrawer(false);
+    ACTIONS[k]?.(button, button.dataset.id);
+    if (fromDrawer && ui.drawer && !qs('dialog[open]') && k != 'localimport')
+        setDrawer(false);
+}
+
+function openClickedLevel(event, clickedCard) {
+    const l = clickedCard && !event.target.closest('form') && findLevel(clickedCard.dataset.id);
+    if (l) {
+        if (clickedCard.classList.contains('pt')) {
+            ui.tab = l.kind;
+            ui.sel = l.id;
+            ui.edit = 0;
+            resetListFilters();
+            render();
+            scrollSel();
+        }
+        else if (clickedCard.classList.contains('lv'))
+            selectLevel(clickedCard.dataset.id);
+    }
 }
 
 document.body.onclick = e => {
@@ -365,34 +489,11 @@ document.body.onclick = e => {
     const g = e.target.closest('[data-tag]'), a = e.target.closest('[data-act]'), c = e.target.closest('[data-id]');
     if (e.target.classList.contains('modal'))
         return closeModal();
-    if (g) {
-        ui.tagFilter = [g.dataset.tag];
-        if (!isListTab())
-            ui.tab = 'classic';
-        closeModal();
-        return render();
-    }
-    if (a) {
-        const k = a.dataset.act;
-        if (a.closest('.pause') && ['wnew', 'tags', 'legal'].includes(k))
-            closeModal();
-        a.closest(':popover-open')?.hidePopover();
-        ACTIONS[k]?.(a, a.dataset.id);
-        return;
-    }
-    const l = c && !e.target.closest('form') && findLevel(c.dataset.id);
-    if (l) {
-        if (c.classList.contains('pt')) {
-            ui.tab = l.kind;
-            ui.sel = l.id;
-            ui.edit = 0;
-            resetListFilters();
-            render();
-            scrollSel();
-        }
-        else if (c.classList.contains('lv'))
-            selectLevel(c.dataset.id);
-    }
+    if (g && a?.dataset.act !== 'list-pick')
+        return filterByTagChip(g);
+    if (a)
+        return runAction(a);
+    openClickedLevel(e, c);
 };
 document.body.onsubmit = e => {
     e.preventDefault();
@@ -414,25 +515,64 @@ document.body.onsubmit = e => {
     else
         saveLevel(e.target);
 };
+document.addEventListener('scroll', e => {
+    const pane = e.target;
+    if (pane.matches?.('#lw, .shell-main > .legacy-surface, .legacy-surface > .wl'))
+        pane.classList.toggle('scrolled-edge', pane.scrollTop > 0);
+}, { capture: true, passive: true });
+
+const invalidForms = new WeakSet();
+
+function showInvalidField(event) {
+    const field = event.target, form = field.form;
+    if (!form?.closest('dialog.modal') || field.dataset.deathField != null)
+        return;
+    event.preventDefault();
+    setFieldError(field, field.validationMessage);
+    if (!invalidForms.has(form)) {
+        invalidForms.add(form);
+        queueMicrotask(() => {
+            invalidForms.delete(form);
+            if (form.isConnected)
+                field.focus();
+        });
+    }
+}
+
+document.addEventListener('invalid', showInvalidField, true);
+
+function setListQuery(input) {
+    ui.q = input.value.toLowerCase();
+    renderList();
+    if (!ui.q)
+        scrollSel();
+}
+
 document.body.oninput = e => {
+    if (e.target.getAttribute?.('aria-invalid') == 'true' && e.target.closest('dialog.modal') && e.target.dataset.deathField == null)
+        setFieldError(e.target, '');
+    if (e.target.dataset.tn != null || e.target.id == 'nn')
+        updateTagPreview(e.target);
+    if (e.target.dataset.tc != null || e.target.id == 'nc')
+        e.target.parentElement.style.setProperty('--tag-color', e.target.value);
+    if (e.target.dataset.deathField != null)
+        return deathInputChanged(e.target);
     if (['pf', 'pwf'].includes(e.target.form?.id))
         return accountFormInput(e.target);
-    if (e.target.dataset.compareSlot != null)
+    if (e.target.dataset.compareSlot != null) {
+        e.target.nextElementSibling.hidden = false;
         return setComparisonSearch(e.target);
+    }
     if (['fm', 'wf'].includes(e.target.form?.id))
         e.target.setCustomValidity(fieldError(e.target.name, e.target.value));
-    if (e.target.form?.id == 'fm' && ['attC', 'attN', 'tN', 'tP', 'tPC'].includes(e.target.name))
+    if (e.target.form?.id == 'fm' && (/^(?:attC|attN|t(?:N|P|PC)_[hms])$/.test(e.target.name)))
         updateTotals(e.target.form);
     if (e.target.id == 'tgq')
         renderTagSuggestions();
     if (e.target.id == 'gdq')
         scheduleLevelSearch();
-    if (e.target.id == 'q') {
-        ui.q = e.target.value.toLowerCase();
-        renderList();
-        if (!ui.q)
-            scrollSel();
-    }
+    if (e.target.id == 'q')
+        setListQuery(e.target);
 };
 document.body.onchange = e => {
     const input = e.target, ds = input.dataset;
@@ -446,22 +586,38 @@ document.body.onchange = e => {
         return setTagColor(input);
     if (ds.tn != null)
         return renameTag(input);
-    // Only a level on the list has a position
-    if (input.form?.id == 'fm' && input.name == 'as' && input.value != 'r')
-        return clearAredlPosition(input.form);
     if (input.id == 'fi') {
         if (input.files[0])
             importProfile(input.files[0]);
         input.value = '';
     }
 };
-// Popovers open in the top layer, away from their button; place each menu under its own button, inside the viewport
-document.addEventListener('beforetoggle', e => {
-    if (e.target.id != 'amenu' || e.newState != 'open')
+function popoverPlacement(rect, viewport, menuHeight) {
+    const width = Math.min(360, viewport.width - 24);
+    const below = Math.max(0, viewport.height - rect.bottom - 18), above = Math.max(0, rect.top - 18);
+    const useBelow = menuHeight <= below || below >= above, maxHeight = useBelow ? below : above;
+    const top = useBelow ? rect.bottom + 6 : rect.top - 6 - Math.min(menuHeight, maxHeight);
+    return { width: width + 'px', left: Math.max(12, Math.min(rect.left, viewport.width - width - 12)) + 'px',
+        top: Math.max(12, Math.min(top, viewport.height - Math.min(menuHeight, maxHeight) - 12)) + 'px', maxHeight: maxHeight + 'px' };
+}
+
+// Popovers open in the top layer, away from their buttons, so place each menu next to its own button inside the viewport.
+function placePopover(event) {
+    const menu = event.target;
+    if (!menu.matches('.pmenu') || event.newState != 'open')
         return;
-    const r = qs(`[popovertarget=${e.target.id}]`).getBoundingClientRect(), w = Math.min(360, innerWidth - 24);
-    Object.assign(e.target.style, { width: w + 'px', top: r.bottom + 6 + 'px', left: Math.max(12, Math.min(r.left, innerWidth - w - 12)) + 'px', maxHeight: Math.max(200, innerHeight - r.bottom - 18) + 'px' });
-}, true);
+    const button = event.source || qs(`[popovertarget="${CSS.escape(menu.id)}"]`);
+    if (!button)
+        return;
+    const rect = button.getBoundingClientRect(), viewport = { width: innerWidth, height: innerHeight };
+    // Hidden popovers have no dimensions; measure at the final width before choosing a side.
+    Object.assign(menu.style, { width: popoverPlacement(rect, viewport, 0).width, maxHeight: 'none', display: 'flex' });
+    const height = menu.offsetHeight;
+    menu.style.display = '';
+    Object.assign(menu.style, popoverPlacement(rect, viewport, height));
+}
+
+document.addEventListener('beforetoggle', placePopover, true);
 
 let recoveryDialogOpened = false;
 
@@ -480,23 +636,87 @@ function accountRendered() {
 document.addEventListener('close', () => queueMicrotask(accountRendered), true);
 /** Fits an open dropdown panel inside the viewport. */
 document.addEventListener('toggle', e => {
-    if (e.target.matches('.ms[open]')) {
-        const optionsPanel = e.target.querySelector('.msp'), panelTop = optionsPanel.getBoundingClientRect().top;
+    const disclosure = e.target;
+    if (!disclosure.matches('.ms'))
+        return;
+    const summary = disclosure.querySelector('summary');
+    if (!disclosure.open) {
+        if (disclosure.contains(document.activeElement))
+            summary.focus();
+        return;
+    }
+    const optionsPanel = disclosure.querySelector('.msp');
+    if (!disclosure.closest('dialog')) {
+        const panelTop = optionsPanel.getBoundingClientRect().top;
         optionsPanel.style.setProperty('--ms-height', Math.max(0, innerHeight - panelTop - 12) + 'px');
     }
+    if (document.activeElement == summary)
+        optionsPanel.querySelector('label:not([hidden]) input')?.focus({ preventScroll: true });
 }, true);
-document.onkeydown = e => {
+document.addEventListener('focusout', e => durationBlur(e));
+
+/** Arrow keys move through a comparison picker's options, wrapping around, and Escape returns to its search box; true when the key was handled. */
+function comparePickerKeydown(e) {
+    const picker = e.target.closest?.('.compare-picker');
+    if (!picker || !['Escape', 'ArrowDown', 'ArrowUp'].includes(e.key))
+        return false;
+    const input = picker.querySelector('input'), menu = picker.querySelector('.compare-options'), options = [...picker.querySelectorAll('button')];
+    e.preventDefault();
     if (e.key == 'Escape') {
-        const dropdown = e.target.closest('.ms[open]');
-        if (dropdown) {
+        input.focus();
+        menu.hidden = true;
+    }
+    else if (options.length) {
+        menu.hidden = false;
+        const index = options.indexOf(e.target);
+        const next = e.key == 'ArrowDown' ? index + 1 : (index < 0 ? options.length : index) - 1;
+        options[(next + options.length) % options.length].focus();
+    }
+    return true;
+}
+
+/** Escape closes the open dropdown, or the level panel on narrow screens; true when it did. */
+function escapeKeydown(e) {
+    if (e.key != 'Escape')
+        return false;
+    const dropdown = e.target.closest('.ms[open]');
+    if (dropdown) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropdown.open = false;
+        dropdown.querySelector('summary').focus();
+        return true;
+    }
+    if (e.target.closest?.('.rcol.has') && innerWidth <= 900 && !qs('dialog[open]')) {
+        e.preventDefault();
+        ACTIONS.lvclose();
+        return true;
+    }
+    return false;
+}
+
+document.onkeydown = e => {
+    if (e.key == 'Escape' && !qs('dialog[open]')) {
+        const chooser = e.target.closest?.('#hlists, [data-act=listchoices]');
+        if (chooser && ui.listsExpanded) {
             e.preventDefault();
-            e.stopPropagation();
-            dropdown.open = false;
-            dropdown.querySelector('summary').focus();
+            setListChoices(qs('[data-act=listchoices]'), false);
             return;
         }
-        closeModal();
     }
+    if (ui.drawer && !qs('dialog[open]') && drawerKeydown(e))
+        return;
+    if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.target.matches?.('.lv')) {
+        if (moveRankedLevel(e.target.dataset.id, e.key === 'ArrowUp' ? -1 : 1))
+            e.preventDefault();
+        return;
+    }
+    if (comparePickerKeydown(e) || escapeKeydown(e))
+        return;
+    if (e.target.dataset.duration)
+        return durationKeydown(e);
+    if (e.key == 'Enter' && e.target.dataset.deathField != null)
+        return deathInputKeydown(e);
     if ((e.key == 'Enter' || e.key == ' ') && e.target.matches('[role=button]')) {
         e.preventDefault();
         e.target.click();

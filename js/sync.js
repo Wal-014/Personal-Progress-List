@@ -7,7 +7,7 @@ const CLOUD_KEYS = {
     list_orders: ['kind'], wishlists: ['id'], wishlist_items: ['id'], tags: ['name'], user_settings: []
 };
 
-const currentSettings = () => ({ lang: ui.lang, theme: ui.theme });
+const currentSettings = () => ({ lang: ui.lang, theme: ui.theme, background: ui.background });
 const cloudRowKey = (table, row) => Object.fromEntries(CLOUD_KEYS[table].map(column => [column, row[column]]));
 const cloudMapKey = (table, row) => table + ':' + (table == 'user_settings' ? 'me' : CLOUD_KEYS[table].map(column => row[column]).join('/'));
 const cleanCloudRow = row => row == null ? null : Object.fromEntries(Object.entries(row).filter(([column]) => !['user_id', 'version', 'created_at', 'updated_at'].includes(column)));
@@ -52,12 +52,12 @@ function writeCloudCache() {
 function applyCloudSettings(settings) {
     if (!settings)
         return;
-    for (const [field, key] of [['lang', 'gl'], ['theme', 'gt']]) {
+    for (const [field, key] of [['lang', 'gl'], ['theme', 'gt'], ['background', 'gbg']]) {
         if (settings[field] == null)
             continue;
-        ui[field] = settings[field];
+        ui[field] = field == 'theme' ? themeOf(settings[field]) : field == 'background' ? backgroundOf(settings[field]) : settings[field];
         try {
-            localStorage[key] = settings[field];
+            localStorage[key] = ui[field];
         }
         catch {
         }
@@ -78,21 +78,23 @@ function cloudStatusSentence() {
     return t(cloudSync.status == 'saving' ? 'cloudSaving' : 'cloudSaved');
 }
 
-function cloudStatus() {
-    const icon = cloudSync.status == 'saved' ? ICONS.check : cloudSync.status == 'saving' ? ICONS.sync : ICONS.warning;
-    return `<span id=cloudst class="cloudst ${cloudSync.status}" role=status aria-atomic=true>${icon}<span class=cloudtxt>${escapeHtml(cloudStatusSentence())}</span>${cloudRetryButton(true)}</span>`;
+function cloudRetryButton() {
+    return ['offline', 'error'].includes(cloudSync.status)
+        ? `<button data-act=csync class="xs-txt cloudretry">${ICONS.retry}<span>${t('cloudRetry')}</span></button>` : '';
 }
 
-function cloudRetryButton(header = false) {
-    const label = header ? cloudStatusSentence() + ' · ' + t('cloudRetry') : t('cloudRetry');
-    return ['offline', 'error'].includes(cloudSync.status)
-        ? `<button data-act=csync class="xs-txt cloudretry" aria-label="${escapeHtml(label)}">${ICONS.retry}${header ? `<span class=cloudwarn>${ICONS.warning}</span>` : ''}<span class=retrytxt>${t('cloudRetry')}</span></button>` : '';
+function cloudHeaderStatus() {
+    if (!canEdit() || account.status != 'signed-in' || cloudSync.status == 'saved')
+        return '';
+    const saving = cloudSync.status == 'saving';
+    const label = t(saving ? 'cloudSaving' : cloudSync.status == 'offline' ? 'cloudOfflineShort' : 'cloudErrorShort');
+    return `<span class=cloud-indicator role=status aria-atomic=true title="${escapeHtml(cloudStatusSentence())}">${saving ? ICONS.sync : ICONS.warning}<span>${label}</span></span>${cloudRetryButton()}`;
 }
 
 function renderCloudStatus() {
-    const chip = qs('#cloudst');
-    if (chip)
-        chip.outerHTML = cloudStatus();
+    const header = qs('#cloud-header');
+    if (header)
+        header.innerHTML = cloudHeaderStatus();
     const accountCard = qs('[data-cloud-status]');
     if (accountCard)
         accountCard.textContent = cloudStatusSentence();

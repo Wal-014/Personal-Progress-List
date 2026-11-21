@@ -1,6 +1,6 @@
 # Cloud accounts
 
-How Personal Ranked Progress moves from profiles kept in the browser to Supabase accounts (#192). This document records the design that issues #193-#198 implement; the security analysis is in [threat-models/2026-11-11-supabase-accounts.md](threat-models/2026-11-11-supabase-accounts.md).
+How Personal Progress List moves from profiles kept in the browser to Supabase accounts (#192). This document records the design that issues #193-#198 implement; the security analysis is in [threat-models/2026-11-11-supabase-accounts.md](threat-models/2026-11-11-supabase-accounts.md).
 
 ## Decisions
 
@@ -75,6 +75,7 @@ erDiagram
     text rating
     text aredl_status
     integer aredl_position
+    integer gdl_position
     integer attempts_normal
     integer attempts_copy
     integer time_normal "seconds"
@@ -82,8 +83,8 @@ erDiagram
     integer time_practice_copy
     date completed_on
     text video_url
-    smallint enjoyment
-    smallint liking
+    numeric enjoyment
+    numeric liking
     jsonb deaths "percent to count"
   }
   LEVEL_NOTES {
@@ -152,6 +153,7 @@ How the app's fields map to columns:
 | level `levelId`, `diff`, `ar.s`, `ar.p` | `level_id`, `difficulty`, `aredl_status`, `aredl_position` | The name, ID, creator, difficulty, rating and AREDL fields are metadata the app looks up from GDHistory, the AREDL and the community sheet; they stay on the user's row because they are a per-user cache that the app refreshes itself, not data users may write for everyone. |
 | level `attN`, `attC`, `tN`, `tP`, `tPC` | `attempts_normal`, `attempts_copy`, `time_normal`, `time_practice`, `time_practice_copy` | Times are seconds. |
 | level `date`, `link`, `enj`, `lik` | `completed_on` (date), `video_url`, `enjoyment`, `liking` | |
+| level `gdl` | `gdl_position` | Nullable classic Global Demonlist position, matched by Geometry Dash ID and refreshed independently of AREDL. Integer 1 through 100000. |
 | level `notes` | `level_notes.notes` | A separate table so public profiles can be served by RLS without ever exposing notes. |
 | level `tags` | `level_tags` rows, `position` = index in the array | A tag is identified by its name, as in the app. |
 | `order.classic`, `order.platform` | `list_orders.level_ids` | |
@@ -163,7 +165,7 @@ Every column has a check constraint:
 - allowed values for `kind`, `difficulty`, `rating`, `status`, `aredl_status`, `lang` and `theme`, written as `check (… in (…))` rather than enum types, so a new value is a one-line migration;
 - `#rrggbb` colours, `http(s)` video links, positive Geometry Dash level IDs, and IDs in the order arrays matching the app's ID format;
 - lengths: names and creators 100, notes 5,000, display names 40, biographies 300, tag names 40;
-- ranges: attempts and seconds 0-1,000,000,000, enjoyment and liking -10 to 10, wishlist progress 0-100, tag position on a level 0-49;
+- ranges: attempts and seconds 0-1,000,000,000, enjoyment and liking 0 to 10 with one decimal, wishlist progress 0-100, tag position on a level 0-49;
 - deaths as an object of percentages 0-100 with whole, non-negative counts;
 - usernames `^[a-z0-9_]{3,20}$`, unique, and countries as two capital letters.
 
@@ -236,7 +238,7 @@ The device keeps, per row, the version and contents it last received from the se
 
 ### Local profiles (#196)
 
-- **Offer.** After the first pull of a page session, if the device holds local profiles with real data that were not brought into this account yet, the app opens *Bring your progress to your account* once. Real data means a level, wishlist item or tag that is not part of the bundled demo; brought profiles are recorded per account in `localStorage.gmigrated`. "Not now" or closing the dialog waits until the next page load; *Local data* on Home offers it any time.
+- **Offer.** After the first pull of a page session, if the device holds local profiles with real data that were not brought into this account yet, the app opens *Bring your progress to your account* once. Real data means a level, wishlist item or tag that is not part of the bundled demo; brought profiles are recorded per account in `localStorage.gmigrated`. "Not now" or closing the dialog waits until the next page load; *Local data* in the profile menu offers it any time.
 - **Preview.** The dialog lists the offered profiles with their counts, warns when the account already has levels or wishlists, and can also copy the profile's name and colours to the account.
 - **Bringing** adds to the account and never replaces anything:
   - levels whose id, or the same Geometry Dash level (same `levelId` and kind, or else the same normalized name and kind), already exist are skipped, and the added ones are appended to each ranked list;
@@ -245,7 +247,7 @@ The device keeps, per row, the version and contents it last received from the se
   - every row is cleaned to the database limits first (lengths, control characters, ranges, links, ids), and the result toast says how many entries were already there and how many fields were adjusted.
 - **Safe to retry.** The rows keep their ids and go through the normal sync queue, so a second run finds them all as existing. The local profile is never modified or deleted by bringing it.
 - **Local data** lists every local profile with *Download backup* (the existing export format), *Bring to my account* when signed in, and *Delete from this device*, confirmed. While signed out, *Use on this device* activates another backup; the active profile and the last profile cannot be deleted. *Import backup* always adds a local profile: it becomes active while signed out, or stays a backup that can be brought into the account while signed in.
-- Home shows the account card when signed in and a guest card (the local profile, *Sign in*, *Local data*) when signed out. *Local data* always appears for guests and appears on the account card when the device has real local progress. The legacy profile menu is removed; backup downloads and imports live in *Local data*.
+- Every screen shows a profile pill opening a native popover. Signed-in accounts retain My profile, Edit profile, Share profile, Account settings, Sign out, Local data, tag management and live sync status/retry. Local profiles offer switching, creation, name/colour editing, backup download/import, Local data, Sign in and tag management. Deletion keeps its existing guard: only inactive profiles can be deleted while signed out, and the last profile cannot be deleted.
 
 The cache holds the profile and the snapshot, roughly twice the account's data. Browsers allow about 5 MB of localStorage per site, which covers accounts of a couple of thousand levels; beyond that the cache write fails, the app keeps syncing while online and the status says the copy cannot be kept on the device.
 
@@ -255,12 +257,12 @@ The cache holds the profile and the snapshot, roughly twice the account's data. 
 - **Launch: Google only.** Supabase's built-in mailer only emails members of the Supabase organization, and no SMTP provider is configured yet, so a stranger signing up with email would never get the confirmation email. `EMAIL_AUTH = false` in `js/config.js` shows a Google-only sign-in dialog and hides the change-email and change-password settings, and the hosted project has its email provider turned off. Email sign-in is fully implemented and tested with the switch on; turning it back on means configuring SMTP (`[auth.email.smtp]` in `supabase/config.toml`, which also allows the custom templates), enabling the email provider on the hosted project and setting the switch to `true`. `supabase/config.toml` keeps email on for the local stack, which the database tests sign in with.
 - **Google:** `signInWithOAuth` returns to the page that started it.
 - **Email and password:** sign-up sends a confirmation email and recovery sends a reset email. The templates in `supabase/templates/` link to the app with a `token_hash` that the app verifies with `verifyOtp`, so a link also works when it is opened on another device or browser. The free plan accepts custom templates only with a custom SMTP provider, which #198 configures. Until then the hosted project sends Supabase's default emails: their PKCE link signs in only in the browser that asked for it, and anywhere else the app opens sign-in and explains that the email is confirmed. The app removes auth parameters from the address bar as soon as it has used them.
-- The account menu in the top bar offers My profile, Edit profile, Account settings (password, email, delete account) and Sign out.
+- The profile menu in the sidebar offers My profile, Edit profile, Account settings (password, email, delete account) and Sign out.
 
 ### Public profiles (#197)
 
-- **Viewing.** `?user=<username>` opens that profile read-only for anyone, with or without an account. The app calls `public_profile()` once and builds the profile from its rows; notes are never part of it. While viewing, `save()` does nothing, cloud sync, the local-profile offer and the AREDL refresh do not run, and nothing is written to localStorage. A signed-in visitor's session still restores, so the account button shows their own account.
-- **Read-only screens.** Home shows the owner's identity card (cube, display name, `@username`, country, biography) and the lists, wishlists and statistics; no control that edits is rendered (no add, edit, delete, reorder, status, progress, tags, import or export). *Back to my progress* reloads the app without `user`. An invalid, missing or private username shows "This profile does not exist or is private", and a network failure says so.
+- **Viewing.** `?user=<username>` opens that profile read-only for anyone, with or without an account. The app calls `public_profile()` once and builds the profile from its rows; notes are never part of it. While viewing, `save()` does nothing, cloud sync, the local-profile offer and the AREDL refresh do not run, and nothing is written to localStorage. A signed-in visitor's session still restores, but the sidebar shows only the visited identity and a return-to-own-progress action.
+- **Read-only screens.** The sidebar shows the owner's identity card (cube, display name, `@username`, country, biography) and the lists, wishlists and statistics; no control that edits is rendered (no add, edit, delete, reorder, status, progress, tags, import or export). *Back to my progress* reloads the app without `user`. An invalid, missing or private username shows "This profile does not exist or is private", and a network failure says so.
 - **Escaping.** Every value comes from someone else's account and goes through the same escaping and colour and URL checks as imported files; `tests/public-view.test.js` renders a profile made of payloads on every screen.
 - **Sharing.** *Share profile* (account menu and My profile) asks for a username first, then switches between Private and Public with one sentence on what becomes public, and when public shows the link with *Copy link* (falling back to selecting the text) and *Open*.
 

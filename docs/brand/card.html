@@ -5,15 +5,15 @@
     <!--
       Promotional card and site link preview (og:image in index.html), 1200x630. Render it over HTTP, since
       Chromium does not load the font for a file:// page; with a server at the repository root:
-        npx -y playwright@1.63.0 screenshot --viewport-size "1200,630" "http://localhost:8000/docs/brand/card.html" docs/brand/card.png
+        npx -y playwright@1.63.0 screenshot --viewport-size "1200,630" "http://localhost:8000/docs/brand/card.html" docs/brand/card.jpg
       The screenshots in docs/brand/card/ are crops of the app at a 1440x900 viewport: the demo profile in English,
       Classic blue theme, after the AREDL sync. Retake them when the screens they show change.
     -->
-    <title>Personal Ranked Progress</title>
+    <title>Personal Progress List</title>
     <style>
       @font-face {
         font-family: "Lilita One";
-        src: url("../../fonts/lilita-one-latin.woff2") format("woff2");
+        src: url("lilita-one-latin.woff2") format("woff2");
       }
 
       :root {
@@ -202,7 +202,7 @@
               </g>
             </g>
           </svg>
-          <div class="name gd">Personal <span>Ranked</span> Progress</div>
+          <div class="name gd">Personal <span>Progress</span> List</div>
         </div>
         <h1 class="gd">Track your<br />Geometry Dash<br /><span>progress.</span></h1>
         <ul class="features">

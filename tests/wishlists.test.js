@@ -7,7 +7,7 @@ function fixture(extra = {}) {
     const item = { id: 'i1', name: 'A $& <level>', levelId: '42', creator: 'Maker', diff: 'Hard', rating: 'epic', status: 'prog', pct: 63 };
     const wishlist = { id: 'w1', name: 'Goals', items: [item] };
     nodes.set('#md', { innerHTML: '' });
-    const f = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/sheet.js', 'js/components/faces.js', 'js/components/empty-list.js', 'js/components/levels.js', 'js/components/wishlists.js', 'js/components/search.js', 'js/components/dialogs.js'], {
+    const f = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/sheet.js', 'js/demonlist.js', 'js/components/faces.js', 'js/components/empty-list.js', 'js/components/levels.js', 'js/components/wishlists.js', 'js/components/search.js', 'js/components/dialogs.js'], {
         profile: { levels: [], order: { classic: [], platform: [] }, tags: [], wishlists: [wishlist] },
         ui: { tab: 'wish', wl: 'w1', lang: 'en', wishFx: null },
         document: { body: {}, querySelector: s => nodes.get(s) || null, querySelectorAll: () => [], addEventListener() {} },
@@ -21,6 +21,7 @@ function fixture(extra = {}) {
         matchMedia: () => ({ matches: false }),
         setTimeout: (fn, delay) => { timers.push({ fn, delay }); return timers.length; },
         clearTimeout: id => calls.push(['clear', id]),
+        queueMicrotask: run => run(),
         FormData: class { constructor(form) { return Object.entries(form.fields); } },
         ...extra
     });
@@ -117,6 +118,20 @@ test('status changes retain percentage and expose transient motion only during r
     assert.deepEqual(f.calls.at(-1), ['render', { id: null, from: 0, ratio: 50 }]);
 });
 
+test('wishlist status actions move through every state and back without losing progress', () => {
+    const f = fixture();
+    f.load(['js/events.js']);
+    f.item.status = 'todo';
+    for (const [status, completed] of [['prog', 0], ['done', 1], ['prog', 0], ['todo', 0]]) {
+        f.app('ACTIONS.wstatus')({ dataset: { v: status } }, 'i1');
+        assert.equal(f.item.status, status);
+        assert.equal(f.item.pct, 63);
+        assert.deepEqual({ ...f.app('wishlistProgress')(f.wishlist) }, { n: 1, d: completed, s: status });
+        assert.match(f.app('wishView()'), new RegExp('data-v=' + status + ' aria-pressed=true'));
+    }
+    assert.equal(f.calls.filter(call => call == 'save').length, 4);
+});
+
 test('completion from todo starts at zero and offers immediately with reduced motion', () => {
     const f = fixture({ matchMedia: () => ({ matches: true }) });
     f.item.status = 'todo';
@@ -150,12 +165,14 @@ for (const status of ['todo', 'done'])
 
 for (const [value, expected] of [['-5', 0], ['150', 100], ['63.6', 64], ['', 0]])
     test(`setWishlistPercent normalizes ${JSON.stringify(value)} and updates without rendering`, () => {
-        const f = fixture(), bar = { style: {} };
+        const f = fixture(), properties = {};
+        const bar = { dataset: {}, style: { setProperty: (name, value) => { properties[name] = value; } } };
         const input = { dataset: { wp: 'i1' }, value, closest: () => ({ querySelector: () => bar }) };
         f.app('setWishlistPercent')(input);
         assert.equal(f.item.pct, expected);
         assert.equal(String(input.value), String(expected));
-        assert.equal(bar.style.width, `${expected}%`);
+        assert.deepEqual(properties, { '--pct': expected });
+        assert.equal(bar.dataset.pct, expected);
         assert.deepEqual(f.calls, ['save']);
     });
 
@@ -241,6 +258,9 @@ test('initWishlistSort keeps controls clickable and requires the grip for touch 
     f.app('initWishlistSort()');
     const { options } = created[0];
     assert.equal(options.animation, 180);
+    f.context.matchMedia = () => ({ matches: true });
+    f.app('initWishlistSort()');
+    assert.equal(created.pop().options.animation, 0);
     assert.equal(options.preventOnFilter, false);
     assert.equal(options.fallbackTolerance, 5);
     assert.equal(options.onUpdate, f.app('reorderWishlist'));
@@ -289,7 +309,7 @@ test('wishView renders fixed card structure and state specific accessible contro
         assert.equal((html.match(/data-act=wstatus/g) || []).length, 3);
         assert.match(html, new RegExp(`data-v=${status} aria-pressed=true`));
         assert.match(html, /role=group aria-label="Status · A \$&amp; &lt;level&gt;"/);
-        assert.match(html, /class=grip aria-hidden=true/);
+        assert.ok(html.includes('<span class=grip aria-hidden=true title="Drag or press Alt+↑ / Alt+↓ to reorder"></span>'));
         assert.match(html, /<i class=th aria-hidden=true><\/i>/);
         assert.doesNotMatch(f.app('wishlistCard')({ ...f.item, levelId: null }), /<i class=th\b/);
         assert.match(html, /class=wprog/);
@@ -298,7 +318,7 @@ test('wishView renders fixed card structure and state specific accessible contro
         assert.doesNotMatch(html, /data-wi=|<select/);
         if (status == 'todo') assert.match(html, /Set it to In progress/);
         if (status == 'done') assert.match(html, /data-v=platform>Add to Platformer/);
-        if (status == 'done') assert.match(html, /class=wprog><div class="pb" aria-hidden=true><i style="width:100%;/, 'a completed card shows a full bar whatever percentage was recorded');
+        if (status == 'done') assert.match(html, /class=wprog><div class="pb" aria-hidden=true><i data-pct="100"/, 'a completed card shows a full bar whatever percentage was recorded');
     }
     f.context.profile.levels.push({ kind: 'platform', levelId: '42', name: 'Level' });
     assert.match(f.app('wishView()'), /class=wadded/);
@@ -322,8 +342,8 @@ test('header shows three counts, completion and motion only for the celebrated c
     assert.match(html, /class="wh done"/);
     assert.match(html, /Wishlist completed!/);
     assert.equal((html.match(/class=wstamp/g) || []).length, 1);
-    assert.match(html, /--from:63%/);
-    assert.match(html, /<div class="pb wfill" aria-hidden=true><i style="width:100%;--from:33%">/, 'the header bar grows from its previous ratio');
+    assert.match(html, /data-from="63"/);
+    assert.match(html, /<div class="pb wfill" aria-hidden=true><i data-pct="100" data-from="33">/, 'the header bar grows from its previous ratio');
     f.context.ui.wishFx = null;
     assert.doesNotMatch(f.app('wishView()'), /class=wstamp|celebrate/);
     f.wishlist.items = [];
@@ -369,6 +389,46 @@ test('askTransfer waits for sheet kind detection and keeps unknown levels as a c
         assert.equal(f.item.pct, 63);
     }
 });
+
+for (const knownKind of [true, false])
+    test('completed wishlist item transfers once from the ' + (knownKind ? 'detected list button' : 'list chooser'), async () => {
+        const f = fixture({ fetch: async () => ({ ok: true, json: async () => [] }) });
+        f.load(['js/events.js']);
+        f.item.status = 'done';
+        if (knownKind)
+            f.item.kind = 'platform';
+        const before = { ...f.item };
+        const transferred = () => f.app('wishlistTransferred')(f.item);
+        assert.equal(transferred(), false);
+        if (knownKind) {
+            assert.match(f.app('wishView()'), /data-act=wto data-id="i1" data-v=platform/);
+        } else {
+            const dialog = { querySelector: () => null, addEventListener() {}, showModal() {}, close() {} };
+            const host = f.nodes.get('#md');
+            f.nodes.set('#md', {
+                get innerHTML() { return host.innerHTML; },
+                set innerHTML(value) {
+                    host.innerHTML = value;
+                    f.nodes.set('#md dialog', value ? dialog : null);
+                }
+            });
+            assert.match(f.app('wishView()'), /data-act=wask data-id="i1"/);
+            await f.app('ACTIONS.wask')(null, 'i1');
+            assert.match(host.innerHTML, /data-act=wto data-id="i1" data-v=classic/);
+            assert.match(host.innerHTML, /data-act=wto data-id="i1" data-v=platform/);
+        }
+        const transfer = () => f.app('ACTIONS.wto')({ dataset: { v: 'platform' } }, 'i1');
+        transfer();
+        transfer();
+        assert.equal(f.context.profile.levels.length, 1);
+        assert.equal(f.context.profile.levels[0].kind, 'platform');
+        assert.deepEqual(f.wishlist.items, [{ ...before, kind: 'platform' }]);
+        assert.equal(transferred(), true);
+        assert.match(f.app('wishView()'), /class=wadded/);
+        f.context.profile.levels.pop();
+        assert.equal(transferred(), false);
+        assert.match(f.app('wishView()'), /data-act=wto data-id="i1" data-v=platform/);
+    });
 
 test('a delayed completion offer rechecks screen and item after loading the sheet', async () => {
     for (const reason of ['screen', 'removed', 'modal', 'transferred']) {
@@ -417,8 +477,8 @@ test('home progress bars remain static even while the open wishlist is celebrati
     const f = fixture();
     f.context.ui.wishFx = { id: 'i1', from: 63, ratio: 0 };
     const html = f.app('progressBar')(f.wishlist);
-    assert.match(html, /width:0%/);
-    assert.doesNotMatch(html, /wfill|--from/);
+    assert.match(html, /data-pct="0"/);
+    assert.doesNotMatch(html, /wfill|data-from/);
 });
 
 test('saving a new item keeps detected kind and starts without manual progress', () => {
@@ -468,6 +528,17 @@ test('an unmatched transfer starts as unplaced with no AREDL position', () => {
     assert.deepEqual(JSON.parse(JSON.stringify(f.context.profile.levels[0].ar)), { s: 'n' });
 });
 
+for (const kind of ['classic', 'platform'])
+    test(`an unlisted rated Extreme Demon transferred to ${kind} awaits placement`, () => {
+        const f = fixture();
+        f.load(['js/api.js']);
+        f.app("aredlCache = [{ k: 'd', i: 1, n: 'Other', p: 1 }]");
+        f.item.diff = 'Extreme Demon';
+        f.item.rating = 'rated';
+        f.app('transferWishlistItem')('i1', kind);
+        assert.deepEqual({ ...f.context.profile.levels[0].ar }, { s: 'p', p: null });
+    });
+
 test('controlSelector restores the specific status button and percentage input', () => {
     const f = fixture();
     f.load(['js/render.js']);
@@ -480,3 +551,10 @@ test('controlSelector restores the specific status button and percentage input',
         assert.equal(f.app('controlSelector')(element), expected);
     }
 });
+
+for (const kind of ['classic', 'platform'])
+    test(`wishlist transfer applies GDL only for ${kind}`, () => {
+        const f = fixture({ localStorage: { ggdl: '[[42,387]]' } });
+        f.app('transferWishlistItem')('i1', kind);
+        assert.equal(f.context.profile.levels[0].gdl, kind == 'classic' ? 387 : null);
+    });

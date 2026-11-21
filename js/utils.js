@@ -5,6 +5,8 @@
 /** Short form of document.querySelector. */
 const qs = s => document.querySelector(s);
 
+const prefersReducedMotion = () => globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
 const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 /** Level names are compared ignoring case, accents, spaces and symbols. */
@@ -19,42 +21,18 @@ const newId = prefix => prefix + Date.now().toString(36) + Math.random().toStrin
 /** Shows a stored YYYY-MM-DD date as DD/MM/YYYY, the format used across the app. */
 const formatDate = d => d ? d.split('-').reverse().join('/') : '';
 
+const formatRating = value => value.toLocaleString(ui.lang, { maximumFractionDigits: 1 });
+
 const orDash = v => v == null || v === '' ? '-' : v;
 
 /** Formats seconds as "1h 30m 0s". */
 const formatDuration = s => s == null ? '' : `${~~(s / 3600)}h ${~~(s % 3600 / 60)}m ${s % 60}s`;
 
-/** Parses "1h 30m 0s" into seconds, or null when invalid. */
-const parseDuration = x => {
-    const m = /^\s*(?:(\d+)h)?\s*(?:(\d+)m)?\s*(?:(\d+)s)?\s*$/.exec(x || '');
-    return m && (m[1] || m[2] || m[3]) ? +(m[1] || 0) * 3600 + +(m[2] || 0) * 60 + +(m[3] || 0) : null;
-};
-
-/** Parses "63% x4" lines into { percent: deaths }, summing repeated percentages. */
-const parseDeaths = x => {
-    const d = {};
-    for (const m of x.matchAll(/(\d+)\s*%\s*x\s*(\d+)/gi))
-        d[m[1]] = (d[m[1]] || 0) + +m[2];
-    return d;
-};
-
-/** Valid death line: «63% x4», with a percentage from 0 to 100. */
-const isDeathLine = x => {
-    const m = /^\s*(\d+)\s*%\s*x\s*(\d+)\s*$/i.exec(x);
-    return !!m && +m[1] <= 100;
-};
-
 /** Error checks for form fields that the browser cannot validate on its own. */
 const FIELD_CHECKS = {
     name: v => v.trim() ? '' : t('errName'),
-    lid: v => !v.trim() || /^\d+$/.test(v.trim()) ? '' : t('errLid'),
-    tN: v => !v.trim() || parseDuration(v) != null ? '' : t('errTime'),
-    deaths: v => {
-        const bad = v.split('\n').filter(x => x.trim() && !isDeathLine(x));
-        return bad.length ? `${t('errDeaths')} ${bad.join(', ')}` : '';
-    }
+    lid: v => !v.trim() || /^\d+$/.test(v.trim()) ? '' : t('errLid')
 };
-FIELD_CHECKS.tP = FIELD_CHECKS.tPC = FIELD_CHECKS.tN;
 
 /** Error message for a form field, or '' when its value is valid. */
 const fieldError = (name, value) => FIELD_CHECKS[name]?.(value) || '';
@@ -83,40 +61,20 @@ const thumbUrl = l => {
     return url ? url + '/small' : '';
 };
 
-const aredlLabel = l => {
-    const listName = l.kind == 'platform' ? 'AREPL' : 'AREDL';
-    if (l.ar?.s == 'r') {
-        if (l.ar.p != null)
-            return `${listName} #${escapeHtml(l.ar.p)}`;
-        return `${listName} · ${t('onl')}`;
-    }
-    if (l.ar?.s == 'p')
-        return t('pending');
-    if (l.ar?.s == 'n')
-        return t('notin');
-    return listName + ' -';
-};
-
 /** Tag colour from the active profile, falling back to the text colour. */
 const tagColor = n => {
     const c = profile.tags?.find(g => g.name == n)?.color;
     return isHexColor(c) ? c : 'var(--fg)';
 };
 
-const tagStyle = n => {
-    const c = tagColor(n);
-    return `color:${c};border-color:${c}`;
-};
+const tagColorAttr = n => `data-tag-color="${escapeHtml(tagColor(n))}"`;
 
 /** Levels tagged "Pre-Extremes" appear separately under "First steps". */
+const TAG_NAME_LIMIT = 24;
 const PRE_TAG = 'Pre-Extremes';
 const isPre = l => (l.tags || []).includes(PRE_TAG);
 
-/** Relative time of a past moment, such as "3 hours ago", using ui.lang. */
-const timeAgo = ms => {
-    const s = (Date.now() - ms) / 1000, f = new Intl.RelativeTimeFormat(ui.lang, { numeric: 'auto' });
-    return s < 3600 ? f.format(-Math.round(s / 60), 'minute') : s < 86400 ? f.format(-Math.round(s / 3600), 'hour') : f.format(-Math.round(s / 86400), 'day');
-};
-
-/** Theme to use for a saved preference: the removed dark and light themes map to their closest new theme. */
-const themeOf = v => ({ dark: 'night', light: 'blue' })[v] || (THEMES.includes(v) ? v : 'blue');
+/** Preserve the closest palette when loading preferences from earlier releases. */
+const LEGACY_THEMES = { blue: 'nebula', night: 'graphite', synth: 'crimson', dark: 'graphite', light: 'porcelain' };
+const themeOf = v => THEMES.includes(v) ? v : Object.hasOwn(LEGACY_THEMES, v) ? LEGACY_THEMES[v] : 'nebula';
+const backgroundOf = v => BACKGROUNDS.includes(v) ? v : 'grid';
