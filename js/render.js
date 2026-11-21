@@ -14,8 +14,7 @@ function controlSelector(el) {
     return attrs.length ? el.tagName.toLowerCase() + attrs.map(a => `[${a}="${CSS.escape(el.getAttribute(a))}"]`).join('') : null;
 }
 
-/** Preserves list scroll when redrawing the same screen. */
-function render() {
+function captureView() {
     const active = document.activeElement;
     const focused = active?.closest?.('[popover]') ? overlayOpener(active).selector : controlSelector(active);
     const isLevelList = isListTab(), sameTab = ui.renderedTab == ui.tab;
@@ -34,27 +33,46 @@ function render() {
     ui.renderedWishlist = ui.wl;
     const changedMode = isLevelList && ['classic', 'platform'].includes(ui.renderedTab) && ui.renderedTab != ui.tab;
     ui.renderedTab = ui.tab;
-    const screen = !canEdit() && !viewing.identity ? publicViewScreen() : ui.tab == 'wish' ? currentWishlist() ? wishView() : wishlistsIndex() : isLevelList ? `<div class=split><div class=lcol>${lcol()}</div><div class="rcol ${ui.sel != null ? 'has' : ''}" data-level="${escapeHtml(ui.sel)}">${panel()}</div></div>` : ui.tab == 'stats' ? stats() : home();
-    qs('#app').innerHTML = sharedShell(screen);
-    if (changedMode)
-        qs('.list-surface')?.classList.add('mode-enter');
-    syncDrawer();
+    return { focused, listScrollTop, detailScrollTop, contentSelector, contentScroll, changedMode };
+}
+
+function currentScreen() {
+    return !canEdit() && !viewing.identity ? publicViewScreen() : ui.tab == 'wish' ? currentWishlist() ? wishView() : wishlistsIndex() : isListTab() ? `<div class=split><div class=lcol>${lcol()}</div><div class="rcol ${ui.sel != null ? 'has' : ''}" data-level="${escapeHtml(ui.sel)}">${panel()}</div></div>` : ui.tab == 'stats' ? stats() : home();
+}
+
+function syncDocumentAttributes() {
     document.documentElement.dataset.theme = ui.theme;
     document.documentElement.dataset.bg = ui.background;
     document.documentElement.dataset.motif = ui.tab == 'classic' ? 'stars' : ui.tab == 'platform' ? 'moons' : 'mixed';
     document.documentElement.lang = ui.lang;
+}
+
+function restoreScroll(view) {
+    const { listScrollTop, detailScrollTop, contentSelector, contentScroll } = view;
     if (listScrollTop && qs('#lw'))
         qs('#lw').scrollTop = listScrollTop;
     if (detailScrollTop && qs('.rcol.has'))
         qs('.rcol.has').scrollTop = detailScrollTop;
     if (contentScroll && qs(contentSelector))
         qs(contentSelector).scrollTop = contentScroll;
+}
+
+/** Preserves list scroll when redrawing the same screen. */
+function render() {
+    const view = captureView();
+    const screen = currentScreen();
+    qs('#app').innerHTML = sharedShell(screen);
+    if (view.changedMode)
+        qs('.list-surface')?.classList.add('mode-enter');
+    syncDrawer();
+    syncDocumentAttributes();
+    restoreScroll(view);
     initSort();
     initWishlistSort();
     renderTagSuggestions();
     // Rebuilding #app drops keyboard focus to <body>; put it back on the same control when it still exists
-    if (focused)
-        qs(focused)?.focus({ preventScroll: true });
+    if (view.focused)
+        qs(view.focused)?.focus({ preventScroll: true });
     if (qs('[data-act=bell]'))
         syncNotificationCount(Number(qs('[data-act=bell] .bdg')?.textContent || 0));
     accountRendered();

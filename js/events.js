@@ -436,6 +436,51 @@ async function importProfile(file) {
     }
 }
 
+function filterByTagChip(chip) {
+    ui.tagFilter = [chip.dataset.tag];
+    if (!isListTab())
+        ui.tab = 'classic';
+    closeModal();
+    if (chip.closest?.('.rcol') && innerWidth <= 900) {
+        ACTIONS.lvclose();
+        qs('.lh .ms summary')?.focus({ preventScroll: true });
+    }
+    else
+        render();
+}
+
+function runAction(button) {
+    const k = button.dataset.act;
+    const menu = button.closest(':popover-open');
+    if (menu) {
+        const opener = overlayOpener(button);
+        menu.hidePopover();
+        opener.element?.focus({ preventScroll: true });
+    }
+    const fromDrawer = ui.drawer && button.closest('#shell-sidebar') && k != 'listchoices';
+    if (fromDrawer && ['tab', 'localuse', 'myprogress'].includes(k))
+        setDrawer(false);
+    ACTIONS[k]?.(button, button.dataset.id);
+    if (fromDrawer && ui.drawer && !qs('dialog[open]') && k != 'localimport')
+        setDrawer(false);
+}
+
+function openClickedLevel(event, clickedCard) {
+    const l = clickedCard && !event.target.closest('form') && findLevel(clickedCard.dataset.id);
+    if (l) {
+        if (clickedCard.classList.contains('pt')) {
+            ui.tab = l.kind;
+            ui.sel = l.id;
+            ui.edit = 0;
+            resetListFilters();
+            render();
+            scrollSel();
+        }
+        else if (clickedCard.classList.contains('lv'))
+            selectLevel(clickedCard.dataset.id);
+    }
+}
+
 document.body.onclick = e => {
     document.querySelectorAll('.ms[open]').forEach(d => {
         if (!d.contains(e.target))
@@ -444,48 +489,11 @@ document.body.onclick = e => {
     const g = e.target.closest('[data-tag]'), a = e.target.closest('[data-act]'), c = e.target.closest('[data-id]');
     if (e.target.classList.contains('modal'))
         return closeModal();
-    if (g && a?.dataset.act !== 'list-pick') {
-        ui.tagFilter = [g.dataset.tag];
-        if (!isListTab())
-            ui.tab = 'classic';
-        closeModal();
-        if (g.closest?.('.rcol') && innerWidth <= 900) {
-            ACTIONS.lvclose();
-            qs('.lh .ms summary')?.focus({ preventScroll: true });
-        }
-        else
-            render();
-        return;
-    }
-    if (a) {
-        const k = a.dataset.act;
-        const menu = a.closest(':popover-open');
-        if (menu) {
-            const opener = overlayOpener(a);
-            menu.hidePopover();
-            opener.element?.focus({ preventScroll: true });
-        }
-        const fromDrawer = ui.drawer && a.closest('#shell-sidebar') && k != 'listchoices';
-        if (fromDrawer && ['tab', 'localuse', 'myprogress'].includes(k))
-            setDrawer(false);
-        ACTIONS[k]?.(a, a.dataset.id);
-        if (fromDrawer && ui.drawer && !qs('dialog[open]') && k != 'localimport')
-            setDrawer(false);
-        return;
-    }
-    const l = c && !e.target.closest('form') && findLevel(c.dataset.id);
-    if (l) {
-        if (c.classList.contains('pt')) {
-            ui.tab = l.kind;
-            ui.sel = l.id;
-            ui.edit = 0;
-            resetListFilters();
-            render();
-            scrollSel();
-        }
-        else if (c.classList.contains('lv'))
-            selectLevel(c.dataset.id);
-    }
+    if (g && a?.dataset.act !== 'list-pick')
+        return filterByTagChip(g);
+    if (a)
+        return runAction(a);
+    openClickedLevel(e, c);
 };
 document.body.onsubmit = e => {
     e.preventDefault();
@@ -533,6 +541,13 @@ function showInvalidField(event) {
 
 document.addEventListener('invalid', showInvalidField, true);
 
+function setListQuery(input) {
+    ui.q = input.value.toLowerCase();
+    renderList();
+    if (!ui.q)
+        scrollSel();
+}
+
 document.body.oninput = e => {
     if (e.target.getAttribute?.('aria-invalid') == 'true' && e.target.closest('dialog.modal') && e.target.dataset.deathField == null)
         setFieldError(e.target, '');
@@ -556,12 +571,8 @@ document.body.oninput = e => {
         renderTagSuggestions();
     if (e.target.id == 'gdq')
         scheduleLevelSearch();
-    if (e.target.id == 'q') {
-        ui.q = e.target.value.toLowerCase();
-        renderList();
-        if (!ui.q)
-            scrollSel();
-    }
+    if (e.target.id == 'q')
+        setListQuery(e.target);
 };
 document.body.onchange = e => {
     const input = e.target, ds = input.dataset;
