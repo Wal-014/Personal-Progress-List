@@ -40,6 +40,8 @@ function statsSummary() {
 }
 
 function stats() {
+    if (!profile.levels.length)
+        return canEdit() ? emptyList({ icon: ICONS.metricLevels, title: t('emptyListTitle'), text: t('statsEmptyText'), action: 'add' }) : `<p class=by>${t('publicNoLevels')}</p>`;
     const { levelCount, attemptTotal, playHours, average, mostAttemptsLevel } = statsSummary();
     const difficultyCounts = {};
     const yearCounts = {};

@@ -1176,7 +1176,7 @@ dialog.modal::backdrop {
   min-height: clamp(240px, 42vh, 360px);
 }
 
-.empty .i {
+.empty > .i {
   width: 48px;
   height: 48px;
 }
@@ -1798,6 +1798,37 @@ input.ro {
   overflow-x: auto;
   flex: 1;
   min-width: 0;
+}
+
+#timeline-data summary {
+  padding-block: var(--space-12);
+  cursor: pointer;
+}
+
+#timeline-data table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+#timeline-data caption {
+  padding-block: var(--space-4);
+  color: var(--color-text-muted);
+  text-align: start;
+}
+
+#timeline-data :is(th, td) {
+  padding: var(--space-4) var(--space-8);
+  border-bottom: var(--size-border) solid var(--color-border);
+  text-align: start;
+}
+
+#timeline-data :is(th, td):last-child {
+  text-align: end;
+}
+
+#timeline-data td:nth-child(2) {
+  overflow-wrap: anywhere;
 }
 
 .zoom {
@@ -2484,6 +2515,7 @@ input.ro {
 
 @media (max-width: 900px) {
   .wi {
+    flex-shrink: 0;
     grid-template-columns: 24px 42px minmax(0, 1fr) auto;
     grid-template-areas:
       "grip tile info face"

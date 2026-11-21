@@ -117,6 +117,20 @@ test('status changes retain percentage and expose transient motion only during r
     assert.deepEqual(f.calls.at(-1), ['render', { id: null, from: 0, ratio: 50 }]);
 });
 
+test('wishlist status actions move through every state and back without losing progress', () => {
+    const f = fixture();
+    f.load(['js/events.js']);
+    f.item.status = 'todo';
+    for (const [status, completed] of [['prog', 0], ['done', 1], ['prog', 0], ['todo', 0]]) {
+        f.app('ACTIONS.wstatus')({ dataset: { v: status } }, 'i1');
+        assert.equal(f.item.status, status);
+        assert.equal(f.item.pct, 63);
+        assert.deepEqual({ ...f.app('wishlistProgress')(f.wishlist) }, { n: 1, d: completed, s: status });
+        assert.match(f.app('wishView()'), new RegExp('data-v=' + status + ' aria-pressed=true'));
+    }
+    assert.equal(f.calls.filter(call => call == 'save').length, 4);
+});
+
 test('completion from todo starts at zero and offers immediately with reduced motion', () => {
     const f = fixture({ matchMedia: () => ({ matches: true }) });
     f.item.status = 'todo';
@@ -369,6 +383,46 @@ test('askTransfer waits for sheet kind detection and keeps unknown levels as a c
         assert.equal(f.item.pct, 63);
     }
 });
+
+for (const knownKind of [true, false])
+    test('completed wishlist item transfers once from the ' + (knownKind ? 'detected list button' : 'list chooser'), async () => {
+        const f = fixture({ fetch: async () => ({ ok: true, json: async () => [] }) });
+        f.load(['js/events.js']);
+        f.item.status = 'done';
+        if (knownKind)
+            f.item.kind = 'platform';
+        const before = { ...f.item };
+        const transferred = () => f.app('wishlistTransferred')(f.item);
+        assert.equal(transferred(), false);
+        if (knownKind) {
+            assert.match(f.app('wishView()'), /data-act=wto data-id="i1" data-v=platform/);
+        } else {
+            const dialog = { querySelector: () => null, addEventListener() {}, showModal() {}, close() {} };
+            const host = f.nodes.get('#md');
+            f.nodes.set('#md', {
+                get innerHTML() { return host.innerHTML; },
+                set innerHTML(value) {
+                    host.innerHTML = value;
+                    f.nodes.set('#md dialog', value ? dialog : null);
+                }
+            });
+            assert.match(f.app('wishView()'), /data-act=wask data-id="i1"/);
+            await f.app('ACTIONS.wask')(null, 'i1');
+            assert.match(host.innerHTML, /data-act=wto data-id="i1" data-v=classic/);
+            assert.match(host.innerHTML, /data-act=wto data-id="i1" data-v=platform/);
+        }
+        const transfer = () => f.app('ACTIONS.wto')({ dataset: { v: 'platform' } }, 'i1');
+        transfer();
+        transfer();
+        assert.equal(f.context.profile.levels.length, 1);
+        assert.equal(f.context.profile.levels[0].kind, 'platform');
+        assert.deepEqual(f.wishlist.items, [{ ...before, kind: 'platform' }]);
+        assert.equal(transferred(), true);
+        assert.match(f.app('wishView()'), /class=wadded/);
+        f.context.profile.levels.pop();
+        assert.equal(transferred(), false);
+        assert.match(f.app('wishView()'), /data-act=wto data-id="i1" data-v=platform/);
+    });
 
 test('a delayed completion offer rechecks screen and item after loading the sheet', async () => {
     for (const reason of ['screen', 'removed', 'modal', 'transferred']) {

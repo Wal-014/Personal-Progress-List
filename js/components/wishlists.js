@@ -21,7 +21,9 @@ function wishlistTrigger(w) {
 const wishlistSlot = () => `<div class=slot data-act=wnew role=button tabindex=0>${t('wnew')}</div>`;
 
 function wishlistsIndex() {
-    return `<div class=trigs>${orderedWishlists().map(wishlistTrigger).join('')}${canEdit() ? wishlistSlot() : ''}</div>${profile.wishlists.length ? '' : `<p class=by>${t('noWL')}</p>`}`;
+    if (!profile.wishlists.length)
+        return canEdit() ? emptyList({ icon: ICONS.navWish, title: t('noWL'), text: t('wishlistIndexEmptyText'), action: 'wnew', label: t('palWish') }) : `<p class=by>${t('noWL')}</p>`;
+    return `<div class=trigs>${orderedWishlists().map(wishlistTrigger).join('')}${canEdit() ? wishlistSlot() : ''}</div>`;
 }
 
 /** IDs take precedence over names when both entries have one. */
