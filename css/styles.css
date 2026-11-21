@@ -783,7 +783,7 @@ dialog.modal::backdrop {
   background-image: none;
 }
 
-.list-surface :is(.nm, h2, .mode-switch button, .level-section summary) {
+.list-surface .nm, .list-surface h2, .list-surface .mode-switch button, .list-surface .level-section summary {
   color: inherit;
   font-family: var(--font-display);
   -webkit-text-stroke: 0;
@@ -917,7 +917,7 @@ dialog.modal::backdrop {
 }
 
 .list-surface .lv .nm { color: var(--row-ink); }
-.list-surface .lv :is(.level-creator, .level-date, .grip) { color: var(--row-meta); }
+.list-surface .lv .level-creator, .list-surface .lv .level-date, .list-surface .lv .grip { color: var(--row-meta); }
 
 .level-title {
   display: flex;
@@ -959,7 +959,7 @@ dialog.modal::backdrop {
   overflow: hidden;
 }
 
-.split .lv :is(.nm,.by) {
+.split .lv .nm, .split .lv .by {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1023,7 +1023,7 @@ dialog.modal::backdrop {
   color: var(--color-bg);
   border-color: transparent;
 }
-.lh :is(input, summary, button):focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.lh input:focus-visible, .lh summary:focus-visible, .lh button:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 .lh .ms .msp {
   margin-top: 4px;
   border: 1px solid var(--color-border);
@@ -1879,13 +1879,13 @@ input.ro {
   text-align: start;
 }
 
-#timeline-data :is(th, td) {
+#timeline-data th, #timeline-data td {
   padding: var(--space-4) var(--space-8);
   border-bottom: var(--size-border) solid var(--color-border);
   text-align: start;
 }
 
-#timeline-data :is(th, td):last-child {
+#timeline-data th:last-child, #timeline-data td:last-child {
   text-align: end;
 }
 
@@ -3005,7 +3005,7 @@ input.ro {
   border-color: var(--color-accent);
 }
 
-.hl :is(button, [role=button]):focus-visible {
+.hl button:focus-visible, .hl [role=button]:focus-visible {
   outline: var(--size-focus) solid var(--color-focus);
   outline-offset: var(--size-focus);
 }
@@ -3019,7 +3019,7 @@ input.ro {
   gap: var(--space-32);
 }
 
-.hcontent :is(section, .hpreviews) {
+.hcontent section, .hcontent .hpreviews {
   min-width: 0;
 }
 
@@ -3494,15 +3494,11 @@ body::before {
   background: linear-gradient(115deg, var(--color-accent), color-mix(in srgb, var(--color-secondary-light) 70%, var(--color-accent)));
 }
 
-.hl :is(h1, h2, h3, .nm, .hlead) {
+.hl h1, .hl h2, .hl h3, .hl .nm, .hl .hlead {
   font-family: var(--font-display);
   font-weight: 700;
   color: var(--color-text);
   -webkit-text-stroke: 0;
-}
-
-.hl h1 {
-  font-weight: 800;
 }
 
 .hl button, .hl .by {
@@ -3526,22 +3522,23 @@ body::before {
   font-family: var(--font-display);
 }
 
-.hl :is(.hstats-surface, .hwish-rows, .hcard) {
+.hl .hstats-surface, .hl .hwish-rows, .hl .hcard {
   box-shadow: var(--shadow-panel);
 }
 
-.hl :is(button, [role=button]), .appearance-option {
+.hl button, .hl [role=button], .appearance-option {
   transition: background-color var(--motion-hover) var(--motion-easing), border-color var(--motion-selection) var(--motion-easing), box-shadow var(--motion-selection) var(--motion-easing);
 }
 
-.hl :is(button, [role=button]):hover:not(:disabled):not([aria-disabled=true]), .appearance-option:hover:not(:disabled) {
+.hl button:hover:not(:disabled):not([aria-disabled=true]),
+.hl [role=button]:hover:not(:disabled):not([aria-disabled=true]), .appearance-option:hover:not(:disabled) {
   background-color: var(--color-surface-elevated);
   border-color: var(--color-accent);
   filter: none;
   transform: none;
 }
 
-.hl :is(button, [role=button]):active:not(:disabled), .appearance-option:active:not(:disabled) {
+.hl button:active:not(:disabled), .hl [role=button]:active:not(:disabled), .appearance-option:active:not(:disabled) {
   background-color: var(--color-bg);
   transform: none;
 }
@@ -3551,7 +3548,9 @@ body::before {
   box-shadow: inset 0 0 12px color-mix(in srgb, var(--color-accent) 12%, transparent);
 }
 
-.hl :is(:disabled, [aria-disabled=true]), .appearance-option:disabled {
+.hl button:disabled, .hl fieldset:disabled, .hl input:disabled, .hl optgroup:disabled,
+.hl option:disabled, .hl select:disabled, .hl textarea:disabled,
+.hl [aria-disabled=true], .appearance-option:disabled {
   opacity: .55;
   box-shadow: none;
   filter: none;
@@ -3664,14 +3663,16 @@ body::before {
     display: none;
   }
 
-  .hl, .hl :is(button, [role=button], .hcard-body, .hcard-top, .hwish-rows, .hstats-surface), .appearance-option {
+  .hl, .hl button, .hl [role=button], .hl :where(button).hadd, .hl :where(button).htext,
+  .hl :where(button).slot, .hl :where(button).trig, .hl .hcard-body, .hl .hcard-top,
+  .hl .hwish-rows, .hl .hstats-surface, .appearance-option {
     background: Canvas;
     color: CanvasText;
     border-color: ButtonText;
     box-shadow: none;
   }
 
-  .hl :is(h1, h2, h3, .nm, .hlead, .hcard-copy), .hl .hcard-copy h3 {
+  .hl h1, .hl h2, .hl h3, .hl .nm, .hl .hlead, .hl .hcard-copy, .hl .hcard-copy h3 {
     color: CanvasText;
   }
 
@@ -4071,12 +4072,15 @@ main.home {
 
   /* A single bright ink for labels; the metallic bands belong to the icons. */
   :root:not([data-theme=porcelain]) :is(.shell-nav, .shell-footer, .page-title, .shell-identity) > button > span,
-  :root:not([data-theme=porcelain]) :is(.hl .hadd, .hl .htext, .mode-switch button:not([aria-pressed=true])) {
+  :root:not([data-theme=porcelain]) .hl .hadd,
+  :root:not([data-theme=porcelain]) .hl .htext,
+  :root:not([data-theme=porcelain]) .mode-switch button:not([aria-pressed=true]) {
     color: color-mix(in srgb, var(--color-text) 92%, white);
     text-shadow: 0 0 3px color-mix(in srgb, var(--color-accent) 21%, transparent);
   }
 
-  :root:not([data-theme=porcelain]) :is(.page-title, .lh, .wa, .wseg, .gdseg, .zoom, .compare-panel, .dgb) :is(button, summary):not(:disabled) {
+  :root:not([data-theme=porcelain]) :is(.page-title, .lh, .wa, .wseg, .gdseg, .zoom, .compare-panel, .dgb) button:not(:disabled),
+  :root:not([data-theme=porcelain]) :is(.page-title, .lh, .wa, .wseg, .gdseg, .zoom, .compare-panel, .dgb) summary:not(:disabled) {
     text-shadow: 0 0 3px color-mix(in srgb, var(--color-accent) 21%, transparent);
   }
   :is(.shell-nav, .shell-footer) > button:not([aria-current=page]) {
@@ -4099,7 +4103,9 @@ main.home {
   font-family: var(--font-ui);
 }
 
-:is(.list-surface, .legacy-surface, .modal) :is(h2, h3, legend, .nm, .stat-position) {
+:is(.list-surface, .legacy-surface, .modal) h2, :is(.list-surface, .legacy-surface, .modal) h3,
+:is(.list-surface, .legacy-surface, .modal) legend, :is(.list-surface, .legacy-surface, .modal) .nm,
+:is(.list-surface, .legacy-surface, .modal) .stat-position {
   font-family: var(--font-display);
   font-weight: 700;
   color: var(--color-text);
@@ -4107,16 +4113,20 @@ main.home {
   text-shadow: none;
 }
 
-:is(.list-surface, .legacy-surface, .modal) :is(.box, .stat-card, .wi, .wi .by) {
+:is(.list-surface, .legacy-surface, .modal) .box, :is(.list-surface, .legacy-surface, .modal) .stat-card,
+:is(.list-surface, .legacy-surface, .modal) .wi, :is(.list-surface, .legacy-surface, .modal) .wi .by {
   text-shadow: none;
 }
 
-:is(.list-surface, .legacy-surface, .modal) :is(.by, .meta, label, .lab, .mh, .hb, .st small, .kpi small) {
+:is(.list-surface, .legacy-surface, .modal) .by, :is(.list-surface, .legacy-surface, .modal) .meta,
+:is(.list-surface, .legacy-surface, .modal) label, :is(.list-surface, .legacy-surface, .modal) .lab,
+:is(.list-surface, .legacy-surface, .modal) .mh, :is(.list-surface, .legacy-surface, .modal) .hb,
+:is(.list-surface, .legacy-surface, .modal) :is(.st, .kpi) small {
   font-family: var(--font-ui);
   color: var(--color-text-muted);
 }
 
-:is(.list-surface, .legacy-surface, .modal) :is(.st b, .mh b, .kpi b) {
+:is(.list-surface, .legacy-surface, .modal) :is(.st, .mh, .kpi) b {
   font-family: var(--font-ui);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -4131,16 +4141,20 @@ main.home {
 .list-surface .level-section .st { background: var(--color-surface); }
 [data-theme=porcelain] .level-section .st.big { border-inline-start: 3px solid var(--rank-1); }
 [data-theme=porcelain] .level-section .st.big b { color: var(--color-text); }
-.legacy-surface :is(.well, .kpi, .trig, .wi, .stat-card) { border-radius: var(--radius-card); }
+.legacy-surface .well, .legacy-surface .kpi, .legacy-surface .trig,
+.legacy-surface .wi, .legacy-surface .stat-card { border-radius: var(--radius-card); }
 .legacy-surface .stat-card { background: var(--color-surface); }
-.legacy-surface :is(.wi, .stat-card, .compare-panel), .modal .obj { border-width: var(--size-border); }
+.legacy-surface .wi, .legacy-surface .stat-card, .legacy-surface .compare-panel, .modal .obj { border-width: var(--size-border); }
 .legacy-surface .compare-panel { border-color: var(--color-border); }
-:is(.list-surface, .legacy-surface, .modal) :is(.meter, .pb, .hb .tr) {
+:is(.list-surface, .legacy-surface, .modal) .meter, :is(.list-surface, .legacy-surface, .modal) .pb,
+:is(.list-surface, .legacy-surface, .modal) .hb .tr {
   background: var(--color-surface-elevated);
   border: var(--size-border) solid var(--color-border);
 }
 
-:is(.modal, .legacy-surface, .list-surface) :is(input, textarea, select):not([type=checkbox], [type=radio], [type=color], [type=range]) {
+:is(.modal, .legacy-surface, .list-surface) input:not([type=checkbox], [type=radio], [type=color], [type=range]),
+:is(.modal, .legacy-surface, .list-surface) textarea:not([type=checkbox], [type=radio], [type=color], [type=range]),
+:is(.modal, .legacy-surface, .list-surface) select:not([type=checkbox], [type=radio], [type=color], [type=range]) {
   font: 500 1rem/1.35 var(--font-ui);
   color: var(--color-text);
   background: var(--color-surface);
@@ -4148,8 +4162,11 @@ main.home {
   border-radius: var(--radius-control);
   box-shadow: none;
 }
-:is(.modal, .legacy-surface, .list-surface) :is(input, textarea)::placeholder { color: var(--color-text-muted); opacity: 1; }
-:is(.modal, .legacy-surface, .list-surface) :is(input, select, textarea):is(:user-invalid, [aria-invalid=true]) {
+:is(.modal, .legacy-surface, .list-surface) input::placeholder,
+:is(.modal, .legacy-surface, .list-surface) textarea::placeholder { color: var(--color-text-muted); opacity: 1; }
+:is(.modal, .legacy-surface, .list-surface) input:is(:user-invalid, [aria-invalid=true]),
+:is(.modal, .legacy-surface, .list-surface) select:is(:user-invalid, [aria-invalid=true]),
+:is(.modal, .legacy-surface, .list-surface) textarea:is(:user-invalid, [aria-invalid=true]) {
   outline: 2px solid var(--color-error);
 }
 
@@ -4166,7 +4183,9 @@ main.home {
   -webkit-text-stroke: 0;
 }
 :is(.modal, .list-surface .rcol) .ms summary, .modal button:where(:not(.profile-swatch, .chip)) { min-height: var(--size-control); }
-:is(.modal, .legacy-surface, .rcol) :where(button):is(.pri, .go, .blue) {
+:is(.modal, .legacy-surface, .rcol) :where(button).pri,
+:is(.modal, .legacy-surface, .rcol) :where(button).go,
+:is(.modal, .legacy-surface, .rcol) :where(button).blue {
   color: var(--color-bg);
   background-color: var(--color-accent);
 }
@@ -4231,21 +4250,28 @@ input[type=checkbox]:checked::after {
   input[type=checkbox]:checked::after { content: none; }
 }
 
-:is(.modal, .list-surface) .gdc :is(.nm, .by) { color: var(--color-card-text); }
-.modal .box :is(input, select, textarea, button, summary):focus-visible {
+:is(.modal, .list-surface) .gdc .nm, :is(.modal, .list-surface) .gdc .by { color: var(--color-card-text); }
+.modal .box input:focus-visible, .modal .box select:focus-visible, .modal .box textarea:focus-visible,
+.modal .box button:focus-visible, .modal .box summary:focus-visible {
   outline: var(--size-focus) solid var(--color-focus);
   outline-offset: 2px;
 }
 
 /* A single hairline follows the existing radius. Layered backgrounds also work on inputs. */
 @media (forced-colors: none) {
-  :root :is(.shell-brand-frame, .hl .hcard, .hl .hstats-surface, .hl .hwish-rows,
-    .shell-sidebar .profile-pill, .shell-nav > button[aria-current=page], .page-title button,
-    .hl .hadd, .lh #q, .lh .ms summary, .lh .list-clear, .lh .list-add, .list-selection button,
-    .list-surface .rcol .box, .legacy-surface :is(.well, .wh, .kpi),
-    .trigs .trig, .modal .box, .dgb button, .wa button, .empty .pri, .pause .appearance-option,
-    input:where(:not([type]), [type=text], [type=number], [type=search], [type=email], [type=password], [type=url], [type=date]), textarea,
-    .num button, [data-act=gdgo], button.dg, [data-act=dthremove], [data-act=localdelete], [data-act=compare-toggle]) {
+  /* Scope the rim to the app and dialogs so it wins over component and interaction backgrounds. */
+  #app .shell-brand-frame, #app .hl .hcard, #app .hl .hstats-surface, #app .hl .hwish-rows,
+  #app .shell-sidebar .profile-pill, #app .shell-nav > button[aria-current=page],
+  #app .hl .hadd, .lh #q, #app .lh .ms summary, #app .lh .list-clear, #app .lh .list-add,
+  #app .list-surface .rcol .box, #app .legacy-surface .well, #app .legacy-surface .wh, #app .legacy-surface .kpi,
+  #app .trigs .trig, #app .empty .pri, #md .pause .appearance-option,
+  :is(#md > dialog.modal, body > dialog.modal) .box,
+  :is(#app, dialog.modal) input:where(:not([type]), [type=text], [type=number], [type=search], [type=email], [type=password], [type=url], [type=date]),
+  :is(#app, dialog.modal) textarea, #app :is(.page-title, .list-selection, .wa) button,
+  :is(#app, dialog.modal) :is(.dgb, .num) button,
+  :is(#app, dialog.modal) [data-act=gdgo], :is(#app, dialog.modal) button.dg,
+  :is(#app, dialog.modal) [data-act=dthremove], :is(#app, dialog.modal) [data-act=localdelete],
+  #app [data-act=compare-toggle] {
     --rim-paint: linear-gradient(var(--rim-angle, 125deg), var(--metal-edge) 3%, var(--metal-glint) 13%,
       var(--metal-edge) 27%, var(--metal-shade) 46%, var(--metal-glint) 55%,
       var(--metal-edge) 74%, var(--metal-glint) 93%);
@@ -4254,13 +4280,32 @@ input[type=checkbox]:checked::after {
       linear-gradient(var(--rim-fill, var(--color-surface)), var(--rim-fill, var(--color-surface))) padding-box,
       var(--rim-paint) border-box;
     box-shadow: none;
+  }
 
-    &:where([data-theme=porcelain] *) {
-      --rim-paint: linear-gradient(145deg, var(--metal-glint), var(--metal-edge) 42%, var(--metal-shade) 92%);
-      background:
-        linear-gradient(148deg, var(--rim-fill, var(--satin-light)), var(--rim-fill, var(--satin-base))) padding-box,
-        var(--rim-paint) border-box;
-    }
+  /* Keep this list in step with the one above. A nested `&` would turn the selector back into :is(),
+     which the browser tests against every element. */
+  :where([data-theme=porcelain]) #app .shell-brand-frame, :where([data-theme=porcelain]) #app .hl .hcard,
+  :where([data-theme=porcelain]) #app .hl .hstats-surface, :where([data-theme=porcelain]) #app .hl .hwish-rows,
+  :where([data-theme=porcelain]) #app .shell-sidebar .profile-pill,
+  :where([data-theme=porcelain]) #app .shell-nav > button[aria-current=page], :where([data-theme=porcelain]) #app .hl .hadd,
+  :where([data-theme=porcelain]) .lh #q, :where([data-theme=porcelain]) #app .lh .ms summary,
+  :where([data-theme=porcelain]) #app .lh .list-clear, :where([data-theme=porcelain]) #app .lh .list-add,
+  :where([data-theme=porcelain]) #app .list-surface .rcol .box, :where([data-theme=porcelain]) #app .legacy-surface .well,
+  :where([data-theme=porcelain]) #app .legacy-surface .wh, :where([data-theme=porcelain]) #app .legacy-surface .kpi,
+  :where([data-theme=porcelain]) #app .trigs .trig, :where([data-theme=porcelain]) #app .empty .pri,
+  :where([data-theme=porcelain]) #md .pause .appearance-option,
+  :where([data-theme=porcelain]) :is(#md > dialog.modal, body > dialog.modal) .box,
+  :where([data-theme=porcelain]) :is(#app, dialog.modal) input:where(:not([type]), [type=text], [type=number], [type=search], [type=email], [type=password], [type=url], [type=date]),
+  :where([data-theme=porcelain]) :is(#app, dialog.modal) textarea,
+  :where([data-theme=porcelain]) #app :is(.page-title, .list-selection, .wa) button,
+  :where([data-theme=porcelain]) :is(#app, dialog.modal) :is(.dgb, .num) button,
+  :where([data-theme=porcelain]) :is(#app, dialog.modal) [data-act=gdgo], :where([data-theme=porcelain]) :is(#app, dialog.modal) button.dg,
+  :where([data-theme=porcelain]) :is(#app, dialog.modal) [data-act=dthremove],
+  :where([data-theme=porcelain]) :is(#app, dialog.modal) [data-act=localdelete], :where([data-theme=porcelain]) #app [data-act=compare-toggle] {
+    --rim-paint: linear-gradient(145deg, var(--metal-glint), var(--metal-edge) 42%, var(--metal-shade) 92%);
+    background:
+      linear-gradient(148deg, var(--rim-fill, var(--satin-light)), var(--rim-fill, var(--satin-base))) padding-box,
+      var(--rim-paint) border-box;
   }
 
   .hl .hcard-platform {
@@ -4268,12 +4313,16 @@ input[type=checkbox]:checked::after {
     --metal-shade: #538a99;
     --metal-glint: #e6faff;
   }
-  [data-theme=porcelain] :is(.hwish-rows, .hstats-surface, .trigs .trig, .list-surface .rcol .box, .legacy-surface :is(.well, .wh, .kpi)) {
+  [data-theme=porcelain] .hwish-rows, [data-theme=porcelain] .hstats-surface, [data-theme=porcelain] .trigs .trig,
+  [data-theme=porcelain] .list-surface .rcol .box, [data-theme=porcelain] .legacy-surface .well,
+  [data-theme=porcelain] .legacy-surface .wh, [data-theme=porcelain] .legacy-surface .kpi {
     --metal-edge: color-mix(in srgb, var(--color-accent) 38%, var(--color-surface));
     --metal-glint: color-mix(in srgb, var(--color-accent) 9%, var(--color-surface));
     --metal-shade: color-mix(in srgb, var(--color-accent) 60%, var(--color-surface));
   }
-  [data-theme=porcelain] :is(.hl .hcard, .hwish-rows, .hstats-surface, .trigs .trig, .list-surface .rcol .box, .legacy-surface :is(.well, .wh, .kpi)) {
+  [data-theme=porcelain] .hl .hcard, [data-theme=porcelain] .hwish-rows, [data-theme=porcelain] .hstats-surface,
+  [data-theme=porcelain] .trigs .trig, [data-theme=porcelain] .list-surface .rcol .box,
+  [data-theme=porcelain] .legacy-surface .well, [data-theme=porcelain] .legacy-surface .wh, [data-theme=porcelain] .legacy-surface .kpi {
     --satin-light: color-mix(in srgb, var(--metal-edge) 7%, var(--color-surface));
     --satin-base: color-mix(in srgb, var(--metal-edge) 19%, var(--color-surface));
   }
@@ -4295,7 +4344,7 @@ input[type=checkbox]:checked::after {
   :is(.dgb, .wa) button { color: var(--color-text); text-shadow: none; -webkit-text-stroke: 0; }
   .dgb button.pri, .wa button.pri { color: var(--color-bg); }
   .dgb button.dg, .wa button.dg { --rim-fill: var(--color-error); color: var(--color-bg); }
-  :is(.hl .hadd, .lh .list-add, .wa button[data-act=wadd], .empty .pri) {
+  .hl .hadd, .lh .list-add, .wa button[data-act=wadd], .empty .pri {
     --metal-edge: var(--action-edge);
     --metal-glint: var(--action-glint);
     --metal-shade: var(--action-shade);
@@ -4314,8 +4363,10 @@ input[type=checkbox]:checked::after {
     --rim-fill: color-mix(in srgb, var(--color-accent) 18%, var(--color-surface));
     --metal-edge: var(--color-accent);
   }
-  [data-theme=porcelain] :is(.hl .hadd, .lh summary, .lh .list-clear, .lh .list-add, .pause .appearance-option,
-    input:where(:not([type]), [type=text], [type=number], [type=search], [type=email], [type=password], [type=url], [type=date], [type=checkbox]), textarea) {
+  [data-theme=porcelain] .hl .hadd, [data-theme=porcelain] .lh summary, [data-theme=porcelain] .lh .list-clear,
+  [data-theme=porcelain] .lh .list-add, [data-theme=porcelain] .pause .appearance-option,
+  [data-theme=porcelain] input:where(:not([type]), [type=text], [type=number], [type=search], [type=email], [type=password], [type=url], [type=date], [type=checkbox]),
+  [data-theme=porcelain] textarea {
     --metal-edge: var(--color-control-edge);
     --metal-glint: var(--color-control-edge);
     --metal-shade: var(--color-text-muted);
@@ -4326,7 +4377,8 @@ input[type=checkbox]:checked::after {
     --metal-shade: var(--color-focus);
   }
 
-  :is(.hcard, .hadd, .profile-pill, .appearance-option, .lh summary, .dgb button, .wa button):hover {
+  .hcard:hover, .hadd:hover, .profile-pill:hover, .appearance-option:hover,
+  .lh summary:hover, :is(.dgb, .wa) button:hover {
     --rim-angle: 140deg;
   }
   .hl .hcard:hover:not(:disabled):not([aria-disabled=true]), .hl .hadd:hover:not(:disabled):not([aria-disabled=true]) {
@@ -4336,14 +4388,14 @@ input[type=checkbox]:checked::after {
   /* Reflect the local edge color into the surface. The first mask picks out
      the polished stretches; the four edge masks fade them toward the center. */
   @supports (mask-composite: intersect) {
-    :is(.hl .hcard, .hl .hadd, .profile-pill, .shell-nav > button[aria-current=page],
-      .page-title button, .lh .ms summary, .lh .list-clear, .lh .list-add,
-      .trigs .trig, .dgb button, .wa button, .pause .appearance-option) {
+    .hl .hcard, .hl .hadd, .profile-pill, .shell-nav > button[aria-current=page],
+    :is(.page-title, .dgb, .wa) button, .lh .ms summary, .lh .list-clear, .lh .list-add,
+    .trigs .trig, .pause .appearance-option {
       position: relative;
     }
-    :is(.hl .hcard, .hl .hadd, .profile-pill, .shell-nav > button[aria-current=page],
-      .page-title button, .lh .ms summary, .lh .list-clear, .lh .list-add,
-      .trigs .trig, .dgb button, .wa button, .pause .appearance-option)::before {
+    .hl .hcard::before, .hl .hadd::before, .profile-pill::before, .shell-nav > button[aria-current=page]::before,
+    :is(.page-title, .dgb, .wa) button::before, .lh .ms summary::before, .lh .list-clear::before, .lh .list-add::before,
+    .trigs .trig::before, .pause .appearance-option::before {
       content: '';
       position: absolute;
       inset: 0;
@@ -4361,7 +4413,9 @@ input[type=checkbox]:checked::after {
       mask-composite: intersect, add, add, add;
     }
     .hl .hcard { --reflection-depth: 8px; }
-    [data-theme=porcelain] :is(.hcard, button, .ms summary, .trig)::before {
+    [data-theme=porcelain] .hcard::before, [data-theme=porcelain] button::before,
+    [data-theme=porcelain] button:is(.hadd, .list-clear, .list-add, .appearance-option, [aria-current=page])::before,
+    [data-theme=porcelain] .ms summary::before, [data-theme=porcelain] .trig::before {
       --reflection-depth: 3px;
       opacity: .54;
       background: linear-gradient(145deg, var(--metal-edge), var(--metal-glint) 34%, transparent 70%);
@@ -4393,7 +4447,8 @@ input[type=checkbox]:checked::after {
   }
 
   @supports (background-clip: text) {
-    :root :is(.shell-brand h1, .page-title h2, .hsection-head h2, .list-surface .box > h2, .legacy-surface .well h2) {
+    :root .shell-brand h1, :root :is(.page-title, .hsection-head) h2,
+    :root .list-surface .box > h2, :root .legacy-surface .well h2 {
       color: transparent;
       background: linear-gradient(175deg, var(--color-text) 15%, color-mix(in srgb, var(--color-text) 76%, var(--metal-edge)) 54%, var(--color-text) 82%);
       background-clip: text;
@@ -4583,14 +4638,15 @@ input[type=checkbox]:checked::after {
 
 /* Compact fields and a separate row for the optional search filters. */
 .gdf > .gdseg { flex-basis: 100%; }
-:is(.modal, .list-surface .rcol) .gdf :is(.gdseg button, .ms summary) {
+:is(.modal, .list-surface .rcol) .gdf .gdseg button, :is(.modal, .list-surface .rcol) .gdf .ms summary {
   min-height: 34px;
   padding: 6px 10px;
   line-height: 20px;
   border-width: 1px;
 }
 @media (pointer: coarse) {
-  :is(.modal, .list-surface .rcol) .gdf :is(.gdseg button, .ms summary) { min-height: 44px; }
+  :is(.modal, .list-surface .rcol) .gdf .gdseg button,
+  :is(.modal, .list-surface .rcol) .gdf .ms summary { min-height: 44px; }
 }
 #fm .duration { grid-column: auto; }
 .duration-parts { grid-template-columns: minmax(0, 6.5ch) auto minmax(0, 4ch) auto minmax(0, 4ch); justify-content: start; }
@@ -4627,11 +4683,11 @@ input[type=checkbox]:checked::after {
 }
 
 @media (forced-colors: none) {
-  :root :is(.num button, [data-act=gdgo], .dgb [data-act=edit], [data-act=compare-toggle]) {
+  :root .num button, :root [data-act=gdgo], :root .dgb [data-act=edit], :root [data-act=compare-toggle] {
     --rim-fill: var(--color-accent);
     color: var(--color-bg);
   }
-  :root :is(button.dg, [data-act=dthremove], [data-act=localdelete]) {
+  :root button.dg, :root [data-act=dthremove], :root [data-act=localdelete] {
     --metal-edge: var(--color-error);
     --metal-glint: color-mix(in srgb, var(--color-error) 45%, white);
     --metal-shade: color-mix(in srgb, var(--color-error) 72%, var(--color-bg));
@@ -4675,7 +4731,7 @@ input[type=checkbox]:checked::after {
 .legacy-surface .well.d .hb i { background: linear-gradient(90deg, var(--color-secondary-light), var(--color-accent)); }
 
 .ranking-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; }
-.ranking-controls :is(.gdseg, .ranking-order) {
+.ranking-controls .gdseg, .ranking-controls .ranking-order {
   grid-column: 1;
   display: flex;
   flex-wrap: wrap;
@@ -4684,7 +4740,7 @@ input[type=checkbox]:checked::after {
   padding-inline-start: 6rem;
   position: relative;
 }
-.ranking-controls :is(.gdseg, .ranking-order)::before {
+.ranking-controls .gdseg::before, .ranking-controls .ranking-order::before {
   content: attr(aria-label);
   position: absolute;
   inset-inline-start: 0;
@@ -4718,18 +4774,18 @@ input[type=checkbox]:checked::after {
 .compare-value { font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) {
   .ranking-controls { grid-template-columns: 1fr; }
-  .ranking-controls :is(.gdseg, .ranking-order) { padding-inline-start: 5rem; }
+  .ranking-controls .gdseg, .ranking-controls .ranking-order { padding-inline-start: 5rem; }
   .ranking-controls [data-act=compare-toggle] { grid-column: 1; grid-row: auto; justify-self: start; }
   .compare-selection { grid-template-columns: minmax(0, 1fr) auto; }
   .compare-selection .face { display: none; }
 }
 @media (prefers-reduced-motion: no-preference) {
-  :is(.wi, .trig, .stat-card, .chip, .mode-switch button, .list-choices button, .gdf button, .gdf summary) {
+  .wi, .trig, .stat-card, .chip, :is(.mode-switch, .list-choices, .gdf) button, .gdf summary {
     transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
   }
   .compare-picker:focus-within .compare-options { animation: dropdown-enter 150ms ease-out; }
   @media (hover: hover) {
-    :is(.wi, .trig, .stat-card):hover { border-color: var(--color-accent); }
+    .wi:hover, .trig:hover, .stat-card:hover { border-color: var(--color-accent); }
   }
 }
 
@@ -4781,7 +4837,7 @@ input[type=checkbox]:checked::after {
 @media (prefers-reduced-motion: no-preference) {
   .mode-enter { --enter-x: -8px; --pill-start: 100%; }
   .mode-enter:has([data-v=platform][aria-pressed=true]) { --enter-x: 8px; --pill-start: 0%; }
-  .mode-enter :is(#lw, .rcol) { animation: list-arrive 190ms ease-out; }
+  .mode-enter #lw, .mode-enter .rcol { animation: list-arrive 190ms ease-out; }
   .mode-enter .mode-switch::before { animation: pill-arrive 210ms var(--motion-easing); }
 }
 
@@ -4838,8 +4894,8 @@ input[type=checkbox]:checked::after {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
 }
-.shell-main > :is(.list-surface, .legacy-surface), .list-surface .split > * { min-height: 0; }
-.shell-main > .legacy-surface, .list-surface :is(#lw, .rcol), .legacy-surface > .wl {
+.shell-main > .list-surface, .shell-main > .legacy-surface, .list-surface .split > * { min-height: 0; }
+.shell-main > .legacy-surface, .list-surface #lw, .list-surface .rcol, .legacy-surface > .wl {
   overflow: auto;
   overscroll-behavior: contain;
 }
@@ -4858,14 +4914,14 @@ input[type=checkbox]:checked::after {
   grid-template-rows: auto auto auto minmax(0, 1fr);
 }
 .list-surface .mode-switch { justify-self: start; }
-.list-surface :is(#lw, .rcol) { position: static; max-height: none; }
+.list-surface #lw, .list-surface .rcol { position: static; max-height: none; }
 @media (max-width: 900px) {
   .list-surface .split:has(.rcol.has) .lcol { display: none; }
 }
 @media (max-height: 640px) {
   .shell-content:has(.list-surface, .legacy-surface) .shell-header { min-height: 48px; padding-block: 3px; }
   .shell-main:has(.list-surface, .legacy-surface) { padding-block: var(--space-4); }
-  .shell-main .page-title, .list-surface :is(.mode-switch, .lh) { margin-bottom: var(--space-4); }
+  .shell-main .page-title, .list-surface .mode-switch, .list-surface .lh { margin-bottom: var(--space-4); }
 }
 @media (min-width: 600px) and (max-height: 640px) {
   .lh .list-search { flex-basis: 160px; }
