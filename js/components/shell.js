@@ -95,6 +95,6 @@ function pauseUI() {
 <h3 id=background-design>${t('background')}</h3><div class=appearance-options role=group aria-labelledby=background-design>${BACKGROUNDS.map(bg).join('')}</div>
 <h3>${t('lang')}</h3><div class=lang>${[['es', 'Español'], ['en', 'English']].map(lang).join('')}</div>
 <nav class=legal>${['terms', 'privacy', 'credits'].map(k => `<a class=lk data-act=legal data-v=${k} role=button tabindex=0>${t(k)}</a>`).join(' · ')}</nav>
-<p class=by>© ${new Date().getFullYear()} Retlaw · ${t('rights')} · v1.0.0</p>
+<p class=by>© ${new Date().getFullYear()} Retlaw · ${t('rights')} · v.Beta_0.1</p>
 <p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
 }

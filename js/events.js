@@ -452,7 +452,15 @@ document.body.onsubmit = e => {
     else
         saveLevel(e.target);
 };
+document.addEventListener('scroll', e => {
+    const pane = e.target;
+    if (pane.matches?.('#lw, .shell-main > .legacy-surface, .legacy-surface > .wl'))
+        pane.classList.toggle('scrolled-edge', pane.scrollTop > 0);
+}, { capture: true, passive: true });
+
 document.body.oninput = e => {
+    if (e.target.dataset.tc != null || e.target.id == 'nc')
+        e.target.parentElement.style.setProperty('--tag-color', e.target.value);
     if (e.target.dataset.deathField != null)
         return deathInputChanged(e.target);
     if (['pf', 'pwf'].includes(e.target.form?.id))

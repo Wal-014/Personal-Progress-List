@@ -69,7 +69,7 @@ for (const publicView of [false, true]) {
             [{ tN: 0 }, ['Total time', 'Normal time', '0h 0m 0s'], ['Practice time', 'Copy or StartPos playtime']],
             [{ tP: 60 }, ['Total time', 'Practice time', '0h 1m 0s'], ['Normal time', 'Copy or StartPos playtime']],
             [{ tPC: 5 }, ['Total time', 'Copy or StartPos playtime', '0h 0m 5s'], ['Normal time', 'Practice time']],
-            [{ date: '2026-01-02' }, ['Completion date', '02/01/2026'], ['class=yt', 'Video (YouTube)']],
+            [{ date: '2026-01-02' }, ['Completion date', '02/01/2026'], ['class=yt', 'Video link']],
             [{ link: 'https://example.com/video' }, ['href="https://example.com/video"'], ['Completion date', 'class=grid']],
             [{ enj: 0 }, ['Enjoyment'], ['Level appeal']],
             [{ lik: 3.5 }, ['Level appeal'], ['Enjoyment']],
@@ -124,7 +124,7 @@ for (const url of [
     });
 
 test('youtubeId returns undefined for a non-YouTube link or an incomplete ID', () => {
-    for (const url of ['https://example.com/video', 'https://youtu.be/short', '', undefined])
+    for (const url of ['https://medal.tv/clips/example?v=Ab_12-cDef3', 'https://www.twitch.tv/videos/123', 'https://example.com/video', 'https://youtu.be/short', '', undefined])
         assert.equal(app('youtubeId')(url), undefined);
 });
 

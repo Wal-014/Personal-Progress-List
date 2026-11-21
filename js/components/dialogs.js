@@ -89,11 +89,16 @@ function bindCubeCatalog(dialog, selected) {
         catalog.querySelector('[data-page="-1"]').disabled = page == 0;
         catalog.querySelector('[data-page="1"]').disabled = end == CUBE_COUNT;
     };
-    catalog.ontoggle = () => { if (catalog.open) draw(); };
+    const toggle = catalog.querySelector('[aria-controls]'), optionsPanel = catalog.querySelector('#cube-options');
     catalog.onclick = event => {
         const button = event.target.closest('button');
         if (!button) return;
-        if (button.dataset.page) {
+        if (button == toggle) {
+            optionsPanel.hidden = !optionsPanel.hidden;
+            toggle.setAttribute('aria-expanded', String(!optionsPanel.hidden));
+            if (!optionsPanel.hidden) draw();
+        }
+        else if (button.dataset.page) {
             page += Number(button.dataset.page);
             draw();
             if (button.disabled) catalog.querySelector('.cube-grid button').focus();
@@ -102,10 +107,10 @@ function bindCubeCatalog(dialog, selected) {
             selected.cubeId = Number(button.dataset.cube);
             catalog.querySelectorAll('[data-cube]').forEach(tile => tile.setAttribute('aria-pressed', String(tile == button)));
             dialog.querySelector('.profile-preview').innerHTML = profilePreview(selected);
-            catalog.querySelector('summary span').textContent = selected.cubeId;
+            toggle.querySelector('span').textContent = selected.cubeId;
         }
     };
-    return () => { if (catalog.open) draw(); };
+    return () => { if (!optionsPanel.hidden) draw(); };
 }
 
 function profileColorFields(selected) {
@@ -132,7 +137,7 @@ function bindProfileColors(root, selected, onChange) {
 /** Asks for a profile name and colours, sharing the prompt's validation and keyboard handling. */
 function askProfile(title, { name, color, secondaryColor, cubeId }) {
     const selected = { cubeId: validCubeId(cubeId) ? cubeId : 2, color: isHexColor(color) ? color : PROFILE_COLORS[0], secondaryColor: isHexColor(secondaryColor) ? secondaryColor : DEFAULT_SECONDARY_COLOR };
-    return showDialog({ title, input: 1, def: name, label: t('pname'), extra: profileColorFields(selected) + `<details class=cube-catalog><summary>${t('cube')} <span>${selected.cubeId}</span></summary><div class=cube-pager><button type=button data-page="-1" aria-label="${t('previousPage')}">&lsaquo;</button><output></output><button type=button data-page="1" aria-label="${t('nextPage')}">&rsaquo;</button></div><div class=cube-grid></div></details>`, enhance: m => {
+    return showDialog({ title, ok: t('save'), input: 1, def: name, label: t('pname'), extra: profileColorFields(selected) + `<div class=cube-catalog><button type=button aria-controls=cube-options aria-expanded=false>${t('selectIcon')} <span>${selected.cubeId}</span>${ICONS.chevronDown}</button><div id=cube-options hidden><div class=cube-pager><button type=button data-page="-1" aria-label="${t('previousPage')}">&lsaquo;</button><output></output><button type=button data-page="1" aria-label="${t('nextPage')}">&rsaquo;</button></div><div class=cube-grid></div></div></div>`, enhance: m => {
         bindProfileColors(m, selected, bindCubeCatalog(m, selected));
         return name => ({ name, ...selected });
     } });
@@ -161,7 +166,15 @@ const closeModal = () => {
 };
 
 function tagsUI() {
-    return `<div class=box><h2>${ICONS.tag} ${t('tagsT')}</h2>${profile.tags.map((g, i) => `<p class=trow><input type=color data-tc=${i} value="${escapeHtml(g.color)}" aria-label="${t('color')} · ${escapeHtml(g.name)}"><input data-tn=${i} value="${escapeHtml(g.name)}" aria-label="${t('name')}"${g.name == PRE_TAG ? ' aria-describedby=tg-pre' : ''}><button class="xs dg" data-act=tdel data-i=${i} aria-label="${t('del')} · ${escapeHtml(g.name)}">${ICONS.del}</button></p>${g.name == PRE_TAG ? `<small id=tg-pre class=by style="display:block;margin:-4px 0 8px 54px">${t('preTagHint')}</small>` : ''}`).join('')}<p class=trow><input type=color id=nc value="#00e5ff" aria-label="${t('color')}"><input id=nn placeholder="${t('newTag')}" aria-label="${t('newTag')}"><button class=pri data-act=tadd>${t('add')}</button></p><p class=dgb><button data-act=close>${t('close')}</button></p></div>`;
+    const row = (tag, index) => {
+        const existing = index != null, name = escapeHtml(tag.name), color = isHexColor(tag.color) ? tag.color : '#947bd2';
+        const colorLabel = t('color') + (existing ? ' &middot; ' + name : '');
+        const reserved = existing && tag.name == PRE_TAG;
+        return `<div class=trow><label class="tag-swatch chip" style="--tag-color:${color}" title="${colorLabel}">${t('color')}<input type=color ${existing ? 'data-tc=' + index : 'id=nc'} value="${color}" aria-label="${colorLabel}"></label>
+<input ${existing ? 'data-tn=' + index : 'id=nn'} value="${name}" placeholder="${t('newTag')}" aria-label="${t(existing ? 'name' : 'newTag')}"${reserved ? ' aria-describedby=tg-pre' : ''}>
+${existing ? `<button class="xs dg" data-act=tdel data-i=${index} aria-label="${t('del')} &middot; ${name}">${ICONS.listClear}</button>` : `<button class=pri data-act=tadd>${t('add')}</button>`}</div>${reserved ? `<small id=tg-pre class=by>${t('preTagHint')}</small>` : ''}`;
+    };
+    return `<div class="box tag-manager"><h2>${ICONS.navTags} ${t('tagsT')}</h2>${profile.tags.map(row).join('')}${row({ name: '' })}<p class=dgb><button data-act=close>${t('close')}</button></p></div>`;
 }
 
 let toastTimer = null;

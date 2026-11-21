@@ -112,6 +112,8 @@ function list() {
 }
 
 function youtubeId(url) {
+    if (!/^https?:\/\/(?:(?:www\.|m\.)?youtube\.com|youtu\.be)\//i.test(url))
+        return;
     return (/(?:v=|youtu\.be\/|shorts\/|embed\/)([\w-]{11})/.exec(url) || [])[1];
 }
 
