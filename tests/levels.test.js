@@ -178,7 +178,7 @@ test('detail renders keyboard-accessible tag filters with escaped translated lab
         context.lang = lang;
         app('ui.lang = lang');
         const html = app('detail')(level);
-        assert.ok(html.includes('<div class=hero data-th="https://levelthumbs.prevter.me/thumbnail/4125776"></div>'));
+        assert.ok(html.includes('<div class=hero data-th="https://levelthumbs.prevter.me/thumbnail/4125776" data-th-small="https://levelthumbs.prevter.me/thumbnail/4125776/small"></div>'));
         const chips = html.match(/<span class=chip\b[^>]*>/g);
         assert.equal(chips.length, 2);
         for (const chip of chips) {

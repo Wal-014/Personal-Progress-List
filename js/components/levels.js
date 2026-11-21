@@ -159,7 +159,7 @@ function detail(level) {
     const identity = fact(t('creator'), orDash(level.creator)) + fact('ID', orDash(level.levelId)) + fact(t('diff'), difficultyLabel(level));
     const externalRank = level.ar?.s == 'n' ? t('listRankUnlisted') : level.ar?.s == 'r' && level.ar.p == null ? t('listRankListed') : aredlTopValue(level.ar);
     const ranks = fact(level.kind == 'platform' ? 'AREPL' : 'AREDL', externalRank) + (level.kind == 'platform' ? '' : fact('GDL', level.gdl == null ? '—' : '#' + level.gdl));
-    return `<div class=box>${thumbnail ? `<div class=hero data-th="${escapeHtml(thumbnail)}"></div>` : ''}<h2 id=level-panel-heading tabindex=-1>${escapeHtml(level.name)}</h2>
+    return `<div class=box>${thumbnail ? `<div class=hero data-th="${escapeHtml(thumbnail)}" data-th-small="${escapeHtml(thumbUrl(level))}"></div>` : ''}<h2 id=level-panel-heading tabindex=-1>${escapeHtml(level.name)}</h2>
 <div class=level-identity><dl>${identity}</dl></div><dl class=detail-ranks>${ranks}</dl>
 <div${sections ? ' class=dgrid' : ''}>${sections || `<p class=by>${t('noAdditionalDetails')}</p>`}
 </div><p class=dgb>${canEdit() ? `<button class=blue data-act=edit data-id="${escapeHtml(level.id)}">${ICONS.actionEdit} ${t('edit')}</button>` : ''} <button data-act=lvclose>${t('close')}</button></p></div>`;

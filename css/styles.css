@@ -1304,7 +1304,8 @@ dialog.modal::backdrop {
   border: 3px solid #000;
   border-radius: 10px;
   background: #000 center / cover;
-  background-image: var(--th);
+  /* The small copy is usually cached from the list cards, so it shows while the full image loads and stays if the full image fails. */
+  background-image: var(--th), var(--th-small, none);
 }
 
 .level-section .level-link { color: var(--a); }
