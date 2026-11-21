@@ -283,12 +283,26 @@ test('render applies appearance and screen motifs without changing the saved bac
 });
 
 
-test('drawer toggles inert content, traps focus and restores the menu on Escape and backdrop', () => {
+test('the sidebar starts with a localized close button above the profile', () => {
+    const { app, root } = homeApp();
+    for (const [lang, label] of [['en', 'Close menu'], ['es', 'Cerrar menú']]) {
+        app("ui.lang = '" + lang + "'; render()");
+        const sidebar = root.innerHTML.match(/<aside id=shell-sidebar[^>]*>([\s\S]*?)<\/aside>/)[1];
+        const close = sidebar.match(/<button[^>]*data-act=drawerclose[^>]*>/);
+        assert.ok(close, 'the sidebar has a drawer close button');
+        assert.ok(close.index < sidebar.indexOf('class=shell-identity'));
+        assert.ok(close[0].includes('aria-label="' + label + '"'));
+        assert.ok(close[0].includes('title="' + label + '"'));
+    }
+});
+
+test('drawer traps focus and restores it to the opener on close button, Escape and backdrop', () => {
     const { app, context } = homeApp();
     const nodes = {}, attributes = {};
     const focusable = () => ({ focus() { context.document.activeElement = this; }, getClientRects: () => [1], closest: () => null });
-    const first = focusable(), last = focusable();
-    nodes['#shell-sidebar'] = { inert: false, setAttribute(key, value) { attributes[key] = value; }, removeAttribute(key) { delete attributes[key]; }, querySelectorAll: () => [first, last] };
+    const closeButton = { ...focusable(), dataset: { act: 'drawerclose' }, closest: selector => selector == '#shell-sidebar' ? nodes[selector] : null };
+    const last = focusable();
+    nodes['#shell-sidebar'] = { inert: false, setAttribute(key, value) { attributes[key] = value; }, removeAttribute(key) { delete attributes[key]; }, querySelectorAll: () => [closeButton, last] };
     nodes['#shell-menu'] = { ...focusable(), setAttribute(key, value) { attributes[key] = value; } };
     nodes['.shell-content'] = { inert: false };
     nodes['.drawer-backdrop'] = { hidden: true };
@@ -300,13 +314,13 @@ test('drawer toggles inert content, traps focus and restores the menu on Escape 
     assert.equal(attributes['aria-expanded'], 'true');
     assert.equal(nodes['.shell-content'].inert, true);
     assert.equal(nodes['.drawer-backdrop'].hidden, false);
-    assert.equal(context.document.activeElement, first);
+    assert.equal(context.document.activeElement, closeButton);
     context.document.activeElement = last;
     let prevented = false;
     context.keyEvent = { key: 'Tab', shiftKey: false, preventDefault() { prevented = true; } };
     app('drawerKeydown(keyEvent)');
     assert.equal(prevented, true);
-    assert.equal(context.document.activeElement, first);
+    assert.equal(context.document.activeElement, closeButton);
     context.keyEvent = { key: 'Escape', preventDefault() {} };
     app('drawerKeydown(keyEvent)');
     assert.equal(nodes['.shell-content'].inert, false);
@@ -314,6 +328,13 @@ test('drawer toggles inert content, traps focus and restores the menu on Escape 
     assert.equal(attributes['aria-expanded'], 'false');
     app('ACTIONS.drawer(); ACTIONS.drawerclose()');
     assert.equal(app('ui.drawer'), false);
+    assert.equal(context.document.activeElement, nodes['#shell-menu']);
+    app('setDrawer(true)');
+    context.closeButton = closeButton;
+    app('runAction(closeButton)');
+    assert.equal(app('ui.drawer'), false);
+    assert.equal(nodes['.drawer-backdrop'].hidden, true);
+    assert.equal(context.document.activeElement, nodes['#shell-menu']);
     app('setDrawer(true)');
     context.window.matchMedia = () => ({ matches: false });
     app('syncDrawer()');

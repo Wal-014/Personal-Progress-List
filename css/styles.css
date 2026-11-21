@@ -3927,7 +3927,7 @@ body::before {
   text-align: left;
 }
 
-:is(.shell-nav, .shell-footer) > button > .i {
+:is(.shell-nav, .shell-footer, .shell-drawer-header) > button > .i {
   width: var(--space-24);
   height: var(--space-24);
   flex: none;
@@ -4061,7 +4061,7 @@ body::before {
   border-radius: var(--radius-pill);
 }
 
-.shell-header .shell-menu, .drawer-backdrop {
+.shell-header .shell-menu, .shell-drawer-header, .drawer-backdrop {
   display: none;
 }
 
@@ -4142,7 +4142,7 @@ main.home {
   [data-theme=porcelain] .nav-ink { stop-color: #584630; }
   [data-theme=porcelain] .nav-glint { stop-color: #bd9867; }
 
-  .hsection-head h2 > .i, :is(.shell-nav, .shell-footer) > button > .i,
+  .hsection-head h2 > .i, :is(.shell-nav, .shell-footer, .shell-drawer-header) > button > .i,
   .page-title h2 > .i {
     stroke: url(#nav-metal) currentColor;
     stroke-width: 2.35;
@@ -4566,6 +4566,22 @@ input[type=checkbox]:checked::after {
     display: flex;
     width: var(--size-control);
     height: var(--size-control);
+  }
+
+  .shell-drawer-header {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 1;
+    display: flex;
+    flex: none;
+    justify-content: flex-end;
+    background: var(--color-bg);
+  }
+
+  .shell-drawer-header > button {
+    width: var(--size-control);
+    height: var(--size-control);
+    padding: 0;
   }
 
   .drawer-backdrop:not([hidden]) {
