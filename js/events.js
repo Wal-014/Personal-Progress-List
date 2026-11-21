@@ -643,6 +643,47 @@ document.addEventListener('toggle', e => {
         optionsPanel.querySelector('label:not([hidden]) input')?.focus({ preventScroll: true });
 }, true);
 document.addEventListener('focusout', e => durationBlur(e));
+
+/** Arrow keys move through a comparison picker's options, wrapping around, and Escape returns to its search box; true when the key was handled. */
+function comparePickerKeydown(e) {
+    const picker = e.target.closest?.('.compare-picker');
+    if (!picker || !['Escape', 'ArrowDown', 'ArrowUp'].includes(e.key))
+        return false;
+    const input = picker.querySelector('input'), menu = picker.querySelector('.compare-options'), options = [...picker.querySelectorAll('button')];
+    e.preventDefault();
+    if (e.key == 'Escape') {
+        input.focus();
+        menu.hidden = true;
+    }
+    else if (options.length) {
+        menu.hidden = false;
+        const index = options.indexOf(e.target);
+        const next = e.key == 'ArrowDown' ? index + 1 : (index < 0 ? options.length : index) - 1;
+        options[(next + options.length) % options.length].focus();
+    }
+    return true;
+}
+
+/** Escape closes the open dropdown, or the level panel on narrow screens; true when it did. */
+function escapeKeydown(e) {
+    if (e.key != 'Escape')
+        return false;
+    const dropdown = e.target.closest('.ms[open]');
+    if (dropdown) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropdown.open = false;
+        dropdown.querySelector('summary').focus();
+        return true;
+    }
+    if (e.target.closest?.('.rcol.has') && innerWidth <= 900 && !qs('dialog[open]')) {
+        e.preventDefault();
+        ACTIONS.lvclose();
+        return true;
+    }
+    return false;
+}
+
 document.onkeydown = e => {
     if (e.key == 'Escape' && !qs('dialog[open]')) {
         const chooser = e.target.closest?.('#hlists, [data-act=listchoices]');
@@ -659,37 +700,8 @@ document.onkeydown = e => {
             e.preventDefault();
         return;
     }
-    const picker = e.target.closest?.('.compare-picker');
-    if (picker && ['Escape', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
-        const input = picker.querySelector('input'), options = [...picker.querySelectorAll('button')];
-        e.preventDefault();
-        if (e.key == 'Escape') {
-            input.focus();
-            picker.querySelector('.compare-options').hidden = true;
-        }
-        else if (options.length) {
-            picker.querySelector('.compare-options').hidden = false;
-            const index = options.indexOf(e.target);
-            const next = e.key == 'ArrowDown' ? index + 1 : (index < 0 ? options.length : index) - 1;
-            options[(next + options.length) % options.length].focus();
-        }
+    if (comparePickerKeydown(e) || escapeKeydown(e))
         return;
-    }
-    if (e.key == 'Escape') {
-        const dropdown = e.target.closest('.ms[open]');
-        if (dropdown) {
-            e.preventDefault();
-            e.stopPropagation();
-            dropdown.open = false;
-            dropdown.querySelector('summary').focus();
-            return;
-        }
-        if (e.target.closest?.('.rcol.has') && innerWidth <= 900 && !qs('dialog[open]')) {
-            e.preventDefault();
-            ACTIONS.lvclose();
-            return;
-        }
-    }
     if (e.target.dataset.duration)
         return durationKeydown(e);
     if (e.key == 'Enter' && e.target.dataset.deathField != null)

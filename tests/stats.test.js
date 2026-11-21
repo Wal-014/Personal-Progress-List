@@ -127,6 +127,29 @@ test('comparison search moves an already selected level between slots without du
     assert.deepEqual(plainStats(app('ui.comparison.slots')), ['a', 'b']);
 });
 
+test('comparison picker arrows wrap through the options and Escape returns to its search box', () => {
+    const app = statsApp(), focused = [];
+    const control = name => ({ name, focus() { focused.push(name); } });
+    const input = control('input'), list = { hidden: true }, options = ['first', 'second', 'third'].map(control);
+    const picker = { querySelector: selector => selector == 'input' ? input : list, querySelectorAll: () => options };
+    [input, ...options].forEach(el => el.closest = selector => selector == '.compare-picker' ? picker : null);
+    const press = (key, target) => {
+        const event = { key, target, prevented: false, preventDefault() { this.prevented = true; } };
+        return [app('comparePickerKeydown')(event), event.prevented];
+    };
+    assert.deepEqual(press('ArrowDown', input), [true, true]);
+    assert.equal(list.hidden, false);
+    press('ArrowDown', options[2]);
+    press('ArrowUp', options[0]);
+    press('ArrowUp', input);
+    assert.deepEqual(focused, ['first', 'first', 'third', 'third']);
+    assert.deepEqual(press('Escape', options[1]), [true, true]);
+    assert.equal(focused.at(-1), 'input');
+    assert.equal(list.hidden, true);
+    assert.deepEqual(press('Enter', options[1]), [false, false]);
+    assert.deepEqual(press('ArrowDown', { closest: () => null }), [false, false]);
+});
+
 test('filled comparison slots keep search inputs empty while their selection row identifies the level', () => {
     const app = statsApp();
     app(statsFixture);

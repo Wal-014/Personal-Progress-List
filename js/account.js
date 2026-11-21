@@ -79,6 +79,29 @@ function startAccount() {
     return accountClientPromise;
 }
 
+/** Forgets the signed-in user and stops syncing; `clearCache` also removes the account's copy on this device. */
+function resetAccount(clearCache) {
+    setAccount({ status: 'signed-out', user: null, profile: null, recovering: false });
+    stopCloudSync(clearCache);
+}
+
+/** On someone else's public profile only the visitor's own account row is needed, never their synced data. */
+async function loadVisitorProfile(owner) {
+    setAccount({ user: owner, status: 'loading' });
+    try {
+        const client = await startAccount();
+        const { data, error } = await client.from('profiles').select('*').eq('id', owner.id).maybeSingle();
+        if (error)
+            throw error;
+        if (account.user?.id == owner.id)
+            setAccount({ profile: data, status: data ? 'signed-in' : 'signed-out' });
+    }
+    catch {
+        if (account.user?.id == owner.id)
+            setAccount({ profile: null, status: 'signed-out' });
+    }
+}
+
 /** Applies deferred auth events and loads the current user's profile, ignoring stale results. */
 async function applyAccountSession(event, session) {
     // A failed token refresh leaves the stored session for the next online attempt.
@@ -86,30 +109,12 @@ async function applyAccountSession(event, session) {
         setCloudStatus('offline');
         return;
     }
-    if (event == 'SIGNED_OUT' || !session?.user) {
-        setAccount({ status: 'signed-out', user: null, profile: null, recovering: false });
-        stopCloudSync(false);
-        return;
-    }
+    if (event == 'SIGNED_OUT' || !session?.user)
+        return resetAccount(false);
     if (!['INITIAL_SESSION', 'SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED', 'PASSWORD_RECOVERY'].includes(event))
         return;
-    if (!canEdit()) {
-        const owner = session.user;
-        setAccount({ user: owner, status: 'loading' });
-        try {
-            const client = await startAccount();
-            const { data, error } = await client.from('profiles').select('*').eq('id', owner.id).maybeSingle();
-            if (error)
-                throw error;
-            if (account.user?.id == owner.id)
-                setAccount({ profile: data, status: data ? 'signed-in' : 'signed-out' });
-        }
-        catch {
-            if (account.user?.id == owner.id)
-                setAccount({ profile: null, status: 'signed-out' });
-        }
-        return;
-    }
+    if (!canEdit())
+        return loadVisitorProfile(session.user);
     const nextUser = session.user, changedUser = account.user?.id != nextUser.id;
     if (!changedUser && account.status == 'signed-in' && cloudUser == nextUser.id) {
         account.user = nextUser;
@@ -141,8 +146,7 @@ async function applyAccountSession(event, session) {
                     await startCloudSync(nextUser, cached.accountProfile);
                     return;
                 }
-                setAccount({ status: 'signed-out', user: null, profile: null, recovering: false });
-                stopCloudSync(false);
+                resetAccount(false);
                 showAlert(t(authErrorKey(error)));
             }
         }
@@ -342,8 +346,7 @@ async function signOutAccount() {
         const { error } = await client.auth.signOut({ scope: 'local' });
         if (error)
             return { error };
-        setAccount({ status: 'signed-out', user: null, profile: null, recovering: false });
-        stopCloudSync(true);
+        resetAccount(true);
         return {};
     });
 }
@@ -353,8 +356,7 @@ async function deleteAccount() {
         const { error } = await client.rpc('delete_account');
         if (error)
             return { error };
-        setAccount({ status: 'signed-out', user: null, profile: null, recovering: false });
-        stopCloudSync(true);
+        resetAccount(true);
         return signOutAccount();
     });
 }
