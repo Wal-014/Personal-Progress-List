@@ -307,7 +307,7 @@ test('wishView renders fixed card structure and state specific accessible contro
         assert.equal((html.match(/data-act=wstatus/g) || []).length, 3);
         assert.match(html, new RegExp(`data-v=${status} aria-pressed=true`));
         assert.match(html, /role=group aria-label="Status · A \$&amp; &lt;level&gt;"/);
-        assert.match(html, /class=grip aria-hidden=true/);
+        assert.ok(html.includes('<span class=grip aria-hidden=true title="Drag or press Alt+↑ / Alt+↓ to reorder"></span>'));
         assert.match(html, /<i class=th aria-hidden=true><\/i>/);
         assert.doesNotMatch(f.app('wishlistCard')({ ...f.item, levelId: null }), /<i class=th\b/);
         assert.match(html, /class=wprog/);

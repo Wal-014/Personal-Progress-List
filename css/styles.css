@@ -1145,9 +1145,19 @@ dialog.modal::backdrop {
   -webkit-touch-callout: none;
 }
 
-.grip .i {
+.grip::before {
+  content: "";
   width: 16px;
   height: 24px;
+  background-color: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 24'%3E%3Ccircle cx='4' cy='4' r='2'/%3E%3Ccircle cx='12' cy='4' r='2'/%3E%3Ccircle cx='4' cy='12' r='2'/%3E%3Ccircle cx='12' cy='12' r='2'/%3E%3Ccircle cx='4' cy='20' r='2'/%3E%3Ccircle cx='12' cy='20' r='2'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+@media (forced-colors: active) {
+  .grip::before {
+    forced-color-adjust: none;
+    background-color: CanvasText;
+  }
 }
 
 .lv > .grip { margin-inline-start: -7px; }
