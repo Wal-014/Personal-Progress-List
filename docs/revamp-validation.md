@@ -102,7 +102,7 @@ The eight JPEGs use the built-in Demo profile and quality 80.
 
 | View | Desktop | Mobile or reflow equivalent |
 | --- | --- | --- |
-| Home, Nebula · Grid | [1366 × 900](revamp-validation/home-nebula-desktop.jpg) | [390 × 844](revamp-validation/home-nebula-mobile.jpg) |
-| Home, Porcelain · Aurora | [1366 × 900](revamp-validation/home-porcelain-desktop.jpg) | [390 × 844](revamp-validation/home-porcelain-mobile.jpg) |
-| Classic, Nebula | [Selected rank 1 · Celestial · 1366 × 900](revamp-validation/classic-nebula-selected.jpg) | [Grid · 720 × 450 reflow equivalent](revamp-validation/classic-equivalent-200-percent.jpg) |
-| My Lists, Porcelain | [Platformer detail · Celestial · 1366 × 900](revamp-validation/platformer-porcelain-desktop.jpg) | [Classic · Orbital · 390 × 844](revamp-validation/classic-porcelain-mobile.jpg) |
+| Home, Nebula · Grid | [1366 × 900](https://github.com/Wal-014/Personal-Progress-List/releases/download/pr-media/260-home-nebula-desktop.jpg) | [390 × 844](https://github.com/Wal-014/Personal-Progress-List/releases/download/pr-media/260-home-nebula-mobile.jpg) |
+| Home, Porcelain · Aurora | [1366 × 900](https://github.com/Wal-014/Personal-Progress-List/releases/download/pr-media/260-home-porcelain-desktop.jpg) | [390 × 844](https://github.com/Wal-014/Personal-Progress-List/releases/download/pr-media/260-home-porcelain-mobile.jpg) |
+| Classic, Nebula | [Selected rank 1 · Celestial · 1366 × 900](https://github.com/Wal-014/Personal-Progress-List/releases/download/pr-media/260-classic-nebula-selected.jpg) | [Grid · 720 × 450 reflow equivalent](https://github.com/Wal-014/Personal-Progress-List/releases/download/pr-media/260-classic-equivalent-200-percent.jpg) |
+| My Lists, Porcelain | [Platformer detail · Celestial · 1366 × 900](https://github.com/Wal-014/Personal-Progress-List/releases/download/pr-media/260-platformer-porcelain-desktop.jpg) | [Classic · Orbital · 390 × 844](https://github.com/Wal-014/Personal-Progress-List/releases/download/pr-media/260-classic-porcelain-mobile.jpg) |

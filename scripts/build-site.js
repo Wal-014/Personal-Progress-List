@@ -9,8 +9,8 @@ import { pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 
 const OUT = '_site';
-// Folders are copied whole; docs/brand/card.png is the social preview image index.html points to
-export const SITE_FILES = ['index.html', 'manifest.json', 'sw.js', 'favicon.png', 'icon.svg', 'css', 'js', 'data', 'assets', 'fonts', 'vendor', 'docs/brand/card.png'];
+// Folders are copied whole; docs/brand/card.jpg is the social preview image index.html points to
+export const SITE_FILES = ['index.html', 'manifest.json', 'sw.js', 'favicon.png', 'icon.svg', 'css', 'js', 'data', 'assets', 'fonts', 'vendor', 'docs/brand/card.jpg'];
 
 const ACCOUNTS_ON = 'const ACCOUNTS = true;';
 
