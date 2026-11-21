@@ -23,7 +23,7 @@ const bellUI = () => {
     return `<div class=box><h2>${ICONS.bell} ${t('bell')}</h2>${A.length ? `<ul class=bl>${A.map(a => `<li>${a}</li>`).join('')}</ul>` : `<p>${t('nonot')}</p>`}<p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
 };
 
-const legalUI = k => `<div class="box sm"><h2>${t(k)}</h2><p style="white-space:pre-wrap">${escapeHtml(t(k + 'Txt'))}</p><p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
+const legalUI = k => `<div class="box sm"><h2>${t(k)}</h2><p class=dialog-message>${escapeHtml(t(k + 'Txt'))}</p><p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
 
 const dialogOpeners = new WeakMap();
 let dialogTitleId = 0;
@@ -90,7 +90,7 @@ function showDialog({ title, msg, input, def, ok, cancel, danger, label, extra =
         const titleId = 'dgt-' + ++dialogTitleId;
         m.className = 'modal';
         m.setAttribute('aria-labelledby', titleId);
-        m.innerHTML = `<div class="box sm"><h2 class=prompt-title id=${titleId}>${escapeHtml(title || '')}</h2>${msg ? `<p style="white-space:pre-wrap">${escapeHtml(msg)}</p>` : ''}${input ? `${label ? `<label for=dgi>${escapeHtml(label)}</label>` : ''}<input id=dgi${label ? '' : ' aria-labelledby=' + titleId} value="${escapeHtml(def || '')}" style="width:100%"><p id=dgi-error class=field-error role=alert></p>` : ''}${extra}<p class=dgb>${cancel === false ? '' : `<button data-r=0>${t('cancel')}</button>`}<button class="${danger ? ok ? 'dg bulk-delete' : 'dg' : 'pri'}" data-r=1>${ok || t('ok2')}</button></p></div>${dialogAnnouncements}`;
+        m.innerHTML = `<div class="box sm"><h2 class=prompt-title id=${titleId}>${escapeHtml(title || '')}</h2>${msg ? `<p class=dialog-message>${escapeHtml(msg)}</p>` : ''}${input ? `${label ? `<label for=dgi>${escapeHtml(label)}</label>` : ''}<input id=dgi${label ? '' : ' aria-labelledby=' + titleId} value="${escapeHtml(def || '')}"><p id=dgi-error class=field-error role=alert></p>` : ''}${extra}<p class=dgb>${cancel === false ? '' : `<button data-r=0>${t('cancel')}</button>`}<button class="${danger ? ok ? 'dg bulk-delete' : 'dg' : 'pri'}" data-r=1>${ok || t('ok2')}</button></p></div>${dialogAnnouncements}`;
         const read = enhance?.(m);
         document.body.appendChild(m);
         m.showModal();
@@ -207,7 +207,7 @@ function bindCubeCatalog(dialog, selected) {
 function profileColorFields(selected) {
     const colorGroup = (key, labelKey) => {
         const current = selected[key].toLowerCase(), labelId = 'profile-' + key;
-        const swatch = ([presetKey, c]) => `<label class=profile-swatch style="--swatch:${c}"><input type=radio name="profile-${key}" value="${c}" aria-label="${t(presetKey)}"${c == current ? ' checked' : ''}><span class=profile-color aria-hidden=true>${ICONS.check}</span></label>`;
+        const swatch = ([presetKey, c]) => `<label class=profile-swatch data-swatch="${escapeHtml(c)}"><input type=radio name="profile-${key}" value="${c}" aria-label="${t(presetKey)}"${c == current ? ' checked' : ''}><span class=profile-color aria-hidden=true>${ICONS.check}</span></label>`;
         return `<div><span class=lab id="${labelId}">${t(labelKey)}</span><div class=profile-swatches role=radiogroup aria-labelledby="${labelId}" data-color=${key}>${Object.entries(PROFILE_PRESETS).map(swatch).join('')}<span class="profile-swatch profile-custom" data-selected=${!PROFILE_COLORS.includes(current)}><input type=color value="${current}" aria-label="${t('customColor')}"><span class=profile-color aria-hidden=true>${ICONS.check}</span></span></div></div>`;
     };
     return `<fieldset class=profile-colors><legend>${t('color')}</legend><div class=profile-colors-row><span class=profile-preview>${profilePreview(selected)}</span><div class=profile-color-groups>${colorGroup('color', 'primaryColor')}${colorGroup('secondaryColor', 'secondaryColor')}</div></div></fieldset>`;
@@ -274,7 +274,7 @@ function tagsUI() {
         const existing = index != null, name = escapeHtml(tag.name), color = isHexColor(tag.color) ? tag.color : '#947bd2';
         const colorLabel = t('color') + (existing ? ' &middot; ' + name : '');
         const reserved = existing && tag.name == PRE_TAG;
-        return `<div class=trow><label class="tag-swatch chip" style="--tag-color:${color}" title="${colorLabel}"><span>${name || t('newTag')}</span><input type=color ${existing ? 'data-tc=' + index : 'id=nc'} value="${color}" aria-label="${colorLabel}"></label>
+        return `<div class=trow><label class="tag-swatch chip" data-tag-color="${escapeHtml(color)}" title="${colorLabel}"><span>${name || t('newTag')}</span><input type=color ${existing ? 'data-tc=' + index : 'id=nc'} value="${color}" aria-label="${colorLabel}"></label>
 <input ${existing ? 'data-tn=' + index : 'id=nn autofocus'} value="${name}" maxlength="${TAG_NAME_LIMIT}" placeholder="${t('newTag')}" aria-label="${t(existing ? 'name' : 'newTag')}" aria-describedby="tag-limit${reserved ? ' tg-pre' : ''}">
 ${existing ? `<button class="xs dg" data-act=tdel data-i=${index} aria-label="${t('del')} &middot; ${name}">${ICONS.listClear}</button>` : `<button class=pri data-act=tadd>${t('add')}</button>`}</div>${reserved ? `<small id=tg-pre class=by>${t('preTagHint')}</small>` : ''}`;
     };

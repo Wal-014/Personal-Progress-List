@@ -386,16 +386,23 @@ input:user-invalid, select:user-invalid, textarea:user-invalid {
   }
 }
 
+@property --chip-highlight {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 14%;
+}
+
 .chip {
   --candy: color-mix(in oklab, var(--tag-color) 48%, var(--color-text-muted));
-  background: color-mix(in oklab, var(--candy) 14%, var(--color-surface));
+  --chip-highlight: 14%;
+  background: color-mix(in oklab, var(--candy) var(--chip-highlight), var(--color-surface));
   border: var(--size-border) solid var(--color-control-edge, var(--candy));
   color: var(--color-text);
   border-radius: var(--radius-pill);
   font: 600 .75rem/1.4 var(--font-ui);
 }
 .chip:is(:hover, :focus-visible) {
-  background: color-mix(in oklab, var(--candy) 26%, var(--color-surface));
+  --chip-highlight: 26%;
 }
 
 /* ===== Edit Object panel: details, forms and dialogs ===== */
@@ -706,6 +713,7 @@ dialog.modal::backdrop {
 
 .pb i {
   display: block;
+  width: calc(var(--pct) * 1%);
   height: 100%;
   background: var(--go);
 }
@@ -1296,7 +1304,12 @@ dialog.modal::backdrop {
   border: 3px solid #000;
   border-radius: 10px;
   background: #000 center / cover;
+  background-image: var(--th);
 }
+
+.level-section .level-link { color: var(--a); }
+.level-section > .level-notes { white-space: pre-wrap; }
+.box label[for=tgq] { margin-top: 12px; }
 
 .box > h2 {
   font-size: 28px;
@@ -1352,6 +1365,7 @@ dialog.modal::backdrop {
   height: 12px;
   margin-top: 4px;
   overflow: hidden;
+  color: hsl(calc(var(--pct) * 1.2) 100% 55%);
   background: rgba(0, 0, 0, .45);
   border: 2px solid #000;
   border-radius: 6px;
@@ -1361,6 +1375,9 @@ dialog.modal::backdrop {
   position: absolute;
   top: 0;
   bottom: 0;
+  left: 0;
+  width: calc(var(--pct) * 1%);
+  background: currentColor;
 }
 
 .hist {
@@ -1381,6 +1398,7 @@ dialog.modal::backdrop {
 .hist i {
   display: block;
   width: 100%;
+  height: calc(var(--pct) * 1%);
   background: var(--pk);
   border: 1px solid #000;
   border-bottom: 0;
@@ -1866,6 +1884,8 @@ input.ro {
   display: flex;
 }
 
+.timeline-chart > svg { flex: none; }
+
 #tlw {
   overflow-x: auto;
   flex: 1;
@@ -1928,6 +1948,7 @@ input.ro {
 
 .hb i {
   display: block;
+  width: calc(var(--pct) * 1%);
   height: 100%;
   min-width: 3px;
   background: var(--cy);
@@ -2189,6 +2210,7 @@ input.ro {
 }
 
 .compare-track i {
+  width: calc(var(--pct) * 1%);
   height: 100%;
   background: var(--slot-color);
 }
@@ -2558,7 +2580,7 @@ input.ro {
 }
 
 @keyframes wishlist-fill {
-  from { width: var(--from); }
+  from { width: calc(var(--from) * 1%); }
 }
 
 .toast {
@@ -2633,6 +2655,9 @@ input.ro {
   font-size: 19px;
   line-height: 1.3;
 }
+
+.modal .dialog-message { white-space: pre-wrap; }
+.modal #dgi { width: 100%; }
 
 .bl {
   margin: 0;
@@ -4790,9 +4815,12 @@ input[type=checkbox]:checked::after {
   .compare-selection .face { display: none; }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .wi, .trig, .stat-card, .chip, :is(.mode-switch, .list-choices, .gdf) button, .gdf summary {
+  .wi, .trig, .stat-card, :is(.mode-switch, .list-choices, .gdf) button, .gdf summary {
     transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
   }
+  /* Tag colours arrive after the chip's first style pass, so transitioning a colour that depends
+     on them would fade in every new chip. The hover transition uses --chip-highlight. */
+  .chip { transition: --chip-highlight 160ms ease, box-shadow 160ms ease; }
   .compare-picker:focus-within .compare-options { animation: dropdown-enter 150ms ease-out; }
   @media (hover: hover) {
     .wi:hover, .trig:hover, .stat-card:hover { border-color: var(--color-accent); }

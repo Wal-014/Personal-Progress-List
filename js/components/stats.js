@@ -22,7 +22,7 @@ function renderStatsWell(selector, draw) {
 /** Horizontal bars (difficulty and year). */
 const bars = o => {
     const m = Math.max(1, ...Object.values(o));
-    return Object.entries(o).map(([k, v]) => `<div class=hb><span>${escapeHtml(k)}</span><span class=tr><i style="width:${v / m * 100}%"></i></span><b>${v}</b></div>`).join('');
+    return Object.entries(o).map(([k, v]) => `<div class=hb><span>${escapeHtml(k)}</span><span class=tr><i data-pct="${escapeHtml(v / m * 100)}"></i></span><b>${v}</b></div>`).join('');
 };
 
 function statsSummary() {

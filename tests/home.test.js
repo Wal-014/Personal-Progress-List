@@ -39,13 +39,13 @@ test('Home cards use ranked leads, faces, localized counts and attempts without 
         assert.ok(html.includes(text), text);
     assert.equal((html.match(/class=hbadge>#1/g) || []).length, 2);
     assert.match(html, /class="face/);
-    assert.equal((html.match(/--th:/g) || []).length, app("['classic', 'platform'].filter(kind => thumbUrl(findLevel(rankedIds(kind)[0]))).length"));
+    assert.equal((html.match(/data-th=/g) || []).length, app("['classic', 'platform'].filter(kind => thumbUrl(findLevel(rankedIds(kind)[0]))).length"));
     assert.match(html, /data-act=add/);
     assert.match(html, /data-act=tab data-v=stats/);
     app("profile.levels = [{ id: 'one', kind: 'classic', name: '<Lead>', attN: 0 }]; profile.order.classic = ['one']; profile.order.platform = []");
     const card = app("homeListCard('classic')");
     assert.match(card, /&lt;Lead&gt;/);
-    assert.doesNotMatch(card, /--th:|attempts|<button/);
+    assert.doesNotMatch(card, /data-th=|attempts|<button/);
     app('profile.order.classic = []');
     assert.match(app("homeListCard('classic')"), /Unplaced/);
     assert.doesNotMatch(app("homeListCard('classic')"), /No levels yet|class=hbadge/);
@@ -59,14 +59,14 @@ test('empty cards stay navigable, show the empty label and omit badges, faces an
         assert.match(html, /No levels yet/);
         assert.match(html, /0 Levels/);
         assert.match(html, new RegExp('data-act=tab data-v=' + kind));
-        assert.doesNotMatch(html, /class=hbadge|class="face|--th:/);
+        assert.doesNotMatch(html, /class=hbadge|class="face|data-th=/);
     }
 });
 
 test('Platformer has its own icon and keeps fallback art underneath the optional thumbnail', () => {
     const { app } = homeApp();
     app("profile = emptyProfile(); profile.levels = [{ id: 'p', kind: 'platform', name: 'Platform', levelId: '123' }]; profile.order.platform = ['p']");
-    assert.match(app("homeListCard('platform')"), /--th:/);
+    assert.match(app("homeListCard('platform')"), /data-th=/);
     assert.match(app("homeListCard('platform')"), /class=hghost[\s\S]+class=hcover/);
     app('delete profile.levels[0].levelId');
     const card = app("homeListCard('platform')"), icon = app('ICONS.platform');

@@ -18,13 +18,14 @@ function page(query = '?user=player', response = { data: fixture() }, saved = {}
     const calls = [], writes = [], listeners = {};
     const storage = new Proxy({ gl: 'en', ...saved }, { set(target, key, value) { writes.push(key); target[key] = value; return true; } });
     const appNode = { innerHTML: '', contains: () => false };
-    const document = { body: {}, activeElement: null, documentElement: { dataset: {} }, visibilityState: 'visible',
+    const document = { body: {}, activeElement: null, documentElement: { nodeType: 1, dataset: {}, getAttribute: () => null, querySelectorAll: () => [] }, visibilityState: 'visible',
         querySelector: selector => selector == '#app' ? appNode : null, querySelectorAll: () => [],
         addEventListener: (name, fn) => { (listeners[name] ||= []).push(fn); } };
     const env = loadScripts(appScripts.filter(file => !file.startsWith('vendor/') && file != 'js/main.js'), {
         localStorage: storage, document, window: { addEventListener: (name, fn) => { listeners[name] = [fn]; } },
         location: new URL('https://example.test/app/' + query), URL, URLSearchParams,
-        navigator: { onLine: true }, history: { replaceState() {} }, setTimeout, clearTimeout, queueMicrotask
+        navigator: { onLine: true }, history: { replaceState() {} }, setTimeout, clearTimeout, queueMicrotask,
+        MutationObserver: class { observe() {} }
     });
     env.context.loadCloud = async () => ({ rpc: async (name, args) => { calls.push([name, plain(args)]); if (response instanceof Error) throw response; return response; } });
     env.context.autoSyncIfStale = () => calls.push('auto-sync');

@@ -86,7 +86,7 @@ function setLevelFilter(input) {
 /** A result: the whole card picks the level. The thumbnail fills its background, black when there is none. */
 function resultCard(l, i) {
     const u = thumbUrl(l), mode = ['classic', 'platform'].includes(l.kind) ? `<span class="gdmode ${escapeHtml(l.kind)}">${t('gdMode_' + l.kind)}</span>` : '';
-    return `<button type=button class=gdc data-act=gdpick data-i=${i}${u ? ` style="--th:url('${u}')"` : ''}><span class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by><span class=credit>ID ${escapeHtml(l.levelId)} · ${t('by')} ${escapeHtml(orDash(l.creator))}</span>${mode}</span></span>${difficultyFace(l)}</button>`;
+    return `<button type=button class=gdc data-act=gdpick data-i=${i}${u ? ` data-th="${escapeHtml(u)}"` : ''}><span class=info><span class=nm>${escapeHtml(l.name)}</span><span class=by><span class=credit>ID ${escapeHtml(l.levelId)} · ${t('by')} ${escapeHtml(orDash(l.creator))}</span>${mode}</span></span>${difficultyFace(l)}</button>`;
 }
 
 /** Status text and warning for the sources this search could cover. */

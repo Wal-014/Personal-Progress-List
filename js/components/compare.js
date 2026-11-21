@@ -76,7 +76,7 @@ function comparisonSlotHtml(level, slotIndex) {
 function comparisonMetricHtml(metric, firstLevel, secondLevel) {
     const result = comparisonMetric(metric, firstLevel, secondLevel);
     const difference = result.difference == null ? '' : `<small class=compare-gap>${result.arrow}${result.difference ? ' ' + escapeHtml(result.difference) : ''}</small>`;
-    return `<div class=compare-row><div class=compare-numbers><span class=compare-value>${escapeHtml(levelMetricText(metric, result.values[0]))}</span><span>${t(metric.label)}${difference}</span><span class=compare-value>${escapeHtml(levelMetricText(metric, result.values[1]))}</span></div><div class=compare-bars>${result.shares.map((share, slotIndex) => `<span class="compare-track compare-${slotIndex + 1}">${share == null ? '' : `<i style="width:${share}%"></i>`}</span>`).join('')}</div></div>`;
+    return `<div class=compare-row><div class=compare-numbers><span class=compare-value>${escapeHtml(levelMetricText(metric, result.values[0]))}</span><span>${t(metric.label)}${difference}</span><span class=compare-value>${escapeHtml(levelMetricText(metric, result.values[1]))}</span></div><div class=compare-bars>${result.shares.map((share, slotIndex) => `<span class="compare-track compare-${slotIndex + 1}">${share == null ? '' : `<i data-pct="${escapeHtml(share)}"></i>`}</span>`).join('')}</div></div>`;
 }
 
 function comparisonHtml() {

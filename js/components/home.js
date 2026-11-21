@@ -4,7 +4,7 @@ function homeListCard(kind) {
     const levels = profile.levels.filter(level => level.kind == kind);
     const attempts = levels.reduce((sum, level) => sum + (totalAttempts(level) || 0), 0);
     const lead = findLevel(rankedIds(kind)[0]), url = lead ? thumbUrl(lead) : '';
-    return `<div class="hcard hcard-${kind}" data-act=tab data-v=${kind} role=button tabindex=0${url ? ` style="--th:url('${url}')"` : ''}>
+    return `<div class="hcard hcard-${kind}" data-act=tab data-v=${kind} role=button tabindex=0${url ? ` data-th="${escapeHtml(url)}"` : ''}>
 <div class=hcard-top>${lead ? `<span class=hbadge>#1</span><span class=hlead>${escapeHtml(lead.name)}</span>${difficultyFace(lead)}` : `<span class=hlead>${t(levels.length ? 'unplaced' : 'listEmpty')}</span>`}</div>
 <div class=hcard-body><span class=hghost aria-hidden=true>${ICONS[kind]}</span>${url ? '<i class=hcover aria-hidden=true></i>' : ''}<div class=hcard-copy><h3>${t(kind)}</h3><div class=hcard-rule></div><p>${ICONS.metricLevels}<span>${levels.length.toLocaleString(ui.lang)} ${t('lv')}${attempts > 0 ? ` · ${attempts.toLocaleString(ui.lang)} ${t('att')}` : ''}</span></p></div></div></div>`;
 }
