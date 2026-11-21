@@ -4,8 +4,12 @@
  * still see the DOM before those properties are applied. */
 const isDataStylePercent = value => /^(?:\d+|\d*\.\d+)(?:e[+-]?\d+)?$/i.test(value) && Number(value) <= 100;
 
+const isThumbnailUrl = value => /^https:\/\/levelthumbs\.prevter\.me\/thumbnail\/\d{1,12}(?:\/small)?$/.test(value);
+const cssUrl = value => `url("${value}")`;
+
 const DATA_STYLES = Object.freeze([
-    Object.freeze(['data-th', '--th', value => /^https:\/\/levelthumbs\.prevter\.me\/thumbnail\/\d{1,12}(?:\/small)?$/.test(value), value => `url("${value}")`]),
+    Object.freeze(['data-th', '--th', isThumbnailUrl, cssUrl]),
+    Object.freeze(['data-th-small', '--th-small', isThumbnailUrl, cssUrl]),
     Object.freeze(['data-pct', '--pct', isDataStylePercent]),
     Object.freeze(['data-from', '--from', isDataStylePercent]),
     Object.freeze(['data-tag-color', '--tag-color', value => isHexColor(value) || value === 'var(--fg)']),
