@@ -71,11 +71,13 @@ async function deleteSelectedLevels() {
 function card(l, i, n, reorderable) {
     const selection = currentLevelSelection();
     const selectionAttrs = selection ? ` data-act=list-pick aria-pressed=${selection.ids.has(l.id)}` : '';
+    const canMove = reorderable && canEdit();
     const u = thumbUrl(l), rank = i == 'pre' ? ICONS.classic : i != null ? i + 1 : '—';
-    const podium = i === 0 ? ' top1' : i === 1 ? ' top2' : i === 2 ? ' top3' : '';
+    const hasEmblem = Number.isInteger(i) && i >= 0 && i < 5;
+    const rankContent = hasEmblem ? `<img src="assets/ranks/${l.kind === 'platform' ? 'platformer' : 'classic'}-${rank}.webp" width=68 height=80 alt="" decoding=async draggable=false>` : rank;
     const creator = l.creator ? `<span class=level-creator>${t('by')} ${escapeHtml(l.creator)}</span>` : '';
     const date = l.date ? `<time class=level-date datetime="${escapeHtml(l.date)}">${escapeHtml(formatDate(l.date))}</time>` : '';
-    return `<div class="obj lv${podium}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${selectionAttrs}${u ? ` style="--th:url('${u}')"` : ''}>${u ? '<i class=th aria-hidden=true></i>' : ''}${canEdit() && reorderable ? `<span class=grip aria-hidden=true title="${t('dragHint')}">${ICONS.grip}</span>` : ''}<span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + (i + 1) + ' / ' + n : t('unplaced')}">${rank}</span><div class=info><div class=level-title><span class=nm>${escapeHtml(l.name)}</span>${creator}</div>${date}</div>${difficultyFace(l)}${selection ? `<span class=selection-mark aria-hidden=true>${ICONS.actionCheck}</span>` : ''}</div>`;
+    return `<div class="obj lv${hasEmblem ? ' rank-' + rank : ''}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${selectionAttrs}${canMove ? ' aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"' : ''}${u ? ` style="--th:url('${u}')"` : ''}>${u ? '<i class=th aria-hidden=true></i>' : ''}${canMove ? `<span class=grip aria-hidden=true title="${t('dragHint')}">${ICONS.grip}</span>` : ''}<span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + rank + ' / ' + n : t('unplaced')}">${rankContent}</span><div class=info><div class=level-title><span class=nm>${escapeHtml(l.name)}</span>${creator}</div>${date}</div>${difficultyFace(l)}${selection ? `<span class=selection-mark aria-hidden=true>${ICONS.actionCheck}</span>` : ''}</div>`;
 }
 
 /** Ids of the ranked levels of a list, in order: Pre-Extremes levels and ids of deleted levels have no rank. */
@@ -274,15 +276,37 @@ function dragWasCanceled(originalEvent) {
     return ['dragend', 'touchcancel', 'pointercancel'].includes(originalEvent.type);
 }
 
+function saveListOrder(order) {
+    profile.order[ui.tab] = order;
+    save();
+    render();
+}
+
+function moveRankedLevel(id, direction) {
+    if (!canReorder())
+        return false;
+    const ids = rankedIds(ui.tab), position = ids.findIndex(rankedId => String(rankedId) === id);
+    if (position < 0)
+        return false;
+    const next = position + direction;
+    if (next < 0 || next >= ids.length)
+        return true;
+    const order = [...profile.order[ui.tab]];
+    const from = order.indexOf(ids[position]), to = order.indexOf(ids[next]);
+    [order[from], order[to]] = [order[to], order[from]];
+    saveListOrder(order);
+    document.activeElement?.scrollIntoView({ block: 'nearest' });
+    showToast(t('rankMoved').replace('{position}', next + 1).replace('{total}', ids.length));
+    return true;
+}
+
 /** Saves the order Sortable left in the list. Sortable has already moved the card, so a cancelled drag redraws the saved order instead. */
 function reorderList(evt) {
     if (dragWasCanceled(evt.originalEvent)) {
         render();
         return;
     }
-    profile.order[ui.tab] = [...qs('#lst').children].map(c => c.dataset.id);
-    save();
-    render();
+    saveListOrder([...qs('#lst').children].map(c => c.dataset.id));
 }
 
 function initSort() {

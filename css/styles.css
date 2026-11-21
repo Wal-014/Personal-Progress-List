@@ -760,11 +760,6 @@ dialog.modal::backdrop {
   text-shadow: none;
 }
 
-.list-surface .lv.sel {
-  border-color: var(--color-accent);
-  box-shadow: inset 4px 0 var(--color-accent);
-}
-
 .level-section {
   min-width: 0;
   padding: var(--space-12);
@@ -859,6 +854,27 @@ dialog.modal::backdrop {
 .list-surface .lv {
   --row-ink: var(--color-text);
   --row-meta: var(--color-text-muted);
+  border-color: var(--row-rank, var(--color-border));
+  box-shadow: var(--row-glow, none);
+}
+
+.lv.rank-1 {
+  --row-rank: var(--rank-1);
+  --row-glow: 0 0 14px color-mix(in srgb, var(--row-rank) 28%, transparent);
+}
+.lv.rank-2 {
+  --row-rank: var(--rank-2);
+  --row-glow: 0 0 10px color-mix(in srgb, var(--row-rank) 22%, transparent);
+}
+.lv.rank-3 {
+  --row-rank: var(--rank-3);
+  --row-glow: 0 0 6px color-mix(in srgb, var(--row-rank) 16%, transparent);
+}
+.lv.rank-4 { --row-rank: var(--rank-4); }
+.lv.rank-5 { --row-rank: var(--rank-5); }
+
+[data-theme=porcelain] .lv:is(.rank-1, .rank-2, .rank-3, .rank-4, .rank-5):not(:has(.th)) {
+  border-color: color-mix(in srgb, var(--row-rank) 56%, var(--color-text));
 }
 
 .list-surface .lv:has(.th) {
@@ -1009,7 +1025,7 @@ dialog.modal::backdrop {
 #lw {
   max-height: max(calc(var(--space-48) * 3), calc(100dvh - var(--space-48) * 6));
   overflow: auto;
-  padding: 2px 4px 2px 2px;
+  padding: 4px;
 }
 
 .rcol {
@@ -1020,16 +1036,19 @@ dialog.modal::backdrop {
 }
 
 .lv {
+  --rank-width: 68px;
+  --rank-height: 80px;
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) auto;
+  grid-template-columns: var(--rank-width) minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
   margin-bottom: 8px;
   padding: 8px 10px;
   overflow: hidden;
   cursor: pointer;
+  scroll-margin-block: 4px;
 }
 
 /* Off-screen cards skip this layer, so their thumbnails are not downloaded until they come near the viewport. */
@@ -1052,18 +1071,18 @@ dialog.modal::backdrop {
   mask-image: linear-gradient(90deg, transparent 40%, #000);
 }
 
-.lv:hover {
-  border-color: rgba(255, 255, 255, .45);
+.lv:is(.sel, [aria-pressed=true])::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  box-shadow: inset 3px 0 var(--color-accent), inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 45%, transparent);
 }
 
-.lv.sel {
-  border-color: var(--go);
-  box-shadow: 0 0 0 2px rgba(60, 255, 108, .25);
-}
-
-/* The grip's 44px touch target also covers the card's left padding, so it takes only 34px of the row */
+/* The grip uses the left padding beyond the selection bar for its 44px touch target. */
 .lv:has(> .grip) {
-  grid-template-columns: 34px 46px minmax(0, 1fr) auto;
+  grid-template-columns: 37px var(--rank-width) minmax(0, 1fr) auto;
   column-gap: 0;
 }
 
@@ -1091,8 +1110,17 @@ dialog.modal::backdrop {
   height: 24px;
 }
 
+.lv > .grip { margin-inline-start: -7px; }
+
 @media (hover: hover) {
-  .lv:hover .grip, .wi:hover .grip {
+  .list-surface .lv:hover { background-color: var(--color-surface-elevated); }
+  .lv:hover > .th::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--color-card-text) 6%, transparent);
+  }
+  .wi:hover .grip {
     color: #fff;
   }
 }
@@ -1104,26 +1132,16 @@ dialog.modal::backdrop {
 .rk {
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
   font-family: var(--font-display);
   font-size: 20px;
-  color: #fff;
-  background: #000;
-  border: 2px solid #fff;
-  box-shadow: inset 0 0 8px rgba(255, 255, 255, .35);
+  font-weight: 700;
+  color: var(--row-ink);
 }
 
-.top1 .rk {
-  color: #ffd84a;
-}
-
-.top2 .rk {
-  color: #e6eef7;
-}
-
-.top3 .rk {
-  color: #ffa45c;
+.rk > img {
+  width: var(--rank-width);
+  height: var(--rank-height);
+  object-fit: contain;
 }
 
 .lv .nm {
@@ -1207,6 +1225,10 @@ dialog.modal::backdrop {
 /* Phones: the detail replaces the list instead of sitting under it */
 @media (max-width: 900px) {
   .split .lv { height: 96px; }
+  .lv {
+    --rank-width: 54px;
+    --rank-height: 72px;
+  }
 
   .lh .list-search {
     flex-basis: 100%;
@@ -4595,12 +4617,12 @@ input[type=checkbox]:checked::after {
   .compare-selection .face { display: none; }
 }
 @media (prefers-reduced-motion: no-preference) {
-  :is(.wi, .trig, .stat-card, .lv, .chip, .mode-switch button, .list-choices button, .gdf button, .gdf summary) {
+  :is(.wi, .trig, .stat-card, .chip, .mode-switch button, .list-choices button, .gdf button, .gdf summary) {
     transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
   }
   .compare-picker:focus-within .compare-options { animation: dropdown-enter 150ms ease-out; }
   @media (hover: hover) {
-    :is(.wi, .trig, .stat-card, .lv):hover { border-color: var(--color-accent); }
+    :is(.wi, .trig, .stat-card):hover { border-color: var(--color-accent); }
   }
 }
 
@@ -4674,7 +4696,7 @@ input[type=checkbox]:checked::after {
 .list-selection button { min-height: 36px; padding: 4px 12px; }
 .list-selection output { margin-inline-start: var(--space-16); }
 .list-surface .lv[data-act=list-pick] {
-  grid-template-columns: 46px minmax(0, 1fr) auto auto;
+  grid-template-columns: var(--rank-width) minmax(0, 1fr) auto auto;
 }
 .list-selection output { color: var(--color-text-muted); }
 :root .list-selection button[data-act=list-delete], :root .modal .dgb .bulk-delete {
@@ -4692,10 +4714,6 @@ input[type=checkbox]:checked::after {
   color: var(--color-bg);
 }
 .selection-mark > svg { width: .875rem; height: .875rem; visibility: hidden; }
-.list-surface .lv[data-act=list-pick][aria-pressed=true] {
-  outline: 2px solid var(--color-accent);
-  outline-offset: -2px;
-}
 .list-surface .lv[aria-pressed=true] .selection-mark {
   border-color: var(--color-accent);
   background: var(--color-accent);
