@@ -3180,9 +3180,9 @@ input.ro {
 .hcard-top {
   display: flex;
   align-items: center;
-  gap: var(--space-12);
+  gap: var(--space-8);
   min-height: 80px;
-  padding: var(--space-16);
+  padding: var(--space-4) var(--space-16);
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);
 }
@@ -3191,8 +3191,8 @@ input.ro {
   flex: none;
   border: 1px solid var(--rank-1);
   border-radius: var(--radius-control);
-  padding: 2px 10px;
-  font: bold 20px/1.4 var(--font-ui);
+  padding: var(--space-4) var(--space-8);
+  font: bold 16px/1 var(--font-display);
 }
 
 .hlead {
@@ -3202,13 +3202,6 @@ input.ro {
   text-overflow: ellipsis;
   white-space: nowrap;
   font: bold 18px/1.4 var(--font-ui);
-}
-
-.hcard-top .face {
-  flex: none;
-  width: 52px;
-  height: 52px;
-  object-fit: contain;
 }
 
 .hcard-body {
