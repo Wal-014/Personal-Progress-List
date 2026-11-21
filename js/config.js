@@ -70,21 +70,19 @@ const cubeIcon = (color, secondaryColor) => {
     const fill = isHexColor(color) ? color : PROFILE_COLORS[0], face = isHexColor(secondaryColor) ? secondaryColor : DEFAULT_SECONDARY_COLOR, id = 'cube' + ++cubeIds;
     return `<svg class=i viewBox="0 0 48 48" aria-hidden=true><defs><linearGradient id=${id} x1=0 y1=0 x2=0 y2=1><stop offset=0 stop-color="#000" stop-opacity=0 /><stop offset=1 stop-color="#000" stop-opacity=".3" /></linearGradient></defs><rect x=2.5 y=2.5 width=43 height=43 rx=3 fill="${fill}" stroke="#000" stroke-width=3 /><rect x=2.5 y=2.5 width=43 height=43 rx=3 fill="url(#${id})" /><rect x=6 y=6 width=36 height=36 rx=1.5 fill=none stroke="#fff" stroke-opacity=".35" stroke-width=1.5 /><rect x=12 y=13 width=8 height=8 fill="${face}" stroke="#000" stroke-width=2.5 /><rect x=28 y=13 width=8 height=8 fill="${face}" stroke="#000" stroke-width=2.5 /><rect x=12 y=28 width=24 height=6 fill="${face}" stroke="#000" stroke-width=2.5 /></svg>`;
 };
-// Each sheet holds twenty 80px cubes. The three bands preserve the secondary,
-// primary and fixed-detail layers of the original Icon Kit sprites.
 const CUBE_COUNT = 485;
+// The cube picker shows twenty cubes per page.
 const CUBES_PER_PAGE = 20;
 const validCubeId = id => Number.isInteger(id) && id >= 1 && id <= CUBE_COUNT;
+// Each cube file stacks the secondary, primary and fixed-detail layers of the original Icon Kit sprite.
 function catalogCube(id, primary, secondary) {
-    const index = (validCubeId(id) ? id : 2) - 1, cell = index % CUBES_PER_PAGE;
-    const x = cell % 5 * 80, y = Math.floor(cell / 5) * 80;
-    const src = 'assets/cubes/' + Math.floor(index / CUBES_PER_PAGE) + '.webp';
+    const src = `assets/cubes/${validCubeId(id) ? id : 2}.webp`;
     const uid = 'kit' + ++cubeIds;
     const filters = [isHexColor(secondary) ? secondary : DEFAULT_SECONDARY_COLOR, isHexColor(primary) ? primary : PROFILE_COLORS[0]].map((color, layer) => {
         const [r, g, b] = color.slice(1).match(/../g).map(hex => parseInt(hex, 16) / 255);
         return `<filter id="${uid}-${layer}" color-interpolation-filters="sRGB"><feColorMatrix values="${r} 0 0 0 0 0 ${g} 0 0 0 0 0 ${b} 0 0 0 0 0 1 0"/></filter>`;
     }).join('');
-    const layers = [0, 1, 2].map(layer => `<g${layer < 2 ? ` filter="url(#${uid}-${layer})"` : ''}><svg width="80" height="80" viewBox="${x} ${y + layer * 320} 80 80" overflow="hidden"><image href="${src}" width="400" height="960"/></svg></g>`).join('');
+    const layers = [0, 1, 2].map(layer => `<g${layer < 2 ? ` filter="url(#${uid}-${layer})"` : ''}><svg width="80" height="80" viewBox="0 ${layer * 80} 80 80" overflow="hidden"><image href="${src}" width="80" height="240"/></svg></g>`).join('');
     return `<svg class=i viewBox="0 0 80 80" aria-hidden=true><defs>${filters}</defs>${layers}</svg>`;
 }
 
