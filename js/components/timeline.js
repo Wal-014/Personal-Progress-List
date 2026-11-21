@@ -28,22 +28,50 @@ function timelinePoints(data, metric) {
     return points;
 }
 
-function timelineHtml() {
+function timelineTable(points, metric, dataOpen) {
+    const caption = t('timelineDataCaption').replace('{metric}', () => t(metric.timelineLabel));
+    return `<details id=timeline-data${dataOpen ? ' open' : ''}><summary>${t('timelineShowData')}</summary><table><caption>${escapeHtml(caption)}</caption><thead><tr><th scope=col>${t('timelineDate')}</th><th scope=col>${t('timelineLevel')}</th><th scope=col>${t('timelineValue')}</th></tr></thead><tbody>${points.map(([level]) => `<tr><td>${escapeHtml(formatDate(level.date))}</td><td>${escapeHtml(level.name)}</td><td>${escapeHtml(metric.short(metric.read(level)))}</td></tr>`).join('')}</tbody></table></details>`;
+}
+
+function timelineHtml(dataOpen = false) {
     const metric = LEVEL_METRICS[ui.timelineMetric];
     const data = timelineData();
     const dateSpacing = ui.z;
+    const disabled = data.levels.length ? '' : ' disabled';
+    const controls = `<div class=timeline-controls><h2>${t('tl')}</h2>${statsSegments('timeline-metric', ui.timelineMetric, Object.entries(LEVEL_METRICS).filter(([, entry]) => entry.timelineLabel).map(([key, entry]) => [key, t(entry.timelineLabel)]), t('timelineMetric'))}<span class=zoom><button class=xs data-act=zo aria-label="${t('timelineZoomOut')}"${disabled}>−</button><span class=by>${Math.round(dateSpacing / 28 * 100)}%</span><button class=xs data-act=zi aria-label="${t('timelineZoomIn')}"${disabled}>+</button></span></div>`;
+    if (!data.levels.length)
+        return controls + `<p class=by>${t('timelineNoData')}</p>`;
     const dateX = index => 34 + index * dateSpacing;
     const chartWidth = data.dates.length * dateSpacing + 50;
     const points = timelinePoints(data, metric);
     const line = [...points].sort((a, b) => a[1] - b[1]).map(([, dateIndex, pointY]) => `${dateX(dateIndex)},${pointY}`).join(' ');
-    return `<div class=timeline-controls><h2>${t('tl')}</h2>${statsSegments('timeline-metric', ui.timelineMetric, Object.entries(LEVEL_METRICS).filter(([, entry]) => entry.timelineLabel).map(([key, entry]) => [key, t(entry.timelineLabel)]), t('timelineMetric'))}<span class=zoom><button class=xs data-act=zo aria-label="${t('tl')} −">−</button><span class=by>${Math.round(dateSpacing / 28 * 100)}%</span><button class=xs data-act=zi aria-label="${t('tl')} +">+</button></span></div><div class=timeline-chart><svg width=58 height=370 style="flex:none">${data.grid.map(value => `<text x=54 y=${data.valueY(value) + 4} font-size=10 text-anchor=end fill="var(--mut)">${escapeHtml(metric.short(value))}</text>`).join('')}</svg><div id=tlw><svg width="${chartWidth}" height=370>${data.grid.map(value => `<line x1=0 x2=${chartWidth} y1=${data.valueY(value)} y2=${data.valueY(value)} stroke="var(--ln)" stroke-dasharray="${value == data.maximum ? '' : '4'}"/>`).join('')}<line x1=0 x2=${chartWidth} y1=290 y2=290 stroke="var(--ln)" stroke-width=2 />
+    const summaryDateFormat = new Intl.DateTimeFormat(ui.lang, { dateStyle: 'long', timeZone: 'UTC' });
+    const summaryDate = date => {
+        const timestamp = Date.parse(date);
+        return Number.isFinite(timestamp) ? summaryDateFormat.format(timestamp) : formatDate(date);
+    };
+    const summaryValues = {
+        metric: t(metric.timelineLabel),
+        count: points.length.toLocaleString(ui.lang),
+        first: summaryDate(data.dates[0]),
+        last: summaryDate(data.dates.at(-1)),
+        max: metric.tooltip(data.levels.reduce((maximum, level) => Math.max(maximum, metric.read(level)), -Infinity))
+    };
+    const summary = t('timelineSummary').replace(/\{(\w+)\}/g, (_, key) => summaryValues[key]);
+    return `${controls}<div class=timeline-chart role=img aria-label="${escapeHtml(summary)}"><svg aria-hidden=true width=58 height=370 style="flex:none">${data.grid.map(value => `<text x=54 y=${data.valueY(value) + 4} font-size=10 text-anchor=end fill="var(--mut)">${escapeHtml(metric.short(value))}</text>`).join('')}</svg><div id=tlw tabindex=-1><svg aria-hidden=true width="${chartWidth}" height=370>${data.grid.map(value => `<line x1=0 x2=${chartWidth} y1=${data.valueY(value)} y2=${data.valueY(value)} stroke="var(--ln)" stroke-dasharray="${value == data.maximum ? '' : '4'}"/>`).join('')}<line x1=0 x2=${chartWidth} y1=290 y2=290 stroke="var(--ln)" stroke-width=2 />
 ${dateSpacing >= 24 ? data.dates.map((date, dateIndex) => `<text transform="rotate(-60 ${dateX(dateIndex)} 302)" x=${dateX(dateIndex)} y=302 font-size=10 text-anchor=end fill="var(--mut)" pointer-events="none">${escapeHtml(formatDate(date))}</text>`).join('') : ''}
-<polyline points="${line}" fill=none stroke="var(--obj)" stroke-width=6 stroke-linejoin=round pointer-events=none /><polyline points="${line}" fill=none stroke="var(--a)" stroke-width=3 stroke-linejoin=round pointer-events=none />${points.map(([level, dateIndex, pointY]) => `<rect class=pt data-id="${escapeHtml(level.id)}" x=${dateX(dateIndex) - 6} y=${pointY - 6} width=12 height=12 fill="var(--obj)" stroke="var(--a)" stroke-width=2.5 />${dateSpacing >= 60 ? `<text x=${dateX(dateIndex) + 10} y=${pointY + 4} font-size=11 font-weight=bold fill="var(--fg)" pointer-events="none">${escapeHtml(metric.short(metric.read(level)))}</text>` : ''}`).join('')}</svg></div></div>`;
+<polyline points="${line}" fill=none stroke="var(--obj)" stroke-width=6 stroke-linejoin=round pointer-events=none /><polyline points="${line}" fill=none stroke="var(--a)" stroke-width=3 stroke-linejoin=round pointer-events=none />${points.map(([level, dateIndex, pointY]) => `<rect class=pt data-id="${escapeHtml(level.id)}" x=${dateX(dateIndex) - 6} y=${pointY - 6} width=12 height=12 fill="var(--obj)" stroke="var(--a)" stroke-width=2.5 />${dateSpacing >= 60 ? `<text x=${dateX(dateIndex) + 10} y=${pointY + 4} font-size=11 font-weight=bold fill="var(--fg)" pointer-events="none">${escapeHtml(metric.short(metric.read(level)))}</text>` : ''}`).join('')}</svg></div></div>${timelineTable(points, metric, dataOpen)}`;
 }
 
 function renderTimeline() {
+    const well = qs('#timeline-well');
+    if (!well)
+        return;
+    const details = qs('#timeline-data');
+    if (details)
+        well.dataset.dataOpen = String(details.open);
     const scrollLeft = qs('#tlw')?.scrollLeft || 0;
-    renderStatsWell('#timeline-well', timelineHtml);
+    renderStatsWell('#timeline-well', () => timelineHtml(well.dataset.dataOpen == 'true'));
     if (qs('#tlw'))
         qs('#tlw').scrollLeft = scrollLeft;
 }

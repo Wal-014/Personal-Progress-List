@@ -15,6 +15,18 @@ for (const [lang, addLabel, wishTitle, wishText, listTitle, listText, noMatch] o
         assert.equal(html, `<div class=empty><svg class=i></svg><h3>Empty title</h3><p>Empty hint</p><button class=pri data-act=test-add>${app('ICONS.actionAdd')} ${addLabel}</button></div>`);
     });
 
+    test('wishlist index has a single creation action for editors and a message for readers in ' + lang, () => {
+        context.lang = lang;
+        app('profile = emptyProfile(); ui.lang = lang; viewing = null');
+        const markup = app('wishlistsIndex()');
+        assert.ok(markup.startsWith('<div class=empty>' + app('ICONS.navWish')));
+        assert.equal((markup.match(/data-act=wnew/g) || []).length, 1);
+        assert.ok(markup.includes('<button class=pri data-act=wnew>' + app('ICONS.actionAdd') + ' ' + app("t('palWish')") + '</button>'));
+        app('viewing = {}');
+        assert.equal(app('wishlistsIndex()'), '<p class=by>' + app("t('noWL')") + '</p>');
+        app('viewing = null');
+    });
+
     for (const hasItems of [false, true])
         test(`wishView renders ${hasItems ? 'items' : 'an empty state outside the grid'} in ${lang}`, () => {
             context.lang = lang;
