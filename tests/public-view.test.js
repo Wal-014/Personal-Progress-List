@@ -17,9 +17,9 @@ const fixture = () => ({
 function page(query = '?user=player', response = { data: fixture() }, saved = {}) {
     const calls = [], writes = [], listeners = {};
     const storage = new Proxy({ gl: 'en', ...saved }, { set(target, key, value) { writes.push(key); target[key] = value; return true; } });
-    const appNode = { innerHTML: '', contains: () => false };
+    const appNode = { innerHTML: '', contains: () => false }, nodes = { '#app': appNode };
     const document = { body: {}, activeElement: null, documentElement: { nodeType: 1, dataset: {}, getAttribute: () => null, querySelectorAll: () => [] }, visibilityState: 'visible',
-        querySelector: selector => selector == '#app' ? appNode : null, querySelectorAll: () => [],
+        querySelector: selector => nodes[selector] || null, querySelectorAll: () => [],
         addEventListener: (name, fn) => { (listeners[name] ||= []).push(fn); } };
     const env = loadScripts(appScripts.filter(file => !file.startsWith('vendor/') && file != 'js/main.js'), {
         localStorage: storage, document, window: { addEventListener: (name, fn) => { listeners[name] = [fn]; } },
@@ -31,7 +31,7 @@ function page(query = '?user=player', response = { data: fixture() }, saved = {}
     env.context.startRankingSync = () => calls.push('auto-sync');
     env.context.initAccount = () => calls.push('account');
     env.context.restoreCloudSync = () => calls.push('restore');
-    return { ...env, calls, writes, listeners, html: () => appNode.innerHTML };
+    return { ...env, calls, writes, listeners, nodes, html: () => appNode.innerHTML };
 }
 
 for (const username of ['', 'ab', 'UPPER', 'a-b', 'a'.repeat(21), '<img src=x onerror=alert(1)>', 'Bad<User>', 'abc\n']) {
@@ -184,6 +184,53 @@ test('public wishlist progress uses labels and percentages without editing instr
         assert.ok(html.includes(text), text);
 });
 
+test('public identity shows a decorative flag next to the localized country', async () => {
+    const data = fixture();
+    data.profile.country = 'JP';
+    const p = page('?user=player', { data });
+    await p.app('initPublicView()');
+    p.app('ui.lang = "es"; render()');
+    assert.match(p.html(), /class=profile-country><img[^>]+assets\/flags\/jp\.svg" alt=""[^>]*><span>Japón<\/span>/);
+    p.app('viewing.identity.country = "ZZ"; render()');
+    assert.doesNotMatch(p.html(), /profile-country|assets\/flags\//);
+});
+
+test('public bio reveals its toggle only when clamped text overflows and expands in place', async () => {
+    const data = fixture();
+    data.profile.bio = 'a'.repeat(300);
+    const p = page('?user=player', { data });
+    await p.app('initPublicView()');
+    assert.match(p.html(), /<p class="profile-bio profile-bio-clamped" id=public-profile-bio>a{300}<\/p>/);
+    assert.match(p.html(), /data-act=publicbio aria-expanded=false aria-controls=public-profile-bio hidden>See more<\/button>/);
+
+    const classes = new Set(['profile-bio-clamped']);
+    const bio = p.nodes['#public-profile-bio'] = { clientHeight: 80, scrollHeight: 160, classList: {
+        toggle(name, on) { if (on) classes.add(name); else classes.delete(name); }
+    } };
+    const attrs = { 'aria-expanded': 'false' };
+    const toggle = p.nodes['[data-act=publicbio]'] = { hidden: true, textContent: 'See more',
+        getAttribute: name => attrs[name], setAttribute: (name, value) => attrs[name] = value,
+        dataset: { act: 'publicbio' }, closest: selector => selector == '#shell-sidebar' ? {} : null
+    };
+    p.app('ui.drawer = true; render()');
+    assert.equal(toggle.hidden, false);
+    p.app('runAction')(toggle);
+    assert.equal(attrs['aria-expanded'], 'true');
+    assert.equal(toggle.textContent, 'See less');
+    assert.equal(classes.has('profile-bio-clamped'), false);
+    assert.equal(p.app('ui.drawer'), true);
+    p.app('runAction')(toggle);
+    assert.equal(attrs['aria-expanded'], 'false');
+    assert.equal(toggle.textContent, 'See more');
+    assert.equal(classes.has('profile-bio-clamped'), true);
+
+    bio.scrollHeight = bio.clientHeight;
+    p.app('viewing.identity.bio = "Short"; render()');
+    assert.equal(toggle.hidden, true);
+    p.app('viewing.identity.bio = ""; render()');
+    assert.doesNotMatch(p.html(), /profile-bio|data-act=publicbio/);
+});
+
 for (const username of ['a_1', 'a'.repeat(20)]) test('valid public username is passed unchanged: ' + username, async () => {
     const p = page('?user=' + username);
     await p.app('initPublicView()');
@@ -222,4 +269,5 @@ test('a first-time signed-out visitor sees the demo guest card and local data', 
     assert.match(p.html(), /data-act=asignin/);
     assert.match(p.html(), /data-act=localdata/);
     assert.match(p.html(), /id=pmenu/);
+    assert.match(p.html(), /data-act=pedit/);
 });

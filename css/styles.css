@@ -2889,6 +2889,25 @@ input.ro {
   min-height: 44px;
 }
 
+.account-heading, .country-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.account-heading {
+  margin-bottom: var(--space-12);
+}
+
+.account-heading h2 {
+  margin: 0;
+}
+
+.account-back {
+  flex: 0 0 44px;
+  padding: 0;
+}
+
 .account-dialog input:not([type=radio]):not([type=color]), .account-dialog textarea, .account-dialog select {
   width: 100%;
   min-width: 0;
@@ -2972,9 +2991,79 @@ input.ro {
   text-align: center;
 }
 
+.profile-country, .profile-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+}
+
+.profile-status {
+  display: inline-flex;
+  gap: var(--space-4);
+  margin: 0;
+  padding: var(--space-4) var(--space-8);
+  border: var(--size-border) solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+  font-size: .875rem;
+}
+
+.profile-status .i {
+  width: var(--space-16);
+  height: var(--space-16);
+}
+
+.flag {
+  flex: none;
+  box-sizing: content-box;
+  width: auto;
+  height: 1.25em;
+  border: var(--size-border) solid var(--color-border);
+  border-radius: var(--space-4);
+  vertical-align: middle;
+}
+
+#country-preview:empty, .profile-bio-toggle[hidden] {
+  display: none;
+}
+
 .profile-bio {
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   text-align: left;
+}
+
+.profile-bio-clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
+}
+
+.public-bio {
+  text-align: left;
+}
+
+.public-bio .profile-bio {
+  margin-bottom: 0;
+}
+
+.profile-bio-toggle {
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+@media (max-width: 420px) {
+  .profile-actions {
+    flex-direction: column;
+  }
 }
 
 .account-counter {
@@ -3075,8 +3164,13 @@ input.ro {
 .share-open {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   min-height: 44px;
   min-width: 44px;
+  padding-inline: var(--space-12);
+  border: var(--size-border) solid var(--color-border);
+  border-radius: var(--radius-control);
+  color: var(--color-text);
 }
 
 /* ===== Home content ===== */

@@ -58,8 +58,9 @@ test('account menu preserves profile, sharing, settings, local data and sync hoo
     const { app } = createApp();
     signedIn(app);
     const html = app('accountMenu()');
-    for (const action of ['aprofile', 'aedit', 'ashare', 'asettings', 'asignout', 'localdata'])
+    for (const action of ['aprofile', 'ashare', 'asettings', 'asignout', 'localdata'])
         assert.match(html, new RegExp('data-act=' + action));
+    assert.doesNotMatch(html, /data-act=aedit/);
     assert.match(html, /data-cloud-status/);
     assert.match(html, /data-cloud-retry/);
     assert.match(html, /Saved/);
@@ -105,7 +106,7 @@ test('menu, profile card, forms and confirmation panel escape all hostile user v
     const hostile = `<img src=x onerror=alert(1)>"'`;
     context.hostile = hostile;
     signedIn(app);
-    app('Object.assign(account.profile, { display_name: hostile, username: hostile, bio: hostile }); account.user.email = hostile');
+    app('Object.assign(account.profile, { display_name: hostile, username: hostile, bio: hostile, country: hostile }); account.user.email = hostile');
     const escaped = app('escapeHtml(hostile)');
     for (const template of ['accountMenu()', 'profileCard()', 'profileForm()', 'confirmationPanel(hostile)']) {
         const html = app(template);
@@ -292,13 +293,66 @@ test('password form requires a match, reveals the nonce and submits it on retry'
 test('profile card localizes country and membership date and preserves biography line breaks', () => {
     const { app } = createApp();
     signedIn(app);
+    app('account.profile.bio = "Hello\\n" + "x".repeat(294)');
     const html = app('profileCard()');
-    assert.match(html, /Costa Rica/);
+    assert.match(html, /class=profile-country><img[^>]+assets\/flags\/cr\.svg[^>]*><span>Costa Rica<\/span>/);
     assert.match(html, /Member since/);
-    assert.match(html, /class=profile-bio>Hello/);
+    assert.match(html, /class=profile-bio>Hello\nx{294}<\/p>/);
     app("account.profile.username = null");
     assert.match(app('profileCard()'), /No username yet/);
+    app('account.profile.bio = null; account.profile.country = "ZZ"');
+    assert.doesNotMatch(app('profileCard()'), /profile-bio|assets\/flags\//);
 });
+
+for (const [visibility, label, icon] of [[true, 'Public', 'actionGlobe'], [false, 'Private', 'actionLock']]) {
+    test(`profile overview presents Share first and shows a ${label} badge without a URL`, () => {
+        const { app } = createApp({ location: new URL('https://example.test/app/') });
+        signedIn(app, `is_public: ${visibility}`);
+        const html = app('profileCard()');
+        assert.match(html, /<button class=pri data-act=ashare>Share<\/button><button data-act=aedit>/);
+        assert.ok(html.includes(`<p class=profile-status>${app(`ICONS.${icon}`)}${label}</p>`));
+        assert.doesNotMatch(html, /<a\s|\?user=|share-link/);
+    });
+}
+
+test('country flags use only supported canonical codes and are decorative', () => {
+    const { app } = createApp();
+    assert.match(app('countryFlag("CR")'), /^<img class=flag src="assets\/flags\/cr\.svg" alt="" width=\d+ height=\d+ loading=lazy decoding=async>$/);
+    for (const code of ['', 'ZZ', 'cr', '../cr', null])
+        assert.equal(app('countryFlag')(code), '');
+});
+
+test('country selection updates and clears the flag preview', () => {
+    const { app, nodes, document } = createApp();
+    signedIn(app);
+    assert.match(app('profileForm()'), /<span id=country-preview><img[^>]+assets\/flags\/cr\.svg/);
+    const preview = nodes['#country-preview'] = element();
+    const input = element({ id: 'pcountry', value: 'JP' });
+    document.body.onchange({ target: input });
+    assert.match(preview.innerHTML, /assets\/flags\/jp\.svg/);
+    input.value = '';
+    document.body.onchange({ target: input });
+    assert.equal(preview.innerHTML, '');
+});
+
+for (const [action, title] of [['aedit', 'Edit profile'], ['ashare', 'Share profile']]) {
+    test(`Back from ${title} returns to the overview and focuses its opener`, () => {
+        const { app, nodes } = createApp({ location: new URL('https://example.test/app/') });
+        signedIn(app, 'is_public: true');
+        const opener = nodes[`#md [data-act=${action}]`] = element();
+        const { form } = fakeForm();
+        nodes['#pf'] = form;
+        app('ACTIONS.aprofile()');
+        app(`ACTIONS.${action}()`);
+        const html = nodes['#md'].innerHTML;
+        assert.ok(html.includes(`<h2>${title}</h2>`));
+        assert.match(html, new RegExp(`data-act=aprofileback data-v=${action} aria-label="Back to My profile"`));
+        app('ACTIONS.aprofileback')(element({ dataset: { v: action } }));
+        assert.match(nodes['#md'].innerHTML, /class="box sm account-dialog profile-card"/);
+        assert.match(nodes['#md'].innerHTML, /Public/);
+        assert.equal(opener.focused, true);
+    });
+}
 
 test('all 249 countries are unique, localized, sorted and preserve the saved selection', () => {
     const { app } = createApp();
@@ -329,14 +383,17 @@ test('profile form lowercases usernames, clears errors and updates the bio count
 
 test('profile saves optional empty fields as null and handles username conflicts on the field', async () => {
     const { app, context, nodes } = createApp(), { form } = fakeForm(), toasts = [];
+    signedIn(app);
     const error = nodes['#pusername-error'] = element();
     context.showToast = value => toasts.push(value);
     context.saveOwnProfile = async fields => {
         assert.deepEqual({ ...fields }, { display_name: 'Player', username: null, color: '#123456', secondary_color: '#abcdef', bio: null, country: null });
+        app('account.profile.display_name = "Updated Player"');
         return {};
     };
     await app('submitAccountProfile')(form);
     assert.deepEqual(toasts, ['Profile saved']);
+    assert.match(nodes['#md'].innerHTML, /class="box sm account-dialog profile-card".*<h2>Updated Player<\/h2>/);
     context.saveOwnProfile = async () => ({ error: 'usernameTaken' });
     await app('submitAccountProfile')(form);
     assert.equal(error.textContent, app('t("usernameTaken")'));
@@ -551,6 +608,8 @@ test('share dialog covers username setup, private and public profiles', () => {
     app('account.profile.is_public = true; shareDialog()');
     assert.match(nodes['#md'].innerHTML, /data-v=true aria-pressed=true/);
     assert.match(nodes['#md'].innerHTML, /readonly/);
+    assert.match(nodes['#md'].innerHTML, /<button class=pri data-act=acopy>Copy link<\/button>/);
+    assert.match(nodes['#md'].innerHTML, /<a class="lk share-open"/);
     assert.match(nodes['#md'].innerHTML, /https:\/\/example.test\/app\/\?user=player/);
     assert.match(app('profileCard()'), /Public/);
     assert.match(app('profileCard()'), /data-act=ashare/);
@@ -596,6 +655,28 @@ test('share visibility saves once with pending controls and inline errors', asyn
     assert.match(nodes['#md'].innerHTML, /id=share-link/);
     await app('setProfileVisibility')(buttons[0]);
     assert.match(nodes['#md'].innerHTML, /Only you can see your progress/);
+});
+
+test('a visibility save finishing after Back updates the overview badge in place', async () => {
+    const { app, context, nodes } = createApp({ location: new URL('https://example.test/app/') });
+    signedIn(app, 'is_public: true');
+    const message = element(), status = nodes['#md .profile-status'] = element({ textContent: 'Public' });
+    const opener = nodes['#md [data-act=ashare]'] = element();
+    const button = element({ dataset: { v: 'false' }, closest: () => root });
+    const root = element({ querySelector: () => message, querySelectorAll: () => [button] });
+    let finishSave;
+    context.saveOwnProfile = () => new Promise(resolve => { finishSave = resolve; });
+    app('ACTIONS.ashare()');
+    const pending = app('ACTIONS.asharestate')(button);
+    app('ACTIONS.aprofileback')(element({ dataset: { v: 'ashare' } }));
+    root.isConnected = false;
+    const overview = nodes['#md'].innerHTML;
+    app('account.profile.is_public = false');
+    finishSave({});
+    await pending;
+    assert.equal(status.textContent, 'Private');
+    assert.equal(nodes['#md'].innerHTML, overview);
+    assert.equal(opener.focused, true);
 });
 
 test('with email sign-in off, the sign-in dialog offers only Google and explains why', async () => {

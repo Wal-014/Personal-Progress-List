@@ -66,6 +66,10 @@ function render() {
         qs('.list-surface')?.classList.add('mode-enter');
     syncDrawer();
     syncDocumentAttributes();
+    if (viewing?.identity?.bio) {
+        updatePublicBio();
+        document.fonts?.ready.then(updatePublicBio);
+    }
     restoreScroll(view);
     initSort();
     initWishlistSort();
