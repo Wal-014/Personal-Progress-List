@@ -317,15 +317,20 @@ function reorderList(evt) {
     saveListOrder([...qs('#lst').children].map(c => c.dataset.id));
 }
 
+function configureDragScroll(sortable, pane) {
+    const scrollPane = pane.scrollHeight > pane.clientHeight;
+    sortable.option('scroll', scrollPane ? pane : true);
+    sortable.option('bubbleScroll', !scrollPane);
+}
+
 function initSort() {
     const listNode = qs('#lst');
     if (!listNode || !canReorder())
         return;
-    const pane = listNode.parentElement;
-    const scrollPane = pane.scrollHeight > pane.clientHeight;
     new Sortable(listNode, {
         animation: prefersReducedMotion() ? 0 : 180, filter: startsAwayFromGrip, preventOnFilter: false, fallbackTolerance: 5,
-        scroll: scrollPane ? pane : true, bubbleScroll: !scrollPane,
+        // AutoScroll starts listening before Sortable dispatches onStart.
+        onChoose() { configureDragScroll(this, listNode.parentElement); },
         forceAutoScrollFallback: true, scrollSensitivity: 80, scrollSpeed: 14, onUpdate: reorderList
     });
 }
