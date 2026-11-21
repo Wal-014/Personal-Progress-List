@@ -18,7 +18,10 @@ function setAppearance(field, value) {
         ui[field] = value;
         localStorage[field == 'theme' ? 'gt' : 'gbg'] = value;
     }
-    reopenPause(`[data-act=${field}][data-v=${value}]`);
+    document.documentElement.dataset[field == 'theme' ? 'theme' : 'bg'] = value;
+    document.querySelectorAll('#md .pause [data-act=' + field + ']').forEach(option => {
+        option.setAttribute('aria-pressed', String(option.dataset.v == value));
+    });
 }
 
 /** Zooms the timeline by a factor, keeping the same date in the middle of the view. */
@@ -30,7 +33,16 @@ function zoomTimeline(factor) {
     n.scrollLeft = r * n.scrollWidth - n.clientWidth / 2;
 }
 
-window.addEventListener('resize', () => syncDrawer());
+function resizeOverlays() {
+    syncDrawer();
+    const menu = qs('.pmenu:popover-open');
+    if (menu?.closest('[inert]'))
+        menu.hidePopover();
+    else if (menu)
+        placePopover({ target: menu, newState: 'open' });
+}
+
+window.addEventListener('resize', resizeOverlays);
 
 /** What each data-act value does when clicked. Handlers get the clicked element and its data-id. */
 const ACTIONS = {
@@ -58,7 +70,6 @@ const ACTIONS = {
         render();
     },
     localimport() {
-        closeModal();
         qs('#fi').click();
     },
     localbackup: (a, id) => downloadLocalBackup(id),
@@ -119,11 +130,7 @@ const ACTIONS = {
     'list-select': () => toggleLevelSelection(),
     'list-pick': (row, id) => pickListLevel(row, id),
     'list-delete': () => deleteSelectedLevels(),
-    listchoices(button) {
-        ui.listsExpanded = button.getAttribute('aria-expanded') != 'true';
-        button.setAttribute('aria-expanded', String(ui.listsExpanded));
-        qs('#hlists').inert = !ui.listsExpanded;
-    },
+    listchoices: button => setListChoices(button, !ui.listsExpanded),
     zi: () => zoomTimeline(1.5),
     zo: () => zoomTimeline(1 / 1.5),
     'ranking-mode': a => setRankingMode(a.dataset.v),
@@ -212,9 +219,12 @@ const ACTIONS = {
         });
     },
     tadd() {
-        const n = qs('#nn').value.trim();
-        const error = tagNameError(n);
-        if (error) return showAlert(error);
+        const input = qs('#nn'), n = input.value.trim(), error = tagNameError(n);
+        if (error) {
+            setFieldError(input, error);
+            input.focus();
+            return;
+        }
         profile.tags.push({ name: n, color: qs('#nc').value });
         save();
         render();
@@ -356,9 +366,8 @@ function renameTag(input) {
     if (name === tag.name) return;
     const error = tagNameError(name, tag);
     if (error) {
-        input.value = tag.name;
-        updateTagPreview(input);
-        return showAlert(error);
+        setFieldError(input, error);
+        return;
     }
     const rename = () => {
         const wasPre = tag.name == PRE_TAG;
@@ -409,8 +418,11 @@ async function importProfile(file) {
     }
     localStorage.gdp = JSON.stringify(store);
     render();
-    if (cloudUser)
+    const localDataOpen = !!qs('#md .local-data');
+    if (cloudUser || localDataOpen) {
         openModal(localDataDialog());
+        if (localDataOpen) qs('#md [data-act=localimport]').focus();
+    }
 }
 
 document.body.onclick = e => {
@@ -430,12 +442,18 @@ document.body.onclick = e => {
     }
     if (a) {
         const k = a.dataset.act;
-        if (ui.drawer && k != 'listchoices' && a.closest('#shell-sidebar'))
+        const menu = a.closest(':popover-open');
+        if (menu) {
+            const opener = overlayOpener(a);
+            menu.hidePopover();
+            opener.element?.focus({ preventScroll: true });
+        }
+        const fromDrawer = ui.drawer && a.closest('#shell-sidebar') && k != 'listchoices';
+        if (fromDrawer && ['tab', 'localuse', 'myprogress'].includes(k))
             setDrawer(false);
-        if (a.closest('.pause') && ['wnew', 'tags', 'legal'].includes(k))
-            closeModal();
-        a.closest(':popover-open')?.hidePopover();
         ACTIONS[k]?.(a, a.dataset.id);
+        if (fromDrawer && ui.drawer && !qs('dialog[open]') && k != 'localimport')
+            setDrawer(false);
         return;
     }
     const l = c && !e.target.closest('form') && findLevel(c.dataset.id);
@@ -478,7 +496,29 @@ document.addEventListener('scroll', e => {
         pane.classList.toggle('scrolled-edge', pane.scrollTop > 0);
 }, { capture: true, passive: true });
 
+const invalidForms = new WeakSet();
+
+function showInvalidField(event) {
+    const field = event.target, form = field.form;
+    if (!form?.closest('dialog.modal') || field.dataset.deathField != null)
+        return;
+    event.preventDefault();
+    setFieldError(field, field.validationMessage);
+    if (!invalidForms.has(form)) {
+        invalidForms.add(form);
+        queueMicrotask(() => {
+            invalidForms.delete(form);
+            if (form.isConnected)
+                field.focus();
+        });
+    }
+}
+
+document.addEventListener('invalid', showInvalidField, true);
+
 document.body.oninput = e => {
+    if (e.target.getAttribute?.('aria-invalid') == 'true' && e.target.closest('dialog.modal') && e.target.dataset.deathField == null)
+        setFieldError(e.target, '');
     if (e.target.dataset.tn != null || e.target.id == 'nn')
         updateTagPreview(e.target);
     if (e.target.dataset.tc != null || e.target.id == 'nc')
@@ -568,14 +608,34 @@ function accountRendered() {
 document.addEventListener('close', () => queueMicrotask(accountRendered), true);
 /** Fits an open dropdown panel inside the viewport. */
 document.addEventListener('toggle', e => {
-    if (e.target.matches('.ms[open]')) {
-        const optionsPanel = e.target.querySelector('.msp'), panelTop = optionsPanel.getBoundingClientRect().top;
+    const disclosure = e.target;
+    if (!disclosure.matches('.ms'))
+        return;
+    const summary = disclosure.querySelector('summary');
+    if (!disclosure.open) {
+        if (disclosure.contains(document.activeElement))
+            summary.focus();
+        return;
+    }
+    const optionsPanel = disclosure.querySelector('.msp');
+    if (!disclosure.closest('dialog')) {
+        const panelTop = optionsPanel.getBoundingClientRect().top;
         optionsPanel.style.setProperty('--ms-height', Math.max(0, innerHeight - panelTop - 12) + 'px');
     }
+    if (document.activeElement == summary)
+        optionsPanel.querySelector('label:not([hidden]) input')?.focus({ preventScroll: true });
 }, true);
 document.addEventListener('focusout', e => durationBlur(e));
 document.onkeydown = e => {
-    if (ui.drawer && drawerKeydown(e))
+    if (e.key == 'Escape' && !qs('dialog[open]')) {
+        const chooser = e.target.closest?.('#hlists, [data-act=listchoices]');
+        if (chooser && ui.listsExpanded) {
+            e.preventDefault();
+            setListChoices(qs('[data-act=listchoices]'), false);
+            return;
+        }
+    }
+    if (ui.drawer && !qs('dialog[open]') && drawerKeydown(e))
         return;
     if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.target.matches?.('.lv')) {
         if (moveRankedLevel(e.target.dataset.id, e.key === 'ArrowUp' ? -1 : 1))
@@ -611,7 +671,6 @@ document.onkeydown = e => {
             dropdown.querySelector('summary').focus();
             return;
         }
-        closeModal();
     }
     if ((e.key == 'Enter' || e.key == ' ') && e.target.matches('[role=button]')) {
         e.preventDefault();

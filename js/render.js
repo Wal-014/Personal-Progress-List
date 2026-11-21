@@ -8,13 +8,16 @@ function controlSelector(el) {
         return null;
     if (el.id)
         return '#' + CSS.escape(el.id);
+    if (el.closest?.('.lh .ms'))
+        return '.lh .ms summary';
     const attrs = ['data-act', 'data-id', 'data-v', 'data-wp', 'popovertarget', 'name'].filter(a => el.hasAttribute(a));
     return attrs.length ? el.tagName.toLowerCase() + attrs.map(a => `[${a}="${CSS.escape(el.getAttribute(a))}"]`).join('') : null;
 }
 
 /** Preserves list scroll when redrawing the same screen. */
 function render() {
-    const focused = controlSelector(document.activeElement);
+    const active = document.activeElement;
+    const focused = active?.closest?.('[popover]') ? overlayOpener(active).selector : controlSelector(active);
     const listScrollTop = ui.renderedTab == ui.tab ? qs('#lw')?.scrollTop : 0, isLevelList = isListTab();
     const contentSelector = ui.tab == 'wish' && ui.wl ? '.legacy-surface > .wl' : '.legacy-surface';
     const contentScroll = ui.renderedTab == ui.tab && (ui.tab == 'stats' || (ui.tab == 'wish' && ui.renderedWishlist == ui.wl))
@@ -41,5 +44,7 @@ function render() {
     // Rebuilding #app drops keyboard focus to <body>; put it back on the same control when it still exists
     if (focused)
         qs(focused)?.focus({ preventScroll: true });
+    if (qs('[data-act=bell]'))
+        syncNotificationCount(Number(qs('[data-act=bell] .bdg')?.textContent || 0));
     accountRendered();
 }

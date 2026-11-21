@@ -15,7 +15,7 @@ function createApp(globals = {}, { emailAuth = true } = {}) {
     nodes['#md'] = element({ innerHTML: '' });
     nodes['#md dialog'] = element({ querySelector: () => null, addEventListener() {}, showModal() {}, close() {} });
     const env = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/account.js', 'js/components/dialogs.js', 'js/components/account-ui.js', 'js/events.js'], {
-        document, window: { addEventListener() {} }, renderTagSuggestions() {}, ui: { lang: 'en' }, cloudSync: { pending: 0 }, cloudUser: null, queueMicrotask: () => {}, cloudStatusSentence: () => 'Saved', cloudRetryButton: () => '', ...globals
+        document, CSS: { escape: String }, window: { addEventListener() {} }, renderTagSuggestions() {}, ui: { lang: 'en' }, cloudSync: { pending: 0 }, cloudUser: null, queueMicrotask: () => {}, cloudStatusSentence: () => 'Saved', cloudRetryButton: () => '', ...globals
     }, withEmailAuth(emailAuth));
     return { ...env, document, nodes, listeners };
 }
@@ -39,7 +39,7 @@ function element(values = {}) {
 
 function fakeForm(mode = 'signin') {
     const button = element({ textContent: 'Submit' }), message = element(), forward = element(), heading = element(), nonceField = element({ hidden: true });
-    const elements = Object.fromEntries(Object.entries({ aemail: 'owner@example.test', apassword: 'Password9', adisplay: 'Player', pdisplay: ' Player ', pusername: '', pbio: '', pcountry: '', pnewpassword: 'Password9', pconfirm: 'Password9', pnonce: '', enew: 'new@example.test' }).map(([key, value]) => [key, element({ value })]));
+    const elements = Object.fromEntries(Object.entries({ aemail: 'owner@example.test', apassword: 'Password9', adisplay: 'Player', pdisplay: ' Player ', pusername: '', pbio: '', pcountry: '', pnewpassword: 'Password9', pconfirm: 'Password9', pnonce: '', enew: 'new@example.test' }).map(([key, value]) => [key, element({ id: key, value })]));
     elements.pnonce.disabled = true;
     const form = element({ dataset: { mode }, elements, profileColors: { color: '#123456', secondaryColor: '#abcdef' },
         querySelector: selector => selector === '[type=submit]' ? button : selector === '#auth-forward' ? forward : selector === 'h3' ? heading : selector === '#nonce-field' ? nonceField : selector === 'input' ? elements.aemail : message
@@ -262,12 +262,15 @@ test('password visibility toggle updates its control, label and pressed state', 
 });
 
 test('password form requires a match, reveals the nonce and submits it on retry', async () => {
-    const { app, context } = createApp(), { form, message, nonceField } = fakeForm(), toasts = [];
+    const { app, context, nodes } = createApp(), { form, nonceField } = fakeForm(), toasts = [];
+    const error = nodes['#pconfirm-error'] = element();
     form.elements.pconfirm.value = 'Different9';
     context.updatePassword = async () => assert.fail('mismatched passwords must not be sent');
     await app('submitAccountPassword')(form);
-    assert.ok(form.elements.pconfirm.validityMessage);
-    assert.equal(message.focused, true);
+    assert.equal(error.textContent, app('t("accountPasswordMismatch")'));
+    assert.equal(form.elements.pconfirm.getAttribute('aria-describedby'), 'pconfirm-error');
+    assert.equal(form.elements.pconfirm.getAttribute('aria-invalid'), 'true');
+    assert.equal(form.elements.pconfirm.focused, true);
     form.elements.pconfirm.value = 'Password9';
     context.updatePassword = async (password, nonce) => {
         assert.equal(password, 'Password9');
@@ -325,7 +328,8 @@ test('profile form lowercases usernames, clears errors and updates the bio count
 });
 
 test('profile saves optional empty fields as null and handles username conflicts on the field', async () => {
-    const { app, context } = createApp(), { form } = fakeForm(), toasts = [];
+    const { app, context, nodes } = createApp(), { form } = fakeForm(), toasts = [];
+    const error = nodes['#pusername-error'] = element();
     context.showToast = value => toasts.push(value);
     context.saveOwnProfile = async fields => {
         assert.deepEqual({ ...fields }, { display_name: 'Player', username: null, color: '#123456', secondary_color: '#abcdef', bio: null, country: null });
@@ -335,9 +339,10 @@ test('profile saves optional empty fields as null and handles username conflicts
     assert.deepEqual(toasts, ['Profile saved']);
     context.saveOwnProfile = async () => ({ error: 'usernameTaken' });
     await app('submitAccountProfile')(form);
-    assert.equal(form.elements.pusername.validityMessage, app('t("usernameTaken")'));
+    assert.equal(error.textContent, app('t("usernameTaken")'));
+    assert.equal(form.elements.pusername.validityMessage, error.textContent);
     assert.equal(form.elements.pusername.focused, true);
-    assert.equal(form.elements.pusername.reported, true);
+    assert.equal(form.elements.pusername.getAttribute('aria-invalid'), 'true');
 });
 
 test('settings distinguish email identities, send email changes and show confirmation', async () => {
@@ -358,7 +363,7 @@ test('settings distinguish email identities, send email changes and show confirm
 });
 
 test('delete confirmation requires the matching account email, case insensitively', async () => {
-    const { app, context } = createApp(), message = element(), root = element({ querySelector: () => message }), button = element({ closest: () => root }), toasts = [];
+    const { app, context } = createApp(), button = element({ closest: () => element() }), toasts = [];
     signedIn(app);
     let deletions = 0;
     context.deleteAccount = async () => { deletions++; return {}; };
@@ -368,12 +373,13 @@ test('delete confirmation requires the matching account email, case insensitivel
             assert.equal(options.danger, 1);
             assert.equal(options.input, 1);
             assert.ok(options.label.includes('owner@example.test'));
-            return answer;
+            if (answer === 'wrong@example.test')
+                assert.equal(options.validate(answer), app('t("accountEmailMismatch")'));
+            return answer && !options.validate(answer) ? answer : null;
         };
         await app('confirmAccountDeletion')(button);
         if (answer !== 'OWNER@EXAMPLE.TEST') assert.equal(deletions, 0);
     }
-    assert.equal(message.focused, true);
     assert.equal(deletions, 1);
     assert.deepEqual(toasts, ['Account deleted']);
 });
@@ -406,6 +412,29 @@ test('form dispatch reaches named account handlers and preserves level form vali
     assert.equal(nodes['#gdq'].reported, true);
     assert.ok(nodes['#gdq'].validityMessage);
     assert.equal(app('typeof ACTIONS.asignin'), 'function');
+});
+
+test('native form validation retains the input and associates the inline error with its hint', () => {
+    const { document, nodes, listeners } = createApp({ queueMicrotask: run => run() });
+    const { form } = fakeForm();
+    const field = form.elements.aemail, error = nodes['#aemail-error'] = element();
+    field.value = 'not-an-email';
+    field.validationMessage = 'Enter a valid email';
+    field.setAttribute('aria-describedby', 'email-hint');
+    field.closest = () => form;
+    form.closest = () => form;
+    let prevented = false;
+    listeners.invalid[0]({ target: field, preventDefault: () => prevented = true });
+    assert.equal(prevented, true);
+    assert.equal(field.focused, true);
+    assert.equal(field.value, 'not-an-email');
+    assert.equal(error.textContent, 'Enter a valid email');
+    assert.equal(field.getAttribute('aria-describedby'), 'email-hint aemail-error');
+    field.value = 'owner@example.test';
+    document.body.oninput({ target: field });
+    assert.equal(error.textContent, '');
+    assert.equal(field.getAttribute('aria-describedby'), 'email-hint');
+    assert.equal(field.getAttribute('aria-invalid'), undefined);
 });
 
 test('sign-out shows success or a retryable error and restores its pending button', async () => {

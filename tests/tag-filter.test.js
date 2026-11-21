@@ -6,12 +6,12 @@ import { loadScripts } from './load-scripts.js';
 const createApp = () => {
     const calls = [], dom = {};
     const document = { body: {}, addEventListener() {}, querySelector: selector => dom[selector] ?? null, querySelectorAll: selector => dom[selector] ?? [] };
-    const { context, app } = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/demonlist.js', 'js/api.js', 'js/components/faces.js', 'js/components/levels.js', 'js/events.js'], { localStorage: {}, document, window: { addEventListener() {} } });
+    const { context, app, load } = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/demonlist.js', 'js/api.js', 'js/components/faces.js', 'js/components/levels.js', 'js/events.js'], { localStorage: {}, document, window: { addEventListener() {} } });
     for (const name of ['render', 'closeModal', 'openModal', 'tagsUI'])
         context[name] = () => calls.push(name);
     context.askConfirm = async () => true;
     app('store = { cur: "p", profs: { p: { name: "P", color: "#ffe94d", data: emptyProfile() } } }; profile = store.profs.p.data; ui.tab = "classic"');
-    return { app, calls, context, dom };
+    return { app, calls, context, dom, load };
 };
 const tagFilter = app => [...app('ui.tagFilter')];
 const flush = () => new Promise(resolve => setImmediate(resolve));
@@ -86,6 +86,32 @@ test('renaming a tag renames it inside the active filter', () => {
     app('profile.tags = [{ name: "A", color: "#000000" }, { name: "B", color: "#ffffff" }]; ui.tagFilter = ["A", "B"]');
     app('renameTag')({ dataset: { tn: '0' }, value: 'Z' });
     assert.deepEqual(tagFilter(app), ['Z', 'B']);
+});
+
+test('invalid tag changes keep the draft and expose the error beside its field', () => {
+    const { app, context, dom, load } = createApp();
+    context.CSS = { escape: String };
+    load(['js/components/dialogs.js']);
+    app('profile.tags = [{ name: "A", color: "#000000" }, { name: "B", color: "#ffffff" }]');
+    const input = (id, value, dataset = {}) => {
+        const attributes = new Map([['aria-describedby', 'tag-limit']]);
+        return { id, value, dataset, getAttribute: name => attributes.get(name), removeAttribute: name => attributes.delete(name),
+            setAttribute: (name, next) => attributes.set(name, next), focus() { this.focused = true; } };
+    };
+    const added = dom['#nn'] = input('nn', '   ');
+    dom['#nn-error'] = {};
+    app('ACTIONS.tadd()');
+    assert.equal(added.value, '   ');
+    assert.equal(added.focused, true);
+    assert.equal(added.getAttribute('aria-describedby'), 'tag-limit nn-error');
+    assert.equal(dom['#nn-error'].textContent, app("t('tagEmpty')"));
+    const renamed = input('', 'B', { tn: '0' });
+    dom['#tag-name-0-error'] = {};
+    app('renameTag')(renamed);
+    assert.equal(renamed.value, 'B');
+    assert.equal(renamed.getAttribute('aria-invalid'), 'true');
+    assert.equal(dom['#tag-name-0-error'].textContent, app("t('tagExists')"));
+    assert.equal(app('profile.tags.map(tag => tag.name).join(",")'), 'A,B');
 });
 
 test('the dropdown summary names one selected tag and counts several', () => {
