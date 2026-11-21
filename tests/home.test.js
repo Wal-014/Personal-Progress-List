@@ -21,6 +21,16 @@ function homeApp() {
     return { ...loaded, root };
 }
 
+test('entering either list keeps the sidebar disclosure closed until the user expands it', () => {
+    const { app } = homeApp();
+    for (const kind of ['classic', 'platform']) {
+        app(`ui.tab = '${kind}'`);
+        assert.match(app('shellNavigation()'), /data-act=listchoices aria-expanded=false/);
+    }
+    app('ui.listsExpanded = true');
+    assert.match(app('shellNavigation()'), /data-act=listchoices aria-expanded=true/);
+});
+
 test('Home cards use ranked leads, faces, localized counts and attempts without nested controls', () => {
     const { app } = homeApp();
     const html = app('home()');

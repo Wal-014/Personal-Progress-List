@@ -61,7 +61,7 @@ function drawerKeydown(event) {
 
 function shellNavigation() {
     const navItem = (kind, label, icon) => `<button data-act=tab data-v=${kind}${kind == ui.tab ? ' aria-current=page' : ''}>${icon}<span>${t(label)}</span></button>`;
-    const expanded = ui.listsExpanded ?? isListTab();
+    const expanded = ui.listsExpanded;
     const choices = ['classic', 'platform'].map(kind => `<button class=pma data-act=tab data-v=${kind}${ui.tab == kind ? ' aria-current=page' : ''}>${ICONS[kind]}<span>${t(kind)}</span></button>`).join('');
     return `<nav class=shell-nav aria-label="${t('nav')}">${navItem('home', 'home', ICONS.navHome)}<button data-act=listchoices aria-expanded=${expanded} aria-controls=hlists${isListTab() ? ' aria-current=page' : ''}>${ICONS.navLists}<span>${t(canEdit() ? 'lists' : 'publicLists')}</span>${ICONS.chevronDown}</button><div id=hlists class=list-choices${expanded ? '' : ' inert'}><div class=list-choices-inner>${choices}</div></div>${navItem('wish', 'wish', ICONS.navWish)}${navItem('stats', 'stats', ICONS.navStats)}</nav>`;
 }

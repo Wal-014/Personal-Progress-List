@@ -73,7 +73,7 @@ function showDialog({ title, msg, input, def, ok, cancel, danger, label, extra =
 
 const askText = (title, def) => showDialog({ title, input: 1, def });
 
-const profilePreview = selected => selected.cubeId ? catalogCube(selected.cubeId, selected.color, selected.secondaryColor) : cubeIcon(selected.color, selected.secondaryColor);
+const profilePreview = selected => selected.cubeId ? catalogCube(selected.cubeId, selected.color, selected.secondaryColor) + `<small>${t('cube')} ${selected.cubeId}</small>` : cubeIcon(selected.color, selected.secondaryColor);
 
 function bindCubeCatalog(dialog, selected) {
     const catalog = dialog.querySelector('.cube-catalog');
@@ -107,7 +107,6 @@ function bindCubeCatalog(dialog, selected) {
             selected.cubeId = Number(button.dataset.cube);
             catalog.querySelectorAll('[data-cube]').forEach(tile => tile.setAttribute('aria-pressed', String(tile == button)));
             dialog.querySelector('.profile-preview').innerHTML = profilePreview(selected);
-            toggle.querySelector('span').textContent = selected.cubeId;
         }
     };
     return () => { if (!optionsPanel.hidden) draw(); };
@@ -137,7 +136,7 @@ function bindProfileColors(root, selected, onChange) {
 /** Asks for a profile name and colours, sharing the prompt's validation and keyboard handling. */
 function askProfile(title, { name, color, secondaryColor, cubeId }) {
     const selected = { cubeId: validCubeId(cubeId) ? cubeId : 2, color: isHexColor(color) ? color : PROFILE_COLORS[0], secondaryColor: isHexColor(secondaryColor) ? secondaryColor : DEFAULT_SECONDARY_COLOR };
-    return showDialog({ title, ok: t('save'), input: 1, def: name, label: t('pname'), extra: profileColorFields(selected) + `<div class=cube-catalog><button type=button aria-controls=cube-options aria-expanded=false>${t('selectIcon')} <span>${selected.cubeId}</span>${ICONS.chevronDown}</button><div id=cube-options hidden><div class=cube-pager><button type=button data-page="-1" aria-label="${t('previousPage')}">&lsaquo;</button><output></output><button type=button data-page="1" aria-label="${t('nextPage')}">&rsaquo;</button></div><div class=cube-grid></div></div></div>`, enhance: m => {
+    return showDialog({ title, ok: t('save'), input: 1, def: name, label: t('pname'), extra: profileColorFields(selected) + `<div class=cube-catalog><button type=button aria-controls=cube-options aria-expanded=false>${t('selectIcon')}${ICONS.chevronDown}</button><div id=cube-options hidden><div class=cube-pager><button type=button data-page="-1" aria-label="${t('previousPage')}">&lsaquo;</button><output></output><button type=button data-page="1" aria-label="${t('nextPage')}">&rsaquo;</button></div><div class=cube-grid></div></div></div>`, enhance: m => {
         bindProfileColors(m, selected, bindCubeCatalog(m, selected));
         return name => ({ name, ...selected });
     } });
@@ -170,7 +169,7 @@ function tagsUI() {
         const existing = index != null, name = escapeHtml(tag.name), color = isHexColor(tag.color) ? tag.color : '#947bd2';
         const colorLabel = t('color') + (existing ? ' &middot; ' + name : '');
         const reserved = existing && tag.name == PRE_TAG;
-        return `<div class=trow><label class="tag-swatch chip" style="--tag-color:${color}" title="${colorLabel}">${t('color')}<input type=color ${existing ? 'data-tc=' + index : 'id=nc'} value="${color}" aria-label="${colorLabel}"></label>
+        return `<div class=trow><label class="tag-swatch chip" style="--tag-color:${color}" title="${colorLabel}"><span>${name || t('newTag')}</span><input type=color ${existing ? 'data-tc=' + index : 'id=nc'} value="${color}" aria-label="${colorLabel}"></label>
 <input ${existing ? 'data-tn=' + index : 'id=nn'} value="${name}" placeholder="${t('newTag')}" aria-label="${t(existing ? 'name' : 'newTag')}"${reserved ? ' aria-describedby=tg-pre' : ''}>
 ${existing ? `<button class="xs dg" data-act=tdel data-i=${index} aria-label="${t('del')} &middot; ${name}">${ICONS.listClear}</button>` : `<button class=pri data-act=tadd>${t('add')}</button>`}</div>${reserved ? `<small id=tg-pre class=by>${t('preTagHint')}</small>` : ''}`;
     };

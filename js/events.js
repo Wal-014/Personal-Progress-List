@@ -336,10 +336,19 @@ function setTagColor(input) {
     render();
 }
 
+function updateTagPreview(input) {
+    const label = input.parentElement.querySelector('.tag-swatch');
+    const name = input.value.trim();
+    label.querySelector('span').textContent = name || t('newTag');
+    label.title = name ? t('color') + ' \u00b7 ' + name : t('color');
+    label.querySelector('input').setAttribute('aria-label', label.title);
+}
+
 function renameTag(input) {
     const tag = profile.tags[input.dataset.tn], name = input.value.trim();
     if (!name || profile.tags.some(x => x != tag && x.name == name)) {
         input.value = tag.name;
+        updateTagPreview(input);
         return showAlert(t(name ? 'tagExists' : 'tagEmpty'));
     }
     const rename = () => {
@@ -357,8 +366,10 @@ function renameTag(input) {
     askConfirm(t('preTagConfirm')).then(ok => {
         if (ok)
             rename();
-        else
+        else {
             input.value = tag.name;
+            updateTagPreview(input);
+        }
     });
 }
 
@@ -459,6 +470,8 @@ document.addEventListener('scroll', e => {
 }, { capture: true, passive: true });
 
 document.body.oninput = e => {
+    if (e.target.dataset.tn != null || e.target.id == 'nn')
+        updateTagPreview(e.target);
     if (e.target.dataset.tc != null || e.target.id == 'nc')
         e.target.parentElement.style.setProperty('--tag-color', e.target.value);
     if (e.target.dataset.deathField != null)

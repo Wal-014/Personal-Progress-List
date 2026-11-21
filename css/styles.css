@@ -2541,18 +2541,23 @@ input.ro {
 
 .profile-colors-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
 }
 
 .profile-preview {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+  color: var(--color-text-muted);
   flex: none;
 }
 
 .profile-preview .i {
   display: block;
-  width: 48px;
-  height: 48px;
+  width: clamp(56px, 14vw, 68px);
+  height: auto;
+  aspect-ratio: 1;
 }
 
 .profile-color-groups {
@@ -3065,6 +3070,7 @@ input.ro {
 }
 
 .hghost .i {
+  stroke-width: 1.4;
   width: 42%;
   height: auto;
 }
@@ -4743,6 +4749,11 @@ input[type=checkbox]:checked::after {
 .tag-manager .trow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; }
 .tag-manager .trow > input { width: 100%; min-width: 0; }
 .tag-manager .tag-swatch {
+  text-transform: none;
+  letter-spacing: normal;
+  font: 600 .75rem/1.4 var(--font-ui);
+  max-width: min(11rem, 27vw);
+  overflow-wrap: anywhere;
   position: relative;
   display: inline-grid;
   place-items: center;
