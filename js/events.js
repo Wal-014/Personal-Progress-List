@@ -169,20 +169,7 @@ const ACTIONS = {
         openModal(levelForm());
         qs('#gdq').focus();
     },
-    edit(a, id) {
-        const openedFromDialog = !!qs('#md .modal'), l = findLevel(id);
-        closeModal();
-        if (l)
-            ui.tab = l.kind;
-        ui.sel = id;
-        ui.edit = 1;
-        if (openedFromDialog)
-            resetListFilters();
-        render();
-        if (openedFromDialog)
-            scrollSel();
-        focusLevelPanel();
-    },
+    edit: (a, id) => openLevelEditor(id, !!qs('#md .modal')),
     lvclose() {
         const wasEditing = ui.edit, returnId = ui.sel;
         if (!ui.edit)
@@ -323,6 +310,21 @@ const ACTIONS = {
     wask: (a, id) => askTransfer(currentWishlist().items.find(i => i.id == id), false),
     wto: (a, id) => transferWishlistItem(id, a.dataset.v)
 };
+
+function openLevelEditor(id, revealInList) {
+    const level = findLevel(id);
+    closeModal();
+    if (level)
+        ui.tab = level.kind;
+    ui.sel = id;
+    ui.edit = 1;
+    if (revealInList)
+        resetListFilters();
+    render();
+    if (revealInList)
+        scrollSel();
+    focusLevelPanel();
+}
 
 function downloadLocalBackup(id) {
     const pr = store.profs[id], u = URL.createObjectURL(new Blob([JSON.stringify({ ...pr.data, profileName: pr.name, profileCubeId: pr.cubeId, profileColor: pr.color, profileSecondaryColor: pr.secondaryColor })], { type: 'application/json' })), x = document.createElement('a');

@@ -27,7 +27,9 @@ function wishlistsIndex() {
 }
 
 /** IDs take precedence over names when both entries have one. */
-const isInList = (i, k) => profile.levels.some(l => l.kind == k && (i.levelId && l.levelId ? String(l.levelId) == String(i.levelId) : l.name.toLowerCase() == i.name.toLowerCase()));
+const findWishlistLevel = (i, k) => profile.levels.find(l => l.kind == k && (i.levelId && l.levelId ? String(l.levelId) == String(i.levelId) : l.name.toLowerCase() == i.name.toLowerCase()));
+
+const isInList = (i, k) => !!findWishlistLevel(i, k);
 
 /** Transfer state follows the saved lists, including levels subsequently removed from them. */
 const wishlistTransferred = i => i.kind ? isInList(i, i.kind) : isInList(i, 'classic') || isInList(i, 'platform');
@@ -187,19 +189,17 @@ function transferWishlistItem(id, kind) {
     if (!item || !['classic', 'platform'].includes(kind))
         return;
     item.kind ||= kind;
-    const exists = isInList(item, kind);
-    if (!exists) {
-        const level = { id: newId('n'), name: item.name, kind, levelId: item.levelId || null, creator: item.creator || null, diff: item.diff || null, rating: item.rating || null, ar: { s: 'n' }, deaths: {}, tags: [], notes: '', date: todayLocal() };
+    let level = findWishlistLevel(item, kind);
+    const feedback = level ? 'wExists' : 'wAdded';
+    if (!level) {
+        level = { id: newId('n'), name: item.name, kind, levelId: item.levelId || null, creator: item.creator || null, diff: item.diff || null, rating: item.rating || null, ar: { s: 'n' }, deaths: {}, tags: [], notes: '', date: todayLocal() };
         profile.levels.push(level);
         matchWithAredl([level]);
         matchWithDemonlist([level]);
     }
-    showToast(t(exists ? 'wExists' : 'wAdded').replace('{list}', () => t(kind)).replace('{name}', () => item.name));
+    showToast(t(feedback).replace('{list}', () => t(kind)).replace('{name}', () => item.name));
     save();
-    closeModal();
-    render();
-    // The transfer button is replaced by a plain indicator, so keyboard focus moves to the card's status control
-    qs(`.wi[data-id="${CSS.escape(id)}"] [data-act=wstatus][data-v=done]`)?.focus();
+    openLevelEditor(level.id, true);
 }
 
 /** Saves the card order only after a drop within the stack. */
