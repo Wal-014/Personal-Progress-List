@@ -577,6 +577,11 @@ document.addEventListener('focusout', e => durationBlur(e));
 document.onkeydown = e => {
     if (ui.drawer && drawerKeydown(e))
         return;
+    if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.target.matches?.('.lv')) {
+        if (moveRankedLevel(e.target.dataset.id, e.key === 'ArrowUp' ? -1 : 1))
+            e.preventDefault();
+        return;
+    }
     const picker = e.target.closest?.('.compare-picker');
     if (picker && ['Escape', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
         const input = picker.querySelector('input'), options = [...picker.querySelectorAll('button')];

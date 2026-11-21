@@ -61,7 +61,7 @@ for (const [lang, addLabel, wishTitle, wishText, listTitle, listText, noMatch] o
             }
             app('ui.q = "matching"; ui.tagFilter = ["Played"]');
             const html = app('list()');
-            assert.match(html, /<div id=lst><div class="obj lv top1" data-id="ranked"/);
+            assert.match(html, /<div id=lst><div [^>]*data-id="ranked"/);
             assert.ok(html.includes('<span class=nm>Matching level</span>'));
             assert.doesNotMatch(html, /class=empty/);
             assert.ok(!html.includes(noMatch));

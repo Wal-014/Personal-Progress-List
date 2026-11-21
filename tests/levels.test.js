@@ -202,16 +202,41 @@ test('cards omit tags in both level lists', () => {
     }
 });
 
+test('cards show the emblem for each of the first five ranks in either list', () => {
+    app('profile = emptyProfile(); viewing = null');
+    for (const [kind, emblem] of [['classic', 'classic'], ['platform', 'platformer']]) {
+        const level = { id: 'ranked', name: 'Ranked level', kind };
+        for (let rank = 1; rank <= 5; rank++) {
+            const html = app('card')(level, rank - 1, 8);
+            assert.match(html, new RegExp(`class="obj lv rank-${rank}"`));
+            assert.ok(html.includes(`<span class=rk aria-label="#${rank} / 8">`));
+            assert.ok(html.includes(`src="assets/ranks/${emblem}-${rank}.webp"`));
+            assert.match(html, /<img[^>]+width=68 height=80 alt="" decoding=async/);
+        }
+    }
+});
+
+test('rank six, unplaced and First steps cards have no emblem', () => {
+    app('profile = emptyProfile(); ui.lang = "en"');
+    const level = { id: 'plain', name: 'Level', kind: 'classic' };
+    const unplaced = app("t('unplaced')");
+    for (const [index, label, content] of [[5, '#6 / 8', '6'], [undefined, unplaced, '—'], [null, unplaced, '—'], ['pre', app("t('first')"), app('ICONS.classic')]]) {
+        const html = app('card')(level, index, 8);
+        assert.ok(html.includes(`<span class=rk aria-label="${label}">${content}</span>`));
+        assert.doesNotMatch(html, /assets\/ranks\/|class="obj lv rank-/);
+    }
+});
+
 test('card renders optional decorative grips and thumbnail layers', () => {
     const level = { id: 'grip-test', name: 'Level', kind: 'classic' };
-    for (const [lang, hint] of [['es', 'Arrastra para reordenar'], ['en', 'Drag to reorder']]) {
+    for (const [lang, hint] of [['es', 'Arrastra o pulsa Alt+↑ / Alt+↓ para reordenar'], ['en', 'Drag or press Alt+↑ / Alt+↓ to reorder']]) {
         context.lang = lang;
         app('ui.lang = lang');
         const html = app('card')(level, 0, 1, true);
         assert.doesNotMatch(html, /<i class=th\b/);
         assert.match(app('card')({ ...level, levelId: '42' }, 0, 1, true), /<i class=th aria-hidden=true><\/i>/);
-        assert.match(html, new RegExp(`^<div[^>]*><span class=grip aria-hidden=true title="${hint}">`));
         const grip = html.match(/<span class=grip[^>]*>(.*?)<\/span>/)[0];
+        assert.ok(grip.startsWith(`<span class=grip aria-hidden=true title="${hint}">`));
         assert.doesNotMatch(grip, /\b(?:tabindex|role)=/);
         assert.ok(grip.includes(app('ICONS.grip')));
         assert.match(grip, /<svg class=i\b[^>]*aria-hidden=true/);
@@ -220,6 +245,77 @@ test('card renders optional decorative grips and thumbnail layers', () => {
         for (const reorderable of [false, undefined])
             assert.doesNotMatch(app('card')(level, 0, 1, reorderable), /class=grip/);
     }
+});
+
+function keyboardReorderFixture(kind) {
+    const localStorage = {}, messages = [];
+    let renders = 0;
+    const { app, context } = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/levels.js', 'js/events.js'], {
+        localStorage, document: { body: {}, addEventListener() {} }, window: { addEventListener() {} },
+        render: () => renders++, showToast: message => messages.push(message), kind
+    });
+    app(`
+        ui.tab = kind;
+        ui.lang = 'en';
+        profile = emptyProfile();
+        store = { cur: 'local', profs: { local: { data: profile } } };
+        profile.levels = ['bottom', 'unplaced', 'pre', 'middle', 'top'].map(id => ({
+            id, name: id, kind, tags: id === 'pre' ? [PRE_TAG] : []
+        }));
+        profile.order[kind] = ['top', 'pre', 'middle', 'deleted', 'bottom'];
+    `);
+    function press(id, key, modifiers = {}) {
+        let prevented = false;
+        context.document.onkeydown({
+            key, altKey: true, ...modifiers,
+            target: { dataset: { id }, matches: selector => selector === '.lv' },
+            preventDefault() { prevented = true; }
+        });
+        return prevented;
+    }
+    return { app, press, localStorage, messages, get renders() { return renders; } };
+}
+
+for (const kind of ['classic', 'platform'])
+    test(`Alt+Arrow moves a ${kind} level by ID and saves the new order`, () => {
+        const fixture = keyboardReorderFixture(kind);
+        for (const [key, position, expected] of [
+            ['ArrowUp', 1, ['middle', 'pre', 'top', 'deleted', 'bottom']],
+            ['ArrowDown', 2, ['top', 'pre', 'middle', 'deleted', 'bottom']]
+        ]) {
+            assert.equal(fixture.press('middle', key), true);
+            assert.deepEqual([...fixture.app('profile.order[kind]')], expected);
+            const saved = JSON.parse(fixture.localStorage.gdp).profs.local.data.order;
+            assert.deepEqual(saved[kind], expected);
+            assert.deepEqual(saved[kind === 'classic' ? 'platform' : 'classic'], []);
+            assert.equal(fixture.messages.at(-1), `Moved to position ${position} of 3.`);
+        }
+        assert.equal(fixture.renders, 2);
+    });
+
+test('keyboard reorder leaves the order and storage alone when the shortcut cannot move a level', () => {
+    const fixture = keyboardReorderFixture('classic');
+    fixture.app('save()');
+    const saved = fixture.localStorage.gdp;
+    fixture.press('top', 'ArrowUp');
+    fixture.press('bottom', 'ArrowDown');
+    fixture.press('unplaced', 'ArrowUp');
+    fixture.press('pre', 'ArrowDown');
+    fixture.press('middle', 'ArrowUp', { altKey: false });
+    for (const setup of [
+        'ui.q = "middle"',
+        'ui.q = ""; ui.tagFilter = ["tag"]',
+        'ui.tagFilter = []; ui.levelSelection = { profile, kind, ids: new Set() }',
+        'ui.levelSelection = null; viewing = {}'
+    ]) {
+        fixture.app(setup);
+        assert.equal(fixture.app('canReorder()'), false);
+        fixture.press('middle', 'ArrowUp');
+    }
+    assert.deepEqual([...fixture.app('profile.order.classic')], ['top', 'pre', 'middle', 'deleted', 'bottom']);
+    assert.equal(fixture.localStorage.gdp, saved);
+    assert.equal(fixture.renders, 0);
+    assert.deepEqual(fixture.messages, []);
 });
 
 for (const kind of ['classic', 'platform'])
