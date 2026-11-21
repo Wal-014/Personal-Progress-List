@@ -44,6 +44,18 @@ function resizeOverlays() {
 
 window.addEventListener('resize', resizeOverlays);
 
+function refreshRankings() {
+    if (!rankingSync.running)
+        return syncRankings({ force: true });
+}
+
+function activateLocalProfile(id) {
+    activateProfile(id);
+    matchWithAredl(profile.levels);
+    matchWithDemonlist(profile.levels);
+    autoSyncRankings();
+}
+
 /** What each data-act value does when clicked. Handlers get the clicked element and its data-id. */
 const ACTIONS = {
     drawer: () => setDrawer(!ui.drawer),
@@ -59,11 +71,11 @@ const ACTIONS = {
     asharestate: a => setProfileVisibility(a),
     acopy: () => copyProfileLink(),
     localdata: () => openModal(localDataDialog()),
+    rankrefresh: refreshRankings,
     localuse(a, id) {
         if (cloudUser || !store.profs[id] || store.cur == id)
             return;
-        activateProfile(id);
-        matchWithAredl(profile.levels);
+        activateLocalProfile(id);
         ui.sel = ui.wl = null;
         localStorage.gdp = JSON.stringify(store);
         closeModal();
@@ -423,9 +435,8 @@ async function importProfile(file) {
     delete data.profileSecondaryColor;
     store.profs[id] = { ...selected, data };
     if (!cloudUser) {
-        activateProfile(id);
+        activateLocalProfile(id);
         ui.sel = ui.wl = null;
-        matchWithAredl(profile.levels);
     }
     localStorage.gdp = JSON.stringify(store);
     render();
@@ -770,7 +781,10 @@ window.addEventListener('storage', e => {
     catch {
         return;
     }
-    activateProfile(store.profs[cur] ? cur : store.cur);
+    if (store.profs[cur])
+        activateProfile(cur);
+    else
+        activateLocalProfile(store.cur);
     if (!qs('form, .modal'))
         render();
 });

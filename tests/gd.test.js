@@ -206,13 +206,15 @@ test('sync fills saved levels and wishlist tiers from the sheet before asking th
         if (url == 'data/levels.json')
             return { ok: true, json: async () => [[1, 'Saved', 'Creator', 3, 0, 2], [2, 'Wish', 'Other', 1, 1, 4], [3, 'Kept', 'Another', 2, 0, 1]] };
         if (url.includes('api.aredl.net'))
-            return { json: async () => [{ level_id: 1, name: 'Saved', position: 1 }] };
+            return { ok: true, json: async () => [{ level_id: 1, name: 'Saved', position: 1 }] };
         return { ok: false, status: 403 };
     };
-    search.context.renderSyncStatus = () => {};
+    search.context.renderRankingStatus = () => {};
+    search.context.cloudSession = null;
     search.context.document = { querySelector: () => true };
-    search.app("profile = { levels: [{ name: 'Saved', levelId: '1' }], wishlists: [{ items: [{ name: 'Wish' }, { name: 'Kept', rating: 'epic' }] }] }");
-    await search.app('syncWithAredl()');
+    search.load(['js/ranking-sync.js']);
+    search.app("profile = { levels: [{ name: 'Saved', levelId: '1' }], wishlists: [{ items: [{ name: 'Wish' }, { name: 'Kept', rating: 'epic' }] }] }; store = { cur: 'p1' }");
+    await search.app('syncRankings({ force: true })');
     assert.equal(search.app('profile.levels[0].rating'), 'epic');
     assert.deepEqual({ ...search.app('profile.wishlists[0].items[0]') }, { name: 'Wish', kind: 'platform', levelId: '2', creator: 'Other', diff: 'Easy', rating: 'mythic' });
     assert.equal(search.app('profile.wishlists[0].items[1].rating'), 'epic');

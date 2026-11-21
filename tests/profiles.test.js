@@ -17,6 +17,8 @@ const createApp = () => {
         context.window = { addEventListener() {} };
         context.render = () => {};
         context.matchWithAredl = () => {};
+        context.matchWithDemonlist = () => {};
+        context.autoSyncRankings = () => {};
         load(['js/events.js']);
     };
     return { app, context, load, loadEvents, localStorage, setProfiles, writes: () => writes };

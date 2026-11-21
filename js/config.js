@@ -91,6 +91,9 @@ const DIFFICULTIES = ['Auto', 'Easy', 'Normal', 'Hard', 'Harder', 'Insane', 'Eas
 const RATING_TIERS = ['rated', 'featured', 'epic', 'legendary', 'mythic'];
 const AREDL_API = 'https://api.aredl.net/v2/api/';
 const DEMONLIST_API = 'https://api.demonlist.org/';
+const RANKING_MAX_AGE = 12 * 3600 * 1000;
+const RANKING_RETRY_DELAY = 5 * 60 * 1000;
+const RANKING_CHECK_INTERVAL = 15 * 60 * 1000;
 // GDHistory sends no CORS headers, so the app reads it through the project's relay (relay/README.md)
 const LEVEL_RELAY_API = 'https://ppl-level-relay.waquermaster.workers.dev/';
 const SUPABASE_URL = 'https://mjgklvdnuhbnyucytaji.supabase.co';

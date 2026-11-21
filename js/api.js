@@ -1,5 +1,5 @@
 /**
- * AREDL and AREPL lists (positions and IDs), and the sync that also fills creators and difficulties from the community sheet.
+ * AREDL and AREPL lists (positions and IDs).
  */
 
 /** The stored AREDL and AREPL lists, or none when the stored copy cannot be read: a failed parse here would leave aredlCache unusable and break every AREDL lookup until storage is cleared. */
@@ -13,14 +13,10 @@ function readAredlCache() {
     }
 }
 
-/** Locally stored AREDL and AREPL lists, refreshed after AREDL_MAX_AGE. */
 let aredlCache = readAredlCache();
 
 /** Normalized names per cached array: keyed by the array, so replacing aredlCache drops them without extra code. */
 const aredlNameIndexes = new WeakMap();
-
-/** After this long the lists are downloaded again on their own. */
-const AREDL_MAX_AGE = 12 * 3600 * 1000;
 
 /** Display name of an API user, or null when none is available. */
 const publisherName = x => typeof x == 'string' ? x : x && (x.global_name || x.username || x.name || x.display_name || x.discord_username || Object.values(x).find(v => typeof v == 'string' && v.length < 32 && !/^[0-9a-f-]{20,}$/i.test(v))) || null;
@@ -60,25 +56,39 @@ function similarAredlNames(name, kind) {
     return n ? indexedAredlNames(kind).filter(x => x.name.includes(n)).slice(0, 3).map(x => x.level.n) : [];
 }
 
-/** Downloads uncached AREDL and AREPL lists (always with force); returns true when fresh lists arrive. */
+function validAredlEntry(entry) {
+    return entry != null && Number.isSafeInteger(entry.level_id) && entry.level_id > 0 && typeof entry.name == 'string'
+        && Number.isInteger(entry.position) && entry.position >= 1 && entry.position <= 100000;
+}
+
 async function loadAredlList(force) {
     if (aredlCache.length && !force)
-        return false;
-    const get = async (q) => {
+        return { d: false, p: false };
+    const get = async (endpoint, kind) => {
         try {
-            const r = await (await fetch(AREDL_API + q)).json();
-            return Array.isArray(r) ? r : r.data || [];
+            const response = await fetch(AREDL_API + endpoint + '/levels');
+            if (!response.ok)
+                return null;
+            const body = await response.json(), entries = Array.isArray(body) ? body : body?.data;
+            if (!Array.isArray(entries) || !entries.length || !entries.every(validAredlEntry))
+                return null;
+            return entries.map(x => ({ k: kind, i: x.level_id, n: x.name, p: x.position, u: publisherName(x.publisher) }));
         }
         catch {
-            return [];
+            return null;
         }
-    }, [d, q] = await Promise.all([get('aredl/levels'), get('arepl/levels')]);
-    const fresh = [...d.map(x => ({ k: 'd', i: x.level_id, n: String(x.name), p: x.position, u: publisherName(x.publisher) })), ...q.map(x => ({ k: 'p', i: x.level_id, n: String(x.name), p: x.position, u: publisherName(x.publisher) }))];
-    if (fresh.length)
-        aredlCache = fresh;
-    if (aredlCache.length)
-        localStorage.gar = JSON.stringify(aredlCache);
-    return fresh.length > 0;
+    };
+    const [classic, platform] = await Promise.all([get('aredl', 'd'), get('arepl', 'p')]);
+    const refreshed = { d: classic != null, p: platform != null };
+    if (classic || platform) {
+        aredlCache = [...aredlCache.filter(x => !refreshed[x.k]), ...(classic || []), ...(platform || [])];
+        try {
+            localStorage.gar = JSON.stringify(aredlCache);
+        }
+        catch {
+        }
+    }
+    return refreshed;
 }
 
 /** The lists are downloaded again at most once per visit to look for levels missing from the cache. */
@@ -115,10 +125,13 @@ async function enrichWishlist(w) {
         }
 }
 
+const aredlKind = level => level.kind == 'platform' ? 'p' : 'd';
+
 function findAredlLevel(level) {
-    const kind = level.kind == 'platform' ? 'p' : 'd';
-    return (level.levelId && aredlCache.findLast(x => x.k == kind && String(x.i) == String(level.levelId)))
-        || aredlCache.findLast(x => x.k == kind && x.n.toLowerCase() == level.name.toLowerCase())
+    const kind = aredlKind(level);
+    if (level.levelId)
+        return aredlCache.findLast(x => x.k == kind && String(x.i) == String(level.levelId)) ?? null;
+    return aredlCache.findLast(x => x.k == kind && x.n.toLowerCase() == level.name.toLowerCase())
         || findAredlByName(level.name, kind);
 }
 
@@ -137,53 +150,16 @@ function fillAredlMetadata(level) {
 }
 
 /** Fills IDs, publishers and automatic statuses from the cached lists. Returns the levels that matched. */
-function matchWithAredl(levels) {
-    if (!aredlCache.length)
-        return [];
+function matchWithAredl(levels, refreshed = { d: true, p: true }) {
+    const available = new Set(aredlCache.map(x => x.k));
     return levels.filter(level => {
+        const kind = aredlKind(level);
+        if (!refreshed[kind] || !available.has(kind))
+            return false;
         const match = fillAredlMetadata(level);
-        level.ar = aredlStatus(level);
+        const rank = aredlStatus(level);
+        if (level.ar?.s !== rank.s || level.ar.p !== rank.p)
+            level.ar = rank;
         return !!match;
     });
-}
-
-/** Downloads AREDL positions, loads the sheet when saved levels or wishlist items still need metadata, then asks GDHistory for ratings still missing. */
-async function syncWithAredl() {
-    if (ui.sync)
-        return;
-    ui.sync = 1;
-    const [aredl, gdl] = await Promise.allSettled([loadAredlList(true), loadDemonlist(true)]);
-    try {
-        if (aredl.status == 'rejected' || !aredl.value)
-            throw Error('no response');
-        const levels = profile.levels;
-        levels.forEach(fillAredlMetadata);
-        if (levels.some(needsSheetFields) || profile.wishlists.some(w => w.items.some(needsSheetFields))) {
-            await loadSheetLevels();
-            // A profile change during the download can introduce levels that still need AREDL metadata first.
-            if (profile.levels !== levels)
-                profile.levels.forEach(fillAredlMetadata);
-            profile.levels.forEach(l => fillFromSheet(l, l.kind == 'platform' ? 'p' : 'd'));
-            profile.wishlists.flatMap(w => w.items).forEach(l => fillFromSheet(l));
-        }
-        await fillRatings([...profile.levels, ...profile.wishlists.flatMap(w => w.items)]);
-        matchWithAredl(profile.levels);
-        localStorage.gas = Date.now();
-    }
-    catch {
-        // Keep cached positions and leave the timestamp stale for the next retry.
-    }
-    if (gdl.status == 'fulfilled')
-        matchWithDemonlist(profile.levels);
-    if (gdl.status == 'fulfilled' || (aredl.status == 'fulfilled' && aredl.value))
-        save();
-    ui.sync = 0;
-    // Replacing a dragged row interrupts sorting. Show refreshed metadata on the next render.
-    if (!qs('form, dialog[open], .ms[open], .sortable-chosen'))
-        render();
-}
-
-function autoSyncIfStale() {
-    if (navigator.onLine && Date.now() - (+localStorage.gas || 0) > AREDL_MAX_AGE)
-        syncWithAredl();
 }
