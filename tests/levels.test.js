@@ -235,13 +235,7 @@ test('card renders optional decorative grips and thumbnail layers', () => {
         const html = app('card')(level, 0, 1, true);
         assert.doesNotMatch(html, /<i class=th\b/);
         assert.match(app('card')({ ...level, levelId: '42' }, 0, 1, true), /<i class=th aria-hidden=true><\/i>/);
-        const grip = html.match(/<span class=grip[^>]*>(.*?)<\/span>/)[0];
-        assert.ok(grip.startsWith(`<span class=grip aria-hidden=true title="${hint}">`));
-        assert.doesNotMatch(grip, /\b(?:tabindex|role)=/);
-        assert.ok(grip.includes(app('ICONS.grip')));
-        assert.match(grip, /<svg class=i\b[^>]*aria-hidden=true/);
-        assert.match(grip, /fill="?currentColor\b/);
-        assert.equal((grip.match(/<circle\b/g) || []).length, 6);
+        assert.ok(html.includes(`<span class=grip aria-hidden=true title="${hint}"></span>`));
         for (const reorderable of [false, undefined])
             assert.doesNotMatch(app('card')(level, 0, 1, reorderable), /class=grip/);
     }
