@@ -58,7 +58,7 @@ for (const aredlFails of [false, true])
             let saves = 0;
             const f = fixture({ profile: { levels, wishlists: [] }, document: { querySelector: () => ({}) },
                 renderSyncStatus() {}, save() { saves++; }, showAlert: message => alerts.push(message),
-                loadSheetLevels: async () => {}, fillFromSheet() {}, fillRatings: async () => {},
+                needsSheetFields: () => false, loadSheetLevels: async () => {}, fillFromSheet() {}, fillRatings: async () => {},
                 fetch: async url => {
                     requests.push(url);
                     if (url.includes('demonlist.org')) {

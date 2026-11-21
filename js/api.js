@@ -147,7 +147,7 @@ function matchWithAredl(levels) {
     });
 }
 
-/** Downloads AREDL positions and fills missing creators, difficulties and rating tiers of saved levels and wishlist items from the sheet, then asks GDHistory for ratings still missing. */
+/** Downloads AREDL positions, loads the sheet when saved levels or wishlist items still need metadata, then asks GDHistory for ratings still missing. */
 async function syncWithAredl() {
     if (ui.sync)
         return;
@@ -156,10 +156,16 @@ async function syncWithAredl() {
     try {
         if (aredl.status == 'rejected' || !aredl.value)
             throw Error('no response');
-        await loadSheetLevels();
-        profile.levels.forEach(fillAredlMetadata);
-        profile.levels.forEach(l => fillFromSheet(l, l.kind == 'platform' ? 'p' : 'd'));
-        profile.wishlists.flatMap(w => w.items).forEach(l => fillFromSheet(l));
+        const levels = profile.levels;
+        levels.forEach(fillAredlMetadata);
+        if (levels.some(needsSheetFields) || profile.wishlists.some(w => w.items.some(needsSheetFields))) {
+            await loadSheetLevels();
+            // A profile change during the download can introduce levels that still need AREDL metadata first.
+            if (profile.levels !== levels)
+                profile.levels.forEach(fillAredlMetadata);
+            profile.levels.forEach(l => fillFromSheet(l, l.kind == 'platform' ? 'p' : 'd'));
+            profile.wishlists.flatMap(w => w.items).forEach(l => fillFromSheet(l));
+        }
         await fillRatings([...profile.levels, ...profile.wishlists.flatMap(w => w.items)]);
         matchWithAredl(profile.levels);
         localStorage.gas = Date.now();

@@ -70,15 +70,20 @@ function findSheetLevel(levelId, name, kind) {
     return n && (kind ? [kind] : ['d', 'p']).map(k => sheetByName.get(k + n)).find(Boolean) || null;
 }
 
-/** Fills a level's missing ID, creator, difficulty and rating from the sheet. Returns the sheet entry, or null. */
+const sheetFillFields = ['kind', 'levelId', 'creator', 'diff', 'rating'];
+
+/** Checks whether a saved level or wishlist item is missing any field the sheet can fill. */
+function needsSheetFields(level) {
+    return sheetFillFields.some(field => !level[field]);
+}
+
+/** Fills a level's missing kind, ID, creator, difficulty and rating from the sheet. Returns the sheet entry, or null. */
 function fillFromSheet(l, kind) {
     const x = findSheetLevel(l.levelId, l.name, kind);
     if (x) {
-        l.kind ||= x[4] ? 'platform' : 'classic';
-        l.levelId ||= String(x[0]);
-        l.creator ||= x[2] || null;
-        l.diff ||= DIFFICULTIES[x[3]] || null;
-        l.rating ||= RATING_TIERS[x[5]] || null;
+        const data = fromSheet(x);
+        for (const field of sheetFillFields)
+            l[field] ||= data[field];
     }
     return x;
 }
