@@ -44,7 +44,7 @@ html {
 
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: 100dvh;
   font: 15px/1.45 var(--font-ui);
   color: var(--fg);
   background: var(--bg2);
@@ -561,6 +561,10 @@ dialog.modal::backdrop {
   position: absolute;
   width: 1px;
   height: 1px;
+  /* Keep the 1px box from extending the page when appended after #app. */
+  margin: -1px;
+  padding: 0;
+  border: 0;
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
