@@ -3407,7 +3407,26 @@ body::before {
   mask-repeat: repeat;
 }
 
-/* In daylight the aurora supplies the color behind the pale etched lines. */
+[data-bg=celestial][data-motif=stars] body::after {
+  --moons: url('../assets/backgrounds/moons-soft.svg');
+}
+
+[data-bg=celestial][data-motif=moons] body::after {
+  --stars: url('../assets/backgrounds/stars-soft.svg');
+}
+
+[data-bg=celestial]:is([data-motif=stars], [data-motif=moons]) body::after {
+  mask-position: right top, right -125px;
+}
+
+@media (max-width: 560px) {
+  [data-bg=celestial]:is([data-motif=stars], [data-motif=moons]) body::after {
+    --sky-tile: min(330px, 90vw);
+    mask-position: right 10px top -12px, right 12px top 45px;
+  }
+}
+
+/* In daylight the aurora supplies the color behind the etched lines. */
 [data-theme=porcelain] body::before {
   --daylight:
     radial-gradient(ellipse at 88% 1%, #a8d9e6, transparent 44%),
@@ -3425,11 +3444,15 @@ body::before {
 }
 
 [data-theme=porcelain]:is([data-bg=orbital], [data-bg=celestial]) body::after {
-  background: linear-gradient(130deg, #fff 5%, #f9f6ff 42%, #fff 75%, #f1fbff);
+  background: linear-gradient(115deg,
+    color-mix(in srgb, var(--color-accent) 62%, var(--color-surface)),
+    color-mix(in srgb, var(--color-secondary-light) 62%, var(--color-surface)));
 }
 
-[data-bg=celestial][data-motif=stars] body::after { mask-image: var(--stars); }
-[data-bg=celestial][data-motif=moons] body::after { mask-image: var(--moons); }
+/* The orbital arcs are much thinner than the stars and moons, so they need a deeper tint to read in daylight. */
+[data-theme=porcelain][data-bg=orbital] body::after {
+  background: linear-gradient(115deg, var(--color-accent), color-mix(in srgb, var(--color-secondary-light) 70%, var(--color-accent)));
+}
 
 .hl :is(h1, h2, h3, .nm, .hlead) {
   font-family: var(--font-display);
