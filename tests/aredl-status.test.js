@@ -192,3 +192,54 @@ for (const failed of [false, true])
         }
         assert.equal(f.app('ui.sync'), 0);
     });
+
+test('sync fetches the sheet only for metadata still missing from a saved level or wishlist item', async () => {
+    const complete = { name: 'Sheet Level', kind: 'classic', levelId: '100', creator: 'Saved Creator', diff: 'Insane', rating: 'rated' };
+    const sheetFields = { kind: 'classic', levelId: '100', creator: 'Sheet Creator', diff: 'Hard', rating: 'epic' };
+    const sync = async (levels, items, replacementProfile) => {
+        let sheetFetches = 0;
+        const f = fixture({
+            profile: { levels, wishlists: [{ items }] },
+            document: { querySelector: () => ({}) }, save() {},
+            fetch: async url => {
+                if (url == 'data/levels.json') {
+                    sheetFetches++;
+                    if (replacementProfile)
+                        f.context.profile = replacementProfile;
+                    return { ok: true, json: async () => [[100, 'Sheet Level', 'Sheet Creator', 3, 0, 2], [42, 'Bloodbath', 'Sheet Publisher', 10, 0, 2]] };
+                }
+                if (url.includes('aredl/levels'))
+                    return { json: async () => [{ level_id: 42, name: 'Bloodbath', position: 125, publisher: 'Publisher' }] };
+                return { ok: false, json: async () => [] };
+            }
+        });
+        await f.app('syncWithAredl()');
+        assert.ok(f.app('localStorage.gas'));
+        return sheetFetches;
+    };
+
+    assert.equal(await sync([{ ...complete }], [{ ...complete }]), 0, 'complete entries need no sheet');
+
+    const aredlLevel = { ...complete, name: 'Bloodbath', levelId: null, creator: '' };
+    assert.equal(await sync([aredlLevel], [{ ...complete }]), 0, 'AREDL completes the saved level before the sheet check');
+    assert.equal(aredlLevel.levelId, '42');
+    assert.equal(aredlLevel.creator, 'Publisher');
+
+    for (const [field, expected] of Object.entries(sheetFields)) {
+        for (const target of ['saved level', 'wishlist item']) {
+            const level = { ...complete }, item = { ...complete };
+            const incomplete = target == 'saved level' ? level : item;
+            const scenario = target + ' missing ' + field;
+            incomplete[field] = '';
+            assert.equal(await sync([level], [item]), 1, scenario);
+            for (const [key, value] of Object.entries(complete)) {
+                assert.equal(incomplete[key], key == field ? expected : value, scenario + ': ' + key);
+            }
+        }
+    }
+
+    const switchedLevel = { name: 'Bloodbath', kind: 'classic' };
+    assert.equal(await sync([{ ...complete, rating: null }], [], { levels: [switchedLevel], wishlists: [] }), 1);
+    assert.equal(switchedLevel.creator, 'Publisher', 'AREDL metadata takes precedence after a profile switch');
+    assert.equal(switchedLevel.rating, 'epic');
+});
