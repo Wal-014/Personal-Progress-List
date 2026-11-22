@@ -323,13 +323,11 @@ for (const hasRemaining of [true, false])
         f.load(['js/components/shell.js', 'js/render.js']);
         f.context.home = () => '';
         let html = '', focus;
-        const heading = {
-            setAttribute(name, value) { this[name] = value; },
-            focus(options) { focus = [this.tabindex, { ...options }]; }
-        };
         f.context.render = () => {
             html = f.app('shellPageTitle() + currentScreen()');
-            if (html.includes('<div class=page-title>')) f.nodes.set('.page-title h2', heading);
+            if (html.includes('<h2 id=screen-title ')) f.nodes.set('#screen-title', {
+                focus(options) { focus = { ...options }; }
+            });
         };
 
         await deleteWishlist(f, true);
@@ -338,14 +336,26 @@ for (const hasRemaining of [true, false])
         assert.equal(ui.wl, null);
         assert.deepEqual(Array.from(profile.wishlists), remaining);
         assert.deepEqual(JSON.parse(localStorage.gdp).profs.local.data.wishlists, remaining);
-        assert.match(html, /<h2>.*Wishlists<\/h2>/);
+        assert.match(html, /<h2 id=screen-title tabindex=-1>.*Wishlists<\/h2>/);
         assert.doesNotMatch(html, /data-act=wdelL|data-id="w1"/);
         if (hasRemaining)
             assert.match(html, /data-act=wopen data-id="w2".*<span class=nm>Later<\/span>/);
         else
             assert.match(html, /<div class=empty>.*<h3>No wishlists yet<\/h3>.*data-act=wnew/s);
-        assert.deepEqual(focus, ['-1', { preventScroll: true }]);
+        assert.deepEqual(focus, { preventScroll: true });
     });
+
+test('captureView can restore focus to the Wishlists overview heading after a redraw', () => {
+    const f = fixture();
+    f.load(['js/components/shell.js', 'js/render.js']);
+    f.context.ui.wl = null;
+    const attrs = f.app('shellPageTitle()').match(/<h2([^>]*)>/)[1];
+    const heading = { id: attrs.match(/ id=(\S+)/)?.[1] ?? '', hasAttribute: name => attrs.includes(' ' + name + '=') };
+    f.nodes.set('#app', { contains: element => element === heading });
+    f.context.document.activeElement = heading;
+
+    assert.equal(f.app('captureView().focused'), '#screen-title');
+});
 
 test('cancelling wishlist deletion keeps the open wishlist without saving or redrawing', async () => {
     const f = fixture(), { profile, ui, localStorage } = f.context;

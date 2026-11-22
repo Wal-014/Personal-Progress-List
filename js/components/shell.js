@@ -85,7 +85,7 @@ function shellPageTitle() {
     const title = isListTab() ? t(canEdit() ? 'lists' : 'publicLists') : wish ? wish.name : t(ui.tab);
     const icon = isListTab() ? ICONS.navLists : ui.tab == 'wish' ? ICONS.navWish : ICONS.navStats;
     const primary = !canEdit() ? '' : ui.tab == 'wish' && !wish ? `<button data-act=wnew>${ICONS.actionAdd}${t('palWish')}</button>` : '';
-    return `<div class=page-title><button data-act=tab data-v=home aria-label="${t('home')}" title="${t('home')}">${ICONS.navHome}</button>${wish ? `<button data-act=tab data-v=wish aria-label="${t('back2')}">${ICONS.actionBack}</button>` : ''}<h2>${icon}${escapeHtml(title)}</h2>${primary}</div>`;
+    return `<div class=page-title><button data-act=tab data-v=home aria-label="${t('home')}" title="${t('home')}">${ICONS.navHome}</button>${wish ? `<button data-act=tab data-v=wish aria-label="${t('back2')}">${ICONS.actionBack}</button>` : ''}<h2 id=screen-title tabindex=-1>${icon}${escapeHtml(title)}</h2>${primary}</div>`;
 }
 
 let notificationCount;

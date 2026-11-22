@@ -279,9 +279,7 @@ const ACTIONS = {
             ui.wl = null;
             save();
             render();
-            const heading = qs('.page-title h2');
-            heading?.setAttribute('tabindex', '-1');
-            heading?.focus({ preventScroll: true });
+            qs('#screen-title')?.focus({ preventScroll: true });
         });
     },
     wadd() {
