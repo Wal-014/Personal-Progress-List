@@ -5,34 +5,42 @@ import { pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import sharp from 'sharp';
 
-const COLUMNS = 20, TILE_WIDTH = 80, TILE_HEIGHT = 240;
+const CUBE_COLUMNS = 20, CUBE_WIDTH = 80, CUBE_HEIGHT = 240;
+const CUBE_ATLAS = 'assets-src/cubes.webp', CUBE_DIR = 'assets/cubes';
 const FACE_SIZE = 176;
-const FACE_ATLAS = 'assets-src/faces.webp', FACE_OUT = 'assets/faces';
-const ATLAS = 'assets-src/cubes.webp', CUBES = 'assets/cubes', FLAGS = 'assets/flags';
+const FACE_ATLAS = 'assets-src/faces.webp', FACE_DIR = 'assets/faces';
+const FLAG_DIR = 'assets/flags';
+
+export async function cutAtlas({ atlas, outDir, tiles, width, height, webp }) {
+    // A buffer lets Sharp reuse the input without caching an open file handle.
+    const image = sharp(readFileSync(atlas));
+    const { width: atlasWidth, height: atlasHeight } = await image.metadata();
+    if (atlasWidth != width || atlasHeight != height)
+        throw new Error(`${atlas} is ${atlasWidth}×${atlasHeight}; expected ${width}×${height}`);
+
+    const { data, info } = await image.raw().toBuffer({ resolveWithObject: true });
+    rmSync(outDir, { recursive: true, force: true });
+    mkdirSync(outDir, { recursive: true });
+    for (const [name, tile] of tiles)
+        await sharp(data, { raw: info }).extract(tile).webp(webp).toFile(join(outDir, `${name}.webp`));
+}
 
 export function cubeTile(id) {
     return {
-        left: ((id - 1) % COLUMNS) * TILE_WIDTH,
-        top: Math.floor((id - 1) / COLUMNS) * TILE_HEIGHT,
-        width: TILE_WIDTH,
-        height: TILE_HEIGHT
+        left: ((id - 1) % CUBE_COLUMNS) * CUBE_WIDTH,
+        top: Math.floor((id - 1) / CUBE_COLUMNS) * CUBE_HEIGHT,
+        width: CUBE_WIDTH,
+        height: CUBE_HEIGHT
     };
 }
 
-async function buildCubeCatalog(count) {
-    const atlas = sharp(ATLAS);
-    const { width, height } = await atlas.metadata();
-    const expectedWidth = COLUMNS * TILE_WIDTH, expectedHeight = Math.ceil(count / COLUMNS) * TILE_HEIGHT;
-    if (width != expectedWidth || height != expectedHeight)
-        throw new Error(`${ATLAS} is ${width}×${height}; expected ${expectedWidth}×${expectedHeight} for ${count} cubes`);
-
-    const { data, info } = await atlas.raw().toBuffer({ resolveWithObject: true });
-    rmSync(CUBES, { recursive: true, force: true });
-    mkdirSync(CUBES, { recursive: true });
-    for (let id = 1; id <= count; id++) {
-        await sharp(data, { raw: info }).extract(cubeTile(id))
-            .webp({ lossless: true, exact: true }).toFile(`${CUBES}/${id}.webp`);
-    }
+function buildCubeCatalog(count) {
+    const tiles = Array.from({ length: count }, (_, index) => [index + 1, cubeTile(index + 1)]);
+    return cutAtlas({
+        atlas: CUBE_ATLAS, outDir: CUBE_DIR, tiles,
+        width: CUBE_COLUMNS * CUBE_WIDTH, height: Math.ceil(count / CUBE_COLUMNS) * CUBE_HEIGHT,
+        webp: { lossless: true, exact: true }
+    });
 }
 
 function faceTile(column, row) {
@@ -51,20 +59,13 @@ export function faceTiles(faces, halos) {
 }
 
 async function buildFaceCatalog(faces, halos) {
-    const atlas = sharp(FACE_ATLAS);
-    const { width, height } = await atlas.metadata();
-    const expectedWidth = (halos.length + 1) * FACE_SIZE, expectedHeight = (faces.length + 1) * FACE_SIZE;
     const tiles = faceTiles(faces, halos);
-    if (width != expectedWidth || height != expectedHeight)
-        throw new Error(`${FACE_ATLAS} is ${width}×${height}; expected ${expectedWidth}×${expectedHeight} for ${tiles.length} faces`);
-
-    const { data, info } = await atlas.raw().toBuffer({ resolveWithObject: true });
-    rmSync(FACE_OUT, { recursive: true, force: true });
-    mkdirSync(FACE_OUT, { recursive: true });
-    for (const [name, tile] of tiles)
-        await sharp(data, { raw: info }).extract(tile)
-            .webp({ lossless: true, exact: true }).toFile(`${FACE_OUT}/${name}.webp`);
-    console.log(`Generated ${tiles.length} faces in ${FACE_OUT}/`);
+    await cutAtlas({
+        atlas: FACE_ATLAS, outDir: FACE_DIR, tiles,
+        width: (halos.length + 1) * FACE_SIZE, height: (faces.length + 1) * FACE_SIZE,
+        webp: { quality: 90, alphaQuality: 100, effort: 6 }
+    });
+    return tiles.length;
 }
 
 /** Checks every source before the catalog is emptied, so a package without a flag cannot leave it half built. */
@@ -82,26 +83,28 @@ async function buildFlagCatalog(codes) {
     const packageDir = dirname(createRequire(import.meta.url).resolve('flag-icons/package.json'));
     const flags = flagSources(codes, join(packageDir, 'flags', '4x3'));
 
-    rmSync(FLAGS, { recursive: true, force: true });
-    mkdirSync(FLAGS, { recursive: true });
+    rmSync(FLAG_DIR, { recursive: true, force: true });
+    mkdirSync(FLAG_DIR, { recursive: true });
     for (const { name, source } of flags) {
         // Flat flag colours compress smaller lossless than lossy, with no artefacts
         await sharp(source).resize(64, 48, { fit: 'fill' })
-            .webp({ lossless: true, effort: 6 }).toFile(`${FLAGS}/${name}.webp`);
+            .webp({ lossless: true, effort: 6 }).toFile(`${FLAG_DIR}/${name}.webp`);
     }
-    copyFileSync(join(packageDir, 'LICENSE'), `${FLAGS}/LICENSE`);
+    copyFileSync(join(packageDir, 'LICENSE'), `${FLAG_DIR}/LICENSE`);
 }
 
 async function main() {
     const config = readFileSync('js/config.js', 'utf8');
     const { CUBE_COUNT, COUNTRY_CODES } = vm.runInNewContext(config + ';({ CUBE_COUNT, COUNTRY_CODES })');
-    await buildCubeCatalog(CUBE_COUNT);
-    console.log(`Generated ${CUBE_COUNT} cubes in ${CUBES}/`);
     const faceConfig = readFileSync('js/components/faces.js', 'utf8');
     const [faces, halos] = vm.runInNewContext(faceConfig + ';[FACES, HALOS]');
-    await buildFaceCatalog(faces, halos);
+
+    await buildCubeCatalog(CUBE_COUNT);
+    console.log(`Generated ${CUBE_COUNT} cubes in ${CUBE_DIR}/`);
+    const faceCount = await buildFaceCatalog(faces, halos);
+    console.log(`Generated ${faceCount} faces in ${FACE_DIR}/`);
     await buildFlagCatalog(COUNTRY_CODES);
-    console.log(`Generated ${COUNTRY_CODES.length} flags in ${FLAGS}/`);
+    console.log(`Generated ${COUNTRY_CODES.length} flags in ${FLAG_DIR}/`);
 }
 
 if (process.argv[1] && import.meta.url == pathToFileURL(process.argv[1]).href) {

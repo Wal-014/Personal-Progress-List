@@ -117,7 +117,7 @@ The banner is drawn in `docs/brand/banner.html`. Regenerate it from the reposito
 
 The promotional card, also the site's link preview image, is drawn in `docs/brand/card.html` from screenshots of the app in `docs/brand/card/` (demo profile, English, Classic blue theme). With the server above running, regenerate it with `npx -y playwright@1.63.0 screenshot --viewport-size "1200,630" "http://localhost:8000/docs/brand/card.html" docs/brand/card.jpg`. Retake the screenshots when the screens they show change. The existing banner and card images still show the former Personal Ranked Progress name; their HTML sources use the new name.
 
-`npm run assets` generates the images in `assets/cubes/` and `assets/faces/` from the `assets-src/cubes.webp` and `assets-src/faces.webp` atlases, and the 64×48 WebP country flags in `assets/flags/` from the pinned `flag-icons` npm package, with the package licence beside them. `scripts/build-cubes.py` rebuilds the cube atlas from the GDBrowser Icon Kit using Pillow and requests.
+`npm run assets` cuts the atlases `assets-src/cubes.webp` and `assets-src/faces.webp` into `assets/cubes/` and `assets/faces/`. The face atlas is lossless, and the generated faces use lossy WebP to keep downloads small. The command also generates 64×48 WebP country flags in `assets/flags/` from the pinned `flag-icons` npm package and copies the package licence alongside them. `scripts/build-cubes.py` rebuilds the cube atlas from the GDBrowser Icon Kit using Pillow and requests.
 
 ## Deployment
 
