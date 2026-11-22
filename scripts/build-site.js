@@ -1,10 +1,13 @@
 /**
  * Copies the files the site serves into _site/, the folder the deploy jobs publish,
- * so tests, docs and tooling stay out of the live site.
+ * so tests, docs and tooling stay out of the live site. Both builds stamp the service worker
+ * cache name with a hash of the published assets.
  * `npm run site` builds production (GitHub Pages); `npm run site -- development` builds the dev site,
  * which has no database of its own, so accounts are off and the page cannot reach the production project.
  */
-import { cpSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { cpSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { join, relative, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 
@@ -23,6 +26,28 @@ export const DEV_HEADERS = `/*
   Content-Security-Policy: frame-ancestors 'none'
   Strict-Transport-Security: max-age=31536000
 `;
+
+export function stampCache(sw, hash) {
+    const declaration = /^const CACHE = '([^'\r\n]+)';$/m;
+    if (!declaration.test(sw))
+        throw new Error('sw.js has no CACHE declaration');
+    return sw.replace(declaration, (_, name) => `const CACHE = '${name}-${hash}';`);
+}
+
+export function assetsHash(dir) {
+    const files = readdirSync(dir, { recursive: true, withFileTypes: true })
+        .filter(entry => entry.isFile())
+        .map(entry => relative(dir, join(entry.parentPath, entry.name)).split(sep).join('/'))
+        .sort();
+    const hash = createHash('sha256');
+    for (const file of files) {
+        const content = readFileSync(join(dir, file));
+        // The length delimits file contents even when they contain arbitrary bytes.
+        hash.update(JSON.stringify([file, content.length]));
+        hash.update(content);
+    }
+    return hash.digest('hex').slice(0, 12);
+}
 
 /** Each rewrite throws when its target is gone, so a moved line cannot ship a dev site with accounts on. */
 export function devConfig(config) {
@@ -56,6 +81,8 @@ if (import.meta.url == pathToFileURL(process.argv[1]).href) {
     rmSync(OUT, { recursive: true, force: true });
     for (const entry of SITE_FILES)
         cpSync(entry, `${OUT}/${entry}`, { recursive: true });
+    const swFile = `${OUT}/sw.js`;
+    writeFileSync(swFile, stampCache(readFileSync(swFile, 'utf8'), assetsHash(`${OUT}/assets`)));
     if (target == 'development')
         buildDev();
     console.log(`Copied ${SITE_FILES.length} entries to ${OUT}/ for ${target}`);

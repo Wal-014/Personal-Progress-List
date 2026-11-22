@@ -1,5 +1,5 @@
 /**
- * Service worker for installation and offline use, fetching same-origin files from the network first with a cache fallback.
+ * Service worker for installation and offline use. Local assets are cache-first, and other same-origin files are network-first.
  */
 const CACHE = 'prp-1.13.14';
 // vendor/supabase.js is intentionally omitted so visitors who never sign in never download it.
@@ -85,19 +85,34 @@ self.addEventListener('activate', e => {
   );
 });
 
+async function cacheFirst(request) {
+  const cache = await caches.open(CACHE);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+
+  // Revalidate so a new deploy's cache is never filled from an old deploy's HTTP cache entry
+  const res = await fetch(request, { cache: 'no-cache' });
+  // Cache writes can fail, for example when storage is full or the response is partial.
+  if (res.ok) await cache.put(request, res.clone()).catch(() => {});
+  return res;
+}
+
+function networkFirst(request) {
+  return fetch(request, { cache: 'no-cache' })
+    .then(res => {
+      // An error page must never replace the good copy that offline mode falls back to
+      if (res.ok) {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(request, copy));
+      }
+      return res;
+    })
+    .catch(() => caches.match(request));
+}
+
 self.addEventListener('fetch', e => {
-  const sameOrigin = new URL(e.request.url).origin === location.origin;
-  if (e.request.method !== 'GET' || !sameOrigin) return;
-  e.respondWith(
-    fetch(e.request, { cache: 'no-cache' })
-      .then(res => {
-        // An error page must never replace the good copy that offline mode falls back to
-        if (res.ok) {
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, copy));
-        }
-        return res;
-      })
-      .catch(() => caches.match(e.request))
-  );
+  const url = new URL(e.request.url);
+  if (e.request.method !== 'GET' || url.origin !== location.origin) return;
+  const assetsPath = new URL('assets/', location.href).pathname;
+  e.respondWith(url.pathname.startsWith(assetsPath) ? cacheFirst(e.request) : networkFirst(e.request));
 });

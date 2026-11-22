@@ -71,13 +71,15 @@ Without an account, profiles live in the browser's `localStorage` and only leave
 
 The scripts are classic scripts, not ES modules, so the app also works by opening `index.html` directly from disk. That is why the load order in `index.html` matters: each file uses what the previous ones define (`config` → `i18n` → `utils` → `state` → `api` → `sheet` → `relay` → `gd` → `cloud` → `account` → `cloud-model` → `sync` → `public-view` → `local-migration` → `components/` → `render` → `events` → `main`). User actions are wired through `data-act` attributes handled in `js/events.js`.
 
-The service worker is network-first: it always tries the latest version and falls back to its cache offline. It only caches the app's own files, never API responses. The app uses self-hosted Inter for controls and body text and Oxanium for headings and display values. Their SIL OFL licences are in `fonts/`. Shared appearance scales and palettes live in `css/tokens.css`; see [design tokens](docs/design-tokens.md). SortableJS 1.15.2 and supabase-js 2.119.0 are self-hosted in `vendor/` (MIT, notices kept in the files), because the Content Security Policy only allows the app's own fonts and scripts. The difficulty faces are WebP copies of the game's sprites in `assets/faces/`, taken from GDBrowser and centred on one canvas so every halo lines up; serving them from the site keeps them working offline.
+The service worker serves images under `assets/` cache-first. The build adds a hash of the published assets to the cache name so changed images replace the cached ones on the next visit. Other app files are network-first and fall back to the cache offline. It only caches the app's own files, never API responses. The app uses self-hosted Inter for controls and body text and Oxanium for headings and display values. Their SIL OFL licences are in `fonts/`. Shared appearance scales and palettes live in `css/tokens.css`; see [design tokens](docs/design-tokens.md). SortableJS 1.15.2 and supabase-js 2.119.0 are self-hosted in `vendor/` (MIT, notices kept in the files), because the Content Security Policy only allows the app's own fonts and scripts. The difficulty faces are WebP copies of the game's sprites in `assets/faces/`, taken from GDBrowser and centred on one canvas so every halo lines up; serving them from the site keeps them working offline.
 
 **Stack:** HTML · CSS · JavaScript (no framework) · SortableJS · Supabase (Auth, Postgres 17, supabase-js) · GitHub Pages · GitHub Actions
 
 ## Running locally
 
 Needs Node.js 24 to generate the cube images and run the checks, plus a modern browser and a static file server such as Python 3.
+
+When serving the repository directly, the service worker is unstamped, so use a hard reload or bump `CACHE` after editing an image.
 
 ```bash
 npm ci                        # install the asset and check tools
