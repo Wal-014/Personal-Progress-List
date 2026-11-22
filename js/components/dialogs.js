@@ -2,11 +2,11 @@
  * Custom dialogs, notifications, tag management and legal text.
  */
 
-function notificationRow({ id, icon, title, text, action, dismiss }) {
+function notificationRow({ id, section, icon, title, text, action, dismiss }) {
     const attributes = Object.entries(action.data).map(([key, value]) => ` data-${key}="${escapeHtml(value)}"`).join('');
     const primary = `<button type=button class=xs-txt aria-label="${escapeHtml(action.label + ' · ' + title)}" data-act="${escapeHtml(action.act)}"${attributes}>${escapeHtml(action.label)}</button>`;
     const secondary = dismiss ? `<button type=button class="xs-txt notification-dismiss" aria-label="${escapeHtml(dismiss.label + ' · ' + title)}" data-act="${escapeHtml(dismiss.act)}" data-id="${escapeHtml(id)}">${escapeHtml(dismiss.label)}</button>` : '';
-    return `<li class=notification-row><span class=notification-icon aria-hidden=true>${icon}</span><div class=notification-copy><strong>${escapeHtml(title)}</strong><p>${escapeHtml(text)}</p></div><div class=notification-actions>${primary}${secondary}</div></li>`;
+    return `<li class=notification-row data-section=${section}><span class=notification-icon aria-hidden=true>${icon}</span><div class=notification-copy><strong>${escapeHtml(title)}</strong><p>${escapeHtml(text)}</p></div><div class=notification-actions>${primary}${secondary}</div></li>`;
 }
 
 function notificationBody() {
@@ -15,11 +15,11 @@ function notificationBody() {
         const rows = entries.filter(entry => entry.section == section).map(notificationRow).join('');
         return rows ? `<section><h3>${t(heading)}</h3><ul class=notification-list role=list>${rows}</ul></section>` : '';
     }).join('');
-    return sections ? `<div class=notification-sections>${sections}</div>` : `<div class=notification-empty>${ICONS.bell}<p>${t('nonot')}</p></div>`;
+    return sections ? `<div class=notification-sections>${sections}</div>` : `<div class=notification-empty>${ICONS.actionBell}<p>${t('nonot')}</p></div>`;
 }
 
 function bellUI() {
-    return `<div class="box notification-box"><h2>${ICONS.bell} ${t('bell')}</h2>${notificationBody()}<p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
+    return `<div class="box notification-box"><h2>${ICONS.actionBell} ${t('bell')}</h2>${notificationBody()}<p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
 }
 
 const legalUI = k => `<div class="box sm"><h2>${t(k)}</h2><p class=dialog-message>${escapeHtml(t(k + 'Txt'))}</p><p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;

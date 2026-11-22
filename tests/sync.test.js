@@ -789,10 +789,16 @@ test('header sync problems update live and disappear when saved or viewing anoth
     page.app("account.status = 'signed-in'");
     page.nodes['#cloud-header'] = { innerHTML: '' };
     assert.equal(page.app('cloudHeaderStatus()'), '');
+    let savingIcon;
     for (const status of ['saving', 'offline', 'error']) {
         page.app(`setCloudStatus('${status}', '<reason>')`);
         const html = page.nodes['#cloud-header'].innerHTML;
-        assert.match(html, /role=status/);
+        assert.match(html, /role=status aria-atomic=true title="/);
+        const icon = html.match(/>(<svg.*?<\/svg>)/)?.[1];
+        assert.match(icon, /viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1\.5 stroke-linecap=round stroke-linejoin=round/);
+        assert.doesNotMatch(icon, /(?:fill|stroke)="#/);
+        if (status == 'saving') savingIcon = icon;
+        else assert.notEqual(icon, savingIcon);
         assert.ok(html.includes(page.app(`t('${status == 'saving' ? 'cloudSaving' : status == 'offline' ? 'cloudOfflineShort' : 'cloudErrorShort'}')`)));
         assert.equal(html.includes('data-act=csync'), status != 'saving');
         assert.doesNotMatch(html, /<reason>/);

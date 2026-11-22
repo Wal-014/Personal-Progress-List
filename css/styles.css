@@ -2733,6 +2733,10 @@ input.ro {
   color: var(--color-success);
 }
 
+.notification-row[data-section=notice] .notification-icon {
+  color: var(--color-accent);
+}
+
 .notification-copy p {
   margin: var(--space-4) 0 0;
   color: var(--color-text-muted);
@@ -4158,6 +4162,7 @@ body::before {
 }
 
 .shell-header {
+  --header-utility-inset: var(--space-16);
   position: relative;
   display: flex;
   align-items: center;
@@ -4203,7 +4208,7 @@ body::before {
 
 .shell-utilities {
   position: absolute;
-  right: var(--space-16);
+  inset-inline-end: var(--header-utility-inset);
   display: flex;
   align-items: center;
   gap: var(--space-8);
@@ -4215,6 +4220,11 @@ body::before {
   position: relative;
   width: var(--size-control);
   height: var(--size-control);
+}
+
+.shell-utilities .sq > .i, .notification-box h2 > .i {
+  width: var(--space-24);
+  height: var(--space-24);
 }
 
 .shell-utilities .bdg {
@@ -4311,11 +4321,22 @@ main.home {
   [data-theme=porcelain] .nav-glint { stop-color: #bd9867; }
 
   .hsection-head h2 > .i, :is(.shell-nav, .shell-footer, .shell-drawer-header) > button > .i,
-  .page-title h2 > .i {
+  .page-title h2 > .i, .shell-utilities .sq > .i, .notification-box h2 > .i, .notification-empty > .i,
+  .notification-icon > .i, .pmenu > .pma > .i, .amenu .cloudretry > .i, .cloud-header .cloudretry > .i,
+  .cloud-indicator > .i {
     stroke: url(#nav-metal) currentColor;
     stroke-width: 2.35;
     filter: drop-shadow(0 1px .45px color-mix(in srgb, var(--color-text) 28%, var(--color-bg)));
   }
+
+  #notification-notice-metal { --notification-ink: var(--color-accent); }
+  #notification-pending-metal { --notification-ink: var(--color-success); }
+  .notification-ink { stop-color: var(--notification-ink); }
+  .notification-glint { stop-color: color-mix(in srgb, var(--notification-ink) 65%, var(--metal-glint)); }
+
+  .notification-row[data-section=notice] .notification-icon > .i { stroke: url(#notification-notice-metal) currentColor; }
+  .notification-row[data-section=pending] .notification-icon > .i { stroke: url(#notification-pending-metal) currentColor; }
+  .cloud-indicator > .warning-icon { stroke: currentColor; }
 
   /* A single bright ink for labels; the metallic bands belong to the icons. */
   :root:not([data-theme=porcelain]) :is(.shell-nav, .shell-footer, .page-title, .shell-identity) > button > span,
@@ -4781,6 +4802,7 @@ input[type=checkbox]:checked::after {
 
 @media (max-width: 560px) {
   .shell-header {
+    --header-utility-inset: var(--space-8);
     padding: var(--space-16) calc(var(--space-48) + var(--space-12));
   }
 
@@ -4800,12 +4822,6 @@ input[type=checkbox]:checked::after {
   .shell-brand-frame > .i {
     width: calc(var(--space-32) + var(--space-4));
     height: calc(var(--space-32) + var(--space-4));
-  }
-
-  .shell-utilities {
-    right: var(--space-8);
-    flex-direction: column;
-    gap: 0;
   }
 
   main.shell-main {
@@ -5073,19 +5089,55 @@ input[type=checkbox]:checked::after {
   flex: none;
 }
 
-.shell-header:has(.cloud-header:not(:empty)) {
-  padding-bottom: calc(var(--space-48) + var(--space-16));
+.cloud-indicator {
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-8);
+  border: var(--size-border) solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
 }
 
-.shell-header:has(.cloud-header:not(:empty)) .shell-utilities {
-  bottom: var(--space-8);
-  flex-direction: row;
-  gap: var(--space-8);
+.cloud-indicator > .warning-icon {
+  color: var(--color-warning);
 }
 
 .shell-header .cloudretry {
   font-size: var(--space-12);
   padding: var(--space-4) var(--space-8);
+}
+
+@media (max-width: 1080px) {
+  .shell-header:has(.shell-utilities) {
+    padding-block-end: var(--size-control);
+  }
+
+  .shell-utilities {
+    display: contents;
+  }
+
+  .shell-utilities .sq {
+    position: absolute;
+    inset-inline-end: var(--header-utility-inset);
+  }
+
+  .cloud-header {
+    position: absolute;
+    inset: auto 0 0;
+    min-height: var(--size-control);
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cloud-indicator {
+    opacity: 1;
+    transition: opacity var(--motion-hover) var(--motion-easing);
+  }
+
+  @starting-style {
+    .cloud-indicator { opacity: 0; }
+  }
 }
 
 .list-choices {
