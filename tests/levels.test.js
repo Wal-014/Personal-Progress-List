@@ -17,6 +17,14 @@ for (const publicView of [false, true]) {
         return html;
     };
 
+    test(`detail actions follow keyboard order in ${mode} mode`, () => {
+        const html = drawDetail();
+        const actions = html.match(/<div class="dgb level-action-bar">(.*?)<\/div><\/div>$/)?.[1];
+        assert.ok(actions);
+        assert.deepEqual([...actions.matchAll(/<button\b[^>]*\bdata-act=(\w+)/g)].map(match => match[1]),
+            publicView ? ['lvclose'] : ['lvclose', 'edit']);
+    });
+
     test(`detail shows a translated empty message without optional sections in ${mode} mode`, () => {
         for (const [language, message] of [['es', 'Sin datos adicionales'], ['en', 'No additional details']]) {
             const html = drawDetail({}, language);
@@ -94,6 +102,24 @@ for (const publicView of [false, true]) {
         assert.doesNotMatch(html, /No additional details|<b>-<\/b>/);
     });
 }
+
+test('the level form ends with actions in keyboard order and one submit button', () => {
+    app('profile = emptyProfile(); viewing = null');
+    const existing = { id: 'saved', name: 'Level', kind: 'classic', tags: [], deaths: {} };
+    for (const [level, expected] of [[undefined, ['close', 'save']], [existing, ['del', 'lvclose', 'save']]]) {
+        const html = app('levelForm')(level);
+        const actions = html.match(/<div class="dgb level-action-bar">(.*?)<\/div><\/form>/)?.[1];
+        assert.ok(actions);
+        const buttons = [...actions.matchAll(/<button\b([^>]*)>/g)].map(match => match[1]);
+        assert.deepEqual(buttons.map(attrs => attrs.match(/\bdata-act=(\w+)/)?.[1] ?? 'save'), expected);
+        assert.match(buttons.at(-1), /\bclass=pri\b/);
+        if (level)
+            assert.match(buttons[0], /\bclass=dg\b/);
+        const formButtons = [...html.matchAll(/<button\b([^>]*)>/g)].map(match => match[1]);
+        assert.deepEqual(formButtons.filter(attrs => !/\btype=button\b/.test(attrs)), [buttons.at(-1)]);
+        assert.match(buttons.at(-1), /\btype=submit\b/);
+    }
+});
 
 test('levelForm translates copy or StartPos playtime', () => {
     app('profile = emptyProfile(); viewing = null');

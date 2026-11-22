@@ -478,6 +478,38 @@ input:user-invalid, select:user-invalid, textarea:user-invalid {
   margin: 14px 0 0;
 }
 
+.level-action-bar {
+  --level-action-surface: var(--rim-bottom, var(--panel));
+  position: sticky;
+  inset-block-end: 0;
+  z-index: 1;
+  gap: var(--space-8);
+  padding-block: var(--space-8) calc(var(--space-8) + env(safe-area-inset-bottom));
+  border-block-start: var(--size-border) solid var(--color-border);
+  background: var(--level-action-surface);
+}
+
+.level-action-bar > button { min-height: var(--size-control); }
+.level-action-bar > .dg { margin-inline-end: auto; }
+/* Sticky offsets start inside the scroller's padding, so the box padding would leave a strip where fields show under the bar. */
+.modal .box:has(> form > .level-action-bar) { padding-block-end: 0; }
+
+@media (forced-colors: none) {
+  @supports (backdrop-filter: blur(1px)) {
+    .level-action-bar {
+      background: color-mix(in srgb, var(--level-action-surface) 94%, transparent);
+      backdrop-filter: blur(var(--space-8));
+    }
+  }
+}
+
+@media (forced-colors: active) {
+  .level-action-bar {
+    background: Canvas;
+    border-block-start-color: CanvasText;
+  }
+}
+
 .st {
   padding: 8px 10px;
   border-radius: 8px;
@@ -4773,13 +4805,15 @@ input[type=checkbox]:checked::after {
     display: flex;
     flex: none;
     justify-content: flex-end;
-    background: var(--color-bg);
+    background: transparent;
+    pointer-events: none;
   }
 
   .shell-drawer-header > button {
     width: var(--size-control);
     height: var(--size-control);
     padding: 0;
+    pointer-events: auto;
   }
 
   .drawer-backdrop:not([hidden]) {
@@ -4874,6 +4908,8 @@ input[type=checkbox]:checked::after {
     border-color: ButtonText;
     box-shadow: none;
   }
+
+  .shell-sidebar .shell-drawer-header > button { background: transparent; }
 
   .shell-sidebar button[aria-current=page] {
     outline: var(--size-focus) solid Highlight;
@@ -5218,6 +5254,18 @@ input[type=checkbox]:checked::after {
   overflow: auto;
   overscroll-behavior: contain;
 }
+:is(.list-surface .rcol, .modal .box):has(.level-action-bar) {
+  --level-action-height: calc(var(--size-control) + 2 * var(--space-8) + var(--size-border) + env(safe-area-inset-bottom));
+  /* Include the modal box's bottom gutter and clearance for focused controls. */
+  scroll-padding-block-end: calc(var(--level-action-height) + var(--space-24));
+}
+
+@media (width < 360px) {
+  .list-surface .rcol:has(#fm > .level-action-bar) {
+    scroll-padding-block-end: calc(var(--level-action-height) + var(--size-control) + var(--space-32));
+  }
+}
+
 .shell-main > .legacy-surface:has(> #rankings-well) {
   /* Keep the final well's rim clear of the scroll clip at fractional heights. */
   padding-block-end: var(--space-4);
@@ -5342,12 +5390,12 @@ input[type=checkbox]:checked::after {
 
     .account-dialog &.gbtn { background-color: color-mix(in srgb, white 94%, currentColor); }
 
-    &:is(.shell-nav button, .shell-footer button, .pma, .ms .msp label, .compare-options button, .local-choice) {
+    &:is(.shell-nav button, .shell-footer button, .shell-drawer-header button, .pma, .ms .msp label, .compare-options button, .local-choice) {
       background-color: var(--hover-menu);
       color: var(--hover-menu-ink);
     }
 
-    :is(.shell-nav, .shell-footer) > &:is(button) {
+    :is(.shell-nav, .shell-footer, .shell-drawer-header) > &:is(button) {
       --rim-lift: 100%;
       --nav-ink: var(--hover-menu-ink);
       border-color: transparent;

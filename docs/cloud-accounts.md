@@ -239,12 +239,12 @@ The device keeps, per row, the version and contents it last received from the se
 
 ### Local profiles (#196)
 
-- **Offer.** After the first pull of a page session, if the device holds local profiles with real data that were not brought into this account yet, the app opens *Bring your progress to your account* once. Real data means a level, wishlist item or tag that is not part of the bundled demo; brought profiles are recorded per account in `localStorage.gmigrated`. "Not now" or closing the dialog waits until the next page load; *Local data* in the profile menu offers it any time.
+- **Offer.** After the first pull of a page session, if the device holds local profiles with real data that were not brought into this account yet, the app opens *Bring your progress to your account* once. Real data means a level, wishlist item or tag that is not part of the demo profile that older versions preloaded; brought profiles are recorded per account in `localStorage.gmigrated`. "Not now" or closing the dialog waits until the next page load; *Local data* in the profile menu offers it any time.
 - **Preview.** The dialog lists the offered profiles with their counts, warns when the account already has levels or wishlists, and can also copy the profile's name and colours to the account.
 - **Bringing** adds to the account and never replaces anything:
   - levels whose id, or the same Geometry Dash level (same `levelId` and kind, or else the same normalized name and kind), already exist are skipped, and the added ones are appended to each ranked list;
   - tags the account lacks are added, and the account's colour wins;
-  - wishlists are added, and a wishlist whose id already exists (every profile made from the demo has `w1`) receives only the items it does not have;
+  - wishlists are added, and a wishlist whose id already exists (every profile made from the old demo has `w1`) receives only the items it does not have;
   - every row is cleaned to the database limits first (lengths, control characters, ranges, links, ids), and the result toast says how many entries were already there and how many fields were adjusted.
 - **Safe to retry.** The rows keep their ids and go through the normal sync queue, so a second run finds them all as existing. The local profile is never modified or deleted by bringing it.
 - **Local data** lists every local profile with *Download backup* (the existing export format), *Bring to my account* when signed in, and *Delete from this device*, confirmed. While signed out, *Use on this device* activates another backup; the active profile and the last profile cannot be deleted. *Import backup* always adds a local profile: it becomes active while signed out, or stays a backup that can be brought into the account while signed in.

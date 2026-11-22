@@ -108,7 +108,7 @@ On Windows, `iniciar.bat` starts the same server and opens the browser. On macOS
 | `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` | The Google OAuth client ID from the project's Google Cloud console. |
 | `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` | The secret of that Google OAuth client. |
 
-The first visit loads the demo profile from `data/demo-data.js`, which contains fictional data. Without `data/levels.json` the app still works; it just cannot fill creators and difficulties from the sheet.
+The first visit starts an empty profile. The fictional demo profile used by tests and the card screenshots is `tests/fixtures/demo-profile.js`. Without `data/levels.json` the app still works; it just cannot fill creators and difficulties from the sheet.
 
 `eslint.config.js` reads the script list in `index.html` so that names shared between the classic scripts count as defined and no local variable can hide one of them. `tests/load-scripts.js` runs the scripts a test needs in one shared `vm` context, the same way the page does, and `tests/globals.test.js` fails when two scripts declare the same top-level name or when one is never used.
 

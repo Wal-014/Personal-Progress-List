@@ -38,6 +38,22 @@ for (const token of css.matchAll(/"(?:\\[\s\S]|[^"\\])*"|'(?:\\[\s\S]|[^'\\])*'|
     start = token.index + 1;
 }
 
+test('level actions stick to the bottom of the panel scrollport', () => {
+    const bar = blocks.find(({ selector }) => selector === '.level-action-bar');
+    assert.ok(bar);
+    assert.ok(bar.declarations.includes('position: sticky'));
+    assert.ok(bar.declarations.includes('inset-block-end: 0'));
+});
+
+test('the responsive drawer header stays transparent and only its button catches clicks', () => {
+    const header = blocks.find(({ selector }) => selector === '.shell-drawer-header');
+    const button = blocks.find(({ selector }) => selector === '.shell-drawer-header > button');
+    assert.ok(header?.declarations.includes('background: transparent'));
+    assert.ok(header.declarations.includes('position: sticky'));
+    assert.ok(header.declarations.includes('pointer-events: none'));
+    assert.ok(button?.declarations.includes('pointer-events: auto'));
+});
+
 test('buttons have no global brightness filter on hover', () => {
     for (const { selector, declarations } of blocks) {
         if (/(?:^|,)\s*button:hover\s*(?:,|$)/.test(selector))

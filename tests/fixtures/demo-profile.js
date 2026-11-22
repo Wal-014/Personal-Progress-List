@@ -1,5 +1,5 @@
 /**
- * Fictional demo profile for first launch; personal data is stored in the browser.
+ * Fictional demo profile used by tests and by the docs/brand screenshots; never loaded by the app.
  */
 window.DEMO_PROFILE = {
   "profileName": "Demo",
