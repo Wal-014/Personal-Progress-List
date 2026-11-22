@@ -14,8 +14,8 @@ function createApp(globals = {}, { emailAuth = true } = {}) {
     const document = { body: {}, addEventListener: (name, handler) => { (listeners[name] ||= []).push(handler); }, querySelector: selector => nodes[selector] || null };
     nodes['#md'] = element({ innerHTML: '' });
     nodes['#md dialog'] = element({ querySelector: () => null, addEventListener() {}, showModal() {}, close() {} });
-    const env = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/account.js', 'js/components/dialogs.js', 'js/components/account-ui.js', 'js/events.js'], {
-        document, CSS: { escape: String }, window: { addEventListener() {} }, renderTagSuggestions() {}, ui: { lang: 'en' }, cloudSync: { pending: 0 }, cloudUser: null, queueMicrotask: () => {}, cloudStatusSentence: () => 'Saved', cloudRetryButton: () => '', ...globals
+    const env = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/account.js', 'js/components/dialogs.js', 'js/components/account-ui.js', 'js/components/home.js', 'js/events.js'], {
+        document, CSS: { escape: String }, window: { addEventListener() {} }, renderTagSuggestions() {}, ui: { lang: 'en' }, canEdit: () => true, cloudSync: { pending: 0 }, cloudUser: null, queueMicrotask: () => {}, cloudStatusSentence: () => 'Saved', cloudRetryButton: () => '', ...globals
     }, withEmailAuth(emailAuth));
     return { ...env, document, nodes, listeners };
 }
@@ -41,11 +41,20 @@ function fakeForm(mode = 'signin') {
     const button = element({ textContent: 'Submit' }), message = element(), forward = element(), heading = element(), nonceField = element({ hidden: true });
     const elements = Object.fromEntries(Object.entries({ aemail: 'owner@example.test', apassword: 'Password9', adisplay: 'Player', pdisplay: ' Player ', pusername: '', pbio: '', pcountry: '', pnewpassword: 'Password9', pconfirm: 'Password9', pnonce: '', enew: 'new@example.test' }).map(([key, value]) => [key, element({ id: key, value })]));
     elements.pnonce.disabled = true;
-    const form = element({ dataset: { mode }, elements, profileColors: { color: '#123456', secondaryColor: '#abcdef' },
-        querySelector: selector => selector === '[type=submit]' ? button : selector === '#auth-forward' ? forward : selector === 'h3' ? heading : selector === '#nonce-field' ? nonceField : selector === 'input' ? elements.aemail : message
+    const toggle = element(), preview = element(), previous = element({ dataset: { page: '-1' } });
+    const next = element({ dataset: { page: '1' } }), output = element();
+    const tile = element({ dataset: { cube: '23' } }), grid = element({ querySelector: () => tile });
+    const options = element({ hidden: true, querySelector: selector => selector === '[data-cube]' ? tile : null });
+    const catalogNodes = { '[aria-controls]': toggle, '#cube-options': options, '.cube-grid': grid, 'output': output, '[data-page="-1"]': previous, '[data-page="1"]': next };
+    const catalog = element({ querySelector: selector => catalogNodes[selector], querySelectorAll: () => [tile] });
+    const colors = element({ querySelector: () => preview });
+    const editNodes = { '.cube-catalog': catalog, '.profile-colors': colors, '.profile-preview': preview };
+    for (const control of [toggle, next, tile]) control.closest = () => control;
+    const form = element({ dataset: { mode }, elements, profileEditor: { color: '#123456', secondaryColor: '#abcdef' },
+        querySelector: selector => selector === '[type=submit]' ? button : selector === '#auth-forward' ? forward : selector === 'h3' ? heading : selector === '#nonce-field' ? nonceField : selector === 'input' ? elements.aemail : editNodes[selector] || message
     });
     Object.values(elements).forEach(input => input.form = form);
-    return { form, button, message, forward, heading, nonceField };
+    return { form, button, message, forward, heading, nonceField, catalog, toggle, next, tile, grid, preview };
 }
 
 const flush = () => new Promise(resolve => setImmediate(resolve));
@@ -64,6 +73,30 @@ test('account menu preserves profile, sharing, settings, local data and sync hoo
     assert.match(html, /data-cloud-status/);
     assert.match(html, /data-cloud-retry/);
     assert.match(html, /Saved/);
+});
+
+test('the signed-in pill, account menu and profile overview render the saved cube or generic icon', () => {
+    const { app } = createApp();
+    signedIn(app, 'cube_id: 485');
+    for (const markup of ['profileSwitcher().split("</button>")[0]', 'accountMenu()', 'profileCard()']) {
+        assert.match(app(markup), /assets\/cubes\/485\.webp/);
+        app('account.profile.cube_id = null');
+        assert.match(app(markup), /viewBox="0 0 48 48".*fill="#123456"/);
+        assert.doesNotMatch(app(markup), /assets\/cubes\//);
+        app('account.profile.cube_id = 485');
+    }
+});
+
+test('profile cube accepts integer catalog ids and falls back for missing or invalid ids', () => {
+    const { app } = createApp();
+    const renderCube = app('profileCube');
+    for (const id of [1, 485])
+        assert.match(renderCube(id, '#123456', '#abcdef'), new RegExp('assets/cubes/' + id + '\\.webp'));
+    for (const id of [null, undefined, 0, 486, 2.5, '23']) {
+        const html = renderCube(id, '#123456', '#abcdef');
+        assert.match(html, /viewBox="0 0 48 48".*fill="#123456".*fill="#abcdef"/);
+        assert.doesNotMatch(html, /assets\/cubes\//);
+    }
 });
 
 test('Google settings share one request and only accept an explicit true', async () => {
@@ -381,13 +414,54 @@ test('profile form lowercases usernames, clears errors and updates the bio count
     assert.equal(nodes['#bio-count'].textContent, '5 / 300');
 });
 
+test('Edit opens the shared cube catalog, previews a selection and saves it with the profile', async () => {
+    const { app, context, nodes } = createApp();
+    signedIn(app, 'cube_id: null');
+    const { form, catalog, toggle, next, tile, grid, preview } = fakeForm();
+    nodes['#pf'] = form;
+    context.showToast = () => {};
+    context.saveOwnProfile = async fields => {
+        assert.equal(fields.cube_id, 23);
+        app('account.profile.cube_id = 23');
+        return {};
+    };
+
+    app('openProfileForm()');
+    assert.match(nodes['#md'].innerHTML, /<span class=profile-preview><svg class=i viewBox="0 0 48 48"/);
+    assert.match(nodes['#md'].innerHTML, /<\/fieldset><div class=cube-catalog>.*id=cube-toggle.*id=cube-options.*class=cube-pager.*class=cube-grid.*<label for=pbio>/);
+    catalog.onclick({ target: toggle });
+    assert.match(grid.innerHTML, /data-cube=1 aria-pressed=false/);
+    assert.match(grid.innerHTML, /data-cube=20 aria-pressed=false/);
+    assert.doesNotMatch(grid.innerHTML, /aria-pressed=true/);
+    catalog.onclick({ target: next });
+    assert.match(grid.innerHTML, /data-cube=23 aria-pressed=false/);
+    catalog.onclick({ target: tile });
+    assert.equal(tile.getAttribute('aria-pressed'), 'true');
+    assert.match(preview.innerHTML, /assets\/cubes\/23\.webp/);
+    assert.equal(app('account.profile.cube_id'), null);
+    await app('submitAccountProfile')(form);
+    assert.match(nodes['#md'].innerHTML, /class="box sm account-dialog profile-card".*assets\/cubes\/23\.webp/);
+});
+
+test('Edit converts an invalid cube selection to null before saving', async () => {
+    const { app, context } = createApp();
+    const { form } = fakeForm();
+    form.profileEditor.cubeId = 486;
+    form.isConnected = false;
+    context.saveOwnProfile = async fields => {
+        assert.equal(fields.cube_id, null);
+        return {};
+    };
+    await app('submitAccountProfile')(form);
+});
+
 test('profile saves optional empty fields as null and handles username conflicts on the field', async () => {
     const { app, context, nodes } = createApp(), { form } = fakeForm(), toasts = [];
     signedIn(app);
     const error = nodes['#pusername-error'] = element();
     context.showToast = value => toasts.push(value);
     context.saveOwnProfile = async fields => {
-        assert.deepEqual({ ...fields }, { display_name: 'Player', username: null, color: '#123456', secondary_color: '#abcdef', bio: null, country: null });
+        assert.deepEqual({ ...fields }, { display_name: 'Player', username: null, color: '#123456', secondary_color: '#abcdef', cube_id: null, bio: null, country: null });
         app('account.profile.display_name = "Updated Player"');
         return {};
     };

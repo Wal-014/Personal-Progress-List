@@ -116,6 +116,18 @@ test('invalid local data changes nothing and identity is copied only on request'
     assert.deepEqual(JSON.parse(d.storage.gmigrated), { owner: ['a'] });
 });
 
+test('a valid local cube migrates only with the optional identity', async () => {
+    const d = device();
+    d.setup({ a: localProfile({ cubeId: 485 }) });
+    await d.app("bringLocalProfile('a', false)");
+    assert.deepEqual(d.identities, []);
+    await d.app("bringLocalProfile('a', true)");
+    assert.equal(d.identities[0].cube_id, 485);
+    d.app('store.profs.a.cubeId = 486');
+    await d.app("bringLocalProfile('a', true)");
+    assert.equal(Object.hasOwn(d.identities[1], 'cube_id'), false);
+});
+
 test('migration dialog escapes names, selects active profile and warns only when account has data', () => {
     const d = device();
     d.setup({ a: localProfile({ name: '<img src=x onerror=alert(1)>', data: { ...data(), levels: [level('n1')] } }) });

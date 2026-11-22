@@ -6,6 +6,7 @@ const context = enabled ? createTestContext() : null;
 after(async () => context?.cleanup());
 
 const invalid = [
+    ['profiles', 'cube_id', 0], ['profiles', 'cube_id', 486],
     ['profiles', 'username', 'Ab'], ['profiles', 'username', 'ABC'],
     ['profiles', 'username', 'a'.repeat(21)], ['profiles', 'username', 'abc-'],
     ['profiles', 'display_name', ''], ['profiles', 'display_name', 'x'.repeat(41)],
@@ -109,6 +110,16 @@ describe('database constraints through the Data API', { skip: !enabled }, () => 
         const anonymous = ok(await context.anon.from('levels').select('*').eq('user_id', userId));
         assert.deepEqual(anonymous, ok(await client.from('levels').select('*').eq('user_id', userId)));
         assert.equal(anonymous.length, 1);
+    });
+
+    test('profile cubes start unset and accept both catalog boundaries and null', async () => {
+        const { id, client: owner } = await context.createUser();
+        const profile = ok(await owner.from('profiles').select('cube_id').eq('id', id).single());
+        assert.equal(profile.cube_id, null);
+        for (const cubeId of [1, 485, null]) {
+            const row = ok(await owner.from('profiles').update({ cube_id: cubeId }).eq('id', id).select('cube_id').single());
+            assert.equal(row.cube_id, cubeId);
+        }
     });
 
     test('ratings accept boundaries, decimals and null as JSON numbers', async () => {

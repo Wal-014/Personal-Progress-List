@@ -30,7 +30,7 @@ function profileSwitcher() {
         return viewing.identity ? publicIdentityCard() : '';
     const signedIn = account.status == 'signed-in' && account.profile, own = signedIn ? account.profile : store.profs[store.cur];
     const menuId = signedIn ? 'amenu' : 'pmenu';
-    const pill = `<button id=profile-pill class=profile-pill popovertarget=${menuId}>${signedIn ? cubeIcon(own.color, own.secondary_color) : catalogCube(own.cubeId, own.color, own.secondaryColor)}<span>${escapeHtml(signedIn ? own.display_name : own.name)}</span>${ICONS.chevronDown}</button>`;
+    const pill = `<button id=profile-pill class=profile-pill popovertarget=${menuId}>${signedIn ? profileCube(own.cube_id, own.color, own.secondary_color) : catalogCube(own.cubeId, own.color, own.secondaryColor)}<span>${escapeHtml(signedIn ? own.display_name : own.name)}</span>${ICONS.chevronDown}</button>`;
     if (signedIn)
         return pill + accountMenu();
     const row = (act, key, extra = '') => `<button class=pma data-act=${act} ${extra}>${t(key)}</button>`;

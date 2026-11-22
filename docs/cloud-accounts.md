@@ -55,6 +55,7 @@ erDiagram
     text display_name
     text color
     text secondary_color
+    smallint cube_id "1-485, null = generic cube"
     text bio
     text country
     boolean is_public
