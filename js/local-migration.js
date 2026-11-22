@@ -1,21 +1,20 @@
 /** Local backups, account migration and migration offers. */
 
-// Startup reuses the demo object for the first profile, so remember its IDs before that profile can be edited.
-const localDemoData = (() => {
-    const demo = typeof window == 'object' ? window.DEMO_PROFILE : null;
-    const rows = value => Array.isArray(value) ? value : [];
-    return {
-        levels: new Set(rows(demo?.levels).map(level => level?.id)),
-        items: new Set(rows(demo?.wishlists).flatMap(wishlist => rows(wishlist?.items).map(item => item?.id))),
-        tags: new Set(rows(demo?.tags).map(tag => tag?.name))
-    };
-})();
+// Older browsers still store the demo profile that used to be preloaded.
+const legacyDemoData = {
+    levels: new Set([
+        'demo0', 'demo1', 'demo2', 'demo3', 'demo4', 'demo5', 'demo6', 'demo7', 'demo8',
+        'demop1', 'demop2'
+    ]),
+    items: new Set(['i1', 'i2', 'i3']),
+    tags: new Set(['Rebeated', 'Fluked', 'Pre-Extremes'])
+};
 
 function hasRealLocalData(p) {
     const data = p?.data, rows = value => Array.isArray(value) ? value : [];
-    return rows(data?.levels).some(level => level && !localDemoData.levels.has(level.id))
-        || rows(data?.wishlists).some(wishlist => rows(wishlist?.items).some(item => item && !localDemoData.items.has(item.id)))
-        || rows(data?.tags).some(tag => tag && !localDemoData.tags.has(tag.name));
+    return rows(data?.levels).some(level => level && !legacyDemoData.levels.has(level.id))
+        || rows(data?.wishlists).some(wishlist => rows(wishlist?.items).some(item => item && !legacyDemoData.items.has(item.id)))
+        || rows(data?.tags).some(tag => tag && !legacyDemoData.tags.has(tag.name));
 }
 
 function migratedLocalProfiles() {
