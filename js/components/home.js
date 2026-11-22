@@ -5,7 +5,7 @@ function homeListCard(kind) {
     const lead = findLevel(rankedIds(kind)[0]), url = lead ? thumbUrl(lead) : '';
     return `<div class="hcard hcard-${kind}" data-act=tab data-v=${kind} role=button tabindex=0${url ? ` data-th="${escapeHtml(url)}"` : ''}>
 <div class=hcard-top>${lead ? `<span class=hbadge>#1</span><span class=hlead>${escapeHtml(lead.name)}</span>${difficultyFace(lead)}` : `<span class=hlead>${t(levels.length ? 'unplaced' : 'listEmpty')}</span>`}</div>
-<div class=hcard-body><span class=hghost aria-hidden=true>${ICONS[kind]}</span>${url ? '<i class=hcover aria-hidden=true></i>' : ''}<div class=hcard-copy><h3>${t(kind)}</h3><div class=hcard-rule></div><p>${ICONS.metricLevels}<span>${levels.length.toLocaleString(ui.lang)} ${t('lv')}</span></p></div></div></div>`;
+<div class=hcard-body><span class=hghost aria-hidden=true>${ICONS[kind]}</span>${url ? '<i class=hcover aria-hidden=true></i>' : ''}<div class=hcard-copy><h3>${t(kind)}</h3><div class=hcard-rule></div><p>${ICONS.metricLevels}<span>${levels.length.toLocaleString(ui.lang)} ${levelLabel(levels.length)}</span></p></div></div></div>`;
 }
 
 function homeWishlists() {
@@ -16,8 +16,8 @@ function homeWishlists() {
 
 function homeStats() {
     const summary = statsSummary();
-    const metric = (icon, value, key) => `<div class=hmetric>${icon}<div><b>${value.toLocaleString(ui.lang)}</b><span>${t(key)}</span></div></div>`;
-    return `<section class=hstats><div class=hsection-head><h2>${ICONS.navStats}${t('stats')}</h2></div><div class=hstats-surface>${metric(ICONS.metricLevels, summary.levelCount, 'lv')}${metric(ICONS.metricAttempts, summary.attemptTotal, 'attT')}${metric(ICONS.metricHours, summary.playHours, 'hrs')}<button class=htext data-act=tab data-v=stats>${t('viewStats')}<span aria-hidden=true>→</span></button></div></section>`;
+    const metric = (icon, value, label) => `<div class=hmetric>${icon}<div><b>${value.toLocaleString(ui.lang)}</b><span>${label}</span></div></div>`;
+    return `<section class=hstats><div class=hsection-head><h2>${ICONS.navStats}${t('stats')}</h2></div><div class=hstats-surface>${metric(ICONS.metricLevels, summary.levelCount, levelLabel(summary.levelCount))}${metric(ICONS.metricAttempts, summary.attemptTotal, t('attT'))}${metric(ICONS.metricHours, summary.playHours, t('hrs'))}<button class=htext data-act=tab data-v=stats>${t('viewStats')}<span aria-hidden=true>→</span></button></div></section>`;
 }
 
 function home() {
