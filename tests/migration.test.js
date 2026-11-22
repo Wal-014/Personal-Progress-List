@@ -16,7 +16,7 @@ function device() {
         addEventListener: (name, work) => { if (name === 'close') closeListeners.push(work); },
         showModal() {}, close() { closed++; for (const work of closeListeners.splice(0)) work(); }, remove() {} };
     const document = { body: {}, querySelector: selector => nodes[selector] || null, addEventListener() {} };
-    const env = loadScripts(['data/demo-data.js', 'js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/account.js', 'js/cloud-model.js', ...syncScripts, 'js/demonlist.js', 'js/api.js', 'js/ranking-sync.js', 'js/components/dialogs.js', 'js/components/local-data.js', 'js/components/home.js', 'js/components/shell.js', 'js/components/account-ui.js', 'js/events.js'], {
+    const env = loadScripts(['data/demo-data.js', 'js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/account.js', 'js/cloud-model.js', ...syncScripts, 'js/demonlist.js', 'js/api.js', 'js/ranking-sync.js', 'js/notifications.js', 'js/components/dialogs.js', 'js/components/local-data.js', 'js/components/home.js', 'js/components/shell.js', 'js/components/account-ui.js', 'js/events.js'], {
         document, window: { addEventListener() {} }, localStorage: storage,
         queueMicrotask: task => tasks.push(task), setTimeout: task => tasks.push(task), clearTimeout() {},
         navigator: { onLine: true }, render() {}, renderTagSuggestions() {}, URL, Blob
@@ -262,15 +262,13 @@ for (const signed of [false, true]) test('import backup adds a local profile, si
     }
 });
 
-test('automatic migration waits for a successful pull and unblocked UI, and Not now lasts this page session', () => {
+test('rendering a signed-in account with local data leaves the dialog closed', () => {
     const d = device();
     d.setup({ a: localProfile({ data: { ...data(), levels: [level('n1')] } }) });
-    d.app('cloudSession.pulled = false; maybeOfferMigration()'); assert.equal(d.opened.length, 0);
-    d.app('cloudSession.pulled = true'); d.nodes['form, dialog[open], .ms[open]'] = {};
-    d.app('maybeOfferMigration()'); assert.equal(d.opened.length, 0);
-    delete d.nodes['form, dialog[open], .ms[open]'];
-    d.app('maybeOfferMigration()'); assert.equal(d.opened.length, 1);
-    d.app('deferMigration(); maybeOfferMigration()'); assert.equal(d.opened.length, 1);
+    d.app('accountRendered()');
+    for (const task of d.tasks)
+        task();
+    assert.equal(d.opened.length, 0);
 });
 
 test('backup download uses the legacy JSON shape and profile filename', async () => {
@@ -436,12 +434,27 @@ test('cut tag names are trimmed again in both tag rows and level assignments', (
     assert.equal(cleaned.data.tags[0].name, 'x'.repeat(39));
 });
 
-test('automatic offer records deferral immediately while a manual opening remains available', () => {
+test('Local data can still bring a profile after its notice was hidden', () => {
     const d = device(); d.setup({ a: localProfile({ data: { ...data(), levels: [level('n1')] } }) });
-    d.app('maybeOfferMigration(); maybeOfferMigration()');
-    assert.equal(d.opened.length, 1);
-    d.app("openLocalMigration('a')"); assert.equal(d.opened.length, 2);
-    d.app('deferMigration(); maybeOfferMigration()'); assert.equal(d.opened.length, 2);
+    d.storage.gnotices = '{"owner":{"local-data":"a"}}';
+    d.app('ACTIONS.localdata()');
+    assert.match(d.opened[0], /data-act=localbring data-id="a">/);
+    d.app("ACTIONS.localbring(null, 'a')");
+    assert.match(d.opened[1], /id=migration/);
+});
+
+test('an unreadable offered profile keeps the notice until the profile is successfully brought over', async () => {
+    const d = device();
+    d.setup({ a: localProfile({ data: { ...data(), levels: [level('n1')], order: null } }) });
+    assert.match(d.app('bellUI()'), /Local data available/);
+    await d.app("bringLocalProfile('a', false)");
+    assert.equal(d.alerts[0].title, 'This profile could not be read');
+    assert.equal(d.storage.gmigrated, undefined);
+    assert.match(d.app('bellUI()'), /Local data available/);
+    d.app('store.profs.a.data.order = { classic: [], platform: [] }');
+    await d.app("bringLocalProfile('a', false)");
+    assert.deepEqual(JSON.parse(d.storage.gmigrated), { owner: ['a'] });
+    assert.doesNotMatch(d.app('bellUI()'), /Local data available/);
 });
 
 for (const [lang, expected, toast] of [

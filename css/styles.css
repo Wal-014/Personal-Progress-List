@@ -2792,6 +2792,26 @@ input.ro {
   line-height: 1.4;
 }
 
+.notification-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.modal .notification-actions .notification-dismiss {
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-text-muted);
+}
+
+@media (hover: hover) and (forced-colors: none) {
+  .modal .notification-actions .notification-dismiss:hover {
+    color: var(--color-text);
+    text-decoration: underline;
+  }
+}
+
 .notification-empty {
   padding: var(--space-24) 0;
   text-align: center;
@@ -2815,9 +2835,11 @@ input.ro {
     gap: var(--space-8);
   }
 
-  .notification-row .xs-txt {
+  .notification-actions {
     grid-column: 2;
-    justify-self: start;
+  }
+
+  .notification-actions .xs-txt {
     min-height: var(--size-control);
   }
 }

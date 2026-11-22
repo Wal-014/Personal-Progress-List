@@ -295,18 +295,4 @@ function migrationSummary(result) {
         + (result.adjusted ? ' ' + t(result.adjusted == 1 ? 'migrationAdjustedOne' : 'migrationAdjusted').replace('{n}', result.adjusted) : '');
 }
 
-const migrationDeferred = new Set();
-
-function maybeOfferMigration() {
-    if (!canEdit() || !cloudUser || !cloudSession?.pulled || account.recovering || migrationDeferred.has(cloudUser)
-        || cloudFormOpen() || !localProfilesToOffer(cloudUser).length)
-        return;
-    migrationDeferred.add(cloudUser);
-    openModal(migrationDialog());
-}
-
-function deferMigration() {
-    closeModal();
-}
-
 const localDataCount = (kind, count) => t('local' + kind + (count == 1 ? 'One' : '')).replace('{n}', count);
