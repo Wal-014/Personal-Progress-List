@@ -85,7 +85,7 @@ function shellPageTitle() {
     const title = isListTab() ? t(canEdit() ? 'lists' : 'publicLists') : wish ? wish.name : t(ui.tab);
     const icon = isListTab() ? ICONS.navLists : ui.tab == 'wish' ? ICONS.navWish : ICONS.navStats;
     const primary = !canEdit() ? '' : ui.tab == 'wish' && !wish ? `<button data-act=wnew>${ICONS.actionAdd}${t('palWish')}</button>` : '';
-    return `<div class=page-title><button data-act=tab data-v=home aria-label="${t('home')}" title="${t('home')}">${ICONS.navHome}</button>${wish ? `<button data-act=tab data-v=wish aria-label="${t('back2')}">${ICONS.actionBack}</button>` : ''}<h2>${icon}${escapeHtml(title)}</h2>${primary}</div>`;
+    return `<div class=page-title><button data-act=tab data-v=home aria-label="${t('home')}" title="${t('home')}">${ICONS.navHome}</button>${wish ? `<button data-act=tab data-v=wish aria-label="${t('back2')}">${ICONS.actionBack}</button>` : ''}<h2 id=screen-title tabindex=-1>${icon}${escapeHtml(title)}</h2>${primary}</div>`;
 }
 
 let notificationCount;
@@ -161,6 +161,6 @@ ${canEdit() ? `<h3 id=ranking-sync>${t('rankSync')}</h3>
 <div id=ranking-status class=ranking-status data-ranking-status role=status aria-live=polite aria-busy=${rankingSync.running}>${rankingStatusRows()}</div>
 <button data-act=rankrefresh aria-describedby=ranking-status aria-disabled=${rankingSync.running}>${ICONS.actionSync}<span>${rankingRefreshLabel()}</span></button>` : ''}
 <nav class=legal>${['terms', 'privacy', 'credits'].map(k => `<a class=lk data-act=legal data-v=${k} role=button tabindex=0>${t(k)}</a>`).join(' · ')}</nav>
-<p class=by>© ${new Date().getFullYear()} Retlaw · ${t('rights')} · v.Beta_0.1</p>
+<p class=by>© ${new Date().getFullYear()} Retlaw · ${t('rights')} · v${APP_VERSION}</p>
 <p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
 }

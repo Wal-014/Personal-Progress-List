@@ -16,11 +16,12 @@ function device() {
         addEventListener: (name, work) => { if (name === 'close') closeListeners.push(work); },
         showModal() {}, close() { closed++; for (const work of closeListeners.splice(0)) work(); }, remove() {} };
     const document = { body: {}, querySelector: selector => nodes[selector] || null, addEventListener() {} };
-    const env = loadScripts(['data/demo-data.js', 'js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/account.js', 'js/cloud-model.js', ...syncScripts, 'js/demonlist.js', 'js/api.js', 'js/ranking-sync.js', 'js/notifications.js', 'js/components/dialogs.js', 'js/components/local-data.js', 'js/components/home.js', 'js/components/shell.js', 'js/components/account-ui.js', 'js/events.js'], {
+    const env = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/account.js', 'js/cloud-model.js', ...syncScripts, 'js/demonlist.js', 'js/api.js', 'js/ranking-sync.js', 'js/notifications.js', 'js/components/dialogs.js', 'js/components/local-data.js', 'js/components/home.js', 'js/components/shell.js', 'js/components/account-ui.js', 'js/events.js'], {
         document, window: { addEventListener() {} }, localStorage: storage,
         queueMicrotask: task => tasks.push(task), setTimeout: task => tasks.push(task), clearTimeout() {},
         navigator: { onLine: true }, render() {}, renderTagSuggestions() {}, URL, Blob
     });
+    env.load(['tests/fixtures/demo-profile.js']);
     Object.assign(env.context, {
         autoSyncRankings() { rankingChecks.push(env.app('store.cur')); },
         saveCloud() { saves++; }, showToast: message => toasts.push(message),
@@ -398,13 +399,20 @@ for (const addition of ['none', 'level', 'item', 'tag']) test(`real demo fixture
     assert.match(d.app('profileSwitcher()'), /data-act=localdata/);
 });
 
-test('a missing or malformed demo definition does not block real profiles', () => {
-    const d = device();
-    d.setup({ a: localProfile({ data: { ...data(), levels: [level('demo-user-added')] } }) });
-    for (const missing of [undefined, null, {}, { levels: 'bad', tags: null, wishlists: 42 }]) {
-        d.context.window.DEMO_PROFILE = missing;
-        assert.deepEqual(plain(d.app("localProfilesToOffer('owner')")), ['a']);
-    }
+test('the historical demo signature matches the fixture', () => {
+    const d = device(), demo = d.context.window.DEMO_PROFILE;
+    assert.deepEqual(new Set(d.app('legacyDemoData.levels')), new Set(demo.levels.map(level => level.id)));
+    assert.deepEqual(new Set(d.app('legacyDemoData.items')), new Set(demo.wishlists.flatMap(wishlist => wishlist.items.map(item => item.id))));
+    assert.deepEqual(new Set(d.app('legacyDemoData.tags')), new Set(demo.tags.map(tag => tag.name)));
+});
+
+test('editing demo fields other than level IDs, item IDs or tag names does not trigger a migration offer', () => {
+    const d = device(), demo = plain(d.context.window.DEMO_PROFILE);
+    demo.levels[0].name = 'Renamed level';
+    demo.wishlists[0].items[0].name = 'Renamed item';
+    demo.tags[0].color = '#123456';
+    d.setup({ a: localProfile({ data: demo }) });
+    assert.deepEqual(plain(d.app("localProfilesToOffer('owner')")), []);
 });
 
 test('shared demo wishlists append new items from both profiles without replacing account metadata', async () => {

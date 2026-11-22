@@ -277,9 +277,9 @@ const ACTIONS = {
                 return;
             profile.wishlists = profile.wishlists.filter(w => w.id != ui.wl);
             ui.wl = null;
-            ui.tab = 'home';
             save();
             render();
+            qs('#screen-title')?.focus({ preventScroll: true });
         });
     },
     wadd() {
@@ -302,7 +302,7 @@ const ACTIONS = {
         levelSearch.f = { rated: 'all', rates: [], diffs: [] };
         changeLevelFilters();
     },
-    gdpick: a => pickLevel(a.form, levelSearch.results[a.dataset.i]),
+    gdpick: a => chooseLevelResult(a.form, levelSearch.results[a.dataset.i], a.matches(':focus-visible')),
     wdel(a, id) {
         askConfirm(t('wconf')).then(ok => {
             if (!ok)
@@ -524,8 +524,6 @@ document.body.onclick = e => {
             d.open = false;
     });
     const g = e.target.closest('[data-tag]'), a = e.target.closest('[data-act]'), c = e.target.closest('[data-id]');
-    if (e.target.classList.contains('modal'))
-        return closeModal();
     if (g && a?.dataset.act !== 'list-pick')
         return filterByTagChip(g);
     if (a)

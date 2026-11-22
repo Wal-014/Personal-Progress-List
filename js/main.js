@@ -9,9 +9,8 @@
     }
     else {
         if (!store) {
-            const demo = window.DEMO_PROFILE || emptyProfile();
-            store = { cur: 'p1', profs: { p1: { name: demo.profileName || 'Demo', data: demo } } };
-            profile = demo;
+            store = { cur: 'p1', profs: { p1: { name: t('defaultProfile'), data: emptyProfile() } } };
+            profile = store.profs.p1.data;
             save();
         }
         ensureProfileColors();

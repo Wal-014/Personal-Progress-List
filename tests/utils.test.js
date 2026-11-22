@@ -23,6 +23,17 @@ test('duration display retains its existing format', () => {
     assert.equal(app('formatDuration')(null), '');
 });
 
+test('levelLabel returns the localized singular only for one level', () => {
+    const { app, context } = loadScripts(['js/i18n.js', 'js/utils.js'], { ui: {} });
+    for (const [lang, singular, plural] of [['en', 'Level', 'Levels'], ['es', 'Nivel', 'Niveles']]) {
+        context.ui.lang = lang;
+        const levelLabel = app('levelLabel');
+        assert.equal(levelLabel(0), plural);
+        assert.equal(levelLabel(1), singular);
+        assert.equal(levelLabel(2), plural);
+    }
+});
+
 test('thumbnails are only requested for numeric level IDs', () => {
     assert.equal(app('thumbUrl')({ levelId: '4125776' }), 'https://levelthumbs.prevter.me/thumbnail/4125776/small');
     assert.equal(app('thumbUrl')({ levelId: '../x' }), '');

@@ -50,6 +50,9 @@ const newId = prefix => prefix + Date.now().toString(36) + Math.random().toStrin
 /** Shows a stored YYYY-MM-DD date as DD/MM/YYYY, the format used across the app. */
 const formatDate = d => d ? d.split('-').reverse().join('/') : '';
 
+/** Zero levels use the plural form in both supported languages. */
+const levelLabel = count => t(count == 1 ? 'lv1' : 'lv');
+
 const formatRating = value => value.toLocaleString(ui.lang, { maximumFractionDigits: 1 });
 
 const orDash = v => v == null || v === '' ? '-' : v;

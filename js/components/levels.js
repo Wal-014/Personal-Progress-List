@@ -162,7 +162,7 @@ function detail(level) {
     return `<div class=box>${thumbnail ? `<div class=hero data-th="${escapeHtml(thumbnail)}" data-th-small="${escapeHtml(thumbUrl(level))}"></div>` : ''}<h2 id=level-panel-heading tabindex=-1>${escapeHtml(level.name)}</h2>
 <div class=level-identity><dl>${identity}</dl></div><dl class=detail-ranks>${ranks}</dl>
 <div${sections ? ' class=dgrid' : ''}>${sections || `<p class=by>${t('noAdditionalDetails')}</p>`}
-</div><p class=dgb>${canEdit() ? `<button class=blue data-act=edit data-id="${escapeHtml(level.id)}">${ICONS.actionEdit} ${t('edit')}</button>` : ''} <button data-act=lvclose>${t('close')}</button></p></div>`;
+</div><div class="dgb level-action-bar"><button type=button data-act=lvclose>${t('close')}</button> ${canEdit() ? `<button type=button class=blue data-act=edit data-id="${escapeHtml(level.id)}">${ICONS.actionEdit} ${t('edit')}</button>` : ''}</div></div>`;
 }
 
 const tagChip = n => `<button type=button class=chip data-act=tgrm data-v="${escapeHtml(n)}" aria-label="${escapeHtml(t('del') + ' · ' + n)}" ${tagColorAttr(n)}>${escapeHtml(n)} ${ICONS.listClear}<input type=hidden name=tg value="${escapeHtml(n)}"></button>`;
@@ -219,7 +219,7 @@ ${section('s3', `<div class=level-attempts>${attempts}</div><div class=level-tim
 ${section('s4', formField('date', levelData.date, 'date') + formField('link', levelData.link))}
 <fieldset><legend>${t('s5')}</legend><div class=grid>${formField('enj', levelData.enj, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}${formField('lik', levelData.lik, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}</div><label for=tgq>${t('tags')}</label><input id=tgq placeholder="${t('tgs')}" autocomplete=off><div id=tgr class=tgr></div><div id=tgs>${(levelData.tags || []).map(tagChip).join('')}</div></fieldset>
 <fieldset><legend>${t('s6')}</legend><label for=fm-notes>${t('notes')}</label><textarea id=fm-notes name=notes rows=3>${escapeHtml(levelData.notes)}</textarea>${deathsInput(levelData.deaths)}</fieldset>
-<p class=dgb><button class=pri>${t('save')}</button> <button type=button data-act=${level ? 'lvclose' : 'close'}>${t('close')}</button> ${level ? `<button type=button class=dg data-act=del data-id="${escapeHtml(level.id)}">${t('del')}</button>` : ''}</p></form></div>`;
+<div class="dgb level-action-bar">${level ? `<button type=button class=dg data-act=del data-id="${escapeHtml(level.id)}">${t('del')}</button>` : ''} <button type=button data-act=${level ? 'lvclose' : 'close'}>${t('close')}</button> <button type=submit class=pri>${t('save')}</button></div></form></div>`;
 }
 
 function levelFromForm(form) {

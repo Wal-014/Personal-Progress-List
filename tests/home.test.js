@@ -1,12 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { stampVersion } from '../scripts/build-site.js';
 import { loadScripts } from './load-scripts.js';
 
-function homeApp() {
+function homeApp(options) {
     const root = { innerHTML: '', contains: () => false };
     const document = { body: {}, documentElement: { dataset: {} }, activeElement: null,
         querySelector: selector => selector == '#app' ? root : null, querySelectorAll: () => [], addEventListener() {} };
-    const loaded = loadScripts(['data/demo-data.js', 'js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js',
+    const loaded = loadScripts(['tests/fixtures/demo-profile.js', 'js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js',
         'js/ranking-sync.js', 'js/components/faces.js', 'js/components/levels.js', 'js/components/timeline.js', 'js/components/rankings.js', 'js/components/compare.js',
         'js/components/stats.js', 'js/components/wishlists.js', 'js/notifications.js', 'js/components/home.js', 'js/components/shell.js',
         'js/components/account-ui.js', 'js/render.js', 'js/events.js'], {
@@ -15,7 +16,7 @@ function homeApp() {
         cloudHeaderStatus: () => '', localProfileSummary: () => 'Local profile', publicIdentityCard: () => '<div class=profile-card>Public player</div>',
         initSort() {}, initWishlistSort() {}, renderTagSuggestions() {}, finishAccountSignIn() {},
         lcol: () => 'List content', panel: () => 'Level panel', publicViewScreen: () => 'Loading public profile'
-    });
+    }, options);
     loaded.app("profile = JSON.parse(JSON.stringify(window.DEMO_PROFILE)); store = { cur: 'demo', profs: { demo: { name: 'Demo', color: '#123456', data: profile } } }; ui.lang = 'en'; ui.tab = 'home'");
     Object.assign(loaded.context, { lcol: () => 'List content', panel: () => 'Level panel' });
     return { ...loaded, root };
@@ -31,24 +32,57 @@ test('entering either list keeps the sidebar disclosure closed until the user ex
     assert.match(app('shellNavigation()'), /data-act=listchoices aria-expanded=true/);
 });
 
-test('Home cards use ranked leads, faces, localized counts and attempts without nested controls', () => {
+test('Home cards use ranked leads, faces and localized level counts without nested controls, and attempts appear in Home statistics', () => {
     const { app } = homeApp();
     const html = app('home()');
     assert.equal((html.match(/class="hcard hcard-/g) || []).length, 2);
-    for (const text of ['Bloodbath', 'Demo Platformer A', '9 Levels', '2 Levels', '95,596 attempts', '6,057 attempts'])
+    for (const text of ['Bloodbath', 'Demo Platformer A'])
         assert.ok(html.includes(text), text);
+    assert.match(html, /<b>101,653<\/b><span>Total attempts<\/span>/);
     assert.equal((html.match(/class=hbadge>#1/g) || []).length, 2);
     assert.match(html, /class="face/);
     assert.equal((html.match(/data-th=/g) || []).length, app("['classic', 'platform'].filter(kind => thumbUrl(findLevel(rankedIds(kind)[0]))).length"));
     assert.match(html, /data-act=add/);
     assert.match(html, /data-act=tab data-v=stats/);
-    app("profile.levels = [{ id: 'one', kind: 'classic', name: '<Lead>', attN: 0 }]; profile.order.classic = ['one']; profile.order.platform = []");
+    for (const [lang, label] of [['en', 'Levels'], ['es', 'Niveles']]) {
+        app("ui.lang = '" + lang + "'");
+        for (const [kind, count] of [['classic', 9], ['platform', 2]]) {
+            const card = app("homeListCard('" + kind + "')");
+            assert.match(card, new RegExp('<span>' + count + ' ' + label + '</span></p>'));
+        }
+    }
+    app("ui.lang = 'en'; profile.levels = [{ id: 'one', kind: 'classic', name: '<Lead>', attN: 0 }]; profile.order.classic = ['one']; profile.order.platform = []");
     const card = app("homeListCard('classic')");
     assert.match(card, /&lt;Lead&gt;/);
     assert.doesNotMatch(card, /data-th=|attempts|<button/);
     app('profile.order.classic = []');
     assert.match(app("homeListCard('classic')"), /Unplaced/);
     assert.doesNotMatch(app("homeListCard('classic')"), /No levels yet|class=hbadge/);
+});
+
+test('Home list cards use singular level labels only for one level', () => {
+    const { app } = homeApp();
+    app('profile = emptyProfile()');
+    for (const [lang, singular, plural] of [['en', 'Level', 'Levels'], ['es', 'Nivel', 'Niveles']]) {
+        app(`ui.lang = '${lang}'`);
+        for (const kind of ['classic', 'platform']) {
+            for (const [count, label] of [[0, plural], [1, singular], [2, plural]]) {
+                app(`profile.levels = window.DEMO_PROFILE.levels.filter(level => level.kind == '${kind}').slice(0, ${count})`);
+                assert.match(app(`homeListCard('${kind}')`), new RegExp(`<span>${count} ${label}</span></p>`));
+            }
+        }
+    }
+});
+
+test('Home statistics uses a singular level label only for one level', () => {
+    const { app } = homeApp();
+    for (const [lang, singular, plural] of [['en', 'Level', 'Levels'], ['es', 'Nivel', 'Niveles']]) {
+        app(`ui.lang = '${lang}'`);
+        for (const [count, label] of [[0, plural], [1, singular], [2, plural]]) {
+            app(`profile.levels = window.DEMO_PROFILE.levels.slice(0, ${count})`);
+            assert.match(app('homeStats()'), new RegExp(`<b>${count}</b><span>${label}</span>`));
+        }
+    }
 });
 
 test('empty cards stay navigable, show the empty label and omit badges, faces and thumbnails', () => {
@@ -174,6 +208,7 @@ test('every screen uses the shared shell, active destination and page actions', 
         if (tab == 'home') assert.equal(title, '');
         else {
             assert.match(title, /class=page-title/);
+            assert.match(title, /<h2 id=screen-title tabindex=-1>/);
             assert.ok(title.includes(app(`t('${['classic', 'platform'].includes(tab) ? 'lists' : tab}')`)));
         }
         if (['classic', 'platform'].includes(tab)) assert.doesNotMatch(title, /data-act=add/);
@@ -243,6 +278,16 @@ test('pause menu exposes independent named appearance groups and pressed options
     assert.equal((html.match(/data-act=background /g) || []).length, 4);
     assert.match(html, /data-act=theme data-v=porcelain aria-pressed=true/);
     assert.match(html, /data-act=background data-v=orbital aria-pressed=true/);
+});
+
+test('Settings footer shows the configured application version', () => {
+    const { app } = homeApp();
+    const html = app('pauseUI()');
+    const version = markup => markup.match(/<p class=by>[^<]+ \u00b7 (v[^<]+)<\/p>/)[1];
+    assert.equal(version(html), 'v0.1.0-dev');
+    assert.doesNotMatch(html, /v\.Beta_0\.1/);
+    const production = homeApp({ transform: { 'js/config.js': source => stampVersion(source, '0.1.0-beta.4') } });
+    assert.equal(version(production.app('pauseUI()')), 'v0.1.0-beta.4');
 });
 
 test('guest appearance actions persist independently and update the existing controls', () => {

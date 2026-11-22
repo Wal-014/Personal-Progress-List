@@ -276,15 +276,54 @@ for (const [language, publicHeading, ownHeading] of [['en', 'Lists', 'My lists']
     });
 }
 
-test('a first-time signed-out visitor sees the demo guest card and local data', () => {
-    const p = page('');
+for (const [language, name] of [[undefined, 'Mi perfil'], ['en', 'My profile']]) {
+    test(`a first-time signed-out visitor sees the guest card and an empty profile named "${name}"`, () => {
+        const p = page('', undefined, { gl: language });
+        p.load(['js/main.js']);
+        assert.equal(p.app('cloudUser'), null);
+        assert.equal(p.app('store.cur'), 'p1');
+        assert.equal(p.app('profile'), p.app('store.profs.p1.data'));
+        assert.deepEqual(plain(p.app('profile')), {
+            ratingScale: 10, levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: []
+        });
+        assert.equal(p.app('store.profs.p1.name'), name);
+        assert.deepEqual(JSON.parse(p.context.localStorage.gdp), plain(p.app('store')));
+        assert.match(p.html(), /class=profile-pill/);
+        assert.ok(p.html().includes(`<span>${name}</span>`));
+        assert.match(p.html(), /data-act=asignin/);
+        assert.match(p.html(), /data-act=localdata/);
+        assert.match(p.html(), /id=pmenu/);
+        assert.match(p.html(), /data-act=pedit/);
+    });
+}
+
+test('reloading restores the saved store without adding demo records or rewriting storage', () => {
+    const data = {
+        ratingScale: 10, levels: [{ id: 'n1', name: 'Saved level', kind: 'classic', deaths: {} }],
+        order: { classic: ['n1'], platform: [] }, wishlists: [], tags: []
+    };
+    const saved = { cur: 'existing', profs: { existing: { name: 'Saved profile', color: '#123456', secondaryColor: '#abcdef', data } } };
+    const raw = JSON.stringify(saved);
+    const p = page('', undefined, { gdp: raw });
     p.load(['js/main.js']);
-    assert.equal(p.app('cloudUser'), null);
-    assert.equal(p.app('profile'), p.context.window.DEMO_PROFILE);
-    assert.equal(p.app('store.cur'), 'p1');
-    assert.match(p.html(), /class=profile-pill/);
-    assert.match(p.html(), /data-act=asignin/);
-    assert.match(p.html(), /data-act=localdata/);
-    assert.match(p.html(), /id=pmenu/);
-    assert.match(p.html(), /data-act=pedit/);
+    assert.deepEqual(plain(p.app('store')), saved);
+    assert.deepEqual(plain(p.app('profile')), data);
+    assert.equal(p.context.localStorage.gdp, raw);
+    assert.deepEqual(p.writes, []);
 });
+
+for (const [language, message] of [
+    ['es', /se inició un perfil vacío\. Se guardó una copia de los datos anteriores/],
+    ['en', /an empty profile was started\. A copy of the previous data was kept/]
+]) {
+    test('unreadable saved data starts an empty profile and reports the retained backup: ' + language, () => {
+        const p = page('', undefined, { gl: language, gdp: '{' });
+        const alerts = [];
+        p.context.showDialog = ({ title }) => alerts.push(title);
+        p.load(['js/main.js']);
+        assert.equal(p.context.localStorage.gdpBroken, '{');
+        assert.equal(p.app('profile.levels.length'), 0);
+        assert.equal(alerts.length, 1);
+        assert.match(alerts[0], message);
+    });
+}

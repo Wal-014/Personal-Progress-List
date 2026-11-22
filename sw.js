@@ -1,7 +1,7 @@
 /**
  * Service worker for installation and offline use. Local assets are cache-first, and other same-origin files are network-first.
  */
-const CACHE = 'prp-1.13.15';
+const CACHE = 'prp-1.13.16';
 // vendor/supabase.js is intentionally omitted so visitors who never sign in never download it.
 const SHELL = [
   "./",
@@ -12,7 +12,6 @@ const SHELL = [
   "fonts/inter-latin-ext.woff2",
   "fonts/oxanium-latin.woff2",
   "fonts/oxanium-latin-ext.woff2",
-  "data/demo-data.js",
   "manifest.json",
   "icon.svg",
   "favicon.png",

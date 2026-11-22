@@ -1,12 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempDisposableSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import vm from 'node:vm';
 import { appScripts } from '../eslint.config.js';
-import { DEV_HEADERS, SITE_FILES, assetsHash, devConfig, devPage, stampCache } from '../scripts/build-site.js';
+import { BETA_BASE, DEV_HEADERS, RELEASE_LINE, SITE_FILES, assetsHash, countReleaseCommits, devConfig, devPage, releaseVersion, siteConfig, stampCache, stampVersion } from '../scripts/build-site.js';
 import { loadScripts } from './load-scripts.js';
 
 const isPublished = file => SITE_FILES.some(entry => file == entry || file.startsWith(`${entry}/`));
@@ -37,6 +38,79 @@ test('stampCache appends the asset hash to the cache name', () => {
 
 test('stampCache fails when the cache declaration is missing', () => {
     assert.throws(() => stampCache("// const CACHE = 'example';\nconst OTHER = 'example';"), /CACHE/);
+});
+
+test('releaseVersion appends the count to a prerelease line', () => {
+    assert.equal(releaseVersion('0.1.0-beta', 1), '0.1.0-beta.1');
+    assert.equal(releaseVersion('0.1.0-beta', 12), '0.1.0-beta.12');
+});
+
+test('releaseVersion leaves the stable line unchanged without a count', () => {
+    assert.equal(releaseVersion('1.0.0'), '1.0.0');
+    assert.equal(releaseVersion('1.0.0', 12), '1.0.0');
+});
+
+test('releaseVersion requires a positive integer count for a prerelease', () => {
+    for (const count of [0, -1, 1.5, '1', NaN, Infinity, undefined])
+        assert.throws(() => releaseVersion('0.1.0-beta', count), /positive integer/);
+});
+
+test('stampVersion rewrites only the APP_VERSION declaration', () => {
+    const config = ["// const APP_VERSION = '0.1.0-dev';", "const APP_VERSION = '0.1.0-dev';", "const OTHER = '0.1.0-dev';", ''];
+    const expected = [config[0], "const APP_VERSION = '0.1.0-beta.4';", ...config.slice(2)];
+    assert.equal(stampVersion(config.join('\r\n'), '0.1.0-beta.4'), expected.join('\r\n'));
+});
+
+test('stampVersion fails when the version declaration is missing', () => {
+    assert.throws(() => stampVersion("// const APP_VERSION = '0.1.0-dev';", '0.1.0-beta.4'), /APP_VERSION/);
+});
+
+test('release count follows first parents and is stable on the same commit', t => {
+    const { path, remove } = mkdtempDisposableSync(join(tmpdir(), 'ppl-release-'));
+    t.after(remove);
+    const identity = { NAME: 'Release Test', EMAIL: 'release-test@example.invalid' };
+    const env = { ...process.env, ...Object.fromEntries(['AUTHOR', 'COMMITTER'].flatMap(role => Object.entries(identity).map(([key, value]) => [`GIT_${role}_${key}`, value]))) };
+    const git = (...args) => execFileSync('git', args, { cwd: path, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+    git('init', '--initial-branch=main');
+    // Plumbing builds the history directly, so the machine's commit hooks and identity settings do not apply.
+    const tree = git('mktree');
+    const commit = (message, ...parents) => git('commit-tree', tree, ...parents.flatMap(parent => ['-p', parent]), '-m', message);
+    const moveMain = sha => git('update-ref', 'HEAD', sha);
+    const base = commit('Last release');
+    moveMain(base);
+    const initial = countReleaseCommits(base, path);
+    assert.equal(initial, 0);
+    assert.throws(() => releaseVersion(RELEASE_LINE, initial), /positive integer/);
+
+    const side = ['First', 'Second', 'Third'].reduce((parent, name) => commit(name + ' side change', parent), base);
+    const mainChange = commit('Main change', base);
+    moveMain(mainChange);
+    assert.equal(countReleaseCommits(base, path), 1);
+    moveMain(commit('Merge side', mainChange, side));
+    assert.equal(countReleaseCommits(base, path), 2);
+    assert.equal(countReleaseCommits(base, path), 2);
+});
+
+test('release count errors explain the full-history requirement', t => {
+    const { path, remove } = mkdtempDisposableSync(join(tmpdir(), 'ppl-release-'));
+    t.after(remove);
+    assert.throws(() => countReleaseCommits(BETA_BASE, path), /full Git history/);
+});
+
+test('a flagged production build stamps the release into config', () => {
+    const config = readFileSync('js/config.js', 'utf8');
+    const production = siteConfig(config, 'production', 'true', () => 4);
+    assert.equal(vm.runInNewContext(production + ';APP_VERSION'), '0.1.0-beta.4');
+});
+
+test('local and development builds keep the dev version without counting releases', () => {
+    const config = readFileSync('js/config.js', 'utf8');
+    const unexpectedCount = () => assert.fail('only an explicit production release counts commits');
+    for (const flag of [undefined, 'false', 'TRUE'])
+        assert.equal(siteConfig(config, 'production', flag, unexpectedCount), config);
+    const dev = siteConfig(config, 'development', 'true', unexpectedCount);
+    assert.equal(vm.runInNewContext(dev + ';APP_VERSION'), '0.1.0-dev');
+    assert.equal(vm.runInNewContext(dev + ';ACCOUNTS'), false);
 });
 
 function assetTree(t, files) {

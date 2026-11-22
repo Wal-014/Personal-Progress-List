@@ -2,6 +2,8 @@
  * Application constants for difficulties, API URLs, icons, flags and themes.
  */
 
+const APP_VERSION = '0.1.0-dev';
+
 // The face geometry is shared with the tilted cube in the application mark.
 const modeCube = '<rect x="9" y="6" width="20" height="20" rx="2"/><path d="M12.5 10.5h4v4h-4zM21.5 10.5h4v4h-4zM12.5 18.5h13v3h-13z"/>';
 const ICONS = {

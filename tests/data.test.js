@@ -21,7 +21,7 @@ test('isValidProfileData accepts an empty profile, a full one and the demo profi
     assert.equal(isValid(app('emptyProfile()')), true);
     assert.equal(isValid({ levels: [{ name: 'A', date: '2025-01-01', tags: ['t'] }, { name: 'B', date: null }], order: { classic: [], platform: [] }, wishlists: [{ items: [{ name: 'C' }] }], tags: [{ name: 't' }] }), true);
     assert.equal(isValid({ levels: [], order: { classic: [], platform: [] } }), true);
-    assert.equal(isValid(loadScripts(['data/demo-data.js'], { window: {} }).app('window.DEMO_PROFILE')), true);
+    assert.equal(isValid(loadScripts(['tests/fixtures/demo-profile.js'], { window: {} }).app('window.DEMO_PROFILE')), true);
 });
 
 test('isValidProfileData rejects data the app cannot render', () => {

@@ -337,6 +337,19 @@ test('Statistics offers an add action only on an editable empty profile', () => 
     assert.equal(markup, '<p class=by>No levels yet</p>');
 });
 
+test('Statistics uses a singular level KPI label for one level', () => {
+    const app = statsApp();
+    for (const [lang, singular, plural] of [['en', 'Level', 'Levels'], ['es', 'Nivel', 'Niveles']]) {
+        app(`ui.lang = '${lang}'; profile.levels = []`);
+        assert.doesNotMatch(app('stats()'), /class=kpis/);
+        app(statsFixture);
+        for (const [count, label] of [[2, plural], [1, singular]]) {
+            app(`profile.levels = profile.levels.slice(0, ${count})`);
+            assert.match(app('stats()'), new RegExp(`>${label}</small><b>${count}</b>`));
+        }
+    }
+});
+
 test('timeline keeps metric controls when levels lack a dated value', () => {
     const app = statsApp();
     app("profile.levels = [{ attN: 10 }, { date: '2025-01-01', tN: 20 }]");
