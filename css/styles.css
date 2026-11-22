@@ -2805,9 +2805,11 @@ input.ro {
   color: var(--color-text-muted);
 }
 
-.modal .notification-actions .notification-dismiss:hover {
-  color: var(--color-text);
-  text-decoration: underline;
+@media (hover: hover) and (forced-colors: none) {
+  .modal .notification-actions .notification-dismiss:hover {
+    color: var(--color-text);
+    text-decoration: underline;
+  }
 }
 
 .notification-empty {
