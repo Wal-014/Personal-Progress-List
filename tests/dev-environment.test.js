@@ -71,6 +71,13 @@ test('deploy-dev builds the dev site and deploys it from development', () => {
     assert.match(steps, /^ {6}name: development$/m);
     assert.match(steps, /npm run site -- development/);
     assert.match(steps, /wrangler deploy --config dev-site\/wrangler\.jsonc/);
+    assert.doesNotMatch(steps, /PRODUCTION_RELEASE|fetch-depth: 0\b/);
+});
+
+test('deploy checks out full history and flags the site build as a production release', () => {
+    const steps = job(ci(), 'deploy');
+    assert.match(steps, /^ {6}- uses: actions\/checkout@[^\n]+\n {8}with:\n(?: {10}[^\n]+\n)* {10}fetch-depth: 0$/m);
+    assert.match(steps, /^ {6}- run: npm run site\n {8}env:\n {10}PRODUCTION_RELEASE: "true"$/m);
 });
 
 test('the production deploy waits for the production migrations', () => {

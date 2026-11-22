@@ -161,6 +161,6 @@ ${canEdit() ? `<h3 id=ranking-sync>${t('rankSync')}</h3>
 <div id=ranking-status class=ranking-status data-ranking-status role=status aria-live=polite aria-busy=${rankingSync.running}>${rankingStatusRows()}</div>
 <button data-act=rankrefresh aria-describedby=ranking-status aria-disabled=${rankingSync.running}>${ICONS.actionSync}<span>${rankingRefreshLabel()}</span></button>` : ''}
 <nav class=legal>${['terms', 'privacy', 'credits'].map(k => `<a class=lk data-act=legal data-v=${k} role=button tabindex=0>${t(k)}</a>`).join(' · ')}</nav>
-<p class=by>© ${new Date().getFullYear()} Retlaw · ${t('rights')} · v.Beta_0.1</p>
+<p class=by>© ${new Date().getFullYear()} Retlaw · ${t('rights')} · v${APP_VERSION}</p>
 <p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
 }
