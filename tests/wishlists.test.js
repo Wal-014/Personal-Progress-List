@@ -7,7 +7,7 @@ function fixture({ localStorage = {}, ...extra } = {}) {
     const item = { id: 'i1', name: 'A $& <level>', levelId: '42', creator: 'Maker', diff: 'Hard', rating: 'epic', status: 'prog', pct: 63 };
     const wishlist = { id: 'w1', name: 'Goals', items: [item] };
     nodes.set('#md', { innerHTML: '' });
-    const f = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/sheet.js', 'js/demonlist.js', 'js/components/faces.js', 'js/components/empty-list.js', 'js/components/deaths-input.js', 'js/components/duration-input.js', 'js/components/levels.js', 'js/components/wishlists.js', 'js/components/search.js', 'js/components/dialogs.js', 'js/events.js'], {
+    const f = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/sheet.js', 'js/demonlist.js', 'js/components/faces.js', 'js/components/empty-list.js', 'js/components/deaths-input.js', 'js/components/duration-input.js', 'js/components/levels.js', 'js/components/wishlists.js', 'js/notifications.js', 'js/components/search.js', 'js/components/dialogs.js', 'js/events.js'], {
         profile: { levels: [], order: { classic: [], platform: [] }, tags: [], wishlists: [wishlist] },
         ui: { tab: 'wish', wl: 'w1', lang: 'en', wishFx: null },
         document: { body: {}, querySelector: s => nodes.get(s) || null, querySelectorAll: () => [], addEventListener() {} },
@@ -418,16 +418,15 @@ test('header shows three counts, completion and motion only for the celebrated c
     assert.doesNotMatch(f.app('wishView()'), /class="wh done"/);
 });
 
-test('bell alerts derive transfer state and offer again after the saved level is removed', () => {
+test('wishlist notifications return after the saved level is removed', () => {
     const f = fixture();
     f.item.status = 'done';
     f.item.added = true;
-    assert.equal(f.app('alerts()').length, 1);
+    assert.equal(f.app('notifications().length'), 1);
     f.context.profile.levels.push({ id: 'n1', kind: 'classic', levelId: 42, name: f.item.name });
-    f.context.profile.order.classic.push('n1');
-    assert.equal(f.app('alerts()').length, 0);
+    assert.equal(f.app('notifications().length'), 0);
     f.context.profile.levels = [];
-    assert.equal(f.app('alerts()').length, 1);
+    assert.equal(f.app('notifications().length'), 1);
 });
 
 

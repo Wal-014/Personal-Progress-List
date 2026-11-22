@@ -2737,9 +2737,94 @@ input.ro {
 .modal .dialog-message { white-space: pre-wrap; }
 .modal #dgi { width: 100%; }
 
-.bl {
+.modal .notification-box {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.notification-sections {
+  max-height: min(55dvh, calc(var(--space-48) * 9));
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-4);
+}
+
+.notification-sections section + section {
+  margin-top: var(--space-16);
+}
+
+.notification-sections h3 {
+  margin: 0 0 var(--space-8);
+  color: var(--color-text-muted);
+  font-size: 1rem;
+}
+
+.notification-list {
+  display: grid;
+  gap: var(--space-8);
   margin: 0;
-  padding-left: 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.notification-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-12);
+  padding: var(--space-12);
+  border: var(--size-border) solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+}
+
+.notification-icon {
+  display: flex;
+  color: var(--color-success);
+}
+
+.notification-copy p {
+  margin: var(--space-4) 0 0;
+  color: var(--color-text-muted);
+  font-size: .875rem;
+  line-height: 1.4;
+}
+
+.notification-empty {
+  padding: var(--space-24) 0;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.notification-empty .i {
+  width: var(--space-32);
+  height: var(--space-32);
+  opacity: .6;
+}
+
+.notification-empty p { margin: var(--space-4) 0 0; }
+
+.notification-box .dgb { flex-shrink: 0; }
+
+@media (max-width: 560px) {
+  .notification-row {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-8);
+  }
+
+  .notification-row .xs-txt {
+    grid-column: 2;
+    justify-self: start;
+    min-height: var(--size-control);
+  }
+}
+
+@media (forced-colors: active) {
+  .notification-row { border-color: CanvasText; }
+  .notification-empty .i { opacity: 1; }
 }
 
 .box .profile-colors {
@@ -2836,10 +2921,6 @@ input.ro {
 
 .profile-swatch input:checked + .profile-color, .profile-custom[data-selected=true] .profile-color {
   visibility: visible;
-}
-
-.bl li {
-  margin: 6px 0;
 }
 
 .trow {
