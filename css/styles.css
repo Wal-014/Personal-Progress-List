@@ -491,6 +491,8 @@ input:user-invalid, select:user-invalid, textarea:user-invalid {
 
 .level-action-bar > button { min-height: var(--size-control); }
 .level-action-bar > .dg { margin-inline-end: auto; }
+/* Sticky offsets start inside the scroller's padding, so the box padding would leave a strip where fields show under the bar. */
+.modal .box:has(> form > .level-action-bar) { padding-block-end: 0; }
 
 @media (forced-colors: none) {
   @supports (backdrop-filter: blur(1px)) {
