@@ -85,7 +85,7 @@ test('the service worker caches the cloud vendor on demand and serves it offline
     const handlers = {}, stored = new Map();
     const response = { ok: true, clone: () => response };
     const page = loadScripts(['sw.js'], {
-        URL, location: { origin: 'https://example.com' },
+        URL, location: new URL('https://example.com/app/sw.js'),
         self: { addEventListener(event, handler) { handlers[event] = handler; } },
         fetch: async () => response,
         caches: {
