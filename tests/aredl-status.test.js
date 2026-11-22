@@ -10,7 +10,7 @@ const lists = [
 ];
 
 function formFixture(lang = 'en') {
-    const nodes = Object.fromEntries(['#wn', '#fm-pos-hint', '#lf-face', '#lf-diffT', '#gdq', 'label[for=fm-ap]'].map(key => [key, { textContent: '', setCustomValidity() {} }]));
+    const nodes = Object.fromEntries(['#fm-pos-hint', '#lf-face', '#lf-diffT', '#gdq', 'label[for=fm-ap]'].map(key => [key, { textContent: '', setCustomValidity() {} }]));
     const f = fixture({
         document: { querySelector: key => nodes[key], body: {}, addEventListener() {} },
         window: { addEventListener() {} }, clearTimeout,
@@ -31,6 +31,7 @@ for (const [lang, pending, top] of [['en', 'Awaiting placement', 'Top in'], ['es
                 const level = { id: 'edit', name: 'Level', kind, ar };
                 const html = f.app('levelForm')(level);
                 assert.doesNotMatch(html, /\bname=as\b/);
+                assert.doesNotMatch(html, /\bid=wn\b/);
                 assert.ok(html.includes(`<label for=fm-ap>${top} ${list}</label>`));
                 assert.ok(html.includes(`<output id=fm-ap name=ap>${value}</output>`));
             }
@@ -48,28 +49,42 @@ test('level form groups attempts, times and totals separately, with read-only lo
     assert.ok(groups[3].includes('<output id=fm-tT name=tT>00:01:00</output>'));
 });
 
-test('picking results updates the top, list label and found note from current form fields', async () => {
+test('picking results updates the top and list label from current form fields', async () => {
     const f = formFixture();
-    const form = { id: 'fm', dataset: {}, elements: Object.fromEntries(['name', 'lid', 'creator', 'diff', 'rating', 'kind', 'kindT', 'ap', 'pos'].map(key => [key, { value: '' }])) };
-    for (const [level, value, label, note] of [
-        [{ name: 'Bloodbath', levelId: '42', kind: 'classic' }, '#125', 'Top in AREDL', '✓ Found in the list · #125'],
-        [{ name: 'Platform Trial', levelId: '45', kind: 'platform' }, '#12', 'Top in AREPL', '✓ Found in the list · #12'],
-        [{ name: 'New', levelId: '99', kind: 'platform', diff: 'Extreme Demon', rating: 'rated' }, 'Awaiting placement', 'Top in AREPL', ''],
-        [{ name: 'Blóod Bath', kind: 'classic' }, '#125', 'Top in AREDL', '✓ Found in the list · #125'],
-        [{ name: 'Unknown', kind: 'classic' }, '—', 'Top in AREDL', '']
+    const form = { id: 'fm', isConnected: true, dataset: {}, elements: Object.fromEntries(['name', 'lid', 'creator', 'diff', 'rating', 'kind', 'kindT', 'ap', 'pos'].map(key => [key, { value: '' }])) };
+    for (const [level, value, label] of [
+        [{ name: 'Bloodbath', levelId: '42', kind: 'classic' }, '#125', 'Top in AREDL'],
+        [{ name: 'Platform Trial', levelId: '45', kind: 'platform' }, '#12', 'Top in AREPL'],
+        [{ name: 'New', levelId: '99', kind: 'platform', diff: 'Extreme Demon', rating: 'rated' }, 'Awaiting placement', 'Top in AREPL'],
+        [{ name: 'Blóod Bath', kind: 'classic' }, '#125', 'Top in AREDL'],
+        [{ name: 'Unknown', kind: 'classic' }, '—', 'Top in AREDL']
     ]) {
         f.app('pickLevel')(form, level);
         await Promise.resolve();
         assert.equal(form.elements.ap.value, value);
         assert.equal(f.nodes['label[for=fm-ap]'].textContent, label);
-        assert.equal(f.nodes['#wn'].textContent, note);
     }
+});
+
+test('a lookup finishing after the form closes leaves the value and the next form label alone', async () => {
+    const f = formFixture(), label = f.nodes['label[for=fm-ap]'];
+    label.textContent = 'Top in AREPL';
+    const form = {
+        isConnected: true,
+        elements: Object.fromEntries(Object.entries({ name: 'Bloodbath', lid: '42', kind: 'classic', rating: '', diff: '', ap: '#7' })
+            .map(([key, value]) => [key, { value }]))
+    };
+    const lookup = f.app('fillAredlPosition')(form);
+    form.isConnected = false;
+    await lookup;
+    assert.equal(form.elements.ap.value, '#7');
+    assert.equal(label.textContent, 'Top in AREPL');
 });
 
 test('picking a result without downloadable lists keeps the shown top', async () => {
     const f = formFixture();
     f.app('aredlCache = []');
-    const form = { id: 'fm', dataset: {}, elements: Object.fromEntries(['name', 'lid', 'creator', 'diff', 'rating', 'kind', 'kindT', 'ap', 'pos'].map(key => [key, { value: '' }])) };
+    const form = { id: 'fm', isConnected: true, dataset: {}, elements: Object.fromEntries(['name', 'lid', 'creator', 'diff', 'rating', 'kind', 'kindT', 'ap', 'pos'].map(key => [key, { value: '' }])) };
     form.elements.ap.value = '#7';
     f.app('pickLevel')(form, { name: 'New', levelId: '99', kind: 'platform', diff: 'Extreme Demon', rating: 'rated' });
     await new Promise(resolve => setTimeout(resolve));
@@ -109,8 +124,9 @@ test('only details show external ranks, including pending, missing and escaped p
 });
 
 function fixture(extra = {}) {
-    return loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/sheet.js', 'js/gd.js', 'js/demonlist.js', 'js/api.js'], {
-        localStorage: { gar: JSON.stringify(lists) }, ui: { lang: 'en' }, ...extra
+    return loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/sheet.js', 'js/gd.js', 'js/demonlist.js', 'js/api.js', 'js/ranking-sync.js'], {
+        localStorage: { gar: JSON.stringify(lists) }, ui: { lang: 'en' }, store: { cur: 'p1' }, cloudUser: null, cloudSession: null,
+        renderRankingStatus() {}, ...extra
     });
 }
 
@@ -174,23 +190,23 @@ for (const failed of [false, true])
         ];
         const f = fixture({
             profile: { levels, wishlists: [] },
-            document: { querySelector: () => ({}) }, renderSyncStatus() {}, save() {},
+            document: { querySelector: () => ({}) }, save() {},
             fetch: async url => {
                 if (url == 'data/levels.json')
                     return { ok: true, json: async () => [[100, 'Old pending', '', 9, 0, 0], [102, 'Sheet Extreme', '', 10, 0, 0]] };
                 if (failed) throw Error('offline');
-                return { json: async () => url.includes('arepl/') ? [] : [{ level_id: 42, name: 'Bloodbath', position: 125 }] };
+                return { ok: true, json: async () => url.includes('arepl/') ? [] : [{ level_id: 42, name: 'Bloodbath', position: 125 }] };
             },
             fetchRelayLevelsById: async ids => ids.map(levelId => ({ levelId, diff: 'Extreme Demon', rating: 'rated' }))
         });
         const before = structuredClone(levels);
-        await f.app('syncWithAredl()');
+        await f.app('syncRankings({ force: true })');
         if (failed) assert.deepEqual(levels, before);
         else {
             assert.deepEqual(levels.map(l => ({ ...l.ar })), [{ s: 'n', p: null }, { s: 'p', p: null }, { s: 'p', p: null }, { s: 'p', p: null }, { s: 'r', p: 125 }]);
             assert.equal(levels[4].rating, 'rated', 'the AREDL ID is available for rating enrichment');
         }
-        assert.equal(f.app('ui.sync'), 0);
+        assert.equal(f.app('rankingSync.running'), false);
     });
 
 test('sync fetches the sheet only for metadata still missing from a saved level or wishlist item', async () => {
@@ -209,12 +225,14 @@ test('sync fetches the sheet only for metadata still missing from a saved level 
                     return { ok: true, json: async () => [[100, 'Sheet Level', 'Sheet Creator', 3, 0, 2], [42, 'Bloodbath', 'Sheet Publisher', 10, 0, 2]] };
                 }
                 if (url.includes('aredl/levels'))
-                    return { json: async () => [{ level_id: 42, name: 'Bloodbath', position: 125, publisher: 'Publisher' }] };
+                    return { ok: true, json: async () => [{ level_id: 42, name: 'Bloodbath', position: 125, publisher: 'Publisher' }] };
+                if (url.includes('arepl/levels'))
+                    return { ok: true, json: async () => [{ level_id: 45, name: 'Platform Trial', position: 12 }] };
                 return { ok: false, json: async () => [] };
             }
         });
-        await f.app('syncWithAredl()');
-        assert.ok(f.app('localStorage.gas'));
+        await f.app('syncRankings({ force: true })');
+        assert.ok(JSON.parse(f.context.localStorage.granks)['local:p1'].aredl);
         return sheetFetches;
     };
 

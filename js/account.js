@@ -343,7 +343,7 @@ async function saveOwnProfile(fields) {
         if (!account.user)
             return { error: 'authFailed' };
         const ownerId = account.user.id;
-        const allowed = ['display_name', 'username', 'color', 'secondary_color', 'bio', 'country', 'is_public'];
+        const allowed = ['display_name', 'username', 'color', 'secondary_color', 'cube_id', 'bio', 'country', 'is_public'];
         const values = Object.fromEntries(Object.entries(fields).filter(([key]) => allowed.includes(key)));
         const { data, error } = await client.from('profiles').update(values).eq('id', ownerId).select().single();
         if (error?.code == '23505')

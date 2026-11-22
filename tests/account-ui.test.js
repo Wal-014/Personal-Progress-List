@@ -14,8 +14,8 @@ function createApp(globals = {}, { emailAuth = true } = {}) {
     const document = { body: {}, addEventListener: (name, handler) => { (listeners[name] ||= []).push(handler); }, querySelector: selector => nodes[selector] || null };
     nodes['#md'] = element({ innerHTML: '' });
     nodes['#md dialog'] = element({ querySelector: () => null, addEventListener() {}, showModal() {}, close() {} });
-    const env = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/account.js', 'js/components/dialogs.js', 'js/components/account-ui.js', 'js/events.js'], {
-        document, CSS: { escape: String }, window: { addEventListener() {} }, renderTagSuggestions() {}, ui: { lang: 'en' }, cloudSync: { pending: 0 }, cloudUser: null, queueMicrotask: () => {}, cloudStatusSentence: () => 'Saved', cloudRetryButton: () => '', ...globals
+    const env = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/account.js', 'js/components/dialogs.js', 'js/components/account-ui.js', 'js/components/home.js', 'js/events.js'], {
+        document, CSS: { escape: String }, window: { addEventListener() {} }, renderTagSuggestions() {}, ui: { lang: 'en' }, canEdit: () => true, cloudSync: { pending: 0 }, cloudUser: null, queueMicrotask: () => {}, cloudStatusSentence: () => 'Saved', cloudRetryButton: () => '', ...globals
     }, withEmailAuth(emailAuth));
     return { ...env, document, nodes, listeners };
 }
@@ -41,11 +41,20 @@ function fakeForm(mode = 'signin') {
     const button = element({ textContent: 'Submit' }), message = element(), forward = element(), heading = element(), nonceField = element({ hidden: true });
     const elements = Object.fromEntries(Object.entries({ aemail: 'owner@example.test', apassword: 'Password9', adisplay: 'Player', pdisplay: ' Player ', pusername: '', pbio: '', pcountry: '', pnewpassword: 'Password9', pconfirm: 'Password9', pnonce: '', enew: 'new@example.test' }).map(([key, value]) => [key, element({ id: key, value })]));
     elements.pnonce.disabled = true;
-    const form = element({ dataset: { mode }, elements, profileColors: { color: '#123456', secondaryColor: '#abcdef' },
-        querySelector: selector => selector === '[type=submit]' ? button : selector === '#auth-forward' ? forward : selector === 'h3' ? heading : selector === '#nonce-field' ? nonceField : selector === 'input' ? elements.aemail : message
+    const toggle = element(), preview = element(), previous = element({ dataset: { page: '-1' } });
+    const next = element({ dataset: { page: '1' } }), output = element();
+    const tile = element({ dataset: { cube: '23' } }), grid = element({ querySelector: () => tile });
+    const options = element({ hidden: true, querySelector: selector => selector === '[data-cube]' ? tile : null });
+    const catalogNodes = { '[aria-controls]': toggle, '#cube-options': options, '.cube-grid': grid, 'output': output, '[data-page="-1"]': previous, '[data-page="1"]': next };
+    const catalog = element({ querySelector: selector => catalogNodes[selector], querySelectorAll: () => [tile] });
+    const colors = element({ querySelector: () => preview });
+    const editNodes = { '.cube-catalog': catalog, '.profile-colors': colors, '.profile-preview': preview };
+    for (const control of [toggle, next, tile]) control.closest = () => control;
+    const form = element({ dataset: { mode }, elements, profileEditor: { color: '#123456', secondaryColor: '#abcdef' },
+        querySelector: selector => selector === '[type=submit]' ? button : selector === '#auth-forward' ? forward : selector === 'h3' ? heading : selector === '#nonce-field' ? nonceField : selector === 'input' ? elements.aemail : editNodes[selector] || message
     });
     Object.values(elements).forEach(input => input.form = form);
-    return { form, button, message, forward, heading, nonceField };
+    return { form, button, message, forward, heading, nonceField, catalog, toggle, next, tile, grid, preview };
 }
 
 const flush = () => new Promise(resolve => setImmediate(resolve));
@@ -58,11 +67,40 @@ test('account menu preserves profile, sharing, settings, local data and sync hoo
     const { app } = createApp();
     signedIn(app);
     const html = app('accountMenu()');
-    for (const action of ['aprofile', 'aedit', 'ashare', 'asettings', 'asignout', 'localdata'])
-        assert.match(html, new RegExp('data-act=' + action));
+    for (const action of ['aprofile', 'ashare', 'asettings', 'asignout', 'localdata']) {
+        const icon = html.match(new RegExp('data-act=' + action + '[^>]*>(<svg.*?</svg>)<span>'))?.[1];
+        assert.ok(icon, action + ' has a leading icon');
+        assert.match(icon, /viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1\.5 stroke-linecap=round stroke-linejoin=round/);
+        assert.doesNotMatch(icon, /(?:fill|stroke)="#/);
+    }
+    assert.doesNotMatch(html, /data-act=aedit/);
     assert.match(html, /data-cloud-status/);
     assert.match(html, /data-cloud-retry/);
     assert.match(html, /Saved/);
+});
+
+test('the signed-in pill, account menu and profile overview render the saved cube or generic icon', () => {
+    const { app } = createApp();
+    signedIn(app, 'cube_id: 485');
+    for (const markup of ['profileSwitcher().split("</button>")[0]', 'accountMenu()', 'profileCard()']) {
+        assert.match(app(markup), /assets\/cubes\/485\.webp/);
+        app('account.profile.cube_id = null');
+        assert.match(app(markup), /viewBox="0 0 48 48".*fill="#123456"/);
+        assert.doesNotMatch(app(markup), /assets\/cubes\//);
+        app('account.profile.cube_id = 485');
+    }
+});
+
+test('profile cube accepts integer catalog ids and falls back for missing or invalid ids', () => {
+    const { app } = createApp();
+    const renderCube = app('profileCube');
+    for (const id of [1, 485])
+        assert.match(renderCube(id, '#123456', '#abcdef'), new RegExp('assets/cubes/' + id + '\\.webp'));
+    for (const id of [null, undefined, 0, 486, 2.5, '23']) {
+        const html = renderCube(id, '#123456', '#abcdef');
+        assert.match(html, /viewBox="0 0 48 48".*fill="#123456".*fill="#abcdef"/);
+        assert.doesNotMatch(html, /assets\/cubes\//);
+    }
 });
 
 test('Google settings share one request and only accept an explicit true', async () => {
@@ -105,7 +143,7 @@ test('menu, profile card, forms and confirmation panel escape all hostile user v
     const hostile = `<img src=x onerror=alert(1)>"'`;
     context.hostile = hostile;
     signedIn(app);
-    app('Object.assign(account.profile, { display_name: hostile, username: hostile, bio: hostile }); account.user.email = hostile');
+    app('Object.assign(account.profile, { display_name: hostile, username: hostile, bio: hostile, country: hostile }); account.user.email = hostile');
     const escaped = app('escapeHtml(hostile)');
     for (const template of ['accountMenu()', 'profileCard()', 'profileForm()', 'confirmationPanel(hostile)']) {
         const html = app(template);
@@ -292,13 +330,66 @@ test('password form requires a match, reveals the nonce and submits it on retry'
 test('profile card localizes country and membership date and preserves biography line breaks', () => {
     const { app } = createApp();
     signedIn(app);
+    app('account.profile.bio = "Hello\\n" + "x".repeat(294)');
     const html = app('profileCard()');
-    assert.match(html, /Costa Rica/);
+    assert.match(html, /class=profile-country><img[^>]+assets\/flags\/cr\.webp[^>]*><span>Costa Rica<\/span>/);
     assert.match(html, /Member since/);
-    assert.match(html, /class=profile-bio>Hello/);
+    assert.match(html, /class=profile-bio>Hello\nx{294}<\/p>/);
     app("account.profile.username = null");
     assert.match(app('profileCard()'), /No username yet/);
+    app('account.profile.bio = null; account.profile.country = "ZZ"');
+    assert.doesNotMatch(app('profileCard()'), /profile-bio|assets\/flags\//);
 });
+
+for (const [visibility, label, icon] of [[true, 'Public', 'actionGlobe'], [false, 'Private', 'actionLock']]) {
+    test(`profile overview presents Share first and shows a ${label} badge without a URL`, () => {
+        const { app } = createApp({ location: new URL('https://example.test/app/') });
+        signedIn(app, `is_public: ${visibility}`);
+        const html = app('profileCard()');
+        assert.match(html, /<button class=pri data-act=ashare>Share<\/button><button data-act=aedit>/);
+        assert.ok(html.includes(`<p class=profile-status>${app(`ICONS.${icon}`)}${label}</p>`));
+        assert.doesNotMatch(html, /<a\s|\?user=|share-link/);
+    });
+}
+
+test('country flags use only supported canonical codes and are decorative', () => {
+    const { app } = createApp();
+    assert.equal(app('countryFlag("CR")'), '<img class=flag src="assets/flags/cr.webp" alt="" width=24 height=18 loading=lazy decoding=async>');
+    for (const code of ['', 'ZZ', 'cr', '../cr', null])
+        assert.equal(app('countryFlag')(code), '');
+});
+
+test('country selection updates and clears the flag preview', () => {
+    const { app, nodes, document } = createApp();
+    signedIn(app);
+    assert.match(app('profileForm()'), /<span id=country-preview><img[^>]+assets\/flags\/cr\.webp/);
+    const preview = nodes['#country-preview'] = element();
+    const input = element({ id: 'pcountry', value: 'JP' });
+    document.body.onchange({ target: input });
+    assert.match(preview.innerHTML, /assets\/flags\/jp\.webp/);
+    input.value = '';
+    document.body.onchange({ target: input });
+    assert.equal(preview.innerHTML, '');
+});
+
+for (const [action, title] of [['aedit', 'Edit profile'], ['ashare', 'Share profile']]) {
+    test(`Back from ${title} returns to the overview and focuses its opener`, () => {
+        const { app, nodes } = createApp({ location: new URL('https://example.test/app/') });
+        signedIn(app, 'is_public: true');
+        const opener = nodes[`#md [data-act=${action}]`] = element();
+        const { form } = fakeForm();
+        nodes['#pf'] = form;
+        app('ACTIONS.aprofile()');
+        app(`ACTIONS.${action}()`);
+        const html = nodes['#md'].innerHTML;
+        assert.ok(html.includes(`<h2>${title}</h2>`));
+        assert.match(html, new RegExp(`data-act=aprofileback data-v=${action} aria-label="Back to My profile"`));
+        app('ACTIONS.aprofileback')(element({ dataset: { v: action } }));
+        assert.match(nodes['#md'].innerHTML, /class="box sm account-dialog profile-card"/);
+        assert.match(nodes['#md'].innerHTML, /Public/);
+        assert.equal(opener.focused, true);
+    });
+}
 
 test('all 249 countries are unique, localized, sorted and preserve the saved selection', () => {
     const { app } = createApp();
@@ -327,16 +418,60 @@ test('profile form lowercases usernames, clears errors and updates the bio count
     assert.equal(nodes['#bio-count'].textContent, '5 / 300');
 });
 
+test('Edit opens the shared cube catalog, previews a selection and saves it with the profile', async () => {
+    const { app, context, nodes } = createApp();
+    signedIn(app, 'cube_id: null');
+    const { form, catalog, toggle, next, tile, grid, preview } = fakeForm();
+    nodes['#pf'] = form;
+    context.showToast = () => {};
+    context.saveOwnProfile = async fields => {
+        assert.equal(fields.cube_id, 23);
+        app('account.profile.cube_id = 23');
+        return {};
+    };
+
+    app('openProfileForm()');
+    assert.match(nodes['#md'].innerHTML, /<span class=profile-preview><svg class=i viewBox="0 0 48 48"/);
+    assert.match(nodes['#md'].innerHTML, /<\/fieldset><div class=cube-catalog>.*id=cube-toggle.*id=cube-options.*class=cube-pager.*class=cube-grid.*<label for=pbio>/);
+    catalog.onclick({ target: toggle });
+    assert.match(grid.innerHTML, /data-cube=1 aria-pressed=false/);
+    assert.match(grid.innerHTML, /data-cube=20 aria-pressed=false/);
+    assert.doesNotMatch(grid.innerHTML, /aria-pressed=true/);
+    catalog.onclick({ target: next });
+    assert.match(grid.innerHTML, /data-cube=23 aria-pressed=false/);
+    catalog.onclick({ target: tile });
+    assert.equal(tile.getAttribute('aria-pressed'), 'true');
+    assert.match(preview.innerHTML, /assets\/cubes\/23\.webp/);
+    assert.equal(app('account.profile.cube_id'), null);
+    await app('submitAccountProfile')(form);
+    assert.match(nodes['#md'].innerHTML, /class="box sm account-dialog profile-card".*assets\/cubes\/23\.webp/);
+});
+
+test('Edit converts an invalid cube selection to null before saving', async () => {
+    const { app, context } = createApp();
+    const { form } = fakeForm();
+    form.profileEditor.cubeId = 486;
+    form.isConnected = false;
+    context.saveOwnProfile = async fields => {
+        assert.equal(fields.cube_id, null);
+        return {};
+    };
+    await app('submitAccountProfile')(form);
+});
+
 test('profile saves optional empty fields as null and handles username conflicts on the field', async () => {
     const { app, context, nodes } = createApp(), { form } = fakeForm(), toasts = [];
+    signedIn(app);
     const error = nodes['#pusername-error'] = element();
     context.showToast = value => toasts.push(value);
     context.saveOwnProfile = async fields => {
-        assert.deepEqual({ ...fields }, { display_name: 'Player', username: null, color: '#123456', secondary_color: '#abcdef', bio: null, country: null });
+        assert.deepEqual({ ...fields }, { display_name: 'Player', username: null, color: '#123456', secondary_color: '#abcdef', cube_id: null, bio: null, country: null });
+        app('account.profile.display_name = "Updated Player"');
         return {};
     };
     await app('submitAccountProfile')(form);
     assert.deepEqual(toasts, ['Profile saved']);
+    assert.match(nodes['#md'].innerHTML, /class="box sm account-dialog profile-card".*<h2>Updated Player<\/h2>/);
     context.saveOwnProfile = async () => ({ error: 'usernameTaken' });
     await app('submitAccountProfile')(form);
     assert.equal(error.textContent, app('t("usernameTaken")'));
@@ -551,6 +686,8 @@ test('share dialog covers username setup, private and public profiles', () => {
     app('account.profile.is_public = true; shareDialog()');
     assert.match(nodes['#md'].innerHTML, /data-v=true aria-pressed=true/);
     assert.match(nodes['#md'].innerHTML, /readonly/);
+    assert.match(nodes['#md'].innerHTML, /<button class=pri data-act=acopy>Copy link<\/button>/);
+    assert.match(nodes['#md'].innerHTML, /<a class="lk share-open"/);
     assert.match(nodes['#md'].innerHTML, /https:\/\/example.test\/app\/\?user=player/);
     assert.match(app('profileCard()'), /Public/);
     assert.match(app('profileCard()'), /data-act=ashare/);
@@ -596,6 +733,28 @@ test('share visibility saves once with pending controls and inline errors', asyn
     assert.match(nodes['#md'].innerHTML, /id=share-link/);
     await app('setProfileVisibility')(buttons[0]);
     assert.match(nodes['#md'].innerHTML, /Only you can see your progress/);
+});
+
+test('a visibility save finishing after Back updates the overview badge in place', async () => {
+    const { app, context, nodes } = createApp({ location: new URL('https://example.test/app/') });
+    signedIn(app, 'is_public: true');
+    const message = element(), status = nodes['#md .profile-status'] = element({ textContent: 'Public' });
+    const opener = nodes['#md [data-act=ashare]'] = element();
+    const button = element({ dataset: { v: 'false' }, closest: () => root });
+    const root = element({ querySelector: () => message, querySelectorAll: () => [button] });
+    let finishSave;
+    context.saveOwnProfile = () => new Promise(resolve => { finishSave = resolve; });
+    app('ACTIONS.ashare()');
+    const pending = app('ACTIONS.asharestate')(button);
+    app('ACTIONS.aprofileback')(element({ dataset: { v: 'ashare' } }));
+    root.isConnected = false;
+    const overview = nodes['#md'].innerHTML;
+    app('account.profile.is_public = false');
+    finishSave({});
+    await pending;
+    assert.equal(status.textContent, 'Private');
+    assert.equal(nodes['#md'].innerHTML, overview);
+    assert.equal(opener.focused, true);
 });
 
 test('with email sign-in off, the sign-in dialog offers only Google and explains why', async () => {

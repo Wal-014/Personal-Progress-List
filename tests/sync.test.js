@@ -27,7 +27,7 @@ function device(server = new FakeSyncServer(), storage = {}) {
         clearTimeout(id) { timers.delete(id); },
         console: { error(error) { errors.push(error); } },
         render() { draws++; }, showToast(text) { toasts.push(text); }, showAlert(text) { toasts.push(text); },
-        loadCloud: async () => server, queueMicrotask,
+        loadCloud: async () => server, autoSyncRankings() {}, queueMicrotask,
         migrationDialog: () => 'Migration preview', openModal: html => migrationPrompts.push(html)
     });
     return { ...env, server, storage, timers, listeners, toasts, document, nodes, errors, migrationPrompts,
@@ -54,6 +54,73 @@ test('first sign-in uses empty cloud data and leaves the local profile untouched
     assert.equal(page.storage.gdp, JSON.stringify(local));
     assert.equal(page.status().status, 'saved');
     assert.ok(page.storage['gcloud:owner']);
+});
+
+test('a successful cloud pull starts ranking sync on server levels and pushes only changed positions', async () => {
+    const server = new FakeSyncServer();
+    const page = device(server, { granks: '{"local:p1":{"aredl":0,"gdl":0}}' });
+    page.load();
+    const rows = plain(page.app(`(() => {
+        const data = emptyProfile();
+        data.levels.push({ id: 'level', name: 'Classic', kind: 'classic', levelId: '42', creator: 'Creator',
+            diff: 'Extreme Demon', rating: 'rated', ar: { s: 'r', p: 250 }, gdl: 320 });
+        return [...profileRows(data, currentSettings()).values()].map(({ table, row }) =>
+            ({ table, key: cloudRowKey(table, row), version: null, row }));
+    })()`));
+    await server.rpc('sync_push', { changes: rows });
+    const fetches = [];
+    let finishFetch;
+    const fetchGate = new Promise(resolve => { finishFetch = resolve; });
+    page.context.fetch = async url => {
+        fetches.push(url);
+        await fetchGate;
+        const body = url.includes('demonlist.org') ? { message: 'success', data: { levels: [{ ingame_id: 42, placement: 338 }] } }
+            : [{ level_id: 42, name: 'Classic', position: 267 }];
+        return { ok: true, json: async () => body };
+    };
+    page.load(['js/demonlist.js', 'js/api.js', 'js/sheet.js', 'js/gd.js', 'js/ranking-sync.js', 'js/components/shell.js']);
+    let finishPull;
+    const pullGate = new Promise(resolve => { finishPull = resolve; });
+    server.before = name => name === 'sync_pull' ? pullGate : undefined;
+    const start = page.start();
+    await page.app('autoSyncRankings()');
+    assert.equal(page.app('cloudSession.revision'), null);
+    assert.deepEqual(fetches, []);
+    finishPull();
+    await start;
+    finishFetch();
+    await page.app('rankingPromise');
+    assert.equal(fetches.length, 3);
+    const changes = plain(page.app('pendingCloudChanges()'));
+    assert.deepEqual(changes.map(({ table, row }) => [table, row.aredl_position, row.gdl_position]), [['levels', 267, 338]]);
+    await page.app('pushCloud()');
+    const saved = server.rows('levels')[0];
+    assert.deepEqual([saved.aredl_position, saved.gdl_position, saved.version], [267, 338, 2]);
+    await page.app('syncRankings({ force: true })');
+    assert.deepEqual(plain(page.app('pendingCloudChanges()')), []);
+    await page.app('pushCloud()');
+    assert.equal(server.rows('levels')[0].version, 2);
+
+    server.before = null;
+    await server.rpc('sync_push', { changes: [{ table: 'levels', key: { id: 'level' }, version: 2, row: { aredl_position: 271, gdl_position: 340 } }] });
+    await page.app('pullCloud()');
+    assert.deepEqual([page.data().levels[0].ar.p, page.data().levels[0].gdl], [271, 340]);
+    assert.equal(fetches.length, 6);
+    assert.deepEqual(plain(page.app('pendingCloudChanges()')), []);
+
+    page.storage.granks = JSON.stringify({ 'cloud:owner': { aredl: 0 } });
+    await page.app('pullCloud()');
+    await page.app('rankingPromise');
+    assert.equal(fetches.length, 7);
+    assert.match(fetches[6], /demonlist\.org/);
+});
+
+test('sign-out checks rankings after restoring the local profile', async () => {
+    const page = await ready();
+    const checks = [];
+    page.context.autoSyncRankings = () => checks.push([page.app('cloudUser'), page.data().levels[0].id]);
+    page.app('stopCloudSync(false)');
+    assert.deepEqual(checks, [[null, 'local']]);
 });
 
 async function ready(server, storage) {
@@ -339,7 +406,8 @@ test('write-only network failures keep increasing the retry delay after successf
 });
 
 test('account Home and shell hide local file actions and show the account colours and status', async () => {
-    const page = await ready(); page.load(['js/components/home.js', 'js/components/shell.js', 'js/components/account-ui.js']);
+    const page = await ready(); page.load(['js/ranking-sync.js', 'js/components/home.js', 'js/components/shell.js', 'js/components/account-ui.js']);
+    page.context.autoSyncRankings = () => {};
     page.app(`account.status = 'signed-in'`);
     let html = page.app('profileSwitcher()');
     assert.match(html, /class=profile-pill/); assert.match(html, /Player/); assert.match(html, /#123456/); assert.match(html, /Saved/);
@@ -445,7 +513,7 @@ test('saving only local changes adopts the revision without downloading the acco
 function boot(page, user = { id: 'owner' }) {
     page.storage[page.app(`'sb-' + new URL(SUPABASE_URL).hostname.split('.')[0] + '-auth-token'`)] = JSON.stringify({ user });
     page.context.initAccount = () => {};
-    page.context.autoSyncIfStale = () => {};
+    page.context.startRankingSync = () => {};
     const frames = [];
     page.context.render = () => frames.push({ profile: page.data(), account: plain(page.app('account')), status: page.status() });
     page.load(['js/main.js']);
@@ -616,12 +684,14 @@ test('a programming error cancels an earlier network retry', async () => {
 });
 
 
-test('migration waits for the first successful pull and resumes after a blocked form closes', async () => {
+test('the first successful pull renders without opening migration when local progress exists', async () => {
     const page = device(); page.load(); page.server.failure = 'offline';
     await page.start(); assert.equal(page.migrationPrompts.length, 0); assert.equal(page.app('cloudSession.pulled'), false);
-    page.server.failure = null; page.blocked = true;
+    const draws = page.draws;
+    page.server.failure = null;
     await page.app('pullCloud()'); assert.equal(page.migrationPrompts.length, 0); assert.equal(page.app('cloudSession.pulled'), true);
-    page.blocked = false; page.app('maybeOfferMigration()'); assert.equal(page.migrationPrompts.length, 1);
+    assert.deepEqual(plain(page.app("localProfilesToOffer('owner')")), ['p1']);
+    assert.equal(page.draws, draws + 1);
 });
 
 test('bringing queues durably before a failed push and a reload retries without modifying local backups', async () => {
@@ -719,10 +789,16 @@ test('header sync problems update live and disappear when saved or viewing anoth
     page.app("account.status = 'signed-in'");
     page.nodes['#cloud-header'] = { innerHTML: '' };
     assert.equal(page.app('cloudHeaderStatus()'), '');
+    let savingIcon;
     for (const status of ['saving', 'offline', 'error']) {
         page.app(`setCloudStatus('${status}', '<reason>')`);
         const html = page.nodes['#cloud-header'].innerHTML;
-        assert.match(html, /role=status/);
+        assert.match(html, /role=status aria-atomic=true title="/);
+        const icon = html.match(/>(<svg.*?<\/svg>)/)?.[1];
+        assert.match(icon, /viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1\.5 stroke-linecap=round stroke-linejoin=round/);
+        assert.doesNotMatch(icon, /(?:fill|stroke)="#/);
+        if (status == 'saving') savingIcon = icon;
+        else assert.notEqual(icon, savingIcon);
         assert.ok(html.includes(page.app(`t('${status == 'saving' ? 'cloudSaving' : status == 'offline' ? 'cloudOfflineShort' : 'cloudErrorShort'}')`)));
         assert.equal(html.includes('data-act=csync'), status != 'saving');
         assert.doesNotMatch(html, /<reason>/);

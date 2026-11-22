@@ -110,9 +110,43 @@ function syncNotificationCount(count) {
 }
 
 function sharedShell(screen) {
-    const count = canEdit() ? alerts().length : 0;
-    const utilities = canEdit() ? `<div class=shell-utilities><span id=cloud-header class=cloud-header>${cloudHeaderStatus()}</span><button class=sq data-act=bell aria-haspopup=dialog aria-label="${t('bell')}${count ? ` (${count})` : ''}">${ICONS.bell}${count ? `<b class=bdg aria-hidden=true>${count}</b>` : ''}</button></div>` : '';
-    return `<div class=app-shell><svg class=shell-paints width="0" height="0" aria-hidden="true" focusable="false"><defs><linearGradient id="nav-metal" gradientUnits="userSpaceOnUse" x1="3" y1="2" x2="21" y2="22"><stop class="nav-ink"/><stop offset=".32" class="nav-ink"/><stop offset=".43" class="nav-glint"/><stop offset=".56" class="nav-ink"/><stop offset=".82" class="nav-glint"/><stop offset="1" class="nav-ink"/></linearGradient><linearGradient id="action-metal" gradientUnits="userSpaceOnUse" x1="4" y1="4" x2="20" y2="20"><stop class="action-edge"/><stop offset=".42" class="action-edge"/><stop offset=".55" class="action-glint"/><stop offset=".72" class="action-edge"/><stop offset="1" class="action-glint"/></linearGradient></defs></svg><aside id=shell-sidebar class=shell-sidebar aria-label="${t('nav')}"><div class=shell-identity>${profileSwitcher()}</div>${shellNavigation()}${shellFooter()}</aside><button class=drawer-backdrop data-act=drawerclose tabindex=-1 aria-label="${t('close')}" hidden></button><div class=shell-content><header class=shell-header><button id=shell-menu class=shell-menu data-act=drawer aria-expanded=false aria-controls=shell-sidebar aria-label="${t('nav')}">${ICONS.menu}</button><div class=shell-brand><span class=shell-brand-frame>${ICONS.app}</span><h1>Personal Progress List</h1></div>${utilities}</header><main class="shell-main${ui.tab == 'home' ? ' home hl' : isListTab() ? ' wide' : ''}">${shellPageTitle()}${ui.tab == 'home' ? screen : `<div class=${isListTab() ? 'list-surface' : 'legacy-surface'}>${screen}</div>`}</main></div></div>`;
+    const count = notifications().length;
+    const utilities = canEdit() ? `<div class=shell-utilities><span id=cloud-header class=cloud-header>${cloudHeaderStatus()}</span><button class=sq data-act=bell aria-haspopup=dialog aria-label="${t('bell')}${count ? ` (${count})` : ''}">${ICONS.actionBell}${count ? `<b class=bdg aria-hidden=true>${count}</b>` : ''}</button></div>` : '';
+    const notificationPaints = ['notice', 'pending'].map(section => `<linearGradient id="notification-${section}-metal" href="#nav-metal"><stop class="notification-ink"/><stop offset=".32" class="notification-ink"/><stop offset=".43" class="notification-glint"/><stop offset=".56" class="notification-ink"/><stop offset=".82" class="notification-glint"/><stop offset="1" class="notification-ink"/></linearGradient>`).join('');
+    return `<div class=app-shell><svg class=shell-paints width="0" height="0" aria-hidden="true" focusable="false"><defs><linearGradient id="nav-metal" gradientUnits="userSpaceOnUse" x1="3" y1="2" x2="21" y2="22"><stop class="nav-ink"/><stop offset=".32" class="nav-ink"/><stop offset=".43" class="nav-glint"/><stop offset=".56" class="nav-ink"/><stop offset=".82" class="nav-glint"/><stop offset="1" class="nav-ink"/></linearGradient>${notificationPaints}<linearGradient id="action-metal" gradientUnits="userSpaceOnUse" x1="4" y1="4" x2="20" y2="20"><stop class="action-edge"/><stop offset=".42" class="action-edge"/><stop offset=".55" class="action-glint"/><stop offset=".72" class="action-edge"/><stop offset="1" class="action-glint"/></linearGradient></defs></svg><aside id=shell-sidebar class=shell-sidebar aria-label="${t('nav')}"><div class=shell-drawer-header><button type=button data-act=drawerclose aria-label="${t('closeMenu')}" title="${t('closeMenu')}">${ICONS.actionBack}</button></div><div class=shell-identity>${profileSwitcher()}</div>${shellNavigation()}${shellFooter()}</aside><button class=drawer-backdrop data-act=drawerclose tabindex=-1 aria-label="${t('close')}" hidden></button><div class=shell-content><header class=shell-header><button id=shell-menu class=shell-menu data-act=drawer aria-expanded=false aria-controls=shell-sidebar aria-label="${t('nav')}">${ICONS.menu}</button><div class=shell-brand><span class=shell-brand-frame>${ICONS.app}</span><h1>Personal Progress List</h1></div>${utilities}</header><main class="shell-main${ui.tab == 'home' ? ' home hl' : isListTab() ? ' wide' : ''}">${shellPageTitle()}${ui.tab == 'home' ? screen : `<div class=${isListTab() ? 'list-surface' : 'legacy-surface'}>${screen}</div>`}</main></div></div>`;
+}
+
+function rankingStatusRows() {
+    const times = readRankingTimes(), owner = rankingOwner();
+    return [['aredl', 'AREDL / AREPL'], ['gdl', 'Global Demonlist']].map(([provider, name]) => {
+        const { status, failed } = rankingSync[provider];
+        const timestamp = rankingTimestamp(times, owner, provider);
+        const updating = rankingSync.due.includes(provider);
+        const warning = !updating && (status == 'error' || status == 'partial');
+        let label = t('rankNever');
+        if (updating)
+            label = t('rankUpdating');
+        else if (status == 'error')
+            label = t('rankFailed');
+        else if (status == 'partial')
+            label = t('rankPartial').replace('{list}', () => failed);
+        else if (timestamp != null)
+            label = t('rankUpdated').replace('{time}', () => new Intl.DateTimeFormat(ui.lang, { dateStyle: 'medium', timeStyle: 'short' }).format(timestamp));
+        return `<div class=ranking-row><strong>${name}</strong><span${warning ? ' class=warn' : ''}>${warning ? ICONS.warning : ''}${escapeHtml(label)}</span></div>`;
+    }).join('');
+}
+
+const rankingRefreshLabel = () => t(rankingSync.running ? 'rankUpdating' : 'rankRefresh');
+
+function renderRankingStatus() {
+    const status = qs('[data-ranking-status]');
+    if (!status)
+        return;
+    const busy = String(rankingSync.running), button = qs('[data-act=rankrefresh]');
+    status.setAttribute('aria-busy', busy);
+    status.innerHTML = rankingStatusRows();
+    button.setAttribute('aria-disabled', busy);
+    button.querySelector('span').textContent = rankingRefreshLabel();
 }
 
 function pauseUI() {
@@ -123,6 +157,9 @@ function pauseUI() {
 <h3 id=colour-theme>${t('theme')}</h3><div class=appearance-options role=group aria-labelledby=colour-theme>${THEMES.map(sw).join('')}</div>
 <h3 id=background-design>${t('background')}</h3><div class=appearance-options role=group aria-labelledby=background-design>${BACKGROUNDS.map(bg).join('')}</div>
 <h3>${t('lang')}</h3><div class=lang>${[['es', 'Español'], ['en', 'English']].map(lang).join('')}</div>
+${canEdit() ? `<h3 id=ranking-sync>${t('rankSync')}</h3>
+<div id=ranking-status class=ranking-status data-ranking-status role=status aria-live=polite aria-busy=${rankingSync.running}>${rankingStatusRows()}</div>
+<button data-act=rankrefresh aria-describedby=ranking-status aria-disabled=${rankingSync.running}>${ICONS.actionSync}<span>${rankingRefreshLabel()}</span></button>` : ''}
 <nav class=legal>${['terms', 'privacy', 'credits'].map(k => `<a class=lk data-act=legal data-v=${k} role=button tabindex=0>${t(k)}</a>`).join(' · ')}</nav>
 <p class=by>© ${new Date().getFullYear()} Retlaw · ${t('rights')} · v.Beta_0.1</p>
 <p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;

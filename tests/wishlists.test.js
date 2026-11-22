@@ -2,18 +2,23 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadScripts } from './load-scripts.js';
 
-function fixture(extra = {}) {
+function fixture({ localStorage = {}, ...extra } = {}) {
     const calls = [], timers = [], nodes = new Map();
     const item = { id: 'i1', name: 'A $& <level>', levelId: '42', creator: 'Maker', diff: 'Hard', rating: 'epic', status: 'prog', pct: 63 };
     const wishlist = { id: 'w1', name: 'Goals', items: [item] };
     nodes.set('#md', { innerHTML: '' });
-    const f = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/sheet.js', 'js/demonlist.js', 'js/components/faces.js', 'js/components/empty-list.js', 'js/components/levels.js', 'js/components/wishlists.js', 'js/components/search.js', 'js/components/dialogs.js'], {
+    const f = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/sheet.js', 'js/demonlist.js', 'js/components/faces.js', 'js/components/empty-list.js', 'js/components/deaths-input.js', 'js/components/duration-input.js', 'js/components/levels.js', 'js/components/wishlists.js', 'js/notifications.js', 'js/components/search.js', 'js/components/dialogs.js', 'js/events.js'], {
         profile: { levels: [], order: { classic: [], platform: [] }, tags: [], wishlists: [wishlist] },
         ui: { tab: 'wish', wl: 'w1', lang: 'en', wishFx: null },
         document: { body: {}, querySelector: s => nodes.get(s) || null, querySelectorAll: () => [], addEventListener() {} },
-        window: { addEventListener() {} }, localStorage: {},
+        window: { addEventListener() {} },
+        localStorage: new Proxy(localStorage, {
+            set(storage, key, value) {
+                if (key === 'gdp') calls.push('save');
+                return Reflect.set(storage, key, value);
+            }
+        }),
         CSS: { escape: s => s },
-        save: () => calls.push('save'),
         render() { calls.push(['render', JSON.parse(JSON.stringify(f.app('ui.wishFx') ?? null))]); },
         renderTagSuggestions() {},
         matchWithAredl: levels => { calls.push(['match', levels[0]]); levels[0].ar = { s: 'r', p: 9 }; },
@@ -25,6 +30,10 @@ function fixture(extra = {}) {
         FormData: class { constructor(form) { return Object.entries(form.fields); } },
         ...extra
     });
+    f.app(`profile = globalThis.profile;
+        store = { cur: 'local', profs: { local: { data: profile } } };
+        Object.assign(ui, globalThis.ui);
+        globalThis.ui = ui;`);
     return { ...f, calls, timers, nodes, item, wishlist };
 }
 
@@ -120,7 +129,6 @@ test('status changes retain percentage and expose transient motion only during r
 
 test('wishlist status actions move through every state and back without losing progress', () => {
     const f = fixture();
-    f.load(['js/events.js']);
     f.item.status = 'todo';
     for (const [status, completed] of [['prog', 0], ['done', 1], ['prog', 0], ['todo', 0]]) {
         f.app('ACTIONS.wstatus')({ dataset: { v: status } }, 'i1');
@@ -177,12 +185,22 @@ for (const [value, expected] of [['-5', 0], ['150', 100], ['63.6', 64], ['', 0]]
     });
 
 for (const kind of ['classic', 'platform'])
-    test(`transferWishlistItem adds an unplaced ${kind} level without changing wishlist progress`, () => {
-        const f = fixture(), before = { ...f.item };
-        f.app('transferWishlistItem')('i1', kind);
+    test(`transfer opens the editor for an unplaced ${kind} level without changing wishlist progress`, () => {
+        const f = fixture();
+        const { profile, ui } = f.context;
+        f.item.status = 'done';
+        const before = { ...f.item };
+        ui.q = 'no match';
+        ui.tagFilter = ['Unrelated'];
+        ui.levelSelection = { profile, kind, ids: new Set() };
+        let focused = false, scrolled = false, closed = false;
+        f.nodes.set('#md dialog', { close: () => { closed = true; } });
+        f.nodes.set('.lv.sel', { scrollIntoView: () => { scrolled = true; } });
+        f.nodes.set('.rcol .box > h2', { focus: () => { focused = true; } });
+        f.app('ACTIONS.wto')({ dataset: { v: kind } }, 'i1');
         assert.deepEqual(f.item, { ...before, kind });
         assert.equal(f.wishlist.items[0], f.item);
-        const level = f.context.profile.levels[0];
+        const level = profile.levels[0];
         assert.ok(level.id);
         assert.equal(level.name, before.name);
         assert.equal(level.kind, kind);
@@ -194,34 +212,85 @@ for (const kind of ['classic', 'platform'])
         assert.deepEqual(JSON.parse(JSON.stringify(level.deaths)), {});
         assert.deepEqual(Array.from(level.tags), []);
         assert.equal(level.notes, '');
+        for (const field of ['attN', 'attC', 'tN', 'tP', 'tPC', 'enj', 'lik', 'link'])
+            assert.equal(level[field], undefined);
         assert.equal(level.date, f.app('todayLocal()'));
-        assert.equal(f.context.profile.order[kind].length, 0);
-        assert.ok(f.calls.includes('save'));
+        assert.equal(profile.order[kind].length, 0);
+        assert.deepEqual(f.calls.slice(-2), ['save', ['render', null]]);
+        assert.equal(ui.tab, kind);
+        assert.equal(ui.sel, level.id);
+        assert.equal(ui.edit, 1);
+        assert.equal(ui.q, '');
+        assert.deepEqual(Array.from(ui.tagFilter), []);
+        assert.equal(f.app('currentLevelSelection()'), null);
+        assert.match(f.app('list()'), new RegExp(`<h2 class=grp>Unplaced</h2><div class="obj lv sel" data-id="${level.id}"`));
+        assert.match(f.app('panel()'), new RegExp(`<form id=fm data-id="${level.id}"`));
         assert.equal(f.nodes.get('#md').innerHTML, '');
+        assert.equal(closed, true);
+        assert.equal(scrolled, true);
+        assert.equal(focused, true);
     });
 
-test('a transfer moves keyboard focus from the replaced button to the card status control', () => {
-    const f = fixture();
-    let focused = false;
-    f.nodes.set('.wi[data-id="i1"] [data-act=wstatus][data-v=done]', { focus: () => focused = true });
-    f.app('transferWishlistItem')('i1', 'classic');
-    assert.equal(focused, true);
-});
+for (const [kind, name, levelId] of [['classic', 'Renamed', 42], ['platform', 'a $& <LEVEL>', undefined]])
+    test(`transfer opens the existing ${kind} level and preserves its personal stats`, () => {
+        const f = fixture();
+        const { profile, ui } = f.context;
+        f.item.status = 'done';
+        const existing = { id: 'existing', kind, name, levelId, notes: 'Keep', attN: 87, tN: 120, enj: 9, deaths: { 75: 2 }, tags: ['Personal'] };
+        const before = structuredClone(existing);
+        const toast = { textContent: '', classList: { add() {}, remove() {} } };
+        f.nodes.set('#toast', toast);
+        profile.levels.push(existing);
+        f.app('transferWishlistItem')('i1', kind);
+        assert.deepEqual(profile.levels, [before]);
+        assert.equal(profile.levels[0], existing);
+        assert.equal(ui.tab, kind);
+        assert.equal(ui.sel, existing.id);
+        assert.equal(ui.edit, 1);
+        assert.match(f.app('panel()'), /<form id=fm data-id="existing"/);
+        assert.match(toast.textContent, /A \$& <level> is already in your (Classic|Platformer) list\./);
+        assert.equal(f.item.kind, kind);
+        assert.equal(f.item.status, 'done');
+        assert.equal(f.item.pct, 63);
+    });
 
-test('duplicate transfer preserves the existing level and announces literal user text', () => {
-    const f = fixture(), existing = { id: 'existing', kind: 'classic', name: f.item.name, levelId: 42, notes: 'Keep' };
-    const toast = { textContent: '', classList: { add() {}, remove() {} } };
-    f.nodes.set('#toast', toast);
-    f.context.profile.levels.push(existing);
-    f.app('transferWishlistItem')('i1', 'classic');
-    assert.equal(f.context.profile.levels.length, 1);
-    assert.equal(f.context.profile.levels[0], existing);
-    assert.equal(existing.notes, 'Keep');
-    assert.match(toast.textContent, /A \$& <level> is already in your Classic list\./);
-    assert.equal(f.item.kind, 'classic');
-    assert.equal(f.item.status, 'prog');
-    assert.equal(f.item.pct, 63);
-});
+for (const [id, kind] of [['missing', 'classic'], ['i1', 'invalid']])
+    test(`transfer ignores ${id}/${kind} without closing the offer or navigating`, () => {
+        const f = fixture(), { ui, profile } = f.context;
+        f.item.status = 'done';
+        const before = { ...f.item };
+        const host = f.nodes.get('#md');
+        host.innerHTML = 'transfer offer';
+        f.app('transferWishlistItem')(id, kind);
+        assert.deepEqual(profile.levels, []);
+        assert.deepEqual(f.item, before);
+        assert.equal(ui.tab, 'wish');
+        assert.equal(ui.sel, undefined);
+        assert.equal(ui.edit, undefined);
+        assert.equal(host.innerHTML, 'transfer offer');
+        assert.deepEqual(f.calls, []);
+    });
+
+for (const fromDialog of [false, true])
+    test(`Edit ${fromDialog ? 'from a dialog reveals the level' : 'from the detail panel preserves its filters'}`, () => {
+        const f = fixture(), { profile, ui } = f.context;
+        profile.levels.push({ id: 'level', kind: 'classic', name: 'Target', tags: ['Personal'] });
+        ui.tab = 'classic';
+        ui.q = 'target';
+        ui.tagFilter = ['Personal'];
+        const selection = { profile, kind: 'classic', ids: new Set(['level']) };
+        ui.levelSelection = selection;
+        let scrolled = false;
+        f.nodes.set('.lv.sel', { scrollIntoView: () => { scrolled = true; } });
+        if (fromDialog) f.nodes.set('#md .modal', {});
+        f.app('ACTIONS.edit')(null, 'level');
+        assert.equal(ui.sel, 'level');
+        assert.equal(ui.edit, 1);
+        assert.equal(ui.q, fromDialog ? '' : 'target');
+        assert.deepEqual(Array.from(ui.tagFilter), fromDialog ? [] : ['Personal']);
+        assert.equal(f.app('currentLevelSelection()'), fromDialog ? null : selection);
+        assert.equal(scrolled, fromDialog);
+    });
 
 test('transferDialog offers the detected kind or both unknown choices and escapes names', () => {
     const f = fixture();
@@ -277,7 +346,6 @@ test('initWishlistSort keeps controls clickable and requires the grip for touch 
 
 test('saveWishlistItem stores valid kinds and moves an edited item to its chosen position', () => {
     const f = fixture();
-    f.load(['js/events.js']);
     f.wishlist.items.push({ id: 'i2', name: 'Second' }, { id: 'i3', name: 'Third' });
     const form = { dataset: { id: 'i1' }, fields: { name: 'Edited', lid: '42', creator: 'Maker', kind: 'platform', wpos: '3' } };
     f.app('saveWishlistItem')(form);
@@ -350,16 +418,15 @@ test('header shows three counts, completion and motion only for the celebrated c
     assert.doesNotMatch(f.app('wishView()'), /class="wh done"/);
 });
 
-test('bell alerts derive transfer state and offer again after the saved level is removed', () => {
+test('wishlist notifications return after the saved level is removed', () => {
     const f = fixture();
     f.item.status = 'done';
     f.item.added = true;
-    assert.equal(f.app('alerts()').length, 1);
+    assert.equal(f.app('notifications().length'), 1);
     f.context.profile.levels.push({ id: 'n1', kind: 'classic', levelId: 42, name: f.item.name });
-    f.context.profile.order.classic.push('n1');
-    assert.equal(f.app('alerts()').length, 0);
+    assert.equal(f.app('notifications().length'), 0);
     f.context.profile.levels = [];
-    assert.equal(f.app('alerts()').length, 1);
+    assert.equal(f.app('notifications().length'), 1);
 });
 
 
@@ -393,7 +460,6 @@ test('askTransfer waits for sheet kind detection and keeps unknown levels as a c
 for (const knownKind of [true, false])
     test('completed wishlist item transfers once from the ' + (knownKind ? 'detected list button' : 'list chooser'), async () => {
         const f = fixture({ fetch: async () => ({ ok: true, json: async () => [] }) });
-        f.load(['js/events.js']);
         f.item.status = 'done';
         if (knownKind)
             f.item.kind = 'platform';
@@ -532,7 +598,7 @@ for (const kind of ['classic', 'platform'])
     test(`an unlisted rated Extreme Demon transferred to ${kind} awaits placement`, () => {
         const f = fixture();
         f.load(['js/api.js']);
-        f.app("aredlCache = [{ k: 'd', i: 1, n: 'Other', p: 1 }]");
+        f.app(`aredlCache = [{ k: '${kind == 'classic' ? 'd' : 'p'}', i: 1, n: 'Other', p: 1 }]`);
         f.item.diff = 'Extreme Demon';
         f.item.rating = 'rated';
         f.app('transferWishlistItem')('i1', kind);

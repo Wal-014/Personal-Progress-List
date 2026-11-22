@@ -278,9 +278,14 @@ function rememberMigratedProfile(userId, localId) {
 
 async function saveMigratedIdentity(local) {
     const name = Array.from(migrationText(local.name, Infinity).trim()).slice(0, 40).join('') || account.profile?.display_name || t('name');
-    const identity = await saveOwnProfile({ display_name: name,
+    const fields = {
+        display_name: name,
         color: isHexColor(local.color) ? local.color : PROFILE_COLORS[0],
-        secondary_color: isHexColor(local.secondaryColor) ? local.secondaryColor : DEFAULT_SECONDARY_COLOR });
+        secondary_color: isHexColor(local.secondaryColor) ? local.secondaryColor : DEFAULT_SECONDARY_COLOR
+    };
+    if (validCubeId(local.cubeId))
+        fields.cube_id = local.cubeId;
+    const identity = await saveOwnProfile(fields);
     return identity.error;
 }
 
@@ -288,20 +293,6 @@ function migrationSummary(result) {
     return t('migrationAdded').replace('{levels}', localDataCount('Levels', result.levels)).replace('{wishlists}', localDataCount('Wishlists', result.wishlists)).replace('{tags}', localDataCount('Tags', result.tags))
         + (result.existing ? ' ' + t(result.existing == 1 ? 'migrationExistingOne' : 'migrationExisting').replace('{n}', result.existing) : '')
         + (result.adjusted ? ' ' + t(result.adjusted == 1 ? 'migrationAdjustedOne' : 'migrationAdjusted').replace('{n}', result.adjusted) : '');
-}
-
-const migrationDeferred = new Set();
-
-function maybeOfferMigration() {
-    if (!canEdit() || !cloudUser || !cloudSession?.pulled || account.recovering || migrationDeferred.has(cloudUser)
-        || cloudFormOpen() || !localProfilesToOffer(cloudUser).length)
-        return;
-    migrationDeferred.add(cloudUser);
-    openModal(migrationDialog());
-}
-
-function deferMigration() {
-    closeModal();
 }
 
 const localDataCount = (kind, count) => t('local' + kind + (count == 1 ? 'One' : '')).replace('{n}', count);

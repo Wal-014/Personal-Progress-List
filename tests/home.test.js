@@ -7,11 +7,11 @@ function homeApp() {
     const document = { body: {}, documentElement: { dataset: {} }, activeElement: null,
         querySelector: selector => selector == '#app' ? root : null, querySelectorAll: () => [], addEventListener() {} };
     const loaded = loadScripts(['data/demo-data.js', 'js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js',
-        'js/components/faces.js', 'js/components/levels.js', 'js/components/timeline.js', 'js/components/rankings.js', 'js/components/compare.js',
-        'js/components/stats.js', 'js/components/wishlists.js', 'js/components/home.js', 'js/components/shell.js',
+        'js/ranking-sync.js', 'js/components/faces.js', 'js/components/levels.js', 'js/components/timeline.js', 'js/components/rankings.js', 'js/components/compare.js',
+        'js/components/stats.js', 'js/components/wishlists.js', 'js/notifications.js', 'js/components/home.js', 'js/components/shell.js',
         'js/components/account-ui.js', 'js/render.js', 'js/events.js'], {
         document, window: { addEventListener() {} }, localStorage: {},
-        publicUsernameValid: true, alerts: () => [], account: { status: 'signed-out' }, cloudUser: null, viewing: { identity: null },
+        publicUsernameValid: true, account: { status: 'signed-out' }, cloudUser: null, viewing: { identity: null },
         cloudHeaderStatus: () => '', localProfileSummary: () => 'Local profile', publicIdentityCard: () => '<div class=profile-card>Public player</div>',
         initSort() {}, initWishlistSort() {}, renderTagSuggestions() {}, finishAccountSignIn() {},
         lcol: () => 'List content', panel: () => 'Level panel', publicViewScreen: () => 'Loading public profile'
@@ -283,12 +283,26 @@ test('render applies appearance and screen motifs without changing the saved bac
 });
 
 
-test('drawer toggles inert content, traps focus and restores the menu on Escape and backdrop', () => {
+test('the sidebar starts with a localized close button above the profile', () => {
+    const { app, root } = homeApp();
+    for (const [lang, label] of [['en', 'Close menu'], ['es', 'Cerrar menú']]) {
+        app("ui.lang = '" + lang + "'; render()");
+        const sidebar = root.innerHTML.match(/<aside id=shell-sidebar[^>]*>([\s\S]*?)<\/aside>/)[1];
+        const close = sidebar.match(/<button[^>]*data-act=drawerclose[^>]*>/);
+        assert.ok(close, 'the sidebar has a drawer close button');
+        assert.ok(close.index < sidebar.indexOf('class=shell-identity'));
+        assert.ok(close[0].includes('aria-label="' + label + '"'));
+        assert.ok(close[0].includes('title="' + label + '"'));
+    }
+});
+
+test('drawer traps focus and restores it to the opener on close button, Escape and backdrop', () => {
     const { app, context } = homeApp();
     const nodes = {}, attributes = {};
     const focusable = () => ({ focus() { context.document.activeElement = this; }, getClientRects: () => [1], closest: () => null });
-    const first = focusable(), last = focusable();
-    nodes['#shell-sidebar'] = { inert: false, setAttribute(key, value) { attributes[key] = value; }, removeAttribute(key) { delete attributes[key]; }, querySelectorAll: () => [first, last] };
+    const closeButton = { ...focusable(), dataset: { act: 'drawerclose' }, closest: selector => selector == '#shell-sidebar' ? nodes[selector] : null };
+    const last = focusable();
+    nodes['#shell-sidebar'] = { inert: false, setAttribute(key, value) { attributes[key] = value; }, removeAttribute(key) { delete attributes[key]; }, querySelectorAll: () => [closeButton, last] };
     nodes['#shell-menu'] = { ...focusable(), setAttribute(key, value) { attributes[key] = value; } };
     nodes['.shell-content'] = { inert: false };
     nodes['.drawer-backdrop'] = { hidden: true };
@@ -300,13 +314,13 @@ test('drawer toggles inert content, traps focus and restores the menu on Escape 
     assert.equal(attributes['aria-expanded'], 'true');
     assert.equal(nodes['.shell-content'].inert, true);
     assert.equal(nodes['.drawer-backdrop'].hidden, false);
-    assert.equal(context.document.activeElement, first);
+    assert.equal(context.document.activeElement, closeButton);
     context.document.activeElement = last;
     let prevented = false;
     context.keyEvent = { key: 'Tab', shiftKey: false, preventDefault() { prevented = true; } };
     app('drawerKeydown(keyEvent)');
     assert.equal(prevented, true);
-    assert.equal(context.document.activeElement, first);
+    assert.equal(context.document.activeElement, closeButton);
     context.keyEvent = { key: 'Escape', preventDefault() {} };
     app('drawerKeydown(keyEvent)');
     assert.equal(nodes['.shell-content'].inert, false);
@@ -314,6 +328,13 @@ test('drawer toggles inert content, traps focus and restores the menu on Escape 
     assert.equal(attributes['aria-expanded'], 'false');
     app('ACTIONS.drawer(); ACTIONS.drawerclose()');
     assert.equal(app('ui.drawer'), false);
+    assert.equal(context.document.activeElement, nodes['#shell-menu']);
+    app('setDrawer(true)');
+    context.closeButton = closeButton;
+    app('runAction(closeButton)');
+    assert.equal(app('ui.drawer'), false);
+    assert.equal(nodes['.drawer-backdrop'].hidden, true);
+    assert.equal(context.document.activeElement, nodes['#shell-menu']);
     app('setDrawer(true)');
     context.window.matchMedia = () => ({ matches: false });
     app('syncDrawer()');
@@ -344,6 +365,17 @@ test('the document title and manifest match the shared brand', async () => {
 });
 
 
+test('all local menu actions have a leading outline icon', () => {
+    const { app } = homeApp();
+    const html = app('profileSwitcher()');
+    for (const action of ['pedit', 'localbackup', 'localimport', 'localdata', 'asignin']) {
+        const icon = html.match(new RegExp('data-act=' + action + '[^>]*>(<svg.*?</svg>)<span>'))?.[1];
+        assert.ok(icon, action + ' has a leading icon');
+        assert.match(icon, /viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1\.[57] stroke-linecap=round stroke-linejoin=round/);
+        assert.doesNotMatch(icon, /(?:fill|stroke)="#/);
+    }
+});
+
 test('profile actions keep deletion in Local data and tags in the sidebar; loading disables sign-in', () => {
     const { app } = homeApp();
     app("store.profs.other = { name: '<Other>', color: '#123456', data: emptyProfile() }");
@@ -351,7 +383,7 @@ test('profile actions keep deletion in Local data and tags in the sidebar; loadi
     assert.doesNotMatch(html, /data-act=localdelete|data-act=tags/);
     assert.match(app('shellFooter()'), /data-act=tags/);
     app("account.status = 'loading'");
-    assert.match(app('profileSwitcher()'), /data-act=asignin disabled aria-busy=true>Loading account/);
+    assert.match(app('profileSwitcher()'), /data-act=asignin disabled aria-busy=true><svg.*?<\/svg><span>Loading account\u2026<\/span>/);
 });
 
 

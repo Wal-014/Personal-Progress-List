@@ -159,17 +159,20 @@ test('the list header offers only its own tags, escaped, with the selection chec
 });
 
 test('a finished AREDL update does not redraw over an open dropdown or an active drag', async () => {
-    const { app, calls, context } = createApp();
+    const { app, calls, context, load } = createApp();
     let present = ['.ms[open]'];
     context.document.querySelector = selector => selector.split(', ').some(part => present.includes(part)) ? {} : null;
-    context.loadAredlList = async () => false;
-    context.renderSyncStatus = () => {};
-    await app('syncWithAredl()');
+    context.loadAredlList = async () => ({ d: false, p: false });
+    context.renderRankingStatus = () => {};
+    context.cloudSession = null;
+    load(['js/ranking-sync.js']);
+    app("store = { cur: 'p1' }");
+    await app('syncRankings({ force: true })');
     assert.equal(calls.includes('render'), false);
     present = ['.sortable-chosen'];
-    await app('syncWithAredl()');
+    await app('syncRankings({ force: true })');
     assert.equal(calls.includes('render'), false);
     present = [];
-    await app('syncWithAredl()');
+    await app('syncRankings({ force: true })');
     assert.ok(calls.includes('render'));
 });

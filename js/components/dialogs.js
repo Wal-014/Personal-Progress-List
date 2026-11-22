@@ -2,26 +2,25 @@
  * Custom dialogs, notifications, tag management and legal text.
  */
 
-function alerts() {
-    if (!canEdit())
-        return [];
-    const A = [], lk = l => `<a class=lk data-act=edit data-id="${escapeHtml(l.id)}" role=button tabindex=0>${escapeHtml(l.name)}</a>`;
-    ['classic', 'platform'].forEach(k => {
-        const u = profile.levels.filter(l => l.kind == k && !isPre(l) && !profile.order[k].includes(l.id));
-        if (u.length)
-            A.push(`${escapeHtml(t('aUnp'))} (${escapeHtml(t(k))}): ${u.map(lk).join(', ')}`);
-    });
-    profile.wishlists.forEach(w => w.items.filter(i => i.status == 'done' && !wishlistTransferred(i)).forEach(i => A.push(`${escapeHtml(t('aWish'))}: ${escapeHtml(i.name)} (${escapeHtml(w.name)})`)));
-    const ni = profile.levels.filter(l => !l.levelId);
-    if (ni.length)
-        A.push(`${escapeHtml(t('aNoId'))} (${ni.length}): ${ni.map(lk).join(', ')}`);
-    return A;
+function notificationRow({ id, section, icon, title, text, action, dismiss }) {
+    const attributes = Object.entries(action.data).map(([key, value]) => ` data-${key}="${escapeHtml(value)}"`).join('');
+    const primary = `<button type=button class=xs-txt aria-label="${escapeHtml(action.label + ' · ' + title)}" data-act="${escapeHtml(action.act)}"${attributes}>${escapeHtml(action.label)}</button>`;
+    const secondary = dismiss ? `<button type=button class="xs-txt notification-dismiss" aria-label="${escapeHtml(dismiss.label + ' · ' + title)}" data-act="${escapeHtml(dismiss.act)}" data-id="${escapeHtml(id)}">${escapeHtml(dismiss.label)}</button>` : '';
+    return `<li class=notification-row data-section=${section}><span class=notification-icon aria-hidden=true>${icon}</span><div class=notification-copy><strong>${escapeHtml(title)}</strong><p>${escapeHtml(text)}</p></div><div class=notification-actions>${primary}${secondary}</div></li>`;
 }
 
-const bellUI = () => {
-    const A = alerts();
-    return `<div class=box><h2>${ICONS.bell} ${t('bell')}</h2>${A.length ? `<ul class=bl>${A.map(a => `<li>${a}</li>`).join('')}</ul>` : `<p>${t('nonot')}</p>`}<p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
-};
+function notificationBody() {
+    const entries = notifications();
+    const sections = [['notice', 'notificationNotices'], ['pending', 'notificationPending']].map(([section, heading]) => {
+        const rows = entries.filter(entry => entry.section == section).map(notificationRow).join('');
+        return rows ? `<section><h3>${t(heading)}</h3><ul class=notification-list role=list>${rows}</ul></section>` : '';
+    }).join('');
+    return sections ? `<div class=notification-sections>${sections}</div>` : `<div class=notification-empty>${ICONS.actionBell}<p>${t('nonot')}</p></div>`;
+}
+
+function bellUI() {
+    return `<div class="box notification-box"><h2>${ICONS.actionBell} ${t('bell')}</h2>${notificationBody()}<p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
+}
 
 const legalUI = k => `<div class="box sm"><h2>${t(k)}</h2><p class=dialog-message>${escapeHtml(t(k + 'Txt'))}</p><p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
 
@@ -150,11 +149,17 @@ function showDialog({ title, msg, input, def, ok, cancel, danger, label, extra =
 
 const askText = (title, def) => showDialog({ title, input: 1, def });
 
-const profilePreview = selected => selected.cubeId ? catalogCube(selected.cubeId, selected.color, selected.secondaryColor) + `<small>${t('cube')} ${selected.cubeId}</small>` : cubeIcon(selected.color, selected.secondaryColor);
+function profilePreview({ cubeId, color, secondaryColor }) {
+    return profileCube(cubeId, color, secondaryColor) + (validCubeId(cubeId) ? `<small>${t('cube')} ${cubeId}</small>` : '');
+}
+
+function cubeCatalogField() {
+    return `<div class=cube-catalog><button type=button id=cube-toggle aria-controls=cube-options aria-expanded=false>${t('selectIcon')}${ICONS.chevronDown}</button><div id=cube-options role=group aria-labelledby=cube-toggle hidden><div class=cube-pager><button type=button data-page="-1" aria-label="${t('previousPage')}">&lsaquo;</button><output></output><button type=button data-page="1" aria-label="${t('nextPage')}">&rsaquo;</button></div><div class=cube-grid></div></div></div>`;
+}
 
 function bindCubeCatalog(dialog, selected) {
     const catalog = dialog.querySelector('.cube-catalog');
-    let page = Math.floor((selected.cubeId - 1) / CUBES_PER_PAGE);
+    let page = validCubeId(selected.cubeId) ? Math.floor((selected.cubeId - 1) / CUBES_PER_PAGE) : 0;
     const draw = () => {
         const start = page * CUBES_PER_PAGE + 1, end = Math.min(start + CUBES_PER_PAGE - 1, CUBE_COUNT);
         const tiles = Array.from({ length: end - start + 1 }, (_, offset) => {
@@ -228,7 +233,7 @@ function bindProfileColors(root, selected, onChange) {
 /** Asks for a profile name and colours, sharing the prompt's validation and keyboard handling. */
 function askProfile(title, { name, color, secondaryColor, cubeId }) {
     const selected = { cubeId: validCubeId(cubeId) ? cubeId : 2, color: isHexColor(color) ? color : PROFILE_COLORS[0], secondaryColor: isHexColor(secondaryColor) ? secondaryColor : DEFAULT_SECONDARY_COLOR };
-    return showDialog({ title, ok: t('save'), input: 1, def: name, label: t('pname'), extra: profileColorFields(selected) + `<div class=cube-catalog><button type=button id=cube-toggle aria-controls=cube-options aria-expanded=false>${t('selectIcon')}${ICONS.chevronDown}</button><div id=cube-options role=group aria-labelledby=cube-toggle hidden><div class=cube-pager><button type=button data-page="-1" aria-label="${t('previousPage')}">&lsaquo;</button><output></output><button type=button data-page="1" aria-label="${t('nextPage')}">&rsaquo;</button></div><div class=cube-grid></div></div></div>`, enhance: m => {
+    return showDialog({ title, ok: t('save'), input: 1, def: name, label: t('pname'), extra: profileColorFields(selected) + cubeCatalogField(), enhance: m => {
         bindProfileColors(m, selected, bindCubeCatalog(m, selected));
         return name => ({ name, ...selected });
     } });

@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readdirSync } from 'node:fs';
 import { loadScripts } from './load-scripts.js';
 
 const createApp = () => {
@@ -16,6 +17,8 @@ const createApp = () => {
         context.window = { addEventListener() {} };
         context.render = () => {};
         context.matchWithAredl = () => {};
+        context.matchWithDemonlist = () => {};
+        context.autoSyncRankings = () => {};
         load(['js/events.js']);
     };
     return { app, context, load, loadEvents, localStorage, setProfiles, writes: () => writes };
@@ -50,6 +53,32 @@ test('cubeIcon falls back safely for invalid colours', () => {
         assert.match(cube('#123456', value), /fill="#123456"/);
         assert.equal((cube(value, '#abcdef').match(/fill="#abcdef"/g) || []).length, 3);
     }
+});
+
+test('catalogCube loads the requested cube file for all three colour layers', () => {
+    const { app } = createApp(), cube = app('catalogCube');
+    for (const id of [1, 20, 21, 485]) {
+        const svg = cube(id, '#123456', '#abcdef');
+        assert.deepEqual([...svg.matchAll(/<image href="([^"]+)" width="80" height="240"/g)].map(([, href]) => href),
+            Array(3).fill(`assets/cubes/${id}.webp`));
+        assert.deepEqual([...svg.matchAll(/<svg width="80" height="80" viewBox="([^"]+)"/g)].map(([, viewBox]) => viewBox),
+            ['0 0 80 80', '0 80 80 80', '0 160 80 80']);
+    }
+});
+
+test('catalogCube falls back to the default cube file for invalid ids', () => {
+    const { app } = createApp(), cube = app('catalogCube');
+    for (const id of [undefined, 0, 486, 2.5, '2'])
+        assert.deepEqual([...cube(id).matchAll(/<image href="([^"]+)"/g)].map(([, href]) => href),
+            Array(3).fill('assets/cubes/2.webp'));
+});
+
+test('the cube catalog contains exactly one file per supported id', () => {
+    const { app } = createApp();
+    const entries = readdirSync('assets/cubes', { withFileTypes: true });
+    assert.ok(entries.every(entry => entry.isFile()));
+    assert.deepEqual(entries.map(entry => entry.name).sort(),
+        Array.from({ length: app('CUBE_COUNT') }, (_, index) => `${index + 1}.webp`).sort());
 });
 
 test('ensureProfileColors preserves valid colours and migrates invalid colours by position', () => {
@@ -153,7 +182,7 @@ test('the profile dialog changes only the colour group that was edited', () => {
     assert.deepEqual(secondary.radios.filter(radio => radio.checked), [pink]);
     assert.equal(secondary.custom.parentNode.dataset.selected, false);
     assert.equal(primary.radios.some(radio => radio.checked), false, 'the other group is left alone');
-    assert.match(preview.innerHTML, /assets\/cubes\/0\.webp/);
+    assert.match(preview.innerHTML, /assets\/cubes\/2\.webp/);
     const previous = preview.innerHTML.match(/<feColorMatrix[^>]*>/g);
     assert.equal(previous.length, 2);
     primary.custom.value = '#123456';

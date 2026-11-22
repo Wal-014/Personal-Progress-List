@@ -127,7 +127,7 @@ test('filter hint responds to search and tags and stays hidden in bulk-only and 
     assert.equal(f.app('canReorder()'), false);
     assert.equal(hint.hidden, true);
 
-    f.document.querySelectorAll = () => [{ value: 'A' }];
+    f.document.querySelectorAll = selector => selector.includes('name=tagf') ? [{ value: 'A' }] : [];
     f.app('ui.levelSelection = null; setListTagFilter()');
     assert.deepEqual([...f.app('ui.tagFilter')], ['A']);
     assert.equal(hint.hidden, false);

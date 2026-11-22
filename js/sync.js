@@ -80,7 +80,7 @@ function cloudStatusSentence() {
 
 function cloudRetryButton() {
     return ['offline', 'error'].includes(cloudSync.status)
-        ? `<button data-act=csync class="xs-txt cloudretry">${ICONS.retry}<span>${t('cloudRetry')}</span></button>` : '';
+        ? `<button data-act=csync class="xs-txt cloudretry">${ICONS.actionSync}<span>${t('cloudRetry')}</span></button>` : '';
 }
 
 function cloudHeaderStatus() {
@@ -88,7 +88,7 @@ function cloudHeaderStatus() {
         return '';
     const saving = cloudSync.status == 'saving';
     const label = t(saving ? 'cloudSaving' : cloudSync.status == 'offline' ? 'cloudOfflineShort' : 'cloudErrorShort');
-    return `<span class=cloud-indicator role=status aria-atomic=true title="${escapeHtml(cloudStatusSentence())}">${saving ? ICONS.sync : ICONS.warning}<span>${label}</span></span>${cloudRetryButton()}`;
+    return `<span class=cloud-indicator role=status aria-atomic=true title="${escapeHtml(cloudStatusSentence())}">${saving ? ICONS.actionSync : ICONS.actionWarning}<span>${label}</span></span>${cloudRetryButton()}`;
 }
 
 function renderCloudStatus() {
@@ -186,6 +186,7 @@ function stopCloudSync(clearCache) {
     ui.wl = null;
     cloudSync = { status: 'saved', pending: 0, error: '' };
     render();
+    autoSyncRankings();
 }
 
 function saveCloud() {
@@ -443,7 +444,7 @@ function pullCloud() {
                 render();
             if (hadRevision)
                 notifyCloudChanges(names);
-            maybeOfferMigration();
+            autoSyncRankings();
             return true;
         }
         catch (error) {

@@ -48,6 +48,22 @@ function backToMyProgress() {
 
 function publicIdentityCard() {
     const identity = viewing.identity;
-    const country = COUNTRY_CODES.includes(identity.country) ? new Intl.DisplayNames([ui.lang], { type: 'region' }).of(identity.country) : '';
-    return `<div class="box profile-card">${cubeIcon(identity.color, identity.secondary_color)}<h2>${escapeHtml(identity.display_name)}</h2><p class=by>@${escapeHtml(viewing.username)}</p>${country ? `<p>${escapeHtml(country)}</p>` : ''}<p class=profile-bio>${escapeHtml(identity.bio || '')}</p></div>`;
+    const bio = identity.bio ? `<div class=public-bio><p class="profile-bio profile-bio-clamped" id=public-profile-bio>${escapeHtml(identity.bio)}</p><button type=button class=profile-bio-toggle data-act=publicbio aria-expanded=false aria-controls=public-profile-bio hidden>${t('bioMore')}</button></div>` : '';
+    return `<div class="box profile-card">${profileCube(identity.cube_id, identity.color, identity.secondary_color)}<h2>${escapeHtml(identity.display_name)}</h2><p class=by>@${escapeHtml(viewing.username)}</p>${profileCountry(identity.country)}${bio}</div>`;
+}
+
+function updatePublicBio() {
+    const toggle = qs('[data-act=publicbio]');
+    if (toggle?.getAttribute('aria-expanded') == 'false') {
+        const bio = qs('#public-profile-bio');
+        toggle.hidden = bio.scrollHeight <= bio.clientHeight;
+    }
+}
+
+function togglePublicBio(button) {
+    const expanded = button.getAttribute('aria-expanded') == 'false';
+    qs('#public-profile-bio').classList.toggle('profile-bio-clamped', !expanded);
+    button.setAttribute('aria-expanded', String(expanded));
+    button.textContent = t(expanded ? 'bioLess' : 'bioMore');
+    updatePublicBio();
 }

@@ -30,10 +30,10 @@ function profileSwitcher() {
         return viewing.identity ? publicIdentityCard() : '';
     const signedIn = account.status == 'signed-in' && account.profile, own = signedIn ? account.profile : store.profs[store.cur];
     const menuId = signedIn ? 'amenu' : 'pmenu';
-    const pill = `<button id=profile-pill class=profile-pill popovertarget=${menuId}>${signedIn ? cubeIcon(own.color, own.secondary_color) : catalogCube(own.cubeId, own.color, own.secondaryColor)}<span>${escapeHtml(signedIn ? own.display_name : own.name)}</span>${ICONS.chevronDown}</button>`;
+    const pill = `<button id=profile-pill class=profile-pill popovertarget=${menuId}>${signedIn ? profileCube(own.cube_id, own.color, own.secondary_color) : catalogCube(own.cubeId, own.color, own.secondaryColor)}<span>${escapeHtml(signedIn ? own.display_name : own.name)}</span>${ICONS.chevronDown}</button>`;
     if (signedIn)
         return pill + accountMenu();
-    const row = (act, key, extra = '') => `<button class=pma data-act=${act} ${extra}>${t(key)}</button>`;
+    const row = (act, icon, key, extra = '') => `<button class=pma data-act=${act}${extra ? ` ${extra}` : ''}>${icon}<span>${t(key)}</span></button>`;
     const choices = Object.entries(store.profs).map(([id, p]) => `<div class=profile-choice><button class=pma data-act=localuse data-id="${escapeHtml(id)}"${id == store.cur ? ' aria-pressed=true autofocus' : ''}>${catalogCube(p.cubeId, p.color, p.secondaryColor)}<span>${escapeHtml(p.name)}</span></button></div>`).join('');
-    return `${pill}<div id=pmenu class=pmenu popover role=group aria-labelledby=profile-pill>${choices}${row('pedit', 'pedit')}${row('localbackup', 'localBackup', `data-id="${escapeHtml(store.cur)}"`)}${row('localimport', 'localImport')}${row('localdata', 'localData')}${row('asignin', account.status == 'loading' ? 'accountLoading' : 'accountSignIn', account.status == 'loading' ? 'disabled aria-busy=true' : '')}<p class=by>${t('localGuestHint')}</p></div>`;
+    return `${pill}<div id=pmenu class=pmenu popover role=group aria-labelledby=profile-pill>${choices}${row('pedit', ICONS.actionEdit, 'pedit')}${row('localbackup', ICONS.actionDownload, 'localBackup', `data-id="${escapeHtml(store.cur)}"`)}${row('localimport', ICONS.actionUpload, 'localImport')}${row('localdata', ICONS.actionDevice, 'localData')}${row('asignin', ICONS.actionSignIn, account.status == 'loading' ? 'accountLoading' : 'accountSignIn', account.status == 'loading' ? 'disabled aria-busy=true' : '')}<p class=by>${t('localGuestHint')}</p></div>`;
 }

@@ -50,38 +50,8 @@ for (const result of [{ ok: false }, { ok: true, json: async () => ({ data: { le
         assert.equal(f.app('demonlistCache[0][1]'), 7);
     });
 
-for (const aredlFails of [false, true])
-    for (const gdlFails of [false, true])
-        test(`sync independence: AREDL failure=${aredlFails}, GDL failure=${gdlFails}`, async () => {
-            const levels = [{ name: 'Listed', levelId: '42', gdl: 2, ar: { s: 'r', p: 8 } }, { name: 'Removed', levelId: '43', gdl: 9 }];
-            const alerts = [], requests = [];
-            let saves = 0;
-            const f = fixture({ profile: { levels, wishlists: [] }, document: { querySelector: () => ({}) },
-                renderSyncStatus() {}, save() { saves++; }, showAlert: message => alerts.push(message),
-                needsSheetFields: () => false, loadSheetLevels: async () => {}, fillFromSheet() {}, fillRatings: async () => {},
-                fetch: async url => {
-                    requests.push(url);
-                    if (url.includes('demonlist.org')) {
-                        if (gdlFails) throw Error('offline');
-                        return response();
-                    }
-                    if (aredlFails) throw Error('offline');
-                    return { json: async () => url.includes('arepl/') ? [] : [{ level_id: 42, name: 'Listed', position: 125 }] };
-                }
-            });
-            await f.app('syncWithAredl')();
-            assert.equal(requests.filter(url => url.includes('demonlist.org')).length, 1);
-            assert.equal(levels[0].ar.p, aredlFails ? 8 : 125);
-            assert.deepEqual(levels.map(l => l.gdl), gdlFails ? [2, 9] : [387, null]);
-            assert.equal(saves, aredlFails && gdlFails ? 0 : 1);
-            // Only an AREDL success marks the sync as done, so a failed AREDL download is retried on the next visit
-            assert.equal(f.app('localStorage.gas') != null, !aredlFails);
-            assert.equal(f.app('ui.sync'), 0);
-            assert.equal(alerts.length, 0);
-        });
-
 function formFixture() {
-    const nodes = Object.fromEntries(['#wn', '#lf-face', '#lf-diffT', '#gdq', 'label[for=fm-ap]', '#fm-gdl-field', '#fm-gdl', '#fm-pos-hint'].map(key => [key, { value: '#7', setCustomValidity() {} }]));
+    const nodes = Object.fromEntries(['#lf-face', '#lf-diffT', '#gdq', 'label[for=fm-ap]', '#fm-gdl-field', '#fm-gdl', '#fm-pos-hint'].map(key => [key, { value: '#7', setCustomValidity() {} }]));
     const f = fixture({ localStorage: { ggdl: '[[42,387]]' }, document: { querySelector: key => nodes[key], body: {}, addEventListener() {} }, window: { addEventListener() {} }, clearTimeout,
         FormData: class extends URLSearchParams { constructor(form) { super(form.entries); } },
         render() {}, save() {}, closeModal() {}, scrollSel() {}, renderTagSuggestions() {}, fetch: async () => { throw Error('offline'); } });
@@ -109,7 +79,7 @@ test('form and detail show classic GDL values, hide platformer GDL and escape va
 });
 
 test('picked results toggle GDL visibility and update from cached IDs', async () => {
-    const f = formFixture(), form = { id: 'fm', dataset: {}, elements: Object.fromEntries(['name', 'lid', 'creator', 'diff', 'rating', 'kind', 'kindT', 'ap', 'pos'].map(key => [key, { value: '' }])) };
+    const f = formFixture(), form = { id: 'fm', isConnected: true, dataset: {}, elements: Object.fromEntries(['name', 'lid', 'creator', 'diff', 'rating', 'kind', 'kindT', 'ap', 'pos'].map(key => [key, { value: '' }])) };
     for (const kind of ['classic', 'platform', 'classic']) {
         f.app('pickLevel')(form, { name: 'Level', levelId: '42', kind });
         await new Promise(resolve => setTimeout(resolve));

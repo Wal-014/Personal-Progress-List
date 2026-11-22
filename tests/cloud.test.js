@@ -85,7 +85,7 @@ test('the service worker caches the cloud vendor on demand and serves it offline
     const handlers = {}, stored = new Map();
     const response = { ok: true, clone: () => response };
     const page = loadScripts(['sw.js'], {
-        URL, location: { origin: 'https://example.com' },
+        URL, location: new URL('https://example.com/app/sw.js'),
         self: { addEventListener(event, handler) { handlers[event] = handler; } },
         fetch: async () => response,
         caches: {
@@ -108,10 +108,10 @@ test('startup always restores the cache before rendering and initializes auth af
     const calls = [];
     loadScripts(['js/main.js'], {
         store: {}, storeWasUnreadable: false,
-        ensureProfileColors() {}, ensureProfileDefaults() {}, autoSyncIfStale() {},
+        ensureProfileColors() {}, ensureProfileDefaults() {}, startRankingSync() { calls.push('rankings'); },
         render() { calls.push('render'); },
         restoreCloudSync() { calls.push('cache'); },
         initAccount() { calls.push('init'); }, document: { addEventListener() {} }, navigator: {}
     });
-    assert.deepEqual(calls, ['cache', 'render', 'init']);
+    assert.deepEqual(calls, ['cache', 'render', 'init', 'rankings']);
 });

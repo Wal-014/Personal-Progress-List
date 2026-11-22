@@ -5,6 +5,35 @@
 /** Short form of document.querySelector. */
 const qs = s => document.querySelector(s);
 
+const SCROLL_PANES = '#lw, .shell-main > .legacy-surface, .legacy-surface > .wl';
+
+function scrollEdges({ scrollTop, clientHeight, scrollHeight }) {
+    const maxScroll = scrollHeight - clientHeight;
+    return { top: maxScroll > 1 && scrollTop > 1, bottom: maxScroll > 1 && maxScroll - scrollTop > 1 };
+}
+
+function updateScrollFades(pane) {
+    const { top, bottom } = scrollEdges(pane);
+    pane.classList.toggle('fade-top', top);
+    pane.classList.toggle('fade-bottom', bottom);
+}
+
+const scrollFadeObserver = typeof ResizeObserver === 'undefined' ? null
+    : new ResizeObserver(() => document.querySelectorAll(SCROLL_PANES).forEach(updateScrollFades));
+
+function refreshScrollFades() {
+    scrollFadeObserver?.disconnect();
+    for (const pane of document.querySelectorAll(SCROLL_PANES)) {
+        updateScrollFades(pane);
+        if (scrollFadeObserver) {
+            scrollFadeObserver.observe(pane);
+            // The content can grow while the scroll pane itself keeps the same height.
+            for (const child of pane.children)
+                scrollFadeObserver.observe(child);
+        }
+    }
+}
+
 const prefersReducedMotion = () => globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

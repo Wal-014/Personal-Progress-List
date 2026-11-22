@@ -1,4 +1,8 @@
-"""Build paginated, recolorable cube sheets from the GDBrowser Icon Kit (requires Pillow and requests)."""
+"""Build the lossless cube atlas from the GDBrowser Icon Kit (requires Pillow and requests).
+
+The atlas has 20 columns of 80x240 tiles. Each tile stacks the secondary, primary
+and fixed-detail layers from top to bottom.
+"""
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from pathlib import Path
@@ -10,10 +14,10 @@ import requests
 from PIL import Image
 
 CACHE = Path(gettempdir()) / 'ppl-iconkit-sources'
-DEST = Path(__file__).resolve().parents[1] / 'assets' / 'cubes'
+ROOT = Path(__file__).resolve().parents[1]
+DEST = ROOT / 'assets-src' / 'cubes.webp'
 SIZE = 80
-PER_PAGE = 20
-COLUMNS = 5
+COLUMNS = 20
 
 
 def source(name):
@@ -75,19 +79,24 @@ def cube_layers(index):
 
 
 def main():
+    config = (ROOT / 'js' / 'config.js').read_text(encoding='utf-8')
+    count_match = re.search(r'^const CUBE_COUNT = (\d+);', config, re.MULTILINE)
+    if not count_match:
+        raise ValueError('Missing CUBE_COUNT in js/config.js')
+    count = int(count_match[1])
+    rows = (count + COLUMNS - 1) // COLUMNS
+    tile_height = 3 * SIZE
+    atlas = Image.new('RGBA', (COLUMNS * SIZE, rows * tile_height))
     CACHE.mkdir(exist_ok=True)
-    DEST.mkdir(parents=True, exist_ok=True)
+    DEST.parent.mkdir(parents=True, exist_ok=True)
     with ThreadPoolExecutor(max_workers=5) as pool:
-        for slot, layers in enumerate(pool.map(cube_layers, range(1, 486))):
-            cell = slot % PER_PAGE
-            if cell == 0:
-                page = Image.new('RGBA', (COLUMNS * SIZE, 3 * PER_PAGE // COLUMNS * SIZE))
-            for plane, (tile, (dx, dy)) in enumerate(layers):
-                x = cell % COLUMNS * SIZE + dx
-                y = (plane * PER_PAGE // COLUMNS + cell // COLUMNS) * SIZE + dy
-                page.paste(tile, (x, y))
-            if cell == PER_PAGE - 1 or slot == 484:
-                page.save(DEST / f'{slot // PER_PAGE}.webp', lossless=True)
+        for index, layers in enumerate(pool.map(cube_layers, range(1, count + 1))):
+            cube = Image.new('RGBA', (SIZE, tile_height))
+            for layer, (tile, (dx, dy)) in enumerate(layers):
+                cube.paste(tile, (dx, layer * SIZE + dy))
+            atlas.paste(cube, (index % COLUMNS * SIZE, index // COLUMNS * tile_height))
+    # Preserve RGB values even where alpha is zero.
+    atlas.save(DEST, 'WEBP', lossless=True, quality=100, method=6, exact=True)
 
 
 if __name__ == '__main__':

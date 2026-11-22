@@ -6,6 +6,7 @@
     "lint": "eslint .",
     "test": "node --test",
     "test:db": "node scripts/db-tests.js",
+    "assets": "node scripts/build-assets.js",
     "levels": "node scripts/build-levels.js",
     "site": "node scripts/build-site.js"
   },
@@ -13,7 +14,9 @@
     "@eslint/js": "10.0.1",
     "@supabase/supabase-js": "2.119.0",
     "eslint": "10.14.0",
-    "globals": "17.14.0"
+    "flag-icons": "7.6.0",
+    "globals": "17.14.0",
+    "sharp": "0.35.5"
   },
   "overrides": {
     "minimatch": "11.0.1"

@@ -35,6 +35,8 @@ function zoomTimeline(factor) {
 
 function resizeOverlays() {
     syncDrawer();
+    if (viewing?.identity?.bio)
+        updatePublicBio();
     const menu = qs('.pmenu:popover-open');
     if (menu?.closest('[inert]'))
         menu.hidePopover();
@@ -43,6 +45,18 @@ function resizeOverlays() {
 }
 
 window.addEventListener('resize', resizeOverlays);
+
+function refreshRankings() {
+    if (!rankingSync.running)
+        return syncRankings({ force: true });
+}
+
+function activateLocalProfile(id) {
+    activateProfile(id);
+    matchWithAredl(profile.levels);
+    matchWithDemonlist(profile.levels);
+    autoSyncRankings();
+}
 
 /** What each data-act value does when clicked. Handlers get the clicked element and its data-id. */
 const ACTIONS = {
@@ -55,15 +69,16 @@ const ACTIONS = {
     dthcancel: a => cancelDeathEdit(a),
     dthresolve: a => resolveDeath(a),
     myprogress: () => backToMyProgress(),
+    publicbio: a => togglePublicBio(a),
     ashare: () => shareDialog(),
     asharestate: a => setProfileVisibility(a),
     acopy: () => copyProfileLink(),
     localdata: () => openModal(localDataDialog()),
+    rankrefresh: refreshRankings,
     localuse(a, id) {
         if (cloudUser || !store.profs[id] || store.cur == id)
             return;
-        activateProfile(id);
-        matchWithAredl(profile.levels);
+        activateLocalProfile(id);
         ui.sel = ui.wl = null;
         localStorage.gdp = JSON.stringify(store);
         closeModal();
@@ -76,15 +91,15 @@ const ACTIONS = {
     localbring: (a, id) => openLocalMigration(id),
     localdelete: (a, id) => deleteLocalProfile(id),
     migrationbackup: () => downloadMigrationBackup(),
-    migrationlater: () => deferMigration(),
     migrationconfirm: a => submitMigration(a),
     asignin: () => openAuthDialog(),
     amode: a => openAuthDialog(a.dataset.v),
     agoogle: a => continueWithGoogle(a),
     aresend: a => resendAccountEmail(a),
     apw: a => toggleAccountPassword(a),
-    aprofile: () => openModal(profileCard()),
-    aedit: () => openProfileForm(),
+    aprofile: () => openProfileOverview(),
+    aprofileback: a => backToProfile(a),
+    aedit: a => openProfileForm(a),
     asettings: () => settingsDialog(),
     apassword: () => passwordDialog(),
     adelete: a => confirmAccountDeletion(a),
@@ -104,6 +119,9 @@ const ACTIONS = {
     theme: a => setAppearance('theme', themeOf(a.dataset.v)),
     background: a => setAppearance('background', backgroundOf(a.dataset.v)),
     bell: () => openModal(bellUI()),
+    notifwish: button => transferFromNotification(button),
+    notiflocal: () => openNotificationMigration(),
+    notifdismiss: button => hideNotification(button),
     legal: a => openModal(legalUI(a.dataset.v)),
     ct() {
         ui.tagFilter = [];
@@ -157,20 +175,7 @@ const ACTIONS = {
         openModal(levelForm());
         qs('#gdq').focus();
     },
-    edit(a, id) {
-        const openedFromDialog = !!qs('#md .modal'), l = findLevel(id);
-        closeModal();
-        if (l)
-            ui.tab = l.kind;
-        ui.sel = id;
-        ui.edit = 1;
-        if (openedFromDialog)
-            resetListFilters();
-        render();
-        if (openedFromDialog)
-            scrollSel();
-        focusLevelPanel();
-    },
+    edit: (a, id) => openLevelEditor(id, !!qs('#md .modal')),
     lvclose() {
         const wasEditing = ui.edit, returnId = ui.sel;
         if (!ui.edit)
@@ -312,6 +317,39 @@ const ACTIONS = {
     wto: (a, id) => transferWishlistItem(id, a.dataset.v)
 };
 
+function transferFromNotification(button) {
+    if (!canEdit())
+        return;
+    const { w, id, v: kind } = button.dataset;
+    const wishlist = profile.wishlists.find(candidate => candidate.id == w);
+    const item = wishlist?.items.find(candidate => candidate.id == id);
+    if (!item || item.status != 'done' || kind != item.kind || wishlistTransferred(item))
+        return closeModal();
+    ui.wl = wishlist.id;
+    if (kind)
+        return transferWishlistItem(id, kind);
+    // The chooser only opens while its source wishlist is active and no other dialog is open.
+    closeModal();
+    ui.tab = 'wish';
+    render();
+    return askTransfer(item, false);
+}
+
+function openLevelEditor(id, revealInList) {
+    const level = findLevel(id);
+    closeModal();
+    if (level)
+        ui.tab = level.kind;
+    ui.sel = id;
+    ui.edit = 1;
+    if (revealInList)
+        resetListFilters();
+    render();
+    if (revealInList)
+        scrollSel();
+    focusLevelPanel();
+}
+
 function downloadLocalBackup(id) {
     const pr = store.profs[id], u = URL.createObjectURL(new Blob([JSON.stringify({ ...pr.data, profileName: pr.name, profileCubeId: pr.cubeId, profileColor: pr.color, profileSecondaryColor: pr.secondaryColor })], { type: 'application/json' })), x = document.createElement('a');
     x.href = u;
@@ -423,9 +461,8 @@ async function importProfile(file) {
     delete data.profileSecondaryColor;
     store.profs[id] = { ...selected, data };
     if (!cloudUser) {
-        activateProfile(id);
+        activateLocalProfile(id);
         ui.sel = ui.wl = null;
-        matchWithAredl(profile.levels);
     }
     localStorage.gdp = JSON.stringify(store);
     render();
@@ -457,7 +494,7 @@ function runAction(button) {
         menu.hidePopover();
         opener.element?.focus({ preventScroll: true });
     }
-    const fromDrawer = ui.drawer && button.closest('#shell-sidebar') && k != 'listchoices';
+    const fromDrawer = ui.drawer && button.closest('#shell-sidebar') && !['listchoices', 'publicbio'].includes(k);
     if (fromDrawer && ['tab', 'localuse', 'myprogress'].includes(k))
         setDrawer(false);
     ACTIONS[k]?.(button, button.dataset.id);
@@ -515,11 +552,12 @@ document.body.onsubmit = e => {
     else
         saveLevel(e.target);
 };
-document.addEventListener('scroll', e => {
-    const pane = e.target;
-    if (pane.matches?.('#lw, .shell-main > .legacy-surface, .legacy-surface > .wl'))
-        pane.classList.toggle('scrolled-edge', pane.scrollTop > 0);
-}, { capture: true, passive: true });
+function onPaneScroll({ target: pane }) {
+    if (pane.matches?.(SCROLL_PANES))
+        updateScrollFades(pane);
+}
+
+document.addEventListener('scroll', onPaneScroll, { capture: true, passive: true });
 
 const invalidForms = new WeakSet();
 
@@ -576,6 +614,8 @@ document.body.oninput = e => {
 };
 document.body.onchange = e => {
     const input = e.target, ds = input.dataset;
+    if (input.id == 'pcountry')
+        return updateCountryPreview(input);
     if (input.name == 'tagf')
         return setListTagFilter();
     if (['gdrate', 'gddiff'].includes(input.name))
@@ -629,8 +669,6 @@ function accountRendered() {
         recoveryDialogOpened = true;
         passwordDialog();
     }
-    if (canEdit() && cloudUser)
-        queueMicrotask(maybeOfferMigration);
 }
 
 document.addEventListener('close', () => queueMicrotask(accountRendered), true);
@@ -770,7 +808,10 @@ window.addEventListener('storage', e => {
     catch {
         return;
     }
-    activateProfile(store.profs[cur] ? cur : store.cur);
+    if (store.profs[cur])
+        activateProfile(cur);
+    else
+        activateLocalProfile(store.cur);
     if (!qs('form, .modal'))
         render();
 });
@@ -778,6 +819,20 @@ window.addEventListener('storage', e => {
 function openLocalMigration(id) {
     if (cloudUser && cloudSession?.pulled && store.profs[id] && !(migratedLocalProfiles()[cloudUser] || []).includes(id))
         openModal(migrationDialog(id));
+}
+
+function openNotificationMigration() {
+    if (localDataNotification())
+        openModal(migrationDialog());
+}
+
+function hideNotification(button) {
+    const box = button.closest('.notification-box');
+    if (!box || !dismissNotification(button.dataset.id))
+        return;
+    box.querySelector('.notification-sections').outerHTML = notificationBody();
+    render();
+    box.querySelector('.notification-row button, [data-act=close]').focus();
 }
 
 function downloadMigrationBackup() {
