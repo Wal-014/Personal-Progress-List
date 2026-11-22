@@ -80,7 +80,7 @@ test('startup uses public rows with accounts available, never syncs or writes st
     }
 });
 
-const forbidden = /data-act\s*=\s*["']?(?:add|edit|del|wadd|wedit|wdel|wstatus|wren|wdelL|tags|wnew|wto|wask|exp|imp|localdata|bell|sync)(?=[\s"'>])|class\s*=\s*["']?grip\b|data-wp=/;
+const forbidden = /data-act\s*=\s*["']?(?:add|edit|del|wadd|wedit|wdel|wstatus|wren|wdelL|tags|wnew|wto|wask|exp|imp|localdata|bell|notifwish|sync)(?=[\s"'>])|class\s*=\s*["']?grip\b|data-wp=/;
 const screens = ['home', 'classic', 'platform', 'wish', 'stats'];
 function draw(p, tab) {
     p.app(`ui.tab = '${tab}'; ui.sel = '${tab == 'platform' ? 'n1' : 'n0'}'; ui.wl = 'w1'; render()`);
@@ -95,7 +95,8 @@ test('all public screens omit editing controls while the editable screens retain
         assert.match(p.html(), /@player/);
     }
     assert.doesNotMatch(p.app('pauseUI()'), forbidden);
-    assert.equal(p.app('alerts().length'), 0);
+    assert.deepEqual(plain(p.app('notifications()')), []);
+    assert.doesNotMatch(p.app('bellUI()'), forbidden);
     p.app('viewing = null; store = { cur: "p1", profs: { p1: { name: "Local", data: profile } } }; cloudUser = null');
     for (const tab of screens) assert.match(draw(p, tab), forbidden, tab);
 });

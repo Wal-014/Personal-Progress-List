@@ -8,10 +8,10 @@ function homeApp() {
         querySelector: selector => selector == '#app' ? root : null, querySelectorAll: () => [], addEventListener() {} };
     const loaded = loadScripts(['data/demo-data.js', 'js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js',
         'js/ranking-sync.js', 'js/components/faces.js', 'js/components/levels.js', 'js/components/timeline.js', 'js/components/rankings.js', 'js/components/compare.js',
-        'js/components/stats.js', 'js/components/wishlists.js', 'js/components/home.js', 'js/components/shell.js',
+        'js/components/stats.js', 'js/components/wishlists.js', 'js/notifications.js', 'js/components/home.js', 'js/components/shell.js',
         'js/components/account-ui.js', 'js/render.js', 'js/events.js'], {
         document, window: { addEventListener() {} }, localStorage: {},
-        publicUsernameValid: true, alerts: () => [], account: { status: 'signed-out' }, cloudUser: null, viewing: { identity: null },
+        publicUsernameValid: true, account: { status: 'signed-out' }, cloudUser: null, viewing: { identity: null },
         cloudHeaderStatus: () => '', localProfileSummary: () => 'Local profile', publicIdentityCard: () => '<div class=profile-card>Public player</div>',
         initSort() {}, initWishlistSort() {}, renderTagSuggestions() {}, finishAccountSignIn() {},
         lcol: () => 'List content', panel: () => 'Level panel', publicViewScreen: () => 'Loading public profile'

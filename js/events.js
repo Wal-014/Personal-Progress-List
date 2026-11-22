@@ -120,6 +120,7 @@ const ACTIONS = {
     theme: a => setAppearance('theme', themeOf(a.dataset.v)),
     background: a => setAppearance('background', backgroundOf(a.dataset.v)),
     bell: () => openModal(bellUI()),
+    notifwish: button => transferFromNotification(button),
     legal: a => openModal(legalUI(a.dataset.v)),
     ct() {
         ui.tagFilter = [];
@@ -314,6 +315,24 @@ const ACTIONS = {
     wask: (a, id) => askTransfer(currentWishlist().items.find(i => i.id == id), false),
     wto: (a, id) => transferWishlistItem(id, a.dataset.v)
 };
+
+function transferFromNotification(button) {
+    if (!canEdit())
+        return;
+    const { w, id, v: kind } = button.dataset;
+    const wishlist = profile.wishlists.find(candidate => candidate.id == w);
+    const item = wishlist?.items.find(candidate => candidate.id == id);
+    if (!item || item.status != 'done' || kind != item.kind || wishlistTransferred(item))
+        return closeModal();
+    ui.wl = wishlist.id;
+    if (kind)
+        return transferWishlistItem(id, kind);
+    // The chooser only opens while its source wishlist is active and no other dialog is open.
+    closeModal();
+    ui.tab = 'wish';
+    render();
+    return askTransfer(item, false);
+}
 
 function openLevelEditor(id, revealInList) {
     const level = findLevel(id);

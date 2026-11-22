@@ -2,26 +2,20 @@
  * Custom dialogs, notifications, tag management and legal text.
  */
 
-function alerts() {
-    if (!canEdit())
-        return [];
-    const A = [], lk = l => `<a class=lk data-act=edit data-id="${escapeHtml(l.id)}" role=button tabindex=0>${escapeHtml(l.name)}</a>`;
-    ['classic', 'platform'].forEach(k => {
-        const u = profile.levels.filter(l => l.kind == k && !isPre(l) && !profile.order[k].includes(l.id));
-        if (u.length)
-            A.push(`${escapeHtml(t('aUnp'))} (${escapeHtml(t(k))}): ${u.map(lk).join(', ')}`);
-    });
-    profile.wishlists.forEach(w => w.items.filter(i => i.status == 'done' && !wishlistTransferred(i)).forEach(i => A.push(`${escapeHtml(t('aWish'))}: ${escapeHtml(i.name)} (${escapeHtml(w.name)})`)));
-    const ni = profile.levels.filter(l => !l.levelId);
-    if (ni.length)
-        A.push(`${escapeHtml(t('aNoId'))} (${ni.length}): ${ni.map(lk).join(', ')}`);
-    return A;
+function notificationRow({ icon, title, text, action }) {
+    const attributes = Object.entries(action.data).map(([key, value]) => ` data-${key}="${escapeHtml(value)}"`).join('');
+    return `<li class=notification-row><span class=notification-icon aria-hidden=true>${icon}</span><div class=notification-copy><strong>${escapeHtml(title)}</strong><p>${escapeHtml(text)}</p></div><button type=button class=xs-txt aria-label="${escapeHtml(action.label + ' · ' + title)}" data-act="${escapeHtml(action.act)}"${attributes}>${escapeHtml(action.label)}</button></li>`;
 }
 
-const bellUI = () => {
-    const A = alerts();
-    return `<div class=box><h2>${ICONS.bell} ${t('bell')}</h2>${A.length ? `<ul class=bl>${A.map(a => `<li>${a}</li>`).join('')}</ul>` : `<p>${t('nonot')}</p>`}<p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
-};
+function bellUI() {
+    const entries = notifications();
+    const sections = [['notice', 'notificationNotices'], ['pending', 'notificationPending']].map(([section, heading]) => {
+        const rows = entries.filter(entry => entry.section == section).map(notificationRow).join('');
+        return rows ? `<section><h3>${t(heading)}</h3><ul class=notification-list role=list>${rows}</ul></section>` : '';
+    }).join('');
+    const body = sections ? `<div class=notification-sections>${sections}</div>` : `<div class=notification-empty>${ICONS.bell}<p>${t('nonot')}</p></div>`;
+    return `<div class="box notification-box"><h2>${ICONS.bell} ${t('bell')}</h2>${body}<p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
+}
 
 const legalUI = k => `<div class="box sm"><h2>${t(k)}</h2><p class=dialog-message>${escapeHtml(t(k + 'Txt'))}</p><p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
 
