@@ -23,10 +23,12 @@ test('the relay allows the production and dev sites', () => {
     assert.deepEqual(vars.ALLOWED_ORIGINS.split(','), [PRODUCTION_ORIGIN, DEV_ORIGIN]);
 });
 
-const ci = () => readFileSync('.github/workflows/ci.yml', 'utf8').replace(/\r\n/g, '\n');
+const workflow = name => readFileSync(`.github/workflows/${name}.yml`, 'utf8').replace(/\r\n/g, '\n');
+const ci = () => workflow('ci');
 const jobNames = yaml => [...yaml.split(/^jobs:\n/m)[1].matchAll(/^ {2}([\w-]+):$/gm)].map(([, name]) => name);
 const job = (yaml, name) => yaml.match(new RegExp(`^ {2}${name}:\n((?: {4}.*\n|\n)+)`, 'm'))?.[1] ?? '';
-const jobIf = (yaml, name) => job(yaml, name).match(/^ {4}if: (.*)$/m)?.[1];
+const jobIf = (yaml, name) => job(yaml, name).match(/^ {4}if: (.*)$/m)?.[1]
+    .replace(/^\$\{\{\s*(.*?)\s*\}\}$/, '$1');
 
 test('ci actions are pinned to commit SHAs', () => {
     const actions = [...ci().matchAll(/^\s*(?:-\s+)?uses:\s*(\S+)/gm)];
@@ -54,6 +56,28 @@ test('ci run scripts never interpolate expressions', () => {
 
 test('ci runs on pushes to main and development', () => {
     assert.match(ci(), /^ {2}push:\n {4}branches: \[main, development\]$/m);
+});
+
+test('the daily production deploy skips checks and waits for migrations', () => {
+    const yaml = ci();
+    for (const name of ['ci', 'db'])
+        assert.match(jobIf(yaml, name), /github\.event_name != 'schedule'/, name);
+    for (const name of ['migrate-prod', 'deploy'])
+        assert.match(jobIf(yaml, name), /^!cancelled\(\) && !failure\(\) && /, name);
+    assert.doesNotMatch(jobIf(yaml, 'deploy-dev'), /!failure\(\)/);
+});
+
+test('jobs that read deploy secrets declare an environment', () => {
+    for (const workflowName of ['ci', 'backup', 'relay']) {
+        const yaml = workflow(workflowName);
+        for (const name of jobNames(yaml)) {
+            const body = job(yaml, name);
+            if (body.includes('secrets.'))
+                assert.match(body, /^ {4}environment:/m, `${workflowName}/${name}`);
+        }
+    }
+    assert.match(job(ci(), 'migrate-prod'), /^ {4}environment: production-database$/m);
+    assert.match(job(workflow('backup'), 'backup'), /^ {4}environment: production-database$/m);
 });
 
 test('jobs that read secrets never run for pull requests', () => {
