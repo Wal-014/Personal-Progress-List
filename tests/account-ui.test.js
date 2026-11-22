@@ -332,7 +332,7 @@ test('profile card localizes country and membership date and preserves biography
     signedIn(app);
     app('account.profile.bio = "Hello\\n" + "x".repeat(294)');
     const html = app('profileCard()');
-    assert.match(html, /class=profile-country><img[^>]+assets\/flags\/cr\.svg[^>]*><span>Costa Rica<\/span>/);
+    assert.match(html, /class=profile-country><img[^>]+assets\/flags\/cr\.webp[^>]*><span>Costa Rica<\/span>/);
     assert.match(html, /Member since/);
     assert.match(html, /class=profile-bio>Hello\nx{294}<\/p>/);
     app("account.profile.username = null");
@@ -354,7 +354,7 @@ for (const [visibility, label, icon] of [[true, 'Public', 'actionGlobe'], [false
 
 test('country flags use only supported canonical codes and are decorative', () => {
     const { app } = createApp();
-    assert.match(app('countryFlag("CR")'), /^<img class=flag src="assets\/flags\/cr\.svg" alt="" width=\d+ height=\d+ loading=lazy decoding=async>$/);
+    assert.equal(app('countryFlag("CR")'), '<img class=flag src="assets/flags/cr.webp" alt="" width=24 height=18 loading=lazy decoding=async>');
     for (const code of ['', 'ZZ', 'cr', '../cr', null])
         assert.equal(app('countryFlag')(code), '');
 });
@@ -362,11 +362,11 @@ test('country flags use only supported canonical codes and are decorative', () =
 test('country selection updates and clears the flag preview', () => {
     const { app, nodes, document } = createApp();
     signedIn(app);
-    assert.match(app('profileForm()'), /<span id=country-preview><img[^>]+assets\/flags\/cr\.svg/);
+    assert.match(app('profileForm()'), /<span id=country-preview><img[^>]+assets\/flags\/cr\.webp/);
     const preview = nodes['#country-preview'] = element();
     const input = element({ id: 'pcountry', value: 'JP' });
     document.body.onchange({ target: input });
-    assert.match(preview.innerHTML, /assets\/flags\/jp\.svg/);
+    assert.match(preview.innerHTML, /assets\/flags\/jp\.webp/);
     input.value = '';
     document.body.onchange({ target: input });
     assert.equal(preview.innerHTML, '');

@@ -207,7 +207,7 @@ test('public identity shows a decorative flag next to the localized country', as
     const p = page('?user=player', { data });
     await p.app('initPublicView()');
     p.app('ui.lang = "es"; render()');
-    assert.match(p.html(), /class=profile-country><img[^>]+assets\/flags\/jp\.svg" alt=""[^>]*><span>Japón<\/span>/);
+    assert.match(p.html(), /class=profile-country><img[^>]+assets\/flags\/jp\.webp" alt=""[^>]*><span>Japón<\/span>/);
     p.app('viewing.identity.country = "ZZ"; render()');
     assert.doesNotMatch(p.html(), /profile-country|assets\/flags\//);
 });
