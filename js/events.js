@@ -91,7 +91,6 @@ const ACTIONS = {
     localbring: (a, id) => openLocalMigration(id),
     localdelete: (a, id) => deleteLocalProfile(id),
     migrationbackup: () => downloadMigrationBackup(),
-    migrationlater: () => deferMigration(),
     migrationconfirm: a => submitMigration(a),
     asignin: () => openAuthDialog(),
     amode: a => openAuthDialog(a.dataset.v),
@@ -121,6 +120,8 @@ const ACTIONS = {
     background: a => setAppearance('background', backgroundOf(a.dataset.v)),
     bell: () => openModal(bellUI()),
     notifwish: button => transferFromNotification(button),
+    notiflocal: () => openNotificationMigration(),
+    notifdismiss: button => hideNotification(button),
     legal: a => openModal(legalUI(a.dataset.v)),
     ct() {
         ui.tagFilter = [];
@@ -668,8 +669,6 @@ function accountRendered() {
         recoveryDialogOpened = true;
         passwordDialog();
     }
-    if (canEdit() && cloudUser)
-        queueMicrotask(maybeOfferMigration);
 }
 
 document.addEventListener('close', () => queueMicrotask(accountRendered), true);
@@ -820,6 +819,20 @@ window.addEventListener('storage', e => {
 function openLocalMigration(id) {
     if (cloudUser && cloudSession?.pulled && store.profs[id] && !(migratedLocalProfiles()[cloudUser] || []).includes(id))
         openModal(migrationDialog(id));
+}
+
+function openNotificationMigration() {
+    if (localDataNotification())
+        openModal(migrationDialog());
+}
+
+function hideNotification(button) {
+    const box = button.closest('.notification-box');
+    if (!box || !dismissNotification(button.dataset.id))
+        return;
+    box.querySelector('.notification-sections').outerHTML = notificationBody();
+    render();
+    box.querySelector('.notification-row button, [data-act=close]').focus();
 }
 
 function downloadMigrationBackup() {

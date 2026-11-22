@@ -19,7 +19,7 @@ function migrationDialog(selectedId) {
     return `<div class="box sm migration" id=migration><h2>${t('migrationTitle')}</h2><p class=by>${t('migrationHint')}</p>
 <fieldset><legend>${t('migrationChoose')}</legend>${offers.map(id => `<label class="obj local-choice"><input type=radio name=local-profile value="${escapeHtml(id)}"${id == selected ? ' checked autofocus' : ''}>${localProfileSummary(id)}</label>`).join('')}</fieldset>
 ${warning}<label class=local-identity><input type=checkbox id=migration-identity>${t('migrationIdentity')}</label>
-<p class=dgb><button data-act=migrationbackup>${t('localBackup')}</button><button data-act=migrationlater>${t('notNow')}</button><button class=pri data-act=migrationconfirm>${t('migrationBring')}</button></p></div>`;
+<p class=dgb><button data-act=migrationbackup>${t('localBackup')}</button><button data-act=close>${t('notNow')}</button><button class=pri data-act=migrationconfirm>${t('migrationBring')}</button></p></div>`;
 }
 
 function localDataDialog() {

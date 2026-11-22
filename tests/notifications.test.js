@@ -5,7 +5,7 @@ import { loadScripts } from './load-scripts.js';
 
 const plain = value => JSON.parse(JSON.stringify(value));
 
-function fixture() {
+function fixture(localStorage = { gl: 'en' }) {
     const known = { id: 'i1', name: 'Known <level>', levelId: '12', kind: 'classic', status: 'done' };
     const unknown = { id: 'i1', name: 'Unknown', status: 'done' };
     const wishlists = [
@@ -26,7 +26,7 @@ function fixture() {
     };
     const scripts = appScripts.filter(file => !file.startsWith('vendor/') && file != 'js/main.js' && file != 'data/demo-data.js');
     const env = loadScripts(scripts, {
-        localStorage: { gl: 'en' }, document: {
+        localStorage, document: {
             body: {},
             documentElement: { querySelectorAll: () => [] },
             querySelector: selector => ({ '#md': host, '#md dialog': dialog }[selector] || null),
@@ -41,7 +41,8 @@ function fixture() {
     env.app('profile = data; store = { cur: "p1", profs: { p1: { name: "Local", data } } }; ui.wl = "w1"');
     env.context.render = () => {};
     const click = dataset => env.app('ACTIONS.notifwish')({ dataset });
-    return { ...env, known, unknown, wishlists, levels, host, click };
+    const signIn = () => env.app('cloudUser = "owner"; cloudSession = { pulled: true }; account.status = "signed-in"');
+    return { ...env, known, unknown, wishlists, levels, host, click, signIn, localStorage, dialog: () => dialog };
 }
 
 test('unplaced levels and levels without IDs produce an empty panel and no badge', () => {
@@ -86,12 +87,84 @@ test('pending panel escapes level and wishlist names and the badge counts its ro
     assert.equal(Number(shell.match(/class=bdg aria-hidden=true>(\d+)/)[1]), f.app('notifications().length'));
 });
 
-test('notice and pending headings render only when their section contains an entry', () => {
+test('a local data notice renders above Pending, with localized counts and an accessible Hide button', () => {
     const f = fixture();
-    const notice = { ...f.app('notifications()[0]'), section: 'notice' };
-    f.context.notifications = () => [notice];
-    assert.match(f.app('bellUI()'), /<h3>Notices<\/h3>/);
-    assert.doesNotMatch(f.app('bellUI()'), /<h3>Pending<\/h3>/);
+    f.signIn();
+    const html = f.app('bellUI()');
+    assert.match(html, /<h3>Notices<\/h3>.*<h3>Pending<\/h3>/s);
+    assert.match(html, /You have 1 profile on this device not yet in your account\./);
+    assert.match(html, /data-act="notiflocal"[^>]*>Review local data<\/button>/);
+    assert.match(html, /aria-label="Hide · Local data available" data-act="notifdismiss" data-id="local-data">Hide<\/button>/);
+    assert.equal((html.match(/data-act="notifdismiss"/g) || []).length, 1);
+    assert.match(f.app('sharedShell("")'), /class=bdg aria-hidden=true>3</);
+    f.app('store.profs.p2 = store.profs.p1');
+    assert.match(f.app('bellUI()'), /You have 2 profiles on this device not yet in your account\./);
+    f.known.status = f.unknown.status = 'todo';
+    f.app('ui.lang = "es"');
+    assert.match(f.app('bellUI()'), /Datos locales disponibles.*Tienes 2 perfiles/s);
+    assert.doesNotMatch(f.app('bellUI()'), /<h3>Pendiente<\/h3>/);
+});
+
+for (const [reason, setup] of [
+    ['signed out', 'cloudUser = null'],
+    ['before the first pull', 'cloudSession.pulled = false'],
+    ['during recovery', 'account.recovering = true'],
+    ['in a read-only view', 'viewing = {}'],
+    ['without local progress', 'store.profs.p1.data = emptyProfile()'],
+    ['after all offered profiles have been brought over', 'localStorage.gmigrated = \'{"owner":["p1"]}\'']
+]) {
+    test(`the local data notice is absent ${reason}`, () => {
+        const f = fixture();
+        f.signIn();
+        f.app(setup);
+        assert.doesNotMatch(f.app('bellUI()'), /Local data available/);
+    });
+}
+
+test('Review opens the migration dialog and Not now leaves the notice available', () => {
+    const f = fixture();
+    f.signIn();
+    f.app('ACTIONS.bell(); ACTIONS.notiflocal()');
+    assert.match(f.host.innerHTML, /id=migration/);
+    assert.match(f.host.innerHTML, /value="p1" checked/);
+    assert.match(f.host.innerHTML, /data-act=close>Not now<\/button>/);
+    f.app('ACTIONS.close()');
+    assert.match(f.app('bellUI()'), /Local data available/);
+});
+
+test('Hide refreshes the open panel and persists only for the current account and offered IDs', () => {
+    const f = fixture({ gl: 'en', gmigrated: '{"owner":["previous"]}', gnotices: '{"other":{"local-data":"old"}}' });
+    f.signIn();
+    f.app('ACTIONS.bell()');
+    const dialog = f.dialog(), profiles = f.app('JSON.stringify(store.profs)');
+    let body, focused = false;
+    const sections = { set outerHTML(value) { body = value; } };
+    const panel = { querySelector: selector => selector == '.notification-sections' ? sections : { focus() { focused = true; } } };
+    f.app('ACTIONS.notifdismiss')({ dataset: { id: 'local-data' }, closest: () => panel });
+    assert.equal(f.dialog(), dialog);
+    assert.equal(dialog.open, true);
+    assert.equal(focused, true);
+    assert.match(body, /<h3>Pending<\/h3>/);
+    assert.doesNotMatch(body, /Local data available/);
+    assert.match(f.app('sharedShell("")'), /class=bdg aria-hidden=true>2</);
+    assert.equal(f.app('JSON.stringify(store.profs)'), profiles);
+    assert.equal(f.localStorage.gmigrated, '{"owner":["previous"]}');
+    assert.deepEqual(JSON.parse(f.localStorage.gnotices), {
+        owner: { 'local-data': 'p1' }, other: { 'local-data': 'old' }
+    });
+
+    const fresh = fixture({ ...f.localStorage });
+    fresh.signIn();
+    assert.doesNotMatch(fresh.app('bellUI()'), /Local data available/);
+    fresh.app('cloudUser = "other"');
+    assert.match(fresh.app('bellUI()'), /Local data available/);
+    fresh.app('cloudUser = "owner"; store.profs = { p2: store.profs.p1, ...store.profs }');
+    assert.match(fresh.app('bellUI()'), /You have 2 profiles/);
+    fresh.app('ACTIONS.bell()');
+    fresh.app('ACTIONS.notifdismiss')({ dataset: { id: 'local-data' }, closest: () => panel });
+    assert.equal(JSON.parse(fresh.localStorage.gnotices).owner['local-data'], 'p1,p2');
+    fresh.app('store.profs = { p1: store.profs.p1, p2: store.profs.p2 }');
+    assert.doesNotMatch(fresh.app('bellUI()'), /Local data available/);
 });
 
 test('a known-kind action transfers from the owning wishlist and opens the level editor', () => {

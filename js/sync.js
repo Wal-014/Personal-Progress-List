@@ -444,7 +444,6 @@ function pullCloud() {
                 render();
             if (hadRevision)
                 notifyCloudChanges(names);
-            maybeOfferMigration();
             autoSyncRankings();
             return true;
         }

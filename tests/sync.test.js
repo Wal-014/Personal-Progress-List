@@ -684,12 +684,14 @@ test('a programming error cancels an earlier network retry', async () => {
 });
 
 
-test('migration waits for the first successful pull and resumes after a blocked form closes', async () => {
+test('the first successful pull renders without opening migration when local progress exists', async () => {
     const page = device(); page.load(); page.server.failure = 'offline';
     await page.start(); assert.equal(page.migrationPrompts.length, 0); assert.equal(page.app('cloudSession.pulled'), false);
-    page.server.failure = null; page.blocked = true;
+    const draws = page.draws;
+    page.server.failure = null;
     await page.app('pullCloud()'); assert.equal(page.migrationPrompts.length, 0); assert.equal(page.app('cloudSession.pulled'), true);
-    page.blocked = false; page.app('maybeOfferMigration()'); assert.equal(page.migrationPrompts.length, 1);
+    assert.deepEqual(plain(page.app("localProfilesToOffer('owner')")), ['p1']);
+    assert.equal(page.draws, draws + 1);
 });
 
 test('bringing queues durably before a failed push and a reload retries without modifying local backups', async () => {
