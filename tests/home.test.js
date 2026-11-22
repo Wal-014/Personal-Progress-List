@@ -60,6 +60,31 @@ test('Home cards use ranked leads, faces and localized level counts without nest
     assert.doesNotMatch(app("homeListCard('classic')"), /No levels yet|class=hbadge/);
 });
 
+test('Home list cards use singular level labels only for one level', () => {
+    const { app } = homeApp();
+    app('profile = emptyProfile()');
+    for (const [lang, singular, plural] of [['en', 'Level', 'Levels'], ['es', 'Nivel', 'Niveles']]) {
+        app(`ui.lang = '${lang}'`);
+        for (const kind of ['classic', 'platform']) {
+            for (const [count, label] of [[0, plural], [1, singular], [2, plural]]) {
+                app(`profile.levels = window.DEMO_PROFILE.levels.filter(level => level.kind == '${kind}').slice(0, ${count})`);
+                assert.match(app(`homeListCard('${kind}')`), new RegExp(`<span>${count} ${label}</span></p>`));
+            }
+        }
+    }
+});
+
+test('Home statistics uses a singular level label only for one level', () => {
+    const { app } = homeApp();
+    for (const [lang, singular, plural] of [['en', 'Level', 'Levels'], ['es', 'Nivel', 'Niveles']]) {
+        app(`ui.lang = '${lang}'`);
+        for (const [count, label] of [[0, plural], [1, singular], [2, plural]]) {
+            app(`profile.levels = window.DEMO_PROFILE.levels.slice(0, ${count})`);
+            assert.match(app('homeStats()'), new RegExp(`<b>${count}</b><span>${label}</span>`));
+        }
+    }
+});
+
 test('empty cards stay navigable, show the empty label and omit badges, faces and thumbnails', () => {
     const { app } = homeApp();
     app('profile = emptyProfile()');
