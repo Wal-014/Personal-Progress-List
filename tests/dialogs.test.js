@@ -6,11 +6,13 @@ function dialogApp() {
     const nodes = {};
     const body = { appendChild() {} };
     const appRoot = { contains: control => control?.inApp };
-    const document = { body, activeElement: body, querySelector: selector => nodes[selector], createElement: () => newDialog() };
+    const document = { body, activeElement: body, querySelector: selector => nodes[selector], querySelectorAll: () => [], addEventListener() {}, createElement: () => newDialog() };
     const control = (id, inApp = false) => ({
         id, inApp, isConnected: true, value: '', dataset: {}, attributes: {},
         focus() { if (this.isConnected) document.activeElement = this; },
         select() {},
+        closest() { return null; },
+        classList: { contains: () => false },
         getAttribute(key) { return this.attributes[key] ?? null; },
         setAttribute(key, value) { this.attributes[key] = value; },
         removeAttribute(key) { delete this.attributes[key]; },
@@ -21,7 +23,10 @@ function dialogApp() {
         const dialog = new EventTarget();
         const input = control('dgi'), cancel = control('cancel'), accept = control('accept'), error = control('dgi-error');
         Object.assign(dialog, {
+            classList: { contains: name => dialog.className === name },
+            closest() { return null; },
             input, error, cancel, accept, open: false, innerHTML: '',
+            hasPointerCapture: () => false,
             setAttribute() {}, contains: element => [input, error, cancel, accept].includes(element),
             querySelector(selector) {
                 if (selector === '#dgi') return this.innerHTML.includes('id=dgi') ? input : null;
@@ -46,7 +51,7 @@ function dialogApp() {
     }
     nodes['#app'] = appRoot;
     nodes['#md'] = { set innerHTML(value) {
-        if (value) nodes['#md dialog'] = newDialog();
+        if (value) nodes['#md dialog'] = Object.assign(newDialog(), { className: 'modal' });
         else delete nodes['#md dialog'];
     } };
     const replaceOpener = () => {
@@ -54,10 +59,16 @@ function dialogApp() {
         return (nodes['#opener'] = control('opener', true));
     };
     replaceOpener().focus();
-    const env = loadScripts(['js/utils.js', 'js/components/dialogs.js', 'js/render.js'], {
-        document, CSS: { escape: String }, t: key => key, renderTagSuggestions() {}
+    const env = loadScripts(['js/utils.js', 'js/components/dialogs.js', 'js/render.js', 'js/events.js'], {
+        document, window: { addEventListener() {} }, CSS: { escape: String }, t: key => key, renderTagSuggestions() {}
     });
-    return { ...env, document, nodes, replaceOpener };
+    const dispatchModalEvent = (type, target = nodes.dialog) => {
+        const event = new Event(type, { bubbles: true });
+        Object.defineProperty(event, 'target', { value: target });
+        nodes.dialog.dispatchEvent(event);
+        if (type === 'click') body.onclick(event);
+    };
+    return { ...env, document, nodes, replaceOpener, dispatchModalEvent };
 }
 
 const nextCloseEvent = () => new Promise(resolve => setImmediate(resolve));
@@ -79,6 +90,72 @@ test('openModal returns to the rebuilt opener after replacing dialog contents', 
     app('openModal("<div>Updated settings</div>"); closeModal()');
     await nextCloseEvent();
     assert.equal(document.activeElement, replacement);
+});
+
+test('openModal stays open when a press inside the box ends on the backdrop', () => {
+    const { app, nodes, dispatchModalEvent } = dialogApp();
+    app('openModal("<div>Settings</div>")');
+    dispatchModalEvent('pointerdown', nodes.dialog.input);
+    dispatchModalEvent('pointerup');
+    dispatchModalEvent('click');
+    assert.equal(nodes.dialog.open, true);
+});
+
+test('openModal stays open when a backdrop press ends inside the box', () => {
+    const { app, nodes, dispatchModalEvent } = dialogApp();
+    app('openModal("<div>Settings</div>")');
+    dispatchModalEvent('pointerdown');
+    dispatchModalEvent('pointerup', nodes.dialog.input);
+    dispatchModalEvent('click');
+    assert.equal(nodes.dialog.open, true);
+});
+
+test('openModal closes after a press and release on the backdrop', () => {
+    const { app, nodes, dispatchModalEvent } = dialogApp();
+    app('openModal("<div>Settings</div>")');
+    dispatchModalEvent('pointerdown');
+    dispatchModalEvent('pointerup');
+    dispatchModalEvent('click');
+    assert.equal(nodes.dialog.open, false);
+});
+
+test('openModal stays open when a click targets the box', () => {
+    const { app, nodes, dispatchModalEvent } = dialogApp();
+    app('openModal("<div>Settings</div>")');
+    dispatchModalEvent('pointerdown');
+    dispatchModalEvent('pointerup');
+    dispatchModalEvent('click', nodes.dialog.input);
+    assert.equal(nodes.dialog.open, true);
+});
+
+test('openModal ignores a backdrop press interrupted by pointercancel', () => {
+    const { app, nodes, dispatchModalEvent } = dialogApp();
+    app('openModal("<div>Settings</div>")');
+    dispatchModalEvent('pointerdown');
+    dispatchModalEvent('pointercancel');
+    dispatchModalEvent('pointerup');
+    dispatchModalEvent('click');
+    assert.equal(nodes.dialog.open, true);
+});
+
+test('openModal clears gesture state after every click', () => {
+    const { app, nodes, dispatchModalEvent } = dialogApp();
+    app('openModal("<div>Settings</div>")');
+    dispatchModalEvent('pointerdown');
+    dispatchModalEvent('pointerup');
+    dispatchModalEvent('click', nodes.dialog.input);
+    dispatchModalEvent('click');
+    assert.equal(nodes.dialog.open, true);
+});
+
+test('a reopened modal starts with no backdrop gesture state', () => {
+    const { app, nodes, dispatchModalEvent } = dialogApp();
+    app('openModal("<div>Settings</div>")');
+    dispatchModalEvent('pointerdown');
+    dispatchModalEvent('pointerup');
+    app('closeModal(); openModal("<div>Settings</div>")');
+    dispatchModalEvent('click');
+    assert.equal(nodes.dialog.open, true);
 });
 
 test('native Escape cancellation resolves a confirmation as false and a prompt as null', async () => {

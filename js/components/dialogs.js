@@ -243,6 +243,24 @@ const askConfirm = (title, ok) => showDialog({ title, ok, danger: 1 });
 
 const showAlert = msg => showDialog({ title: msg, cancel: false });
 
+function dismissOnBackdropClick(dialog, close) {
+    let pressedOnBackdrop = false, releasedOnBackdrop = false;
+    const reset = () => { pressedOnBackdrop = releasedOnBackdrop = false; };
+    dialog.addEventListener('pointerdown', event => {
+        pressedOnBackdrop = event.target === dialog;
+        // Implicit capture would retarget a release inside the box to the backdrop.
+        if (pressedOnBackdrop && dialog.hasPointerCapture(event.pointerId))
+            dialog.releasePointerCapture(event.pointerId);
+    });
+    dialog.addEventListener('pointerup', event => { releasedOnBackdrop = event.target === dialog; });
+    dialog.addEventListener('pointercancel', reset);
+    dialog.addEventListener('click', event => {
+        const dismiss = event.target === dialog && pressedOnBackdrop && releasedOnBackdrop;
+        reset();
+        if (dismiss) close();
+    });
+}
+
 const openModal = h => {
     const host = qs('#md'), previous = qs('#md dialog');
     const opener = previous?.open ? dialogOpeners.get(previous) : overlayOpener();
@@ -253,6 +271,7 @@ const openModal = h => {
         dialog.setAttribute('aria-labelledby', 'mdt');
     }
     dialogOpeners.set(dialog, opener);
+    dismissOnBackdropClick(dialog, closeModal);
     dialog.addEventListener('keydown', keepModalTab);
     dialog.addEventListener('cancel', event => {
         event.preventDefault();
