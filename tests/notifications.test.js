@@ -24,7 +24,7 @@ function fixture(localStorage = { gl: 'en' }) {
             dialog = value ? { querySelector: () => null, addEventListener() {}, showModal() { this.open = true; }, close() { this.open = false; } } : null;
         }
     };
-    const scripts = appScripts.filter(file => !file.startsWith('vendor/') && file != 'js/main.js' && file != 'data/demo-data.js');
+    const scripts = appScripts.filter(file => !file.startsWith('vendor/') && file != 'js/main.js');
     const env = loadScripts(scripts, {
         localStorage, document: {
             body: {},

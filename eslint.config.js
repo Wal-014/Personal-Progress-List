@@ -2,7 +2,8 @@ import js from '@eslint/js';
 import globals from 'globals';
 import { readFileSync } from 'node:fs';
 
-const appFiles = ['data/demo-data.js', 'js/**/*.js'];
+const demoFixture = 'tests/fixtures/demo-profile.js';
+const appFiles = [demoFixture, 'js/**/*.js'];
 
 /** The page's scripts in load order, as index.html lists them. */
 export const appScripts = readFileSync('index.html', 'utf8')
@@ -46,6 +47,7 @@ export default [
     },
     {
         files: ['eslint.config.js', 'tests/**/*.js', 'scripts/**/*.js'],
+        ignores: [demoFixture],
         languageOptions: { globals: globals.node }
     }
 ];
