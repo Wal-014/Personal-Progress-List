@@ -33,16 +33,20 @@ async function buildCubeCatalog(count) {
     }
 }
 
-async function buildFlagCatalog(codes) {
-    const packageDir = dirname(createRequire(import.meta.url).resolve('flag-icons/package.json'));
-    const sourceDir = join(packageDir, 'flags', '4x3');
-    const flags = codes.map(code => {
+/** Checks every source before the catalog is emptied, so a package without a flag cannot leave it half built. */
+export function flagSources(codes, sourceDir) {
+    return codes.map(code => {
         const name = code.toLowerCase();
         const source = join(sourceDir, `${name}.svg`);
         if (!existsSync(source))
             throw new Error(`Missing flag SVG for ${code}: ${source}`);
         return { name, source };
     });
+}
+
+async function buildFlagCatalog(codes) {
+    const packageDir = dirname(createRequire(import.meta.url).resolve('flag-icons/package.json'));
+    const flags = flagSources(codes, join(packageDir, 'flags', '4x3'));
 
     rmSync(FLAGS, { recursive: true, force: true });
     mkdirSync(FLAGS, { recursive: true });

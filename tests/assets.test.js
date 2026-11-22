@@ -1,10 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, statSync } from 'node:fs';
+import { mkdtempDisposableSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import sharp from 'sharp';
-import { cubeTile } from '../scripts/build-assets.js';
+import { cubeTile, flagSources } from '../scripts/build-assets.js';
 import { SITE_FILES } from '../scripts/build-site.js';
 import { loadScripts } from './load-scripts.js';
 
@@ -50,6 +51,14 @@ test('every supported country has a generated 64×48 WebP flag', async () => {
 test('generated flags are at most 4 KB each', () => {
     for (const file of FLAG_FILES)
         assert.ok(statSync(file).size <= 4 * 1024, `${file} exceeds 4 KB`);
+});
+
+test('flagSources maps codes to lowercase SVG files and names a missing one', t => {
+    const { path, remove } = mkdtempDisposableSync(join(tmpdir(), 'ppl-flags-'));
+    t.after(remove);
+    writeFileSync(join(path, 'cr.svg'), '<svg/>');
+    assert.deepEqual(flagSources(['CR'], path), [{ name: 'cr', source: join(path, 'cr.svg') }]);
+    assert.throws(() => flagSources(['CR', 'ES'], path), /Missing flag SVG for ES/);
 });
 
 test('the generated flag catalog includes the flag-icons license', () => {
