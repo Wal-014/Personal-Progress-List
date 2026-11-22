@@ -11,6 +11,9 @@ node_modules/
 # Built from the community sheet by the deploy (npm run levels)
 data/levels.json
 
+# Built from assets-src/ by npm run assets
+assets/cubes/
+
 # The deploy's copy of the published files (npm run site)
 _site/
 .vscode/
