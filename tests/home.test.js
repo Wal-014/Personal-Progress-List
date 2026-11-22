@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { stampVersion } from '../scripts/build-site.js';
 import { loadScripts } from './load-scripts.js';
 
-function homeApp() {
+function homeApp(options) {
     const root = { innerHTML: '', contains: () => false };
     const document = { body: {}, documentElement: { dataset: {} }, activeElement: null,
         querySelector: selector => selector == '#app' ? root : null, querySelectorAll: () => [], addEventListener() {} };
@@ -15,7 +16,7 @@ function homeApp() {
         cloudHeaderStatus: () => '', localProfileSummary: () => 'Local profile', publicIdentityCard: () => '<div class=profile-card>Public player</div>',
         initSort() {}, initWishlistSort() {}, renderTagSuggestions() {}, finishAccountSignIn() {},
         lcol: () => 'List content', panel: () => 'Level panel', publicViewScreen: () => 'Loading public profile'
-    });
+    }, options);
     loaded.app("profile = JSON.parse(JSON.stringify(window.DEMO_PROFILE)); store = { cur: 'demo', profs: { demo: { name: 'Demo', color: '#123456', data: profile } } }; ui.lang = 'en'; ui.tab = 'home'");
     Object.assign(loaded.context, { lcol: () => 'List content', panel: () => 'Level panel' });
     return { ...loaded, root };
@@ -252,6 +253,16 @@ test('pause menu exposes independent named appearance groups and pressed options
     assert.equal((html.match(/data-act=background /g) || []).length, 4);
     assert.match(html, /data-act=theme data-v=porcelain aria-pressed=true/);
     assert.match(html, /data-act=background data-v=orbital aria-pressed=true/);
+});
+
+test('Settings footer shows the configured application version', () => {
+    const { app } = homeApp();
+    const html = app('pauseUI()');
+    const version = markup => markup.match(/<p class=by>[^<]+ \u00b7 (v[^<]+)<\/p>/)[1];
+    assert.equal(version(html), 'v0.1.0-dev');
+    assert.doesNotMatch(html, /v\.Beta_0\.1/);
+    const production = homeApp({ transform: { 'js/config.js': source => stampVersion(source, '0.1.0-beta.4') } });
+    assert.equal(version(production.app('pauseUI()')), 'v0.1.0-beta.4');
 });
 
 test('guest appearance actions persist independently and update the existing controls', () => {
