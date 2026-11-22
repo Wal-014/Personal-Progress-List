@@ -68,24 +68,25 @@ test('stampVersion fails when the version declaration is missing', () => {
 test('release count follows first parents and is stable on the same commit', t => {
     const { path, remove } = mkdtempDisposableSync(join(tmpdir(), 'ppl-release-'));
     t.after(remove);
-    const git = (...args) => execFileSync('git', [
-        '-c', 'user.name=Release Test', '-c', 'user.email=release-test@example.invalid', '-c', 'commit.gpgSign=false', ...args
-    ], { cwd: path, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+    const identity = { NAME: 'Release Test', EMAIL: 'release-test@example.invalid' };
+    const env = { ...process.env, ...Object.fromEntries(['AUTHOR', 'COMMITTER'].flatMap(role => Object.entries(identity).map(([key, value]) => [`GIT_${role}_${key}`, value]))) };
+    const git = (...args) => execFileSync('git', args, { cwd: path, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
     git('init', '--initial-branch=main');
-    git('commit', '--allow-empty', '-m', 'Last release');
-    const base = git('rev-parse', 'HEAD');
+    // Plumbing builds the history directly, so the machine's commit hooks and identity settings do not apply.
+    const tree = git('mktree');
+    const commit = (message, ...parents) => git('commit-tree', tree, ...parents.flatMap(parent => ['-p', parent]), '-m', message);
+    const moveMain = sha => git('update-ref', 'HEAD', sha);
+    const base = commit('Last release');
+    moveMain(base);
     const initial = countReleaseCommits(base, path);
     assert.equal(initial, 0);
     assert.throws(() => releaseVersion(RELEASE_LINE, initial), /positive integer/);
 
-    git('switch', '-c', 'side');
-    git('commit', '--allow-empty', '-m', 'First side change');
-    git('commit', '--allow-empty', '-m', 'Second side change');
-    git('commit', '--allow-empty', '-m', 'Third side change');
-    git('switch', 'main');
-    git('commit', '--allow-empty', '-m', 'Main change');
+    const side = ['First', 'Second', 'Third'].reduce((parent, name) => commit(name + ' side change', parent), base);
+    const mainChange = commit('Main change', base);
+    moveMain(mainChange);
     assert.equal(countReleaseCommits(base, path), 1);
-    git('merge', '--no-ff', '-m', 'Merge side', 'side');
+    moveMain(commit('Merge side', mainChange, side));
     assert.equal(countReleaseCommits(base, path), 2);
     assert.equal(countReleaseCommits(base, path), 2);
 });
