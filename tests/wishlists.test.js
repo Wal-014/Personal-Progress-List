@@ -307,6 +307,58 @@ test('transferDialog offers the detected kind or both unknown choices and escape
     assert.match(f.app('transferDialog')(f.item, false), /<h2>Add to a list<\/h2>/);
 });
 
+async function deleteWishlist(f, approved) {
+    let prompt;
+    f.context.showDialog = ({ title }) => { prompt = title; return Promise.resolve(approved); };
+    f.app('ACTIONS.wdelL()');
+    assert.equal(prompt, 'Delete?');
+    await Promise.resolve();
+}
+
+for (const hasRemaining of [true, false])
+    test(`deleting an open wishlist renders and focuses the ${hasRemaining ? 'overview with the remaining wishlist' : 'empty overview'}`, async () => {
+        const f = fixture(), { profile, ui, localStorage } = f.context;
+        const remaining = hasRemaining ? [{ id: 'w2', name: 'Later', items: [] }] : [];
+        profile.wishlists.push(...remaining);
+        f.load(['js/components/shell.js', 'js/render.js']);
+        f.context.home = () => '';
+        let html = '', focus;
+        const heading = {
+            setAttribute(name, value) { this[name] = value; },
+            focus(options) { focus = [this.tabindex, { ...options }]; }
+        };
+        f.context.render = () => {
+            html = f.app('shellPageTitle() + currentScreen()');
+            if (html.includes('<div class=page-title>')) f.nodes.set('.page-title h2', heading);
+        };
+
+        await deleteWishlist(f, true);
+
+        assert.equal(ui.tab, 'wish');
+        assert.equal(ui.wl, null);
+        assert.deepEqual(Array.from(profile.wishlists), remaining);
+        assert.deepEqual(JSON.parse(localStorage.gdp).profs.local.data.wishlists, remaining);
+        assert.match(html, /<h2>.*Wishlists<\/h2>/);
+        assert.doesNotMatch(html, /data-act=wdelL|data-id="w1"/);
+        if (hasRemaining)
+            assert.match(html, /data-act=wopen data-id="w2".*<span class=nm>Later<\/span>/);
+        else
+            assert.match(html, /<div class=empty>.*<h3>No wishlists yet<\/h3>.*data-act=wnew/s);
+        assert.deepEqual(focus, ['-1', { preventScroll: true }]);
+    });
+
+test('cancelling wishlist deletion keeps the open wishlist without saving or redrawing', async () => {
+    const f = fixture(), { profile, ui, localStorage } = f.context;
+
+    await deleteWishlist(f, false);
+
+    assert.deepEqual(profile.wishlists, [f.wishlist]);
+    assert.equal(ui.wl, f.wishlist.id);
+    assert.equal(ui.tab, 'wish');
+    assert.equal(localStorage.gdp, undefined);
+    assert.deepEqual(f.calls, []);
+});
+
 test('reorderWishlist saves DOM order without changing item data, while canceled drags only redraw', () => {
     for (const type of ['drop', 'dragend', 'touchcancel', 'pointercancel']) {
         const f = fixture(), other = { id: 'i2', name: 'Other', status: 'done', pct: 20 };
