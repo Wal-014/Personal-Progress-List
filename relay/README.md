@@ -27,10 +27,10 @@ GDHistory answers are cached for 10 minutes. The relay identifies itself to GDHi
 
 A change deploys itself: when a pull request that touches `relay/` is merged, the `Relay` workflow (`.github/workflows/relay.yml`) runs the tests and `wrangler deploy` with the Wrangler version pinned in `package.json`. **Actions → Relay → Run workflow** deploys `main` again without a change.
 
-The workflow needs one repository secret, `CLOUDFLARE_API_TOKEN`. To set it up or replace it:
+The workflow reads `CLOUDFLARE_API_TOKEN` from the `cloudflare-relay` environment. To set it up or replace it:
 
 1. A member of the owner's Cloudflare account creates a token: **My Profile → API Tokens → Create Token → Custom token**, with the permission **Account · Workers Scripts · Edit** and, under account resources, only the owner's account.
-2. The repository owner adds it in GitHub: **Settings → Secrets and variables → Actions → New repository secret**, named `CLOUDFLARE_API_TOKEN`. Only the owner of a personal repository can add secrets.
+2. The repository owner adds it in GitHub under **Settings → Environments → cloudflare-relay → Add environment secret**, named `CLOUDFLARE_API_TOKEN`. The dev site's `development` environment holds the same token under the same name. Only the owner of a personal repository can add secrets.
 
 The account ID is in `wrangler.jsonc`. The token is tied to its creator's Cloudflare membership; if that person leaves the account, create a new one.
 
