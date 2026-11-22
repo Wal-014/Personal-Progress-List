@@ -1,8 +1,17 @@
 /* global document, getComputedStyle */
+import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
 
-/** Run on the app with a fresh demo profile. */
+function demoProfile() {
+    const context = { window: {} };
+    vm.runInNewContext(readFileSync(new URL('../fixtures/demo-profile.js', import.meta.url), 'utf8'), context);
+    return context.window.DEMO_PROFILE;
+}
+
+/** Run on the app; it stores the demo fixture as the local profile, since first visits start empty. */
 export default async function checkLevelActionBar(page) {
     const check = (condition, message) => { if (!condition) throw new Error(message); };
+    await page.evaluate(data => { localStorage.gdp = JSON.stringify({ cur: 'p1', profs: { p1: { name: 'Demo', data } } }); }, demoProfile());
 
     const checkPanel = async (selector, actions, label) => {
         const pane = page.locator(selector);
