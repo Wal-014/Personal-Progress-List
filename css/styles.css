@@ -31,6 +31,12 @@
   --dropdown-decelerate: var(--motion-easing);
   --dropdown-accelerate: var(--motion-easing);
   --dropdown-offset: translateY(-6px);
+  --hover-motion: var(--motion-hover) var(--motion-easing);
+  --hover-surface: color-mix(in srgb, var(--color-surface-elevated) 96%, var(--color-text));
+  --hover-edge: color-mix(in srgb, var(--color-accent) 42%, var(--color-border));
+  --hover-card-edge: color-mix(in srgb, var(--color-accent) 58%, transparent);
+  --hover-menu: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface));
+  --hover-menu-ink: color-mix(in srgb, var(--color-text) 84%, var(--color-accent));
 }
 
 /* ===== Base ===== */
@@ -99,11 +105,15 @@ a {
 
   ::-webkit-scrollbar-thumb:hover {
     background-color: var(--color-accent);
-    border-width: 2px;
   }
 
   ::-webkit-scrollbar-thumb:active {
     background-color: var(--scroll-thumb);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    ::-webkit-scrollbar-thumb { transition: background-color var(--motion-hover) var(--motion-easing); }
+    ::-webkit-scrollbar-thumb:active { transition-duration: 0s; }
   }
 
   ::-webkit-scrollbar-corner {
@@ -167,19 +177,9 @@ button {
   gap: 6px;
 }
 
-button:hover {
-  filter: brightness(1.12);
-}
-
-button:active {
-  border-color: var(--color-focus);
-}
-
 button:disabled {
   opacity: .65;
   cursor: default;
-  filter: none;
-  transform: none;
 }
 
 .pri, .go {
@@ -257,6 +257,10 @@ input:user-invalid, select:user-invalid, textarea:user-invalid {
   outline-offset: var(--size-focus);
 }
 
+@media (forced-colors: active) {
+  :root :focus-visible { outline-color: Highlight; }
+}
+
 /* ===== Editor objects ===== */
 .obj {
   background: var(--obj);
@@ -285,11 +289,6 @@ input:user-invalid, select:user-invalid, textarea:user-invalid {
   font: bold 13px var(--font-ui);
   color: var(--meta);
   cursor: pointer;
-}
-
-.slot:hover {
-  border-color: var(--go);
-  color: #fff;
 }
 
 .chip {
@@ -401,7 +400,7 @@ input:user-invalid, select:user-invalid, textarea:user-invalid {
   border-radius: var(--radius-pill);
   font: 600 .75rem/1.4 var(--font-ui);
 }
-.chip:is(:hover, :focus-visible) {
+.chip:focus-visible {
   --chip-highlight: 26%;
 }
 
@@ -588,10 +587,6 @@ dialog.modal::backdrop {
     transition: none !important;
   }
 
-  button:active {
-    transform: none;
-  }
-
   .wi .wstamp {
     display: none;
   }
@@ -670,11 +665,6 @@ dialog.modal::backdrop {
   min-height: 44px;
 }
 
-.pause [data-act=rankrefresh][aria-disabled=true] {
-  cursor: default;
-  filter: none;
-}
-
 .fl {
   width: 22px;
   height: 15px;
@@ -705,10 +695,6 @@ dialog.modal::backdrop {
   gap: 10px;
   padding: 8px 12px 8px 8px;
   cursor: pointer;
-}
-
-.trig:hover {
-  border-color: rgba(255, 255, 255, .45);
 }
 
 .info {
@@ -785,8 +771,6 @@ dialog.modal::backdrop {
   border-radius: 12px;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, .6), 0 10px 0 rgba(0, 0, 0, .4);
   flex-direction: column;
-  transition-property: opacity, display;
-  transition-behavior: allow-discrete;
 }
 
 .pmenu:popover-open {
@@ -900,7 +884,6 @@ dialog.modal::backdrop {
   border-radius: inherit;
   background: color-mix(in srgb, var(--mode-ink) 16%, var(--color-surface));
   box-shadow: inset 0 0 0 1px var(--mode-ink);
-  transition: transform var(--motion-selection) var(--motion-easing);
 }
 
 .mode-switch:has([data-v=platform][aria-pressed=true])::before {
@@ -916,8 +899,8 @@ dialog.modal::backdrop {
   opacity: 1;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .mode-switch::before { transition: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .mode-switch::before { transition: transform var(--motion-selection) var(--motion-easing); }
 }
 
 .lh .list-add {
@@ -1098,7 +1081,7 @@ dialog.modal::backdrop {
   font: 500 0.95rem/1.3 var(--font-ui);
 }
 
-.lh .ms .msp label:is(:hover, :focus-within) {
+.lh .ms .msp label:focus-within {
   color: var(--color-text);
   background: var(--color-surface);
 }
@@ -1230,19 +1213,6 @@ dialog.modal::backdrop {
 
 .lv > .grip { margin-inline-start: -7px; }
 .lv.sel > .grip { margin-inline-start: -4px; }
-
-@media (hover: hover) {
-  .list-surface .lv:hover { background-color: var(--color-surface-elevated); }
-  .lv:hover > .th::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: color-mix(in srgb, var(--color-card-text) 6%, transparent);
-  }
-  .wi:hover .grip {
-    color: #fff;
-  }
-}
 
 .list-surface .lv.sel {
   background-color: color-mix(in srgb, var(--row-selection, var(--color-accent)) 7%, var(--color-surface));
@@ -1470,10 +1440,6 @@ dialog.modal::backdrop {
   border-bottom: 0;
 }
 
-.hist b:hover i {
-  background: var(--ye);
-}
-
 .ax {
   display: flex;
   font: bold 10px var(--font-ui);
@@ -1615,24 +1581,13 @@ input.ro {
 .ms .msp, .pmenu {
   opacity: 0;
   transform: var(--dropdown-offset);
-  transition-duration: var(--dropdown-exit);
-  transition-timing-function: var(--dropdown-accelerate);
 }
 
 .pmenu { transform: none; }
 
-.ms .msp, .gdr {
-  transition-property: opacity, transform;
-}
-
 .ms[open] .msp, .pmenu:popover-open, .gdr {
   opacity: 1;
   transform: none;
-}
-
-.pmenu:popover-open, .gdr {
-  transition-duration: var(--dropdown-enter);
-  transition-timing-function: var(--dropdown-decelerate);
 }
 
 @starting-style {
@@ -1644,27 +1599,26 @@ input.ro {
   animation: dropdown-enter var(--dropdown-enter) var(--dropdown-decelerate);
 }
 
-.ms::details-content {
-  transition: content-visibility var(--dropdown-exit) allow-discrete;
+@media (prefers-reduced-motion: no-preference) {
+  .ms .msp, .pmenu {
+    transition-duration: var(--dropdown-exit);
+    transition-timing-function: var(--dropdown-accelerate);
+  }
+  .pmenu {
+    transition-property: opacity, display;
+    transition-behavior: allow-discrete;
+  }
+  .ms .msp, .gdr { transition-property: opacity, transform; }
+  .pmenu:popover-open, .gdr {
+    transition-duration: var(--dropdown-enter);
+    transition-timing-function: var(--dropdown-decelerate);
+  }
+  .ms::details-content { transition: content-visibility var(--dropdown-exit) allow-discrete; }
 }
 
 /* A fading panel must release clicks immediately, including clicks on its sibling. */
 .ms:not([open]) .msp {
   pointer-events: none;
-}
-
-@media (hover: hover) {
-  .ms .msp label:hover {
-    background: rgba(0, 0, 0, .28);
-  }
-
-  .ms .msp label:hover, .pma:hover, .gdc:hover .nm {
-    color: var(--go);
-  }
-
-  .gdc:hover {
-    border-color: var(--go);
-  }
 }
 
 .ms .msp label:has(:focus-visible) {
@@ -1674,14 +1628,6 @@ input.ro {
 .ms .msp label:has(:focus-visible),
 .pma:focus-visible, .gdc:focus-visible .nm {
   color: var(--go);
-}
-
-.ms .msp label {
-  transition: background-color 150ms ease-out, color 150ms ease-out;
-}
-
-.pma, .gdc .nm {
-  transition: color 150ms ease-out;
 }
 
 .ms {
@@ -1798,7 +1744,6 @@ input.ro {
   border: 2px solid rgba(255, 255, 255, .4);
   border-radius: 8px;
   box-shadow: none;
-  transition: border-color 150ms ease-out;
 }
 
 .gdc:focus-visible {
@@ -2678,11 +2623,14 @@ input.ro {
   pointer-events: none;
   opacity: 0;
   transform: translateX(-50%);
-  transition: opacity 150ms ease-out;
 }
 
 .toast.show {
   opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .toast { transition: opacity 150ms ease-out; }
 }
 
 @media (max-width: 900px) {
@@ -3310,11 +3258,6 @@ input.ro {
   -webkit-text-stroke: 0;
 }
 
-.hl button:hover {
-  filter: none;
-  border-color: var(--color-accent);
-}
-
 .hl button:focus-visible, .hl [role=button]:focus-visible {
   outline: var(--size-focus) solid var(--color-focus);
   outline-offset: var(--size-focus);
@@ -3408,16 +3351,10 @@ input.ro {
   background: var(--color-surface);
   box-shadow: 0 0 18px color-mix(in srgb, var(--hc) 10%, transparent);
   cursor: pointer;
-  transition: border-color var(--motion-hover) var(--motion-easing), box-shadow var(--motion-hover) var(--motion-easing);
 }
 
 .hcard-platform {
   --hc: var(--color-mode-platform);
-}
-
-.hcard:hover {
-  transform: none;
-  box-shadow: 0 0 28px color-mix(in srgb, var(--hc) 26%, transparent);
 }
 
 .hcard-top {
@@ -3572,10 +3509,6 @@ input.ro {
   background: transparent;
   font: bold 14px/1.4 var(--font-ui);
   color: var(--color-text-muted);
-}
-
-.hl .slot:hover, .hl .trig:hover {
-  border-color: var(--color-accent);
 }
 
 .hl .htext {
@@ -3875,23 +3808,6 @@ body::before {
   box-shadow: var(--shadow-panel);
 }
 
-.hl button, .hl [role=button], .appearance-option {
-  transition: background-color var(--motion-hover) var(--motion-easing), border-color var(--motion-selection) var(--motion-easing), box-shadow var(--motion-selection) var(--motion-easing);
-}
-
-.hl button:hover:not(:disabled):not([aria-disabled=true]),
-.hl [role=button]:hover:not(:disabled):not([aria-disabled=true]), .appearance-option:hover:not(:disabled) {
-  background-color: var(--color-surface-elevated);
-  border-color: var(--color-accent);
-  filter: none;
-  transform: none;
-}
-
-.hl button:active:not(:disabled), .hl [role=button]:active:not(:disabled), .appearance-option:active:not(:disabled) {
-  background-color: var(--color-bg);
-  transform: none;
-}
-
 .hl [aria-current=page], .hl [aria-pressed=true], .appearance-option[aria-pressed=true] {
   border-color: var(--color-accent);
   box-shadow: inset 0 0 12px color-mix(in srgb, var(--color-accent) 12%, transparent);
@@ -3902,8 +3818,6 @@ body::before {
 .hl [aria-disabled=true], .appearance-option:disabled {
   opacity: .55;
   box-shadow: none;
-  filter: none;
-  transform: none;
   cursor: default;
 }
 
@@ -3994,16 +3908,6 @@ body::before {
 @supports not (backdrop-filter: blur(1px)) {
   .shell-sidebar .pmenu {
     background: var(--color-surface);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hl *, .hl *::before, .hl *::after, .appearance-option, .appearance-option::after {
-    transition: none;
-  }
-
-  .hl [aria-busy=true]::after, .appearance-option[aria-busy=true]::after {
-    animation: none;
   }
 }
 
@@ -4177,12 +4081,6 @@ body::before {
   background: transparent;
   box-shadow: none;
   text-shadow: none;
-  transition: background var(--motion-hover) var(--motion-easing), border-color var(--motion-selection) var(--motion-easing);
-}
-
-:is(.shell-sidebar, .shell-header, .page-title) button:hover {
-  background: var(--color-surface-elevated);
-  filter: none;
 }
 
 :is(.shell-sidebar, .shell-header, .page-title) button:focus-visible {
@@ -4424,7 +4322,7 @@ main.home {
   :root:not([data-theme=porcelain]) .hl .hadd,
   :root:not([data-theme=porcelain]) .hl .htext,
   :root:not([data-theme=porcelain]) .mode-switch button:not([aria-pressed=true]) {
-    color: color-mix(in srgb, var(--color-text) 92%, white);
+    color: var(--nav-ink, color-mix(in srgb, var(--color-text) 92%, white));
     text-shadow: 0 0 3px color-mix(in srgb, var(--color-accent) 21%, transparent);
   }
 
@@ -4434,15 +4332,13 @@ main.home {
   }
   :is(.shell-nav, .shell-footer) > button:not([aria-current=page]) {
     border: 1px solid transparent;
+    --nav-fill: color-mix(in srgb, var(--hover-menu) var(--rim-lift, 0%), var(--color-bg));
     background:
-      linear-gradient(var(--nav-fill, var(--color-bg)), var(--nav-fill, var(--color-bg))) padding-box,
+      linear-gradient(var(--nav-fill), var(--nav-fill)) padding-box,
       linear-gradient(125deg, color-mix(in srgb, var(--metal-edge) 32%, var(--color-bg)),
         color-mix(in srgb, var(--metal-glint) 48%, var(--color-bg)) 19%,
         color-mix(in srgb, var(--metal-shade) 32%, var(--color-bg)) 52%,
         color-mix(in srgb, var(--metal-edge) 38%, var(--color-bg))) border-box;
-  }
-  :is(.shell-nav, .shell-footer) > button:not([aria-current=page]):hover {
-    --nav-fill: var(--color-surface-elevated);
   }
 }
 
@@ -4560,7 +4456,7 @@ main.home {
   color: var(--color-text);
   font: 500 .875rem/1.4 var(--font-ui);
 }
-:is(.modal, .list-surface) .ms .msp label:is(:hover, :focus-within, :has(:checked)) {
+:is(.modal, .list-surface) .ms .msp label:is(:focus-within, :has(:checked)) {
   color: var(--color-text);
   background: color-mix(in srgb, var(--color-accent) 13%, var(--color-surface));
 }
@@ -4606,6 +4502,18 @@ input[type=checkbox]:checked::after {
   outline-offset: 2px;
 }
 
+@property --rim-angle {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 125deg;
+}
+
+@property --rim-lift {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
 /* A single hairline follows the existing radius. Layered backgrounds also work on inputs. */
 @media (forced-colors: none) {
   /* Scope the rim to the app and dialogs so it wins over component and interaction backgrounds. */
@@ -4626,8 +4534,10 @@ input[type=checkbox]:checked::after {
       var(--metal-edge) 74%, var(--metal-glint) 93%);
     border: 1px solid transparent;
     background:
-      linear-gradient(var(--rim-fill, var(--color-surface)), var(--rim-fill, var(--color-surface))) padding-box,
+      linear-gradient(var(--rim-top), var(--rim-bottom)) padding-box,
       var(--rim-paint) border-box;
+    --rim-top: color-mix(in srgb, var(--rim-lift-ink, var(--color-text)) var(--rim-lift, 0%), var(--rim-fill, var(--color-surface)));
+    --rim-bottom: var(--rim-top);
     box-shadow: none;
   }
 
@@ -4651,9 +4561,11 @@ input[type=checkbox]:checked::after {
   :where([data-theme=porcelain]) :is(#app, dialog.modal) [data-act=gdgo], :where([data-theme=porcelain]) :is(#app, dialog.modal) button.dg,
   :where([data-theme=porcelain]) :is(#app, dialog.modal) [data-act=dthremove],
   :where([data-theme=porcelain]) :is(#app, dialog.modal) [data-act=localdelete], :where([data-theme=porcelain]) #app [data-act=compare-toggle] {
-    --rim-paint: linear-gradient(145deg, var(--metal-glint), var(--metal-edge) 42%, var(--metal-shade) 92%);
+    --rim-paint: linear-gradient(calc(var(--rim-angle, 125deg) + 20deg), var(--metal-glint), var(--metal-edge) 42%, var(--metal-shade) 92%);
+    --rim-top: color-mix(in srgb, var(--rim-lift-ink, var(--color-text)) var(--rim-lift, 0%), var(--rim-fill, var(--satin-light)));
+    --rim-bottom: color-mix(in srgb, var(--rim-lift-ink, var(--color-text)) var(--rim-lift, 0%), var(--rim-fill, var(--satin-base)));
     background:
-      linear-gradient(148deg, var(--rim-fill, var(--satin-light)), var(--rim-fill, var(--satin-base))) padding-box,
+      linear-gradient(148deg, var(--rim-top), var(--rim-bottom)) padding-box,
       var(--rim-paint) border-box;
   }
 
@@ -4726,14 +4638,6 @@ input[type=checkbox]:checked::after {
     --metal-shade: var(--color-focus);
   }
 
-  .hcard:hover, .hadd:hover, .profile-pill:hover, .appearance-option:hover,
-  .lh summary:hover, :is(.dgb, .wa) button:hover {
-    --rim-angle: 140deg;
-  }
-  .hl .hcard:hover:not(:disabled):not([aria-disabled=true]), .hl .hadd:hover:not(:disabled):not([aria-disabled=true]) {
-    border-color: transparent;
-  }
-
   /* Reflect the local edge color into the surface. The first mask picks out
      the polished stretches; the four edge masks fade them toward the center. */
   @supports (mask-composite: intersect) {
@@ -4767,7 +4671,7 @@ input[type=checkbox]:checked::after {
     [data-theme=porcelain] .ms summary::before, [data-theme=porcelain] .trig::before {
       --reflection-depth: 3px;
       opacity: .54;
-      background: linear-gradient(145deg, var(--metal-edge), var(--metal-glint) 34%, transparent 70%);
+      background: linear-gradient(calc(var(--rim-angle, 125deg) + 20deg), var(--metal-edge), var(--metal-glint) 34%, transparent 70%);
       mask-image:
         linear-gradient(to bottom, black, transparent var(--reflection-depth)),
         linear-gradient(to right, black, transparent var(--reflection-depth));
@@ -4822,7 +4726,10 @@ input[type=checkbox]:checked::after {
     transform: translateX(-100%);
     overflow-y: auto;
     opacity: 0;
-    transition: transform var(--motion-panel) var(--motion-easing), opacity var(--motion-panel) var(--motion-easing);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .shell-sidebar { transition: transform var(--motion-panel) var(--motion-easing), opacity var(--motion-panel) var(--motion-easing); }
   }
 
   .shell-sidebar[data-open=true] {
@@ -4973,10 +4880,9 @@ input[type=checkbox]:checked::after {
   border: 1px solid transparent;
   box-shadow: none;
 }
-.shell-sidebar .pmenu .pma:is(:hover, :focus-visible, [aria-pressed=true]) {
+.shell-sidebar .pmenu .pma:is(:focus-visible, [aria-pressed=true]) {
   background: color-mix(in srgb, var(--color-accent) 13%, var(--color-surface));
   border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-surface));
-  filter: none;
 }
 .shell-sidebar .profile-choice:last-of-type {
   padding-bottom: 6px;
@@ -4986,7 +4892,6 @@ input[type=checkbox]:checked::after {
 .shell-sidebar .profile-choice span { overflow-wrap: anywhere; }
 .shell-sidebar button:disabled {
   opacity: .55;
-  cursor: not-allowed;
 }
 
 .shell-identity .profile-card h2 {
@@ -5088,7 +4993,6 @@ input[type=checkbox]:checked::after {
   .list-choices { transition: grid-template-rows 170ms ease, opacity 140ms ease, margin-block-start 170ms ease; }
 }
 .shell-nav .list-choices button { color: var(--color-text); background: var(--color-surface); border-color: var(--color-border); }
-.shell-nav .list-choices button:hover { color: var(--color-text); background: var(--color-surface-elevated); box-shadow: none; filter: none; }
 .legacy-surface .wi.s-todo { border-color: var(--color-info); }
 .legacy-surface .tg.s-todo { color: var(--color-info); border-color: currentColor; }
 .legacy-surface .wi.s-prog { box-shadow: none; }
@@ -5137,7 +5041,7 @@ input[type=checkbox]:checked::after {
   box-shadow: var(--shadow-panel);
 }
 .compare-panel .compare-options button { text-align: start; justify-content: flex-start; overflow-wrap: anywhere; background: transparent; border: 0; }
-.compare-panel .compare-options button:is(:hover, :focus-visible) { background: var(--color-surface-elevated); }
+.compare-panel .compare-options button:focus-visible { background: var(--color-surface-elevated); }
 .compare-results { margin-top: 12px; padding: 12px; background: var(--color-surface); border-radius: var(--radius-card); }
 .compare-numbers { font: 500 .875rem/1.4 var(--font-ui); }
 .compare-value { font-variant-numeric: tabular-nums; }
@@ -5149,16 +5053,7 @@ input[type=checkbox]:checked::after {
   .compare-selection .face { display: none; }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .wi, .trig, .stat-card, :is(.mode-switch, .list-choices, .gdf) button, .gdf summary {
-    transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
-  }
-  /* Tag colours arrive after the chip's first style pass, so transitioning a colour that depends
-     on them would fade in every new chip. The hover transition uses --chip-highlight. */
-  .chip { transition: --chip-highlight 160ms ease, box-shadow 160ms ease; }
   .compare-picker:focus-within .compare-options { animation: dropdown-enter 150ms ease-out; }
-  @media (hover: hover) {
-    .wi:hover, .trig:hover, .stat-card:hover { border-color: var(--color-accent); }
-  }
 }
 
 .cloud-header, .cloud-indicator {
@@ -5338,5 +5233,116 @@ input[type=checkbox]:checked::after {
   :is(.fade-top, .fade-bottom) {
     mask-image: linear-gradient(to bottom, var(--fade-top-color, black), black 14px,
       black calc(100% - 14px), var(--fade-bottom-color, black));
+  }
+}
+
+/* ===== Interaction feedback ===== */
+:where(button, summary, [role=button]) {
+  --rim-angle: 125deg;
+  --rim-lift: 0%;
+}
+
+:is(button.pri, button.go, .lh .list-add, .num button, [data-act=gdgo], .dgb [data-act=edit], [data-act=compare-toggle]) {
+  --rim-lift-ink: white;
+}
+
+:is(button, summary, [role=button], input, select, textarea, a[href]):is(:disabled, [aria-disabled=true], [aria-busy=true]),
+:is(.ms .msp label, .local-choice, .tag-swatch, .profile-swatch):has(> :is(:disabled, [aria-disabled=true], [aria-busy=true])) {
+  cursor: default;
+}
+
+:is(button, summary, [role=button], a[href], .ms .msp label, .local-choice, .tag-swatch, .profile-swatch > input, .grip):active:where(
+  :not(:disabled, [aria-disabled=true], [aria-busy=true], :has(> :is(:disabled, [aria-disabled=true], [aria-busy=true])))) {
+  opacity: .82;
+}
+
+@media (hover: hover) and (forced-colors: none) {
+  /* The thumbnail covers the card's background, so the inner edge needs its own layer. */
+  .list-surface .lv::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px var(--hover-card-edge);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .list-surface .lv::after { transition: opacity var(--hover-motion); }
+    .list-surface .lv:active::after { transition-duration: 0s; }
+  }
+
+  :hover:where(:not(:disabled, [aria-disabled=true], [aria-busy=true], [aria-current], [aria-pressed=true],
+    [aria-selected=true], [aria-expanded=true], .sel, .death-chip, :focus-visible, :active, details[open] > summary,
+    .ms:has(:checked) > summary, :has(> :is(:checked, :disabled, [aria-disabled=true], [aria-busy=true], :focus-visible)))) {
+    &:is(button, summary, [role=button], .share-open):not(:where(.lv, .hcard, .trig, .stat-card, .gdc, .chip, a:not(.share-open))) {
+      background-color: var(--hover-surface);
+      border-color: var(--hover-edge);
+      --rim-angle: 140deg;
+      --rim-lift: 7%;
+    }
+
+    &:is(button.pri, button.go, :is(.modal, .legacy-surface, .rcol) button.blue) {
+      background-color: color-mix(in srgb, var(--color-accent) 93%, white);
+      border-color: color-mix(in srgb, var(--color-accent) 82%, white);
+    }
+
+    .account-dialog &.gbtn { background-color: color-mix(in srgb, white 94%, currentColor); }
+
+    &:is(.shell-nav button, .shell-footer button, .pma, .ms .msp label, .compare-options button, .local-choice) {
+      background-color: var(--hover-menu);
+      color: var(--hover-menu-ink);
+    }
+
+    :is(.shell-nav, .shell-footer) > &:is(button) {
+      --rim-lift: 100%;
+      --nav-ink: var(--hover-menu-ink);
+      border-color: transparent;
+    }
+
+    &:is(button.stat-card, button.gdc, .hl .trig) {
+      box-shadow: inset 0 0 0 1px var(--hover-card-edge);
+    }
+
+    .list-surface &.lv::after { opacity: 1; }
+
+    #app :is(.hl .hcard, .trigs .trig)& {
+      --rim-angle: 140deg;
+      box-shadow: inset 0 0 0 1px var(--hover-card-edge);
+    }
+
+    &.chip { --chip-highlight: 26%; }
+    :is(.mode-switch, .gdseg, .wseg) > &:is(button) { background-color: var(--hover-menu); }
+    &:is(a[href], a[role=button]):not(.share-open) { color: var(--hover-menu-ink); }
+    .profile-swatch:not([data-selected=true]) > &:is(input:not(:checked)) { border-color: var(--hover-edge); }
+    :is(.lv, .wi):not(.sortable-chosen) > &.grip { color: var(--hover-menu-ink); }
+    .lv:has(.th):not(.sortable-chosen) > &.grip {
+      color: color-mix(in srgb, var(--color-card-text) 84%, var(--color-accent));
+    }
+  }
+
+  .hist b:hover i { background-color: var(--color-warning); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :where(button, summary, [role=button], a[href], .ms .msp label, .local-choice, .profile-swatch > input) {
+    transition: background-color var(--hover-motion), border-color var(--hover-motion), color var(--hover-motion),
+      box-shadow var(--hover-motion), --rim-angle var(--hover-motion), --rim-lift var(--hover-motion);
+  }
+
+  :is(.shell-nav, .shell-footer) > button > span, .grip { transition: color var(--hover-motion); }
+  .hist i { transition: background-color var(--hover-motion); }
+  .list-surface .lv { transition: background-color var(--motion-selection) var(--motion-easing); }
+
+  /* Tag colours arrive after the first style pass. Interpolating the mix keeps new chips from fading in. */
+  .chip:not(.death-chip) { transition: --chip-highlight var(--hover-motion); }
+
+  :is([aria-current], [aria-pressed=true], details[open] > summary, .ms .msp label:has(:checked)) {
+    transition-duration: var(--motion-selection);
+  }
+
+  :is(button, summary, [role=button], a[href], .ms .msp label, .local-choice, .tag-swatch, .profile-swatch > input):active {
+    transition-duration: 0s;
   }
 }
