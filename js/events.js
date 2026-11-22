@@ -302,7 +302,7 @@ const ACTIONS = {
         levelSearch.f = { rated: 'all', rates: [], diffs: [] };
         changeLevelFilters();
     },
-    gdpick: a => pickLevel(a.form, levelSearch.results[a.dataset.i]),
+    gdpick: a => chooseLevelResult(a.form, levelSearch.results[a.dataset.i], a.matches(':focus-visible')),
     wdel(a, id) {
         askConfirm(t('wconf')).then(ok => {
             if (!ok)

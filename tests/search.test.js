@@ -15,6 +15,11 @@ function searchForm() {
     let now = 0, timerId = 0, reports = 0;
     const timers = new Map(), asked = [];
     const input = { id: 'gdq', value: '', validity: '', dataset: {}, matches: () => false, setCustomValidity(message) { this.validity = message; }, reportValidity() { reports++; } };
+    const fieldset = { focus(options) { this.focusOptions = options; document.activeElement = this; } };
+    const face = { outerHTML: '' }, difficulty = { textContent: '' };
+    const rankHint = { textContent: '' }, aredlLabel = { textContent: '' }, demonlistField = { hidden: true };
+    const elements = Object.fromEntries(['name', 'nameDisplay', 'lid', 'lidDisplay', 'creator', 'creatorDisplay', 'diff', 'rating', 'kind', 'kindT', 'kindTDisplay', 'pos', 'ap', 'gdl'].map(name => [name, { value: '' }]));
+    const levelForm = { id: 'wf', dataset: {}, elements, isConnected: true };
     const classes = new Set();
     let html = '', cards = [], more = null;
     const button = dataset => ({ dataset, focus() { document.activeElement = this; } });
@@ -38,7 +43,10 @@ function searchForm() {
             const index = selector.match(/data-i=["']?(\d+)/);
             return index ? cards.find(c => c.dataset.i == index[1]) : cards[0];
         }
-        return { '#gdq': input, '#gdr': results, '#gdm': message, '.gdclr': clear }[selector];
+        return {
+            '#gdq': input, '#gdr': results, '#gdm': message, '.gdclr': clear, 'fieldset.gds': fieldset,
+            '#lf-face': face, '#lf-diffT': difficulty, '#fm-pos-hint': rankHint, 'label[for=fm-ap]': aredlLabel, '#fm-gdl-field': demonlistField, '#fm-gdl': elements.gdl
+        }[selector];
     }, querySelectorAll: () => [], addEventListener() {} };
     input.focus = () => { document.activeElement = input; };
     const scripts = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/i18n.js', 'js/demonlist.js', 'js/api.js', 'js/sheet.js', 'js/relay.js', 'js/gd.js', 'js/components/faces.js', 'js/components/search.js'], {
@@ -53,7 +61,14 @@ function searchForm() {
     scripts.app('levelSearchBox()');
     scripts.load(['js/events.js']);
     return {
-        ...scripts, input, results, message, asked, timers, document,
+        ...scripts, input, fieldset, results, message, asked, timers, document, levelForm, face, difficulty,
+        pick(fromKeyboard = false) {
+            const card = cards[0];
+            card.form = levelForm;
+            card.matches = selector => selector == ':focus-visible' && document.activeElement == card && fromKeyboard;
+            card.focus();
+            scripts.app('ACTIONS').gdpick(card);
+        },
         reports: () => reports,
         type(value) { input.value = value; document.body.oninput({ target: input }); },
         async tick(ms) {
@@ -279,6 +294,106 @@ test('emptying the box clears results and status and cancels a pending search', 
     assert.equal(form.app('levelSearch.results.length'), 0);
     assert.equal(form.app('levelSearch.q'), '');
     assert.equal(form.app('levelSearch.more'), false);
+});
+
+test('picking a result clears the query, results and status while keeping filters', async () => {
+    const form = searchForm();
+    form.app("levelSearch.f = { rated: 'rated', rates: ['rated'], diffs: ['Hard'] }");
+    form.type('comb');
+    await form.tick(400);
+    assert.match(form.results.innerHTML, /Honeycomb/);
+    assert.notEqual(form.message.textContent, '');
+    const count = form.asked.length;
+    form.pick();
+    assert.equal(form.input.value, '');
+    assert.equal(form.results.innerHTML, '');
+    assert.equal(form.results.hidden, true);
+    assert.equal(form.message.textContent, '');
+    assert.equal(form.app('levelSearch.q'), '');
+    assert.equal(form.app('levelSearch.results.length'), 0);
+    assert.equal(form.app('levelSearch.search'), null);
+    assert.deepEqual(JSON.parse(form.app('JSON.stringify(levelSearch.f)')), { rated: 'rated', rates: ['rated'], diffs: ['Hard'] });
+    await form.tick(400);
+    assert.equal(form.asked.length, count);
+    assert.equal(form.reports(), 0);
+});
+
+test('picking a result cancels the pending search for a typed edit', async () => {
+    const form = searchForm();
+    form.type('comb');
+    await form.tick(400);
+    form.type('other');
+    assert.equal(form.timers.size, 1);
+    const count = form.asked.length;
+    form.pick();
+    assert.equal(form.timers.size, 0);
+    await form.tick(400);
+    assert.equal(form.asked.length, count);
+    assert.equal(form.reports(), 0);
+});
+
+test('picking a result drops the next page already in flight', async () => {
+    const form = searchForm();
+    let finishPage;
+    form.context.fetch = async url => {
+        if (url == 'data/levels.json')
+            return { ok: true, json: async () => [] };
+        if (url.includes('&page=0'))
+            return { ok: true, json: async () => relayPage(Array.from({ length: 10 }, (_, i) => searchRow(String(i + 1), 'Comb ' + i))) };
+        return new Promise(resolve => { finishPage = resolve; });
+    };
+    form.input.value = 'comb';
+    await form.app('runLevelSearch()');
+    const pending = form.app('ACTIONS.gdmore()');
+    form.pick();
+    finishPage({ ok: true, json: async () => relayPage([searchRow('11', 'Late level')]) });
+    await pending;
+    assert.equal(form.app('levelSearch.results.length'), 0);
+    assert.equal(form.results.innerHTML, '');
+    assert.equal(form.results.hidden, true);
+    assert.equal(form.message.textContent, '');
+    assert.equal(form.document.activeElement, form.fieldset, 'the late page must not move focus');
+});
+
+test('picking a result fills the level fields and preserves typed values', async () => {
+    const form = searchForm();
+    form.load(['js/components/levels.js']);
+    form.app(`ui.lang = 'en'; profile = emptyProfile();
+        aredlCache = [{ k: 'd', i: 1, n: 'Honeycomb', p: 12 }];
+        demonlistCache = [[1, 34]]`);
+    form.levelForm.id = 'fm';
+    const fields = form.levelForm.elements;
+    const typed = { pos: '1', attN: '120', attC: '5', tN_m: '15', tP_s: '20', notes: 'Practice the ending', tg: 'Progress' };
+    for (const [name, value] of Object.entries(typed))
+        fields[name] = { value };
+    form.type('comb');
+    await form.tick(400);
+    form.pick();
+    await settleSearch();
+    const picked = {
+        name: 'Honeycomb', nameDisplay: 'Honeycomb', lid: '1', lidDisplay: '1', creator: 'Creator', creatorDisplay: 'Creator',
+        diff: 'Hard', rating: 'rated', kind: 'classic', kindT: 'Classic', kindTDisplay: 'Classic', ap: '#12', gdl: '#34'
+    };
+    for (const [name, value] of Object.entries({ ...picked, ...typed }))
+        assert.equal(fields[name].value, value, name);
+    assert.match(form.face.outerHTML, /assets\/faces\/hard\.webp/);
+    assert.equal(form.difficulty.textContent, 'Hard');
+});
+
+for (const fromKeyboard of [true, false])
+    test(`picking with the ${fromKeyboard ? 'keyboard focuses the input' : 'pointer focuses the fieldset without scrolling'}`, async () => {
+        const form = searchForm();
+        form.type('comb');
+        await form.tick(400);
+        form.pick(fromKeyboard);
+        assert.equal(form.document.activeElement, fromKeyboard ? form.input : form.fieldset);
+        if (!fromKeyboard)
+            assert.equal(form.fieldset.focusOptions?.preventScroll, true);
+    });
+
+test('the level search fieldset can receive focus outside the tab order', () => {
+    const markup = searchForm().app('levelSearchBox()');
+    assert.match(markup, /<fieldset\b[^>]*\bclass=gds\b[^>]*\btabindex=-1\b/);
 });
 
 test('Enter and Search run short queries immediately and cancel pending timers; only explicit searches report invalid text', async () => {
