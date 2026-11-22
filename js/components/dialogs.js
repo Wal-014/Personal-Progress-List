@@ -144,11 +144,17 @@ function showDialog({ title, msg, input, def, ok, cancel, danger, label, extra =
 
 const askText = (title, def) => showDialog({ title, input: 1, def });
 
-const profilePreview = selected => selected.cubeId ? catalogCube(selected.cubeId, selected.color, selected.secondaryColor) + `<small>${t('cube')} ${selected.cubeId}</small>` : cubeIcon(selected.color, selected.secondaryColor);
+function profilePreview({ cubeId, color, secondaryColor }) {
+    return profileCube(cubeId, color, secondaryColor) + (validCubeId(cubeId) ? `<small>${t('cube')} ${cubeId}</small>` : '');
+}
+
+function cubeCatalogField() {
+    return `<div class=cube-catalog><button type=button id=cube-toggle aria-controls=cube-options aria-expanded=false>${t('selectIcon')}${ICONS.chevronDown}</button><div id=cube-options role=group aria-labelledby=cube-toggle hidden><div class=cube-pager><button type=button data-page="-1" aria-label="${t('previousPage')}">&lsaquo;</button><output></output><button type=button data-page="1" aria-label="${t('nextPage')}">&rsaquo;</button></div><div class=cube-grid></div></div></div>`;
+}
 
 function bindCubeCatalog(dialog, selected) {
     const catalog = dialog.querySelector('.cube-catalog');
-    let page = Math.floor((selected.cubeId - 1) / CUBES_PER_PAGE);
+    let page = validCubeId(selected.cubeId) ? Math.floor((selected.cubeId - 1) / CUBES_PER_PAGE) : 0;
     const draw = () => {
         const start = page * CUBES_PER_PAGE + 1, end = Math.min(start + CUBES_PER_PAGE - 1, CUBE_COUNT);
         const tiles = Array.from({ length: end - start + 1 }, (_, offset) => {
@@ -222,7 +228,7 @@ function bindProfileColors(root, selected, onChange) {
 /** Asks for a profile name and colours, sharing the prompt's validation and keyboard handling. */
 function askProfile(title, { name, color, secondaryColor, cubeId }) {
     const selected = { cubeId: validCubeId(cubeId) ? cubeId : 2, color: isHexColor(color) ? color : PROFILE_COLORS[0], secondaryColor: isHexColor(secondaryColor) ? secondaryColor : DEFAULT_SECONDARY_COLOR };
-    return showDialog({ title, ok: t('save'), input: 1, def: name, label: t('pname'), extra: profileColorFields(selected) + `<div class=cube-catalog><button type=button id=cube-toggle aria-controls=cube-options aria-expanded=false>${t('selectIcon')}${ICONS.chevronDown}</button><div id=cube-options role=group aria-labelledby=cube-toggle hidden><div class=cube-pager><button type=button data-page="-1" aria-label="${t('previousPage')}">&lsaquo;</button><output></output><button type=button data-page="1" aria-label="${t('nextPage')}">&rsaquo;</button></div><div class=cube-grid></div></div></div>`, enhance: m => {
+    return showDialog({ title, ok: t('save'), input: 1, def: name, label: t('pname'), extra: profileColorFields(selected) + cubeCatalogField(), enhance: m => {
         bindProfileColors(m, selected, bindCubeCatalog(m, selected));
         return name => ({ name, ...selected });
     } });

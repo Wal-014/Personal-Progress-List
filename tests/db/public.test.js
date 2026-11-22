@@ -39,10 +39,10 @@ async function seed(user) {
     }
 }
 
-async function publish(user) {
+async function publish(user, cubeId = null) {
     ok(await user.client.from('profiles').update({
         username: username(user), is_public: true, display_name: 'Public player',
-        bio: 'A public biography', country: 'CR', color: '#123456', secondary_color: '#abcdef'
+        bio: 'A public biography', country: 'CR', color: '#123456', secondary_color: '#abcdef', cube_id: cubeId
     }).eq('id', user.id));
 }
 
@@ -76,7 +76,7 @@ describe('public profiles through RLS and the Data API', { skip: !enabled }, () 
         for (const client of [context.anon, other.client]) await assertHidden(client, owner);
 
         await seed(owner);
-        ok(await owner.client.from('profiles').update({ username: username(owner) }).eq('id', owner.id));
+        ok(await owner.client.from('profiles').update({ username: username(owner), cube_id: 485 }).eq('id', owner.id));
         for (const client of [context.anon, other.client, owner.client]) {
             const unknown = ok(await client.rpc('public_profile', { target_username: 'unknown_' + username(other).slice(0, 12) }));
             const privateProfile = ok(await client.rpc('public_profile', { target_username: username(owner) }));
@@ -100,10 +100,10 @@ describe('public profiles through RLS and the Data API', { skip: !enabled }, () 
         await seed(owner);
         await seed(other);
         await publish(other);
-        await publish(owner);
+        await publish(owner, 485);
         const original = await snapshot(owner);
         const { id, username: name, display_name, color, secondary_color, bio, country, created_at } = original.profiles;
-        const expectedProfile = { id, username: name, display_name, color, secondary_color, bio, country, created_at };
+        const expectedProfile = { id, username: name, display_name, color, secondary_color, cube_id: 485, bio, country, created_at };
 
         for (const client of [context.anon, other.client, owner.client]) {
             for (const table of ['profiles', ...publicTables]) {
@@ -139,6 +139,7 @@ describe('public profiles through RLS and the Data API', { skip: !enabled }, () 
         for (const client of [context.anon, other.client]) {
             const view = ok(await client.rpc('public_profile', { target_username: username(owner) }));
             assert.equal(view.profile.id, owner.id);
+            assert.equal(view.profile.cube_id, null);
             assert.deepEqual(Object.keys(view).sort(), ['profile', ...publicTables].sort());
             for (const table of publicTables) assert.deepEqual(view[table], [], table);
         }

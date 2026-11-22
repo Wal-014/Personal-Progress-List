@@ -49,7 +49,7 @@ function backToMyProgress() {
 function publicIdentityCard() {
     const identity = viewing.identity;
     const bio = identity.bio ? `<div class=public-bio><p class="profile-bio profile-bio-clamped" id=public-profile-bio>${escapeHtml(identity.bio)}</p><button type=button class=profile-bio-toggle data-act=publicbio aria-expanded=false aria-controls=public-profile-bio hidden>${t('bioMore')}</button></div>` : '';
-    return `<div class="box profile-card">${cubeIcon(identity.color, identity.secondary_color)}<h2>${escapeHtml(identity.display_name)}</h2><p class=by>@${escapeHtml(viewing.username)}</p>${profileCountry(identity.country)}${bio}</div>`;
+    return `<div class="box profile-card">${profileCube(identity.cube_id, identity.color, identity.secondary_color)}<h2>${escapeHtml(identity.display_name)}</h2><p class=by>@${escapeHtml(viewing.username)}</p>${profileCountry(identity.country)}${bio}</div>`;
 }
 
 function updatePublicBio() {

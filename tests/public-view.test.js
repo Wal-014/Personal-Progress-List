@@ -185,6 +185,22 @@ test('public wishlist progress uses labels and percentages without editing instr
         assert.ok(html.includes(text), text);
 });
 
+test('public identity renders the visitor-visible cube from the profile response', async () => {
+    for (const cubeId of [23, null]) {
+        const data = fixture();
+        data.profile.cube_id = cubeId;
+        const p = page('?user=player', { data });
+        await p.app('initPublicView()');
+        const html = p.app('publicIdentityCard()');
+        if (cubeId === null) {
+            assert.match(html, /viewBox="0 0 48 48".*fill="#123456"/);
+            assert.doesNotMatch(html, /assets\/cubes\//);
+        } else {
+            assert.match(html, /assets\/cubes\/23\.webp/);
+        }
+    }
+});
+
 test('public identity shows a decorative flag next to the localized country', async () => {
     const data = fixture();
     data.profile.country = 'JP';

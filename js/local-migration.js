@@ -278,9 +278,14 @@ function rememberMigratedProfile(userId, localId) {
 
 async function saveMigratedIdentity(local) {
     const name = Array.from(migrationText(local.name, Infinity).trim()).slice(0, 40).join('') || account.profile?.display_name || t('name');
-    const identity = await saveOwnProfile({ display_name: name,
+    const fields = {
+        display_name: name,
         color: isHexColor(local.color) ? local.color : PROFILE_COLORS[0],
-        secondary_color: isHexColor(local.secondaryColor) ? local.secondaryColor : DEFAULT_SECONDARY_COLOR });
+        secondary_color: isHexColor(local.secondaryColor) ? local.secondaryColor : DEFAULT_SECONDARY_COLOR
+    };
+    if (validCubeId(local.cubeId))
+        fields.cube_id = local.cubeId;
+    const identity = await saveOwnProfile(fields);
     return identity.error;
 }
 

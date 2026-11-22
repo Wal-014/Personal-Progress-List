@@ -5,7 +5,7 @@ let accountSignInPending = false;
 function accountMenu() {
     const own = account.profile;
     const row = (act, icon, key) => `<button class=pma data-act=${act}${act == 'aprofile' ? ' autofocus' : ''}>${icon}<span>${t(key)}</span></button>`;
-    return `<div id=amenu class="pmenu amenu" popover role=group aria-labelledby=profile-pill><div class=account-head>${cubeIcon(own.color, own.secondary_color)}<div class=info><span class=nm>${escapeHtml(own.display_name)}</span><span class=by>${own.username ? '@' + escapeHtml(own.username) : t('accountChooseUsername')}</span></div></div>${row('aprofile', ICONS.person, 'accountProfile')}${row('ashare', ICONS.exp, 'shareProfile')}${row('asettings', ICONS.settings, 'accountSettings')}${row('asignout', ICONS.logout, 'accountSignOut')}${row('localdata', ICONS.exp, 'localData')}<span class=by data-cloud-status>${escapeHtml(cloudStatusSentence())}</span><span data-cloud-retry>${cloudRetryButton()}</span></div>`;
+    return `<div id=amenu class="pmenu amenu" popover role=group aria-labelledby=profile-pill><div class=account-head>${profileCube(own.cube_id, own.color, own.secondary_color)}<div class=info><span class=nm>${escapeHtml(own.display_name)}</span><span class=by>${own.username ? '@' + escapeHtml(own.username) : t('accountChooseUsername')}</span></div></div>${row('aprofile', ICONS.person, 'accountProfile')}${row('ashare', ICONS.exp, 'shareProfile')}${row('asettings', ICONS.settings, 'accountSettings')}${row('asignout', ICONS.logout, 'accountSignOut')}${row('localdata', ICONS.exp, 'localData')}<span class=by data-cloud-status>${escapeHtml(cloudStatusSentence())}</span><span data-cloud-retry>${cloudRetryButton()}</span></div>`;
 }
 
 function passwordField(id, labelKey, autocomplete) {
@@ -174,7 +174,7 @@ function profileStatus(isPublic) {
 function profileCard() {
     const own = account.profile;
     const date = new Date(own.created_at);
-    return `<div class="box sm account-dialog profile-card">${cubeIcon(own.color, own.secondary_color)}<h2>${escapeHtml(own.display_name)}</h2>
+    return `<div class="box sm account-dialog profile-card">${profileCube(own.cube_id, own.color, own.secondary_color)}<h2>${escapeHtml(own.display_name)}</h2>
 <p class=by>${own.username ? '@' + escapeHtml(own.username) : t('accountNoUsername')}</p>${profileCountry(own.country)}
 ${own.bio ? `<p class=profile-bio>${escapeHtml(own.bio)}</p>` : ''}
 ${Number.isNaN(date.getTime()) ? '' : `<p class=by>${escapeHtml(t('accountMemberSince').replace('{date}', () => date.toLocaleDateString(ui.lang)))}</p>`}
@@ -196,23 +196,28 @@ function profileDialogHeading(title, action) {
     return `<div class=account-heading><button type=button class=account-back data-act=aprofileback data-v=${action} aria-label="${t('backToProfile')}">${ICONS.actionBack}</button><h2>${t(title)}</h2></div>`;
 }
 
-function accountProfileColors() {
+function accountProfileEditorState() {
     const own = account.profile;
-    return { color: isHexColor(own.color) ? own.color : PROFILE_COLORS[0], secondaryColor: isHexColor(own.secondary_color) ? own.secondary_color : DEFAULT_SECONDARY_COLOR };
+    return {
+        color: isHexColor(own.color) ? own.color : PROFILE_COLORS[0],
+        secondaryColor: isHexColor(own.secondary_color) ? own.secondary_color : DEFAULT_SECONDARY_COLOR,
+        cubeId: validCubeId(own.cube_id) ? own.cube_id : null
+    };
 }
 
-function profileForm(returnAction = 'aedit') {
+function profileForm(returnAction = 'aedit', selected = accountProfileEditorState()) {
     const own = account.profile, names = new Intl.DisplayNames([ui.lang], { type: 'region' });
     const options = COUNTRY_CODES.map(code => ({ code, name: names.of(code) })).sort((a, b) => a.name.localeCompare(b.name, ui.lang));
-    return `<div class="box sm account-dialog">${profileDialogHeading('pedit', returnAction)}<form id=pf data-v=${returnAction}><label for=pdisplay>${t('accountDisplayName')}</label><input id=pdisplay name=pdisplay value="${escapeHtml(own.display_name)}" required maxlength=40 autocomplete=nickname><label for=pusername>${t('accountUsername')}</label><div class=username-field><span aria-hidden=true>@</span><input id=pusername name=pusername value="${escapeHtml(own.username || '')}" pattern="[a-z0-9_]{3,20}" maxlength=20 autocomplete=username autocapitalize=none spellcheck=false aria-describedby=username-hint></div><p id=username-hint class=by>${t('accountUsernameHint')}</p>${profileColorFields(accountProfileColors())}<label for=pbio>${t('accountBio')}</label><textarea id=pbio name=pbio maxlength=300 rows=4 aria-describedby=bio-count>${escapeHtml(own.bio || '')}</textarea><p id=bio-count class="by account-counter" aria-live=polite>${(own.bio || '').length} / 300</p>
+    return `<div class="box sm account-dialog">${profileDialogHeading('pedit', returnAction)}<form id=pf data-v=${returnAction}><label for=pdisplay>${t('accountDisplayName')}</label><input id=pdisplay name=pdisplay value="${escapeHtml(own.display_name)}" required maxlength=40 autocomplete=nickname><label for=pusername>${t('accountUsername')}</label><div class=username-field><span aria-hidden=true>@</span><input id=pusername name=pusername value="${escapeHtml(own.username || '')}" pattern="[a-z0-9_]{3,20}" maxlength=20 autocomplete=username autocapitalize=none spellcheck=false aria-describedby=username-hint></div><p id=username-hint class=by>${t('accountUsernameHint')}</p>${profileColorFields(selected)}${cubeCatalogField()}<label for=pbio>${t('accountBio')}</label><textarea id=pbio name=pbio maxlength=300 rows=4 aria-describedby=bio-count>${escapeHtml(own.bio || '')}</textarea><p id=bio-count class="by account-counter" aria-live=polite>${(own.bio || '').length} / 300</p>
 <label for=pcountry>${t('accountCountry')}</label><div class=country-field><select id=pcountry name=pcountry><option value="">${t('accountNotSet')}</option>${options.map(({ code, name }) => `<option value="${code}"${code == own.country ? ' selected' : ''}>${escapeHtml(name)}</option>`).join('')}</select><span id=country-preview>${countryFlag(own.country)}</span></div><p id=pmsg class="gdm warn" role=alert tabindex=-1></p><p class=dgb><button type=button data-act=aprofileback data-v=${returnAction}>${t('cancel')}</button><button class=pri type=submit>${t('save')}</button></p></form></div>`;
 }
 
 function openProfileForm(button) {
-    openModal(profileForm(button?.dataset.v == 'ashare' ? 'ashare' : 'aedit'));
+    const selected = accountProfileEditorState();
+    openModal(profileForm(button?.dataset.v == 'ashare' ? 'ashare' : 'aedit', selected));
     const form = qs('#pf');
-    form.profileColors = accountProfileColors();
-    bindProfileColors(form, form.profileColors);
+    form.profileEditor = selected;
+    bindProfileColors(form, selected, bindCubeCatalog(form, selected));
     form.elements.pdisplay.focus();
 }
 
@@ -232,11 +237,11 @@ function accountFormInput(input) {
 }
 
 async function submitAccountProfile(form) {
-    const fields = form.elements;
+    const fields = form.elements, { color, secondaryColor, cubeId } = form.profileEditor;
     return accountPending(form.querySelector('[type=submit]'), 'accountSaving', async () => {
         const result = await saveOwnProfile({
             display_name: fields.pdisplay.value.trim(), username: fields.pusername.value.trim().toLowerCase() || null,
-            color: form.profileColors.color, secondary_color: form.profileColors.secondaryColor,
+            color, secondary_color: secondaryColor, cube_id: validCubeId(cubeId) ? cubeId : null,
             bio: fields.pbio.value.trim() || null, country: fields.pcountry.value || null
         });
         if (!form.isConnected)

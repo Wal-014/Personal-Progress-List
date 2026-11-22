@@ -272,13 +272,18 @@ test('password changes request a nonce when required and clear recovery only aft
 test('profile saves allow only editable fields and use the signed-in user id', async () => {
     const page = accounts({ saved: true });
     await page.signedIn();
-    const fields = { display_name: 'New', username: 'new_name', color: '#123456', secondary_color: '#abcdef', bio: 'Hello', country: 'CR', is_public: true };
+    const fields = { display_name: 'New', username: 'new_name', color: '#123456', secondary_color: '#abcdef', cube_id: 23, bio: 'Hello', country: 'CR', is_public: true };
     page.respond('single', { data: { ...ownProfile, ...fields }, error: null });
     page.context.fields = { ...fields, id: 'user-b', created_at: 'fake', updated_at: 'fake', unexpected: true };
     assert.deepEqual(plain(await page.app('saveOwnProfile(fields)')), {});
     assert.deepEqual(page.calls.find(call => call[0] == 'update'), ['update', fields]);
     assert.deepEqual(page.calls.at(-2), ['eq', 'id', 'user-a']);
     assert.deepEqual(page.state().profile, { ...ownProfile, ...fields });
+    const visibility = { is_public: false };
+    page.respond('single', { data: { ...ownProfile, ...fields, ...visibility }, error: null });
+    assert.deepEqual(plain(await page.app('saveOwnProfile({ is_public: false })')), {});
+    assert.deepEqual(page.calls.filter(call => call[0] == 'update').at(-1), ['update', visibility]);
+    assert.equal(page.state().profile.cube_id, 23);
     for (const [code, key] of [['23505', 'usernameTaken'], ['23514', 'profileInvalid'], ['other', 'authFailed']]) {
         page.respond('single', { data: null, error: { code } });
         assert.deepEqual(plain(await page.app('saveOwnProfile({ username: "new_name" })')), { error: key });
