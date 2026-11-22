@@ -51,8 +51,9 @@ async function buildFlagCatalog(codes) {
     rmSync(FLAGS, { recursive: true, force: true });
     mkdirSync(FLAGS, { recursive: true });
     for (const { name, source } of flags) {
+        // Flat flag colours compress smaller lossless than lossy, with no artefacts
         await sharp(source).resize(64, 48, { fit: 'fill' })
-            .webp({ quality: 90, effort: 6 }).toFile(`${FLAGS}/${name}.webp`);
+            .webp({ lossless: true, effort: 6 }).toFile(`${FLAGS}/${name}.webp`);
     }
     copyFileSync(join(packageDir, 'LICENSE'), `${FLAGS}/LICENSE`);
 }

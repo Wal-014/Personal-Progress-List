@@ -48,9 +48,11 @@ test('every supported country has a generated 64×48 WebP flag', async () => {
     }
 });
 
-test('generated flags are at most 4 KB each', () => {
-    for (const file of FLAG_FILES)
+test('generated flags are lossless and at most 4 KB each', () => {
+    for (const file of FLAG_FILES) {
         assert.ok(statSync(file).size <= 4 * 1024, `${file} exceeds 4 KB`);
+        assert.ok(readFileSync(file).includes('VP8L'), `${file} is not lossless`);
+    }
 });
 
 test('flagSources maps codes to lowercase SVG files and names a missing one', t => {
