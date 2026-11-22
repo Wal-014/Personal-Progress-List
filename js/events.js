@@ -277,9 +277,9 @@ const ACTIONS = {
                 return;
             profile.wishlists = profile.wishlists.filter(w => w.id != ui.wl);
             ui.wl = null;
-            ui.tab = 'home';
             save();
             render();
+            qs('#screen-title')?.focus({ preventScroll: true });
         });
     },
     wadd() {
