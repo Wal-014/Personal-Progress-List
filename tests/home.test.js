@@ -31,18 +31,26 @@ test('entering either list keeps the sidebar disclosure closed until the user ex
     assert.match(app('shellNavigation()'), /data-act=listchoices aria-expanded=true/);
 });
 
-test('Home cards use ranked leads, faces, localized counts and attempts without nested controls', () => {
+test('Home cards use ranked leads, faces and localized level counts without nested controls, and attempts appear in Home statistics', () => {
     const { app } = homeApp();
     const html = app('home()');
     assert.equal((html.match(/class="hcard hcard-/g) || []).length, 2);
-    for (const text of ['Bloodbath', 'Demo Platformer A', '9 Levels', '2 Levels', '95,596 attempts', '6,057 attempts'])
+    for (const text of ['Bloodbath', 'Demo Platformer A'])
         assert.ok(html.includes(text), text);
+    assert.match(html, /<b>101,653<\/b><span>Total attempts<\/span>/);
     assert.equal((html.match(/class=hbadge>#1/g) || []).length, 2);
     assert.match(html, /class="face/);
     assert.equal((html.match(/data-th=/g) || []).length, app("['classic', 'platform'].filter(kind => thumbUrl(findLevel(rankedIds(kind)[0]))).length"));
     assert.match(html, /data-act=add/);
     assert.match(html, /data-act=tab data-v=stats/);
-    app("profile.levels = [{ id: 'one', kind: 'classic', name: '<Lead>', attN: 0 }]; profile.order.classic = ['one']; profile.order.platform = []");
+    for (const [lang, label] of [['en', 'Levels'], ['es', 'Niveles']]) {
+        app("ui.lang = '" + lang + "'");
+        for (const [kind, count] of [['classic', 9], ['platform', 2]]) {
+            const card = app("homeListCard('" + kind + "')");
+            assert.match(card, new RegExp('<span>' + count + ' ' + label + '</span></p>'));
+        }
+    }
+    app("ui.lang = 'en'; profile.levels = [{ id: 'one', kind: 'classic', name: '<Lead>', attN: 0 }]; profile.order.classic = ['one']; profile.order.platform = []");
     const card = app("homeListCard('classic')");
     assert.match(card, /&lt;Lead&gt;/);
     assert.doesNotMatch(card, /data-th=|attempts|<button/);
