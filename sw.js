@@ -1,7 +1,7 @@
 /**
  * Service worker for installation and offline use. Local assets are cache-first, and other same-origin files are network-first.
  */
-const CACHE = 'prp-1.13.14';
+const CACHE = 'prp-1.13.15';
 // vendor/supabase.js is intentionally omitted so visitors who never sign in never download it.
 const SHELL = [
   "./",
