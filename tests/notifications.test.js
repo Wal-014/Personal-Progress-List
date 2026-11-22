@@ -56,6 +56,24 @@ test('unplaced levels and levels without IDs produce an empty panel and no badge
     assert.deepEqual(plain(f.app('notifications()')), []);
 });
 
+test('the header and panel bells and notification rows use unfilled outline icons', () => {
+    const f = fixture();
+    f.signIn();
+    const panel = f.app('bellUI()'), shell = f.app('sharedShell("")');
+    const bell = shell.match(/data-act=bell[^>]*>(<svg.*?<\/svg>)/)?.[1];
+    assert.ok(bell && panel.includes(bell));
+    const rowIcons = [...panel.matchAll(/class=notification-icon aria-hidden=true>(<svg.*?<\/svg>)/g)].map(match => match[1]);
+    assert.equal(rowIcons.length, 3);
+    assert.notEqual(rowIcons[0], rowIcons[1]);
+    for (const icon of [bell, ...rowIcons]) {
+        assert.match(icon, /viewBox="0 0 24 24" fill=none stroke=currentColor/);
+        assert.doesNotMatch(icon, /(?:fill|stroke)="#/);
+    }
+    f.known.status = f.unknown.status = 'todo';
+    f.app('cloudUser = null');
+    assert.ok(f.app('notificationBody()').includes(bell));
+});
+
 test('pending reminders use stable wishlist-scoped IDs and localized transfer actions', () => {
     const f = fixture();
     const entries = plain(f.app('notifications()'));

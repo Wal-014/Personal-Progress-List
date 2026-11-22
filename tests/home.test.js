@@ -365,6 +365,17 @@ test('the document title and manifest match the shared brand', async () => {
 });
 
 
+test('all local menu actions have a leading outline icon', () => {
+    const { app } = homeApp();
+    const html = app('profileSwitcher()');
+    for (const action of ['pedit', 'localbackup', 'localimport', 'localdata', 'asignin']) {
+        const icon = html.match(new RegExp('data-act=' + action + '[^>]*>(<svg.*?</svg>)<span>'))?.[1];
+        assert.ok(icon, action + ' has a leading icon');
+        assert.match(icon, /viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1\.[57] stroke-linecap=round stroke-linejoin=round/);
+        assert.doesNotMatch(icon, /(?:fill|stroke)="#/);
+    }
+});
+
 test('profile actions keep deletion in Local data and tags in the sidebar; loading disables sign-in', () => {
     const { app } = homeApp();
     app("store.profs.other = { name: '<Other>', color: '#123456', data: emptyProfile() }");
@@ -372,7 +383,7 @@ test('profile actions keep deletion in Local data and tags in the sidebar; loadi
     assert.doesNotMatch(html, /data-act=localdelete|data-act=tags/);
     assert.match(app('shellFooter()'), /data-act=tags/);
     app("account.status = 'loading'");
-    assert.match(app('profileSwitcher()'), /data-act=asignin disabled aria-busy=true>Loading account/);
+    assert.match(app('profileSwitcher()'), /data-act=asignin disabled aria-busy=true><svg.*?<\/svg><span>Loading account\u2026<\/span>/);
 });
 
 

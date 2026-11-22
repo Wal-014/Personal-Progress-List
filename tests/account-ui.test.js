@@ -67,8 +67,12 @@ test('account menu preserves profile, sharing, settings, local data and sync hoo
     const { app } = createApp();
     signedIn(app);
     const html = app('accountMenu()');
-    for (const action of ['aprofile', 'ashare', 'asettings', 'asignout', 'localdata'])
-        assert.match(html, new RegExp('data-act=' + action));
+    for (const action of ['aprofile', 'ashare', 'asettings', 'asignout', 'localdata']) {
+        const icon = html.match(new RegExp('data-act=' + action + '[^>]*>(<svg.*?</svg>)<span>'))?.[1];
+        assert.ok(icon, action + ' has a leading icon');
+        assert.match(icon, /viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1\.5 stroke-linecap=round stroke-linejoin=round/);
+        assert.doesNotMatch(icon, /(?:fill|stroke)="#/);
+    }
     assert.doesNotMatch(html, /data-act=aedit/);
     assert.match(html, /data-cloud-status/);
     assert.match(html, /data-cloud-retry/);

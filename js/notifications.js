@@ -33,7 +33,7 @@ function localDataNotification() {
         id: 'local-data',
         section: 'notice',
         type: 'local-data',
-        icon: ICONS.imp,
+        icon: ICONS.actionDevice,
         title: t('notificationLocalData'),
         text: t(offered.length == 1 ? 'notificationLocalProfilesOne' : 'notificationLocalProfiles').replace('{n}', offered.length),
         action: { act: 'notiflocal', label: t('notificationLocalReview'), data: {} },
