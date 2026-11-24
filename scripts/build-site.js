@@ -17,7 +17,7 @@ const OUT = '_site';
 export const SITE_FILES = ['index.html', 'manifest.json', 'sw.js', 'favicon.png', 'icon.svg', 'css', 'js', 'data', 'assets', 'fonts', 'vendor', 'docs/brand/card.jpg'];
 
 const ACCOUNTS_ON = 'const ACCOUNTS = true;';
-export const RELEASE_LINE = '0.1.0-beta';
+export const RELEASE_LINE = '1.0.0';
 export const BETA_BASE = '41f339b260a0735510b0fe07531c9a0ba639886b';
 
 // Cloudflare applies this file to the dev Worker's responses; this header policy only adds
