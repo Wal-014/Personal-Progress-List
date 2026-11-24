@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import vm from 'node:vm';
 import { appScripts } from '../eslint.config.js';
-import { BETA_BASE, DEV_HEADERS, RELEASE_LINE, SITE_FILES, assetsHash, countReleaseCommits, devConfig, devPage, releaseVersion, siteConfig, stampCache, stampVersion } from '../scripts/build-site.js';
+import { BETA_BASE, DEV_HEADERS, SITE_FILES, assetsHash, countReleaseCommits, devConfig, devPage, releaseVersion, siteConfig, stampCache, stampVersion } from '../scripts/build-site.js';
 import { loadScripts } from './load-scripts.js';
 
 const isPublished = file => SITE_FILES.some(entry => file == entry || file.startsWith(`${entry}/`));
@@ -80,7 +80,7 @@ test('release count follows first parents and is stable on the same commit', t =
     moveMain(base);
     const initial = countReleaseCommits(base, path);
     assert.equal(initial, 0);
-    assert.throws(() => releaseVersion(RELEASE_LINE, initial), /positive integer/);
+    assert.throws(() => releaseVersion('0.1.0-beta', initial), /positive integer/);
 
     const side = ['First', 'Second', 'Third'].reduce((parent, name) => commit(name + ' side change', parent), base);
     const mainChange = commit('Main change', base);
@@ -99,8 +99,8 @@ test('release count errors explain the full-history requirement', t => {
 
 test('a flagged production build stamps the release into config', () => {
     const config = readFileSync('js/config.js', 'utf8');
-    const production = siteConfig(config, 'production', 'true', () => 4);
-    assert.equal(vm.runInNewContext(production + ';APP_VERSION'), '0.1.0-beta.4');
+    const production = siteConfig(config, 'production', 'true', () => assert.fail('stable releases do not count commits'));
+    assert.equal(vm.runInNewContext(production + ';APP_VERSION'), '1.0.0');
 });
 
 test('local and development builds keep the dev version without counting releases', () => {
