@@ -59,7 +59,7 @@ function dialogApp() {
         return (nodes['#opener'] = control('opener', true));
     };
     replaceOpener().focus();
-    const env = loadScripts(['js/utils.js', 'js/components/dialogs.js', 'js/render.js', 'js/events.js'], {
+    const env = loadScripts(['js/utils.js', 'js/components/dialogs.js', 'js/components/level-form-guard.js', 'js/render.js', 'js/events.js'], {
         document, window: { addEventListener() {} }, CSS: { escape: String }, t: key => key, renderTagSuggestions() {}
     });
     const dispatchModalEvent = (type, target = nodes.dialog) => {
@@ -110,12 +110,13 @@ test('openModal stays open when a backdrop press ends inside the box', () => {
     assert.equal(nodes.dialog.open, true);
 });
 
-test('openModal closes after a press and release on the backdrop', () => {
+test('openModal closes after a press and release on the backdrop', async () => {
     const { app, nodes, dispatchModalEvent } = dialogApp();
     app('openModal("<div>Settings</div>")');
     dispatchModalEvent('pointerdown');
     dispatchModalEvent('pointerup');
     dispatchModalEvent('click');
+    await new Promise(setImmediate);
     assert.equal(nodes.dialog.open, false);
 });
 
@@ -197,4 +198,30 @@ test('typed destructive prompts focus Cancel and keep incorrect text available f
     assert.equal(nodes.dialog.open, true);
     assert.equal(input.value, 'wrong');
     assert.equal(error.textContent, 'Mismatch');
+});
+
+for (const [label, dismiss] of [['backdrop', f => { f.dispatchModalEvent('pointerdown'); f.dispatchModalEvent('pointerup'); f.dispatchModalEvent('click'); }], ['Escape', f => f.dispatchModalEvent('cancel')], ['Close', f => f.app('ACTIONS.close()')]])
+    test(`${label} asks before closing a modal whose level form changed, and closes once when the user discards`, async () => {
+        const f = dialogApp(), asked = [];
+        f.app('openModal("<form id=fm></form>")');
+        f.context.answer = false;
+        f.app('confirmLevelFormExit = root => { asked.push(root); return Promise.resolve(answer); }');
+        f.context.asked = asked;
+        dismiss(f);
+        await new Promise(setImmediate);
+        assert.equal(f.nodes.dialog.open, true);
+        assert.equal(asked[0], f.nodes['#md dialog']);
+        f.context.answer = true;
+        dismiss(f);
+        dismiss(f);
+        await new Promise(setImmediate);
+        assert.equal(f.nodes.dialog.open, false);
+    });
+
+test('saving closes the level form directly, without the unsaved-changes question', () => {
+    const f = dialogApp();
+    f.app('openModal("<form id=fm></form>")');
+    f.app('confirmLevelFormExit = () => { throw new Error("asked"); }');
+    f.app('closeModal()');
+    assert.equal(f.nodes.dialog.open, false);
 });

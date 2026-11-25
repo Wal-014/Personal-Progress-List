@@ -173,6 +173,7 @@ const ACTIONS = {
             renderPanel();
         }
         openModal(levelForm());
+        rememberLevelForm(qs('#md'));
         qs('#gdq').focus();
     },
     edit: (a, id) => openLevelEditor(id, !!qs('#md .modal')),
@@ -193,7 +194,7 @@ const ACTIONS = {
         a.remove();
         renderTagSuggestions();
     },
-    close: () => closeModal(),
+    close: () => requestCloseModal(),
     async del(a, id) {
         const deletionProfile = profile;
         if (!canEdit() || !await askConfirm(t('confirm')) || profile !== deletionProfile || !canEdit())
@@ -528,18 +529,35 @@ function openClickedLevel(event, clickedCard) {
     }
 }
 
-document.body.onclick = e => {
+/** Actions that replace what the side panel shows, so they would drop a level being edited there. */
+const LEAVES_LEVEL_EDITOR = new Set(['lvclose', 'tab', 'add', 'edit', 'wopen', 'wnew', 'myprogress', 'localuse']);
+
+function leavesLevelEditor(target, action, clicked) {
+    if (!qs('.rcol #fm'))
+        return false;
+    return action ? LEAVES_LEVEL_EDITOR.has(action.dataset.act) : !!clicked?.matches('.lv, .pt') && !target.closest('form');
+}
+
+/** Runs leave() once the edited level may be dropped: it is unchanged, or the user chose to discard it. */
+function leaveLevelEditor(leave) {
+    return confirmLevelFormExit(qs('.rcol')).then(discard => discard && leave());
+}
+
+function handleBodyClick(e, confirmed = false) {
     document.querySelectorAll('.ms[open]').forEach(d => {
         if (!d.contains(e.target))
             d.open = false;
     });
     const g = e.target.closest('[data-tag]'), a = e.target.closest('[data-act]'), c = e.target.closest('[data-id]');
+    if (!confirmed && leavesLevelEditor(e.target, a, c))
+        return leaveLevelEditor(() => handleBodyClick(e, true));
     if (g && a?.dataset.act !== 'list-pick')
         return filterByTagChip(g);
     if (a)
         return runAction(a);
     openClickedLevel(e, c);
-};
+}
+document.body.onclick = e => handleBodyClick(e);
 document.body.onsubmit = e => {
     e.preventDefault();
     if (e.target.id == 'af')
@@ -739,7 +757,7 @@ function escapeKeydown(e) {
     }
     if (e.target.closest?.('.rcol.has') && innerWidth <= 900 && !qs('dialog[open]')) {
         e.preventDefault();
-        ACTIONS.lvclose();
+        leaveLevelEditor(() => ACTIONS.lvclose());
         return true;
     }
     return false;

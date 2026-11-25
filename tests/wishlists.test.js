@@ -320,7 +320,7 @@ for (const hasRemaining of [true, false])
         const f = fixture(), { profile, ui, localStorage } = f.context;
         const remaining = hasRemaining ? [{ id: 'w2', name: 'Later', items: [] }] : [];
         profile.wishlists.push(...remaining);
-        f.load(['js/components/shell.js', 'js/render.js']);
+        f.load(['js/components/shell.js', 'js/components/level-form-guard.js', 'js/render.js']);
         f.context.home = () => '';
         let html = '', focus;
         f.context.render = () => {
@@ -347,7 +347,7 @@ for (const hasRemaining of [true, false])
 
 test('captureView can restore focus to the Wishlists overview heading after a redraw', () => {
     const f = fixture();
-    f.load(['js/components/shell.js', 'js/render.js']);
+    f.load(['js/components/shell.js', 'js/components/level-form-guard.js', 'js/render.js']);
     f.context.ui.wl = null;
     const attrs = f.app('shellPageTitle()').match(/<h2([^>]*)>/)[1];
     const heading = { id: attrs.match(/ id=(\S+)/)?.[1] ?? '', hasAttribute: name => attrs.includes(' ' + name + '=') };
@@ -669,7 +669,7 @@ for (const kind of ['classic', 'platform'])
 
 test('controlSelector restores the specific status button and percentage input', () => {
     const f = fixture();
-    f.load(['js/render.js']);
+    f.load(['js/components/level-form-guard.js', 'js/render.js']);
     f.nodes.set('#app', { contains: () => true });
     for (const [tag, attrs, expected] of [
         ['BUTTON', { 'data-act': 'wstatus', 'data-id': 'i1', 'data-v': 'prog' }, 'button[data-act="wstatus"][data-id="i1"][data-v="prog"]'],
