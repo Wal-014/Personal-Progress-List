@@ -54,6 +54,14 @@ test('the responsive drawer header stays transparent and only its button catches
     assert.ok(button?.declarations.includes('pointer-events: auto'));
 });
 
+test('Home text links underline only their label on hover, so the arrow stays clean', () => {
+    const hovered = blocks.filter(({ selector, parents }) => selector === '&.htext' && parents.some(parent => parent.selector.includes(':hover')));
+    assert.equal(hovered.length, 1);
+    assert.ok(!hovered[0].declarations.some(value => value.startsWith('text-decoration')));
+    const label = blocks.find(({ selector, parents }) => selector === '& > .htext-label' && parents.includes(hovered[0]));
+    assert.ok(label?.declarations.includes('text-decoration: underline'));
+});
+
 test('generic dialog and panel button styles leave the small help buttons alone', () => {
     const exclusions = blocks.flatMap(({ selector }) => [...selector.matchAll(/(?:\.modal|\.rcol\)) button:where\(:not\(([^)]*)\)\)/g)].map(match => match[1]));
     assert.ok(exclusions.length >= 2);
