@@ -270,16 +270,36 @@ test('popover geometry chooses below or above and stays inside narrow and short 
     assert.equal(aboveViewport.top, '12px');
 });
 
-test('pause menu exposes independent named appearance groups and pressed options', () => {
+test('settings collapse theme, background and language into exclusive pickers that show the current value', () => {
     const { app } = homeApp();
-    app("ui.theme = 'porcelain'; ui.background = 'orbital'");
+    app("ui.theme = 'porcelain'; ui.background = 'orbital'; ui.lang = 'es'");
     const html = app('pauseUI()');
-    assert.match(html, /role=group aria-labelledby=colour-theme/);
-    assert.match(html, /role=group aria-labelledby=background-design/);
+    for (const [field, label, current] of [['theme', 'Tema', /sw-porcelain" aria-hidden=true><\/i>Porcelana/], ['background', 'Fondo', /bg-orbital" aria-hidden=true><\/i>Orbital/], ['lang', 'Idioma', /<\/svg>Español/]]) {
+        const picker = html.match(new RegExp(`<details class=settings-picker name=settings-picker data-picker=${field}>(.*?)</details>`))[1];
+        assert.match(picker, new RegExp(`<summary><span class=settings-label id=picker-${field}>${label}</span><span class=settings-current>`));
+        assert.match(picker.match(/<span class=settings-current>(.*?)<\/span><svg/)[1], current);
+        assert.match(picker, new RegExp(`role=group aria-labelledby=picker-${field}>`));
+    }
     assert.equal((html.match(/data-act=theme /g) || []).length, 6);
     assert.equal((html.match(/data-act=background /g) || []).length, 4);
+    assert.equal((html.match(/data-act=lang /g) || []).length, 2);
     assert.match(html, /data-act=theme data-v=porcelain aria-pressed=true/);
     assert.match(html, /data-act=background data-v=orbital aria-pressed=true/);
+    assert.match(html, /data-act=lang data-v=es aria-pressed=true/);
+    app("ui.lang = 'en'");
+    assert.deepEqual([...app('pauseUI()').matchAll(/class=settings-label id=picker-\w+>([^<]+)/g)].map(match => match[1]), ['Theme', 'Background', 'Language']);
+});
+
+test('picking a theme or background collapses its picker onto the new value and focuses its summary', () => {
+    const { app, context } = homeApp(), focused = [];
+    const current = { innerHTML: 'old' }, summary = { focus: () => focused.push('summary') };
+    const picker = { open: true, querySelector: selector => selector == '.settings-current' ? current : summary };
+    context.document.querySelectorAll = () => [];
+    app('ACTIONS.background')({ dataset: { v: 'aurora' }, innerHTML: '<i class="background-preview bg-aurora"></i>Aurora', closest: selector => selector == '.settings-picker' ? picker : null });
+    assert.equal(picker.open, false);
+    assert.equal(current.innerHTML, '<i class="background-preview bg-aurora"></i>Aurora');
+    assert.deepEqual(focused, ['summary']);
+    assert.equal(app('ui.background'), 'aurora');
 });
 
 test('Settings footer shows the configured application version', () => {
@@ -301,13 +321,13 @@ test('guest appearance actions persist independently and update the existing con
     context.document.querySelectorAll = selector => selector.endsWith('theme]') ? themes : backgrounds;
     context.openModal = () => assert.fail('appearance changes must leave the settings dialog intact');
     context.render = () => assert.fail('appearance changes must leave the inline app form intact');
-    app("ACTIONS.background({ dataset: { v: 'celestial' } }); ACTIONS.theme({ dataset: { v: 'porcelain' } })");
+    app("ACTIONS.background({ dataset: { v: 'celestial' }, closest: () => null }); ACTIONS.theme({ dataset: { v: 'porcelain' }, closest: () => null })");
     assert.equal(app('ui.background'), 'celestial');
     assert.equal(context.localStorage.gbg, 'celestial');
     assert.equal(context.localStorage.gt, 'porcelain');
     assert.equal(pressed.porcelain, 'true');
     assert.equal(pressed.nebula, 'false');
-    app("ACTIONS.background({ dataset: { v: 'orbital' } })");
+    app("ACTIONS.background({ dataset: { v: 'orbital' }, closest: () => null })");
     assert.equal(app('ui.theme'), 'porcelain');
     assert.equal(pressed.orbital, 'true');
     assert.equal(context.document.documentElement.dataset.theme, 'porcelain');
