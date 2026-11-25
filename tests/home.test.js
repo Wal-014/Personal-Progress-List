@@ -168,7 +168,7 @@ test('empty wishlist preview exposes creation to the owner and an empty message 
     assert.doesNotMatch(utilities, /data-act=bell|data-act=tags|guest-account|id=syncst/);
 });
 
-test('stats summary and both screens share totals, include recorded zeros and exclude missing attempts from the average', () => {
+test('stats summary and both screens share totals, include recorded zeros and exclude missing attempts and time from the averages', () => {
     const { app } = homeApp();
     app(`profile = emptyProfile(); profile.levels = [
         { id: 'a', name: 'Alpha', kind: 'classic', attN: 1000, attC: 500, tN: 3600 },
@@ -180,18 +180,20 @@ test('stats summary and both screens share totals, include recorded zeros and ex
     assert.equal(summary.attemptTotal, 1500);
     assert.equal(summary.playHours, 4);
     assert.equal(summary.average, 750);
-    assert.equal(summary.mostAttemptsLevel.id, 'a');
+    assert.equal(summary.playSeconds, 14400);
+    assert.equal(summary.averageSeconds, 7200);
     for (const draw of ['stats()', 'homeStats()']) {
         const html = app(draw);
         assert.match(html, />3</);
         assert.match(html, />1,500</);
         assert.match(html, />4</);
     }
+    assert.match(app('stats()'), /Average time per level<\/small><b class=kpi-sub-value>2 h 0 min</);
     app("ui.lang = 'es'");
     assert.match(app('homeStats()'), />1500</);
     app('profile = emptyProfile()');
     assert.deepEqual(JSON.parse(JSON.stringify(app('statsSummary()'))), {
-        levelCount: 0, attemptTotal: 0, playHours: 0, average: null, mostAttemptsLevel: null
+        levelCount: 0, attemptTotal: 0, playSeconds: 0, playHours: 0, average: null, averageSeconds: null
     });
 });
 
