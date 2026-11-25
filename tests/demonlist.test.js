@@ -55,7 +55,7 @@ function formFixture() {
     const f = fixture({ localStorage: { ggdl: '[[42,387]]' }, document: { querySelector: key => nodes[key], body: {}, addEventListener() {} }, window: { addEventListener() {} }, clearTimeout,
         FormData: class extends URLSearchParams { constructor(form) { super(form.entries); } },
         render() {}, save() {}, closeModal() {}, scrollSel() {}, renderTagSuggestions() {}, fetch: async () => { throw Error('offline'); } });
-    f.load(['js/state.js', 'js/components/faces.js', 'js/components/deaths-input.js', 'js/components/duration-input.js', 'js/components/levels.js', 'js/components/search.js', 'js/events.js']);
+    f.load(['js/state.js', 'js/components/faces.js', 'js/components/deaths-input.js', 'js/components/duration-input.js', 'js/components/help-tip.js', 'js/components/levels.js', 'js/components/search.js', 'js/events.js']);
     f.app('profile = emptyProfile(); ui.lang = "en"');
     return { ...f, nodes };
 }

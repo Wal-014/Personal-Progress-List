@@ -12,7 +12,7 @@ for (const kind of ['classic', 'platform']) {
         const ui = { tab: kind, sel: 'a' }, prompts = [];
         const count = {}, button = {}, row = { setAttribute(key, value) { this[key] = value; } };
         let approved = false, saves = 0;
-        const { app, context } = loadScripts(['js/components/levels.js'], {
+        const { app, context } = loadScripts(['js/components/help-tip.js', 'js/components/levels.js'], {
             ui, profile, isListTab: () => true, render() {},
             findLevel: id => profile.levels.find(level => level.id === id),
             qs: selector => ({ '.list-selection output': count, '[data-act=list-delete]': button })[selector],
@@ -46,7 +46,7 @@ for (const kind of ['classic', 'platform']) {
 test('switching profiles during confirmation leaves both profiles intact', async () => {
     const original = { levels: [{ id: 'a', kind: 'classic' }], order: { classic: ['a'] } };
     let confirm;
-    const { app, context } = loadScripts(['js/components/levels.js'], {
+    const { app, context } = loadScripts(['js/components/help-tip.js', 'js/components/levels.js'], {
         ui: { tab: 'classic' }, profile: original, qs() {}, render() {},
         t: () => '{n}', isListTab: () => true,
         askConfirm: () => new Promise(resolve => { confirm = resolve; })

@@ -1587,6 +1587,71 @@ input.ro {
   justify-content: start;
 }
 
+.field-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.field-head > :is(label, .lab) {
+  margin-bottom: 0;
+}
+
+legend:has(> .help-tip) {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+/* A small circled ? beside a heading or label; the 44px touch area comes from an invisible ring around it. */
+.help-tip {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  min-height: 20px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 55%, var(--color-border));
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-accent);
+  font: 700 12px/1 var(--font-ui);
+  text-transform: none;
+  cursor: help;
+}
+
+.help-tip::after {
+  content: "";
+  position: absolute;
+  inset: -12px;
+}
+
+.help-tip:focus-visible {
+  outline: var(--size-focus) solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.help-pop {
+  position: fixed;
+  inset: auto;
+  top: var(--help-top, -9999px);
+  left: var(--help-left, 0);
+  max-width: min(20rem, calc(100vw - 16px));
+  margin: 0;
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-elevated, var(--color-surface));
+  box-shadow: var(--shadow-panel);
+  color: var(--color-text);
+  font: 500 13px/1.5 var(--font-ui);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .deaths-input > #death-label {
   display: block;
   margin-bottom: var(--space-8);

@@ -352,7 +352,7 @@ test('blocked cache storage does not interrupt account sync', async () => {
 });
 
 test('storage events ignore legacy data and reload the active account cache only outside forms', async () => {
-    const [a, b] = await pair(); a.load(['js/events.js']);
+    const [a, b] = await pair(); a.load(['js/components/help-tip.js', 'js/events.js']);
     b.app(`profile.levels[0].attN = 90; save();`); await b.app('pushCloud()');
     a.storage['gcloud:owner'] = b.storage['gcloud:owner'];
     await a.emit('window', 'storage', { key: 'gdp', newValue: JSON.stringify(local) });
@@ -364,7 +364,7 @@ test('storage events ignore legacy data and reload the active account cache only
 });
 
 test('language and theme actions save account preferences and Retry pulls remote changes', async () => {
-    const page = await ready(); page.load(['js/events.js']);
+    const page = await ready(); page.load(['js/components/help-tip.js', 'js/events.js']);
     page.context.openModal = () => {};
     page.app(`reopenPause = () => {}; ACTIONS.lang({ dataset: { v: 'es' }, closest: () => null }); ACTIONS.theme({ dataset: { v: 'graphite' } });`);
     await page.app('pushCloud()');
@@ -492,7 +492,7 @@ test('offline session restoration preserves cached edits before the first profil
 });
 
 test('account preference actions tolerate blocked storage', async () => {
-    const page = await ready(); page.load(['js/events.js']);
+    const page = await ready(); page.load(['js/components/help-tip.js', 'js/events.js']);
     page.context.localStorage = new Proxy({}, { get() { throw Error('Storage blocked'); }, set() { throw Error('Storage blocked'); } });
     page.app(`reopenPause = () => {}; ACTIONS.lang({ dataset: { v: 'es' }, closest: () => null }); ACTIONS.theme({ dataset: { v: 'graphite' } });`);
     assert.equal(page.app('ui.lang'), 'es'); assert.equal(page.app('ui.theme'), 'graphite');
@@ -632,7 +632,7 @@ test('a null initial session leaves cached mode when its stored session belongs 
 
 test('Retry refreshes an unconfirmed session, keeps offline edits on failure and starts sync on success', async () => {
     const a = await ready(); a.app(`profile.levels.push(${JSON.stringify(level())}); save();`);
-    const page = device(a.server, a.storage); page.load(); boot(page); page.load(['js/events.js']);
+    const page = device(a.server, a.storage); page.load(); boot(page); page.load(['js/components/help-tip.js', 'js/events.js']);
     let attempts = 0;
     a.server.auth = { refreshSession: async () => {
         attempts++;

@@ -180,9 +180,18 @@ function renderTagSuggestions() {
     qs('#tgr').innerHTML = matches + create;
 }
 
+/** Level fields whose meaning is not obvious from their label. */
+const FIELD_HELP = new Set(['pos', 'ap', 'gdl', 'attN', 'attC', 'enj', 'lik', 'tags', 'notes']);
+
+/** A field label, followed by its ? explanation when the field has one. */
+function fieldLabel(key, label, forId = 'fm-' + key) {
+    const tag = `<label for=${forId}>${label}</label>`;
+    return FIELD_HELP.has(key) ? `<div class=field-head>${tag}${helpTip(key, label)}</div>` : tag;
+}
+
 function formField(key, value, type = 'text', attrs = '', hint = '') {
     const step = attrs.match(/\bstep=([\d.]+)/)?.[1] || '1';
-    return `<div><label for=fm-${key}>${t(key)}</label>${type == 'number' && !attrs.includes('readonly') ? `<div class=num><button type=button class=blue data-act=step data-d=-1 aria-label="−${escapeHtml(formatRating(+step))}">−</button><input id=fm-${key} name=${key} type=number ${attrs} value="${escapeHtml(value)}"><button type=button class=blue data-act=step data-d=1 aria-label="+${escapeHtml(formatRating(+step))}">+</button></div>` : `<input id=fm-${key} name=${key} type=${type} ${attrs} value="${escapeHtml(value)}"${attrs.includes('readonly') ? ' class=ro' : ''}>`}${hint ? `<small id=fm-${key}-hint class=by>${escapeHtml(hint)}</small>` : ''}</div>`;
+    return `<div>${fieldLabel(key, t(key))}${type == 'number' && !attrs.includes('readonly') ? `<div class=num><button type=button class=blue data-act=step data-d=-1 aria-label="−${escapeHtml(formatRating(+step))}">−</button><input id=fm-${key} name=${key} type=number ${attrs} value="${escapeHtml(value)}"><button type=button class=blue data-act=step data-d=1 aria-label="+${escapeHtml(formatRating(+step))}">+</button></div>` : `<input id=fm-${key} name=${key} type=${type} ${attrs} value="${escapeHtml(value)}"${attrs.includes('readonly') ? ' class=ro' : ''}>`}${hint ? `<small id=fm-${key}-hint class=by>${escapeHtml(hint)}</small>` : ''}</div>`;
 }
 
 const aredlTopValue = ar => ar?.s == 'r' && ar.p != null ? '#' + ar.p : ar?.s == 'p' ? t('pending') : '—';
@@ -205,20 +214,21 @@ function levelForm(level) {
     const kind = level?.kind || (isListTab() ? ui.tab : 'classic');
     const levelData = level || { tags: [], ar: { s: 'n' }, kind };
     const rankPosition = rankedIds(kind).indexOf(level?.id) + 1 || '', maximum = maxRankPosition(kind, level?.id);
-    const readout = (field, label, value) => `<label for=fm-${field}>${t(label)}</label><output id=fm-${field} name=${field}>${escapeHtml(value)}</output>`;
+    const readout = (field, label, value) => `${fieldLabel(field, t(label))}<output id=fm-${field} name=${field}>${escapeHtml(value)}</output>`;
     const ranks = `<div class=level-ranks><div>${readout('ap', kind == 'platform' ? 'apPlatform' : 'ap', aredlTopValue(levelData.ar))}</div><div id=fm-gdl-field${kind == 'platform' ? ' hidden' : ''}>${readout('gdl', 'gdlTop', kind == 'platform' || levelData.gdl == null ? '—' : '#' + levelData.gdl)}</div></div>`;
     const attempts = ['attN', 'attC'].map(key => formField(key, levelData[key], 'number', 'min=0 step=1')).join('');
     const times = ['tN', 'tP', 'tPC'].map(key => durationInput(key, levelData[key])).join('');
     const totals = `<div class=level-totals><div>${readout('attT', 'attT', totalAttempts(levelData))}</div><div>${readout('tT', 'tT', durationClock(totalSeconds(levelData)))}</div></div>`;
-    const section = (key, body) => `<fieldset><legend>${t(key)}</legend><div class=grid>${body}</div></fieldset>`;
+    const legend = key => `<legend>${t(key)}${helpTip(key, t(key))}</legend>`;
+    const section = (key, body) => `<fieldset>${legend(key)}<div class=grid>${body}</div></fieldset>`;
     return `<div class=box><h2${level ? ' tabindex=-1' : ''}>${level ? t('edit') : t('palAdd')}</h2><form id=fm data-id="${escapeHtml(level?.id)}">
 ${levelSearchBox()}
 ${section('s1', levelFields(levelData, true))}
 ${section('s2', formField('pos', rankPosition, 'number', `min=1 max=${maximum} step=1 aria-describedby=fm-pos-hint`, rankPositionHint(maximum)) + ranks)}
 ${section('s3', `<div class=level-attempts>${attempts}</div><div class=level-times>${times}</div>${totals}`)}
 ${section('s4', formField('date', levelData.date, 'date') + formField('link', levelData.link))}
-<fieldset><legend>${t('s5')}</legend><div class=grid>${formField('enj', levelData.enj, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}${formField('lik', levelData.lik, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}</div><label for=tgq>${t('tags')}</label><input id=tgq placeholder="${t('tgs')}" autocomplete=off maxlength=${TAG_NAME_LIMIT}><div id=tgr class=tgr></div><div id=tgs>${(levelData.tags || []).map(tagChip).join('')}</div></fieldset>
-<fieldset><legend>${t('s6')}</legend><label for=fm-notes>${t('notes')}</label><textarea id=fm-notes name=notes rows=3 maxlength=${NOTES_LIMIT} aria-describedby=fm-notes-hint>${escapeHtml(levelData.notes)}</textarea><small id=fm-notes-hint class=by>${t('notesLimit').replace('{n}', NOTES_LIMIT.toLocaleString(ui.lang))}</small>${deathsInput(levelData.deaths)}</fieldset>
+<fieldset>${legend('s5')}<div class=grid>${formField('enj', levelData.enj, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}${formField('lik', levelData.lik, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}</div>${fieldLabel('tags', t('tags'), 'tgq')}<input id=tgq placeholder="${t('tgs')}" autocomplete=off maxlength=${TAG_NAME_LIMIT}><div id=tgr class=tgr></div><div id=tgs>${(levelData.tags || []).map(tagChip).join('')}</div></fieldset>
+<fieldset>${legend('s6')}${fieldLabel('notes', t('notes'))}<textarea id=fm-notes name=notes rows=3 maxlength=${NOTES_LIMIT} aria-describedby=fm-notes-hint>${escapeHtml(levelData.notes)}</textarea><small id=fm-notes-hint class=by>${t('notesLimit').replace('{n}', NOTES_LIMIT.toLocaleString(ui.lang))}</small>${deathsInput(levelData.deaths)}</fieldset>
 <div class="dgb level-action-bar">${level ? `<button type=button class=dg data-act=del data-id="${escapeHtml(level.id)}">${t('del')}</button>` : ''} <button type=button data-act=${level ? 'lvclose' : 'close'}>${t('close')}</button> <button type=submit class=pri>${t('save')}</button></div></form></div>`;
 }
 

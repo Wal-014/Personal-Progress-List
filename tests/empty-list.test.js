@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadScripts } from './load-scripts.js';
 
-const { context, app } = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js', 'js/components/empty-list.js', 'js/components/levels.js', 'js/components/wishlists.js'], { localStorage: {} });
+const { context, app } = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js', 'js/components/empty-list.js', 'js/components/help-tip.js', 'js/components/levels.js', 'js/components/wishlists.js'], { localStorage: {} });
 
 for (const [lang, addLabel, wishTitle, wishText, listTitle, listText, noMatch] of [
     ['es', 'Añadir nivel', 'Tu wishlist está vacía', 'Añade los niveles que quieres jugar y sigue aquí tu progreso.', 'Aún no hay niveles', 'Añade el primer nivel que hayas superado para empezar tu ranking.', 'Ningún nivel coincide con la búsqueda'],

@@ -8,7 +8,7 @@ function formFixture() {
     const selected = { html: '', insertAdjacentHTML(position, html) { this.html += html; } };
     const nodes = { '#tgq': { value: '', focus() { focused.push('tgq'); } }, '#tgr': { innerHTML: '' }, '#tgs': selected };
     const localStorage = {};
-    const f = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/levels.js', 'js/events.js'], {
+    const f = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/help-tip.js', 'js/components/levels.js', 'js/events.js'], {
         localStorage, document: {
             body: {}, addEventListener() {}, querySelector: selector => nodes[selector],
             querySelectorAll: selector => selector == '#tgs input' ? [...selected.html.matchAll(/name=tg value="([^"]*)"/g)].map(match => ({ value: match[1] })) : []

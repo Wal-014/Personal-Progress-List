@@ -310,7 +310,7 @@ for (const [lang, title, refresh, updating, never, updated, partial, error] of [
 ]) test(`settings display ranking states and keep the refresh button focusable in ${lang}`, async () => {
     const f = fixture();
     f.setup();
-    f.load(['js/events.js']);
+    f.load(['js/components/help-tip.js', 'js/events.js']);
     f.context.ui.lang = lang;
     const settings = () => f.app('pauseUI()');
     const warning = f.app('ICONS.warning');

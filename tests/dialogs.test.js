@@ -59,7 +59,7 @@ function dialogApp() {
         return (nodes['#opener'] = control('opener', true));
     };
     replaceOpener().focus();
-    const env = loadScripts(['js/utils.js', 'js/components/dialogs.js', 'js/render.js', 'js/events.js'], {
+    const env = loadScripts(['js/utils.js', 'js/components/dialogs.js', 'js/render.js', 'js/components/help-tip.js', 'js/events.js'], {
         document, window: { addEventListener() {} }, CSS: { escape: String }, t: key => key, renderTagSuggestions() {}
     });
     const dispatchModalEvent = (type, target = nodes.dialog) => {

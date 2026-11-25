@@ -4,7 +4,7 @@ import { emptyDurationFields, loadScripts } from './load-scripts.js';
 
 function fixture() {
     const nodes = Object.fromEntries(['#lf-face', '#lf-diffT', '#gdq', '#fm-pos-hint'].map(key => [key, { textContent: '', setCustomValidity() {} }]));
-    const f = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js', 'js/components/search.js', 'js/components/deaths-input.js', 'js/components/duration-input.js', 'js/components/levels.js', 'js/events.js'], {
+    const f = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js', 'js/components/search.js', 'js/components/deaths-input.js', 'js/components/duration-input.js', 'js/components/help-tip.js', 'js/components/levels.js', 'js/events.js'], {
         localStorage: {}, clearTimeout, Event,
         document: { querySelector: key => nodes[key], body: {}, addEventListener() {} },
         window: { addEventListener() {} },
