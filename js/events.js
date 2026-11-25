@@ -9,6 +9,16 @@ function reopenPause(selector) {
     qs('#md ' + selector)?.focus();
 }
 
+/** After a pick, the settings picker shows the new value collapsed and returns focus to its summary. */
+function closeSettingsPicker(option) {
+    const picker = option.closest('.settings-picker');
+    if (!picker)
+        return;
+    picker.querySelector('.settings-current').innerHTML = option.innerHTML;
+    picker.open = false;
+    picker.querySelector('summary').focus();
+}
+
 function setAppearance(field, value) {
     if (cloudUser) {
         applyCloudSettings({ [field]: value });
@@ -116,8 +126,14 @@ const ACTIONS = {
             qs('#q')?.focus({ preventScroll: true });
     },
     pause: () => openModal(pauseUI()),
-    theme: a => setAppearance('theme', themeOf(a.dataset.v)),
-    background: a => setAppearance('background', backgroundOf(a.dataset.v)),
+    theme(a) {
+        setAppearance('theme', themeOf(a.dataset.v));
+        closeSettingsPicker(a);
+    },
+    background(a) {
+        setAppearance('background', backgroundOf(a.dataset.v));
+        closeSettingsPicker(a);
+    },
     bell: () => openModal(bellUI()),
     notifwish: button => transferFromNotification(button),
     notiflocal: () => openNotificationMigration(),
@@ -143,7 +159,7 @@ const ACTIONS = {
         else
             ui.lang = localStorage.gl = a.dataset.v;
         if (a.closest('.pause'))
-            reopenPause(`[data-act=lang][data-v=${a.dataset.v}]`);
+            reopenPause('[data-picker=lang] summary');
         else
             render();
     },
@@ -173,6 +189,7 @@ const ACTIONS = {
             renderPanel();
         }
         openModal(levelForm());
+        rememberLevelForm(qs('#md'));
         qs('#gdq').focus();
     },
     edit: (a, id) => openLevelEditor(id, !!qs('#md .modal')),
@@ -193,7 +210,7 @@ const ACTIONS = {
         a.remove();
         renderTagSuggestions();
     },
-    close: () => closeModal(),
+    close: () => requestCloseModal(),
     async del(a, id) {
         const deletionProfile = profile;
         if (!canEdit() || !await askConfirm(t('confirm')) || profile !== deletionProfile || !canEdit())
@@ -528,18 +545,35 @@ function openClickedLevel(event, clickedCard) {
     }
 }
 
-document.body.onclick = e => {
+/** Actions that replace what the side panel shows, so they would drop a level being edited there. */
+const LEAVES_LEVEL_EDITOR = new Set(['lvclose', 'tab', 'add', 'edit', 'wopen', 'wnew', 'myprogress', 'localuse']);
+
+function leavesLevelEditor(target, action, clicked) {
+    if (!qs('.rcol #fm'))
+        return false;
+    return action ? LEAVES_LEVEL_EDITOR.has(action.dataset.act) : !!clicked?.matches('.lv, .pt') && !target.closest('form');
+}
+
+/** Runs leave() once the edited level may be dropped: it is unchanged, or the user chose to discard it. */
+function leaveLevelEditor(leave) {
+    return confirmLevelFormExit(qs('.rcol')).then(discard => discard && leave());
+}
+
+function handleBodyClick(e, confirmed = false) {
     document.querySelectorAll('.ms[open]').forEach(d => {
         if (!d.contains(e.target))
             d.open = false;
     });
     const g = e.target.closest('[data-tag]'), a = e.target.closest('[data-act]'), c = e.target.closest('[data-id]');
+    if (!confirmed && leavesLevelEditor(e.target, a, c))
+        return leaveLevelEditor(() => handleBodyClick(e, true));
     if (g && a?.dataset.act !== 'list-pick')
         return filterByTagChip(g);
     if (a)
         return runAction(a);
     openClickedLevel(e, c);
-};
+}
+document.body.onclick = e => handleBodyClick(e);
 document.body.onsubmit = e => {
     e.preventDefault();
     if (e.target.id == 'af')
@@ -730,12 +764,12 @@ function comparePickerKeydown(e) {
     return true;
 }
 
-/** Escape closes the open dropdown, or the level panel on narrow screens; true when it did. */
+/** Escape closes the open dropdown or settings picker, or the level panel on narrow screens; true when it did. */
 function escapeKeydown(e) {
     // An open explanation closes by itself and must not take the panel with it.
     if (e.key != 'Escape' || qs('.help-pop:popover-open'))
         return false;
-    const dropdown = e.target.closest('.ms[open]');
+    const dropdown = e.target.closest('.ms[open], .settings-picker[open]');
     if (dropdown) {
         e.preventDefault();
         e.stopPropagation();
@@ -745,7 +779,7 @@ function escapeKeydown(e) {
     }
     if (e.target.closest?.('.rcol.has') && innerWidth <= 900 && !qs('dialog[open]')) {
         e.preventDefault();
-        ACTIONS.lvclose();
+        leaveLevelEditor(() => ACTIONS.lvclose());
         return true;
     }
     return false;

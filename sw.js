@@ -63,6 +63,7 @@ const SHELL = [
   "js/components/compare.js",
   "js/components/stats.js",
   "js/components/home.js",
+  "js/components/level-form-guard.js",
   "js/components/dialogs.js",
   "js/components/local-data.js",
   "js/components/account-ui.js",

@@ -366,6 +366,7 @@ function renderPanel() {
     r.classList.toggle('has', !!selectedListLevel());
     r.dataset.level = ui.sel ?? '';
     renderTagSuggestions();
+    rememberLevelForm(r);
 }
 
 function focusLevelPanel() {

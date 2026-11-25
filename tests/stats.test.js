@@ -5,7 +5,7 @@ import { loadScripts } from './load-scripts.js';
 function statsApp(nodes = new Map()) {
     const document = { body: {}, addEventListener() {}, querySelector: selector => nodes.get(selector) ?? null, querySelectorAll: () => [] };
     const files = ['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js', 'js/components/empty-list.js',
-        'js/components/timeline.js', 'js/components/rankings.js', 'js/components/compare.js', 'js/components/stats.js', 'js/render.js', 'js/components/help-tip.js', 'js/events.js'];
+        'js/components/timeline.js', 'js/components/rankings.js', 'js/components/compare.js', 'js/components/stats.js', 'js/components/level-form-guard.js', 'js/render.js', 'js/components/help-tip.js', 'js/events.js'];
     const loaded = loadScripts(files, { localStorage: {}, document, window: { addEventListener() {}, scrollTo() {} } });
     loaded.app('profile = emptyProfile(); ui.lang = "en"');
     return loaded.app;
@@ -454,6 +454,7 @@ export async function checkStatisticsBrowser(page) {
             await page.setViewportSize({ width, height: 900 });
             await page.goto(origin);
             await page.locator('[data-act=pause]').first().click();
+            await page.locator('[data-picker=lang] summary').click();
             await page.locator('[data-act=lang][data-v=' + language + ']').click();
             await page.locator('#md [data-act=close]').click();
             await page.locator('[data-act=tab][data-v=stats]').click();
