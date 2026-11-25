@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import vm from 'node:vm';
 import { appScripts } from '../eslint.config.js';
-import { BETA_BASE, DEV_HEADERS, RELEASE_LINE, SITE_FILES, assetsHash, countReleaseCommits, devConfig, devPage, releaseVersion, siteConfig, stampCache, stampVersion } from '../scripts/build-site.js';
+import { BETA_BASE, DEV_HEADERS, RELEASE_LINE, SITE_FILES, siteHash, countReleaseCommits, devConfig, devPage, releaseVersion, siteConfig, stampCache, stampVersion } from '../scripts/build-site.js';
 import { loadScripts } from './load-scripts.js';
 
 const isPublished = file => SITE_FILES.some(entry => file == entry || file.startsWith(`${entry}/`));
@@ -124,27 +124,27 @@ function assetTree(t, files) {
     return path;
 }
 
-test('assetsHash is stable and hashes files in relative path order regardless of write order', t => {
+test('siteHash is stable and hashes files in relative path order regardless of write order', t => {
     const files = [['z.webp', 'Z'], ['cubes/2.webp', 'C']];
     const first = assetTree(t, files);
     const second = assetTree(t, files.toReversed());
     const expected = createHash('sha256').update('["cubes/2.webp",1]C["z.webp",1]Z').digest('hex').slice(0, 12);
-    assert.equal(assetsHash(first), expected);
-    assert.equal(assetsHash(second), expected);
+    assert.equal(siteHash(first), expected);
+    assert.equal(siteHash(second), expected);
 });
 
-test('assetsHash changes when one file byte changes', t => {
+test('siteHash changes when one file byte changes', t => {
     const dir = assetTree(t, [['cubes/2.webp', Buffer.from([0, 255])], ['flag.svg', 'flag']]);
-    const before = assetsHash(dir);
+    const before = siteHash(dir);
     writeFileSync(join(dir, 'cubes/2.webp'), Buffer.from([0, 254]));
-    assert.notEqual(assetsHash(dir), before);
+    assert.notEqual(siteHash(dir), before);
 });
 
-test('assetsHash changes when a file is renamed', t => {
+test('siteHash changes when a file is renamed', t => {
     const dir = assetTree(t, [['cubes/2.webp', 'cube']]);
-    const before = assetsHash(dir);
+    const before = siteHash(dir);
     renameSync(join(dir, 'cubes/2.webp'), join(dir, 'cubes/3.webp'));
-    assert.notEqual(assetsHash(dir), before);
+    assert.notEqual(siteHash(dir), before);
 });
 
 const SUPABASE_ORIGIN = 'https://mjgklvdnuhbnyucytaji.supabase.co';
@@ -180,4 +180,18 @@ test('dev headers keep every page out of search results, frames and plain HTTP',
         'X-Robots-Tag: noindex', 'X-Content-Type-Options: nosniff', 'Referrer-Policy: strict-origin-when-cross-origin',
         "Content-Security-Policy: frame-ancestors 'none'", 'Strict-Transport-Security: max-age=31536000'
     ]);
+});
+
+test('siteHash leaves out the skipped worker and data folder but sees code, styles and pages', t => {
+    const dir = assetTree(t, [['sw.js', 'worker'], ['data/levels.json', '[]'], ['js/app.js', 'a'], ['css/styles.css', 'b'], ['index.html', 'c'], ['database.txt', 'd']]);
+    const skip = ['sw.js', 'data'];
+    const before = siteHash(dir, skip);
+    writeFileSync(join(dir, 'sw.js'), 'stamped worker');
+    writeFileSync(join(dir, 'data/levels.json'), '[1]');
+    assert.equal(siteHash(dir, skip), before);
+    for (const file of ['js/app.js', 'css/styles.css', 'index.html', 'database.txt']) {
+        const previous = siteHash(dir, skip);
+        writeFileSync(join(dir, file), 'changed ' + file);
+        assert.notEqual(siteHash(dir, skip), previous, file);
+    }
 });

@@ -83,3 +83,18 @@ test('paths outside the local assets folder still try the network before falling
         assert.equal(options.cache, 'no-cache', path);
     }
 });
+
+test('activation deletes only older caches of this app and keeps the caches of other apps on the origin', async () => {
+    const listeners = new Map(), deleted = [];
+    const env = loadScripts(['sw.js'], {
+        self: { addEventListener: (event, listener) => listeners.set(event, listener) },
+        caches: { keys: async () => ['prp-1.0.0-old', 'other-app-cache', 'prp-current-placeholder'], delete: async key => deleted.push(key) },
+        clients: { claim: async () => {} }
+    });
+    const current = env.app('CACHE');
+    env.context.caches.keys = async () => ['prp-1.0.0-old', 'other-app-cache', current];
+    let work;
+    listeners.get('activate')({ waitUntil: promise => { work = promise; } });
+    await work;
+    assert.deepEqual(deleted, ['prp-1.0.0-old']);
+});

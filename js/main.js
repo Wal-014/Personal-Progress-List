@@ -28,11 +28,11 @@
         navigator.serviceWorker.addEventListener('controllerchange', () => {
             if (reloadOnUpdate) {
                 reloadOnUpdate = false;
-                location.reload();
+                newVersionReady();
             }
         });
         // Offline use is optional: without a service worker (opened from disk, or blocked) the app still runs online
-        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {
+        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(watchForUpdates, () => {
         });
     }
 })();

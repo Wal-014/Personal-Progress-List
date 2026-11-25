@@ -139,6 +139,7 @@ const ACTIONS = {
     notiflocal: () => openNotificationMigration(),
     notifdismiss: button => hideNotification(button),
     legal: a => openModal(legalUI(a.dataset.v)),
+    appupdate: () => confirmLevelFormExit(qs('.rcol')).then(discard => discard && applyUpdate()),
     ct() {
         ui.tagFilter = [];
         renderListTagFilters();
