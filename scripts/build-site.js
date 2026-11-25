@@ -1,7 +1,7 @@
 /**
  * Copies the files the site serves into _site/, the folder the deploy jobs publish,
  * so tests, docs and tooling stay out of the live site. Both builds stamp the service worker
- * cache name with a hash of the published assets.
+ * cache name with a hash of the published files, except the worker and the daily data.
  * `npm run site` builds production (GitHub Pages); `npm run site -- development` builds the dev site,
  * which has no database of its own, so accounts are off and the page cannot reach the production project.
  */
@@ -13,11 +13,11 @@ import { pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 
 const OUT = '_site';
-// Folders are copied whole; docs/brand/card.jpg is the social preview image index.html points to
-export const SITE_FILES = ['index.html', 'manifest.json', 'sw.js', 'favicon.png', 'icon.svg', 'css', 'js', 'data', 'assets', 'fonts', 'vendor', 'docs/brand/card.jpg'];
+// Folders are copied whole; docs/brand/card-2.jpg is the social preview image index.html points to
+export const SITE_FILES = ['index.html', 'manifest.json', 'sw.js', 'favicon.png', 'icon.svg', 'css', 'js', 'data', 'assets', 'fonts', 'vendor', 'docs/brand/card-2.jpg'];
 
 const ACCOUNTS_ON = 'const ACCOUNTS = true;';
-export const RELEASE_LINE = '1.0.0';
+export const RELEASE_LINE = '1.1.0';
 export const BETA_BASE = '41f339b260a0735510b0fe07531c9a0ba639886b';
 
 // Cloudflare applies this file to the dev Worker's responses; this header policy only adds
@@ -62,10 +62,15 @@ export function stampCache(sw, hash) {
     return sw.replace(declaration, (_, name) => `const CACHE = '${name}-${hash}';`);
 }
 
-export function assetsHash(dir) {
+/**
+ * Hash of the published files, so any code, style or image change renames the service worker cache and reaches open tabs.
+ * The worker itself and the data folder, which the daily refresh rewrites, are left out with skip.
+ */
+export function siteHash(dir, skip = []) {
     const files = readdirSync(dir, { recursive: true, withFileTypes: true })
         .filter(entry => entry.isFile())
         .map(entry => relative(dir, join(entry.parentPath, entry.name)).split(sep).join('/'))
+        .filter(file => !skip.some(path => file == path || file.startsWith(path + '/')))
         .sort();
     const hash = createHash('sha256');
     for (const file of files) {
@@ -116,8 +121,6 @@ if (import.meta.url == pathToFileURL(process.argv[1]).href) {
     rmSync(OUT, { recursive: true, force: true });
     for (const entry of SITE_FILES)
         cpSync(entry, `${OUT}/${entry}`, { recursive: true });
-    const swFile = `${OUT}/sw.js`;
-    writeFileSync(swFile, stampCache(readFileSync(swFile, 'utf8'), assetsHash(`${OUT}/assets`)));
     const configFile = `${OUT}/js/config.js`;
     const config = readFileSync(configFile, 'utf8');
     const builtConfig = siteConfig(config, target, process.env.PRODUCTION_RELEASE);
@@ -125,5 +128,8 @@ if (import.meta.url == pathToFileURL(process.argv[1]).href) {
         writeFileSync(configFile, builtConfig);
     if (target == 'development')
         buildDev(builtConfig);
+    // Stamped last, so the hash covers the rewritten config and page.
+    const swFile = `${OUT}/sw.js`;
+    writeFileSync(swFile, stampCache(readFileSync(swFile, 'utf8'), siteHash(OUT, ['sw.js', 'data'])));
     console.log(`Copied ${SITE_FILES.length} entries to ${OUT}/ for ${target}`);
 }

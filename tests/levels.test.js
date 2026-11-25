@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadScripts } from './load-scripts.js';
 
-const { context, app } = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js', 'js/components/search.js', 'js/components/deaths-input.js', 'js/components/duration-input.js', 'js/components/levels.js'], { localStorage: {}, clearTimeout });
+const { context, app } = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js', 'js/components/search.js', 'js/components/deaths-input.js', 'js/components/duration-input.js', 'js/components/help-tip.js', 'js/components/levels.js'], { localStorage: {}, clearTimeout });
 
 for (const publicView of [false, true]) {
     const mode = publicView ? 'public' : 'editable';
@@ -48,7 +48,7 @@ for (const publicView of [false, true]) {
         assert.equal((html.match(/<details class=level-section open>/g) || []).length, 1);
         assert.match(html, /<summary>Rating<\/summary>/);
         assert.match(html, /<small>Enjoyment<\/small><div class=mh><b[^>]*>0<\/b>/);
-        assert.match(html, /<small>Level appeal<\/small><div class=mh><b[^>]*>3\.5<\/b>/);
+        assert.match(html, /<small>Level rating<\/small><div class=mh><b[^>]*>3\.5<\/b>/);
         assert.doesNotMatch(html, /No additional details/);
     });
 
@@ -79,8 +79,8 @@ for (const publicView of [false, true]) {
             [{ tPC: 5 }, ['Total time', 'Copy or StartPos playtime', '0h 0m 5s'], ['Normal time', 'Practice time']],
             [{ date: '2026-01-02' }, ['Completion date', '02/01/2026'], ['class=yt', 'Video link']],
             [{ link: 'https://example.com/video' }, ['href="https://example.com/video"'], ['Completion date', 'class=grid']],
-            [{ enj: 0 }, ['Enjoyment'], ['Level appeal']],
-            [{ lik: 3.5 }, ['Level appeal'], ['Enjoyment']],
+            [{ enj: 0 }, ['Enjoyment'], ['Level rating']],
+            [{ lik: 3.5 }, ['Level rating'], ['Enjoyment']],
             [{ notes: '<Recorded>' }, ['&lt;Recorded&gt;'], ['<Recorded>']],
             [{ deaths: { 63: 2 } }, ['Best %', '63% ×2', 'class=hist'], ['Total attempts', 'Normal attempts', 'Copy attempts']]
         ];
@@ -130,7 +130,7 @@ test('levelForm translates copy or StartPos playtime', () => {
 });
 
 test('the level form reopens saved deaths as chips instead of a text field', () => {
-    const fixture = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js', 'js/components/deaths-input.js', 'js/components/duration-input.js', 'js/components/levels.js', 'js/components/search.js'], { localStorage: {}, clearTimeout() {} });
+    const fixture = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js', 'js/components/deaths-input.js', 'js/components/duration-input.js', 'js/components/help-tip.js', 'js/components/levels.js', 'js/components/search.js'], { localStorage: {}, clearTimeout() {} });
     fixture.app('profile = emptyProfile()');
     const html = fixture.app('levelForm')({ id: 'saved', name: 'Level', kind: 'classic', tags: [], deaths: { 37: 82, 0: 0, 24: 135 } });
     assert.deepEqual([...html.matchAll(/name=dth value="([^"]+)"/g)].map(match => match[1]), ['0:0', '24:135', '37:82']);
@@ -165,7 +165,7 @@ test('matchesListFilters matches any selected tag and includes a level with both
         { name: 'First', tags: ['Rebeated'] },
         { name: 'Second', tags: ['Fluked'] },
         { name: 'Both', tags: ['Rebeated', 'Fluked'] },
-        { name: 'Other', tags: ['Pre-Extremes'] },
+        { name: 'Other', tags: ['Hard'] },
         { name: 'Untagged' }
     ];
     assert.deepEqual(levels.filter(level => app('matchesListFilters')(level, '', ['Rebeated', 'Fluked'])).map(level => level.name), ['First', 'Second', 'Both']);
@@ -242,11 +242,11 @@ test('cards show the emblem for each of the first five ranks in either list', ()
     }
 });
 
-test('rank six, unplaced and First steps cards have no emblem', () => {
+test('rank six and unplaced cards have no emblem', () => {
     app('profile = emptyProfile(); ui.lang = "en"');
     const level = { id: 'plain', name: 'Level', kind: 'classic' };
     const unplaced = app("t('unplaced')");
-    for (const [index, label, content] of [[5, '#6 / 8', '6'], [undefined, unplaced, '—'], [null, unplaced, '—'], ['pre', app("t('first')"), app('ICONS.classic')]]) {
+    for (const [index, label, content] of [[5, '#6 / 8', '6'], [undefined, unplaced, '—'], [null, unplaced, '—']]) {
         const html = app('card')(level, index, 8);
         assert.ok(html.includes(`<span class=rk aria-label="${label}">${content}</span>`));
         assert.doesNotMatch(html, /assets\/ranks\/|class="obj lv rank-/);
@@ -270,7 +270,7 @@ test('card renders optional decorative grips and thumbnail layers', () => {
 function keyboardReorderFixture(kind) {
     const localStorage = {}, messages = [];
     let renders = 0;
-    const { app, context } = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/levels.js', 'js/events.js'], {
+    const { app, context } = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/help-tip.js', 'js/components/levels.js', 'js/events.js'], {
         localStorage, document: { body: {}, addEventListener() {} }, window: { addEventListener() {} },
         render: () => renders++, showToast: message => messages.push(message), kind
     });
@@ -279,10 +279,10 @@ function keyboardReorderFixture(kind) {
         ui.lang = 'en';
         profile = emptyProfile();
         store = { cur: 'local', profs: { local: { data: profile } } };
-        profile.levels = ['bottom', 'unplaced', 'pre', 'middle', 'top'].map(id => ({
-            id, name: id, kind, tags: id === 'pre' ? [PRE_TAG] : []
+        profile.levels = ['bottom', 'unplaced', 'other', 'middle', 'top'].map(id => ({
+            id, name: id, kind: id === 'other' ? (kind === 'classic' ? 'platform' : 'classic') : kind
         }));
-        profile.order[kind] = ['top', 'pre', 'middle', 'deleted', 'bottom'];
+        profile.order[kind] = ['top', 'other', 'middle', 'deleted', 'bottom'];
     `);
     function press(id, key, modifiers = {}) {
         let prevented = false;
@@ -300,8 +300,8 @@ for (const kind of ['classic', 'platform'])
     test(`Alt+Arrow moves a ${kind} level by ID and saves the new order`, () => {
         const fixture = keyboardReorderFixture(kind);
         for (const [key, position, expected] of [
-            ['ArrowUp', 1, ['middle', 'pre', 'top', 'deleted', 'bottom']],
-            ['ArrowDown', 2, ['top', 'pre', 'middle', 'deleted', 'bottom']]
+            ['ArrowUp', 1, ['middle', 'other', 'top', 'deleted', 'bottom']],
+            ['ArrowDown', 2, ['top', 'other', 'middle', 'deleted', 'bottom']]
         ]) {
             assert.equal(fixture.press('middle', key), true);
             assert.deepEqual([...fixture.app('profile.order[kind]')], expected);
@@ -320,7 +320,7 @@ test('keyboard reorder leaves the order and storage alone when the shortcut cann
     fixture.press('top', 'ArrowUp');
     fixture.press('bottom', 'ArrowDown');
     fixture.press('unplaced', 'ArrowUp');
-    fixture.press('pre', 'ArrowDown');
+    fixture.press('other', 'ArrowDown');
     fixture.press('middle', 'ArrowUp', { altKey: false });
     for (const setup of [
         'ui.q = "middle"',
@@ -332,7 +332,7 @@ test('keyboard reorder leaves the order and storage alone when the shortcut cann
         assert.equal(fixture.app('canReorder()'), false);
         fixture.press('middle', 'ArrowUp');
     }
-    assert.deepEqual([...fixture.app('profile.order.classic')], ['top', 'pre', 'middle', 'deleted', 'bottom']);
+    assert.deepEqual([...fixture.app('profile.order.classic')], ['top', 'other', 'middle', 'deleted', 'bottom']);
     assert.equal(fixture.localStorage.gdp, saved);
     assert.equal(fixture.renders, 0);
     assert.deepEqual(fixture.messages, []);
@@ -347,15 +347,16 @@ for (const kind of ['classic', 'platform'])
                 { id: 'ranked', name: 'Level ranked', kind, tags: ['A'] },
                 { id: 'second', name: 'Level second', kind, tags: ['A'] },
                 { id: 'unplaced', name: 'Level unplaced', kind, tags: ['A'] },
-                { id: 'first', name: 'Level first', kind, tags: [PRE_TAG, 'A'] }
+                { id: 'tagged', name: 'Level tagged', kind, tags: ['Pre-Extremes', 'A'] }
             ];
-            profile.order[kind] = ['ranked', 'second', 'first'];`);
+            profile.order[kind] = ['ranked', 'second', 'tagged'];`);
         const html = app('list()');
         const [ranked, ...groups] = html.split('</div><h2 class=grp>');
         const outside = groups.join('');
-        assert.equal((ranked.match(/class=grip/g) || []).length, 2);
+        assert.equal((ranked.match(/class=grip/g) || []).length, 3);
+        assert.match(ranked, /data-id="tagged"/);
+        assert.equal(groups.length, 1);
         assert.match(outside, /data-id="unplaced"/);
-        assert.match(outside, /data-id="first"/);
         assert.doesNotMatch(outside, /class=grip/);
         for (const filters of ['ui.q = "level"; ui.tagFilter = []', 'ui.q = ""; ui.tagFilter = ["A"]']) {
             app(filters);
@@ -390,7 +391,7 @@ for (const kind of ['classic', 'platform'])
     for (const type of ['drop', 'pointerup', 'touchend', 'mouseup', 'dragend', 'touchcancel', 'pointercancel'])
         test(`reorderList handles ${type} in the ${kind} list`, () => {
             const calls = [], listNode = { children: ['third', 'first', 'second'].map(id => ({ dataset: { id } })) };
-            const fixture = loadScripts(['js/components/levels.js'], {
+            const fixture = loadScripts(['js/components/help-tip.js', 'js/components/levels.js'], {
                 ui: { tab: kind },
                 profile: { order: { classic: ['first', 'second', 'third'], platform: ['first', 'second', 'third'] } },
                 qs(selector) {
@@ -411,7 +412,7 @@ for (const kind of ['classic', 'platform'])
 
 test('the selected row scrolls without animation when reduced motion is requested', () => {
     const calls = [];
-    const fixture = loadScripts(['js/components/levels.js'], {
+    const fixture = loadScripts(['js/components/help-tip.js', 'js/components/levels.js'], {
         qs: () => ({ scrollIntoView: options => calls.push(options.behavior) }),
         prefersReducedMotion: () => true
     });
@@ -429,18 +430,40 @@ test('editable tag chips expose native form actions with an escaped name', () =>
 test('tag suggestions offer a keyboard button for an unused matching tag', () => {
     const suggestions = { innerHTML: '' };
     const nodes = { '#tgq': { value: 'Tag' }, '#tgr': suggestions };
-    const fixture = loadScripts(['js/config.js', 'js/utils.js', 'js/components/levels.js'], {
+    const fixture = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/components/help-tip.js', 'js/components/levels.js'], {
         document: { querySelector: selector => nodes[selector], querySelectorAll: () => [{ value: 'Used Tag' }] },
-        profile: { tags: [{ name: 'Used Tag' }, { name: 'New Tag' }, { name: 'Other' }] }
+        profile: { tags: [{ name: 'Used Tag' }, { name: 'New Tag' }, { name: 'Other' }] }, ui: { lang: 'en' }
     });
     fixture.app('renderTagSuggestions()');
     assert.match(suggestions.innerHTML, /<button type=button class=chip data-act=tgadd data-v="New Tag"/);
     assert.doesNotMatch(suggestions.innerHTML, /Used Tag|Other/);
 });
 
+test('tag suggestions offer to create the typed name only when no tag has it', () => {
+    const suggestions = { innerHTML: '' }, search = { value: '' };
+    const fixture = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/components/help-tip.js', 'js/components/levels.js'], {
+        document: { querySelector: selector => ({ '#tgq': search, '#tgr': suggestions })[selector], querySelectorAll: () => [{ value: 'Used' }] },
+        profile: { tags: [{ name: 'Used' }, { name: 'Hardest' }] }, ui: { lang: 'en' }
+    });
+    const offers = value => {
+        search.value = value;
+        fixture.app('renderTagSuggestions()');
+        return [...suggestions.innerHTML.matchAll(/data-act=(\w+) data-v="([^"]*)"/g)].map(match => match[1] + ':' + match[2]);
+    };
+    assert.deepEqual(offers('  Hard '), ['tgadd:Hardest', 'tgnew:Hard']);
+    assert.match(suggestions.innerHTML, /<button type=button class="chip tag-create" data-act=tgnew data-v="Hard">\+ Create &quot;Hard&quot;<\/button>/);
+    assert.deepEqual(offers('Hardest'), ['tgadd:Hardest']);
+    assert.deepEqual(offers('Used'), []);
+    assert.deepEqual(offers('   '), ['tgadd:Hardest']);
+    assert.deepEqual(offers('<b>'), ['tgnew:&lt;b&gt;']);
+    fixture.app("ui.lang = 'es'");
+    offers('Nuevo');
+    assert.match(suggestions.innerHTML, /Crear «Nuevo»/);
+});
+
 test('initSort registers the grip filter and saves only updates on an unfiltered list', () => {
     const created = [], listNode = { parentElement: {} };
-    const fixture = loadScripts(['js/components/levels.js'], {
+    const fixture = loadScripts(['js/components/help-tip.js', 'js/components/levels.js'], {
         ui: { q: '', tagFilter: [] },
         qs(selector) {
             assert.equal(selector, '#lst');
@@ -482,7 +505,7 @@ test('initSort measures the pane only when choosing a card and updates auto-scro
         get clientHeight() { layoutReads++; return 200; }
     };
     const listNode = { parentElement: pane };
-    const fixture = loadScripts(['js/components/levels.js'], {
+    const fixture = loadScripts(['js/components/help-tip.js', 'js/components/levels.js'], {
         ui: { q: '', tagFilter: [] },
         qs: () => listNode,
         Sortable: class {
@@ -525,7 +548,7 @@ test('rating meters emit a fill percentage, use localized decimals and omit plus
 
 test('step buttons use decimal steps without floating noise and stop at bounds', () => {
     const input = { value: '0', min: '0', max: '10', step: '0.1', dispatchEvent(event) { assert.equal(event.type, 'input'); } };
-    const env = loadScripts(['js/events.js'], { document: { body: {}, addEventListener() {} }, window: { addEventListener() {} }, Event: class { constructor(type) { this.type = type; } } });
+    const env = loadScripts(['js/components/help-tip.js', 'js/events.js'], { document: { body: {}, addEventListener() {} }, window: { addEventListener() {} }, Event: class { constructor(type) { this.type = type; } } });
     const button = { parentNode: { querySelector: () => input }, dataset: { d: '1' } };
     for (let i = 1; i <= 105; i++) {
         env.app('ACTIONS.step')(button);

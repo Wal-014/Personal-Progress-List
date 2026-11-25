@@ -5,7 +5,7 @@ import { loadScripts } from './load-scripts.js';
 function statsApp(nodes = new Map()) {
     const document = { body: {}, addEventListener() {}, querySelector: selector => nodes.get(selector) ?? null, querySelectorAll: () => [] };
     const files = ['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js', 'js/components/empty-list.js',
-        'js/components/timeline.js', 'js/components/rankings.js', 'js/components/compare.js', 'js/components/stats.js', 'js/render.js', 'js/events.js'];
+        'js/components/timeline.js', 'js/components/rankings.js', 'js/components/compare.js', 'js/components/stats.js', 'js/components/level-form-guard.js', 'js/render.js', 'js/components/help-tip.js', 'js/events.js'];
     const loaded = loadScripts(files, { localStorage: {}, document, window: { addEventListener() {}, scrollTo() {} } });
     loaded.app('profile = emptyProfile(); ui.lang = "en"');
     return loaded.app;
@@ -107,8 +107,8 @@ test('comparison search requires the exact option in the selected mode; stale id
     app('setComparisonSearch({ dataset: { compareSlot: "0" }, value: "Platform" })');
     app('setComparisonSearch({ dataset: { compareSlot: "0" }, value: "Beta" })');
     assert.deepEqual(plainStats(app('ui.comparison.slots')), ['z', 'b']);
-    assert.match(app('comparisonHtml()'), />Beta · ID 123<\/button>/);
-    assert.doesNotMatch(app('comparisonHtml()'), />Platform<\/button>/);
+    assert.match(app('comparisonOptions("a", 0)'), />Beta · ID 123<\/button>/);
+    assert.doesNotMatch(app('comparisonOptions("a", 0)'), />Platform<\/button>/);
     app('clearComparisonSlot(0)');
     assert.deepEqual(plainStats(app('ui.comparison.slots')), [null, 'b']);
 });
@@ -408,19 +408,16 @@ test('rankings changes preserve metric, direction and comparison partner; all co
 test('existing totals and distributions remain before rankings and count all modes', () => {
     const app = statsApp();
     app(statsFixture);
-    const { mostAttemptsLevel, ...totals } = plainStats(app('statsSummary()'));
-    assert.deepEqual(totals, { levelCount: 7, attemptTotal: 70, playHours: 37, average: 14 });
-    assert.equal(mostAttemptsLevel.id, 'p');
+    assert.deepEqual(plainStats(app('statsSummary()')), { levelCount: 7, attemptTotal: 70, playSeconds: 131400, playHours: 37, average: 14, averageSeconds: 32850 });
     const markup = app('stats()').replace(/<svg\b[^>]*aria-hidden=true[^>]*>[\s\S]*?<\/svg>/g, '');
     assert.match(markup, /<small>Levels<\/small><b>7<\/b>/);
-    assert.match(markup, /<small>Total attempts<\/small><b>70<\/b>/);
-    assert.match(markup, /<small>Hours<\/small><b>37<\/b>/);
-    assert.match(markup, /<small>Attempts per level<\/small><b>14<\/b>/);
-    assert.match(markup, /Most attempts<\/small><b>Platform · 30/);
+    assert.match(markup, /<small>Total attempts<\/small><b>70<\/b><small class=kpi-sub>Average attempts per level<\/small><b class=kpi-sub-value>14<\/b>/);
+    assert.match(markup, /<small>Total hours<\/small><b>36.5<\/b><small class=kpi-sub>Average time per level<\/small><b class=kpi-sub-value>9 h 7 min<\/b>/);
+    assert.doesNotMatch(markup, /Most attempts/);
     const counts = type => [...markup.match(new RegExp('<div class="well ' + type + '">([\\s\\S]+?)</div></div>'))[1]
         .matchAll(/<div class=hb><span>([^<]+)<\/span>.*?<b>(\d+)<\/b>/g)]
         .map(match => [match[1], Number(match[2])]);
-    assert.deepEqual(counts('d'), [['Easy', 1], ['Hard', 2], ['-', 4]]);
+    assert.deepEqual(counts('d'), [['Easy', 1], ['Hard', 2], ['Unknown', 4]]);
     assert.deepEqual(counts('y'), [['2025', 5]]);
     assert.ok(markup.indexOf('class=kpis') < markup.indexOf('id=timeline-well'));
     assert.ok(markup.indexOf('By difficulty') < markup.indexOf('id=rankings-well'));
@@ -457,10 +454,11 @@ export async function checkStatisticsBrowser(page) {
             await page.setViewportSize({ width, height: 900 });
             await page.goto(origin);
             await page.locator('[data-act=pause]').first().click();
+            await page.locator('[data-picker=lang] summary').click();
             await page.locator('[data-act=lang][data-v=' + language + ']').click();
             await page.locator('#md [data-act=close]').click();
             await page.locator('[data-act=tab][data-v=stats]').click();
-            check(await page.locator('.kpi').count() == 5, 'Five original KPIs');
+            check(await page.locator('.kpi').count() == 3, 'Levels, attempts and time KPIs');
             check(await page.locator('.side .well').count() == 2, 'Both original distributions');
             check(await page.locator('.stat-card').count() == 9, 'Nine Classic demo levels');
             check(await page.locator('.stat-card button').count() == 0, 'Closed cards are plain elements');
@@ -647,7 +645,7 @@ export async function checkStatisticsAndWishlistsBrowser(page, screenshotDirecto
             assert.equal(await details.getAttribute('open'), null);
 
             await page.evaluate(`
-                statsSummary().mostAttemptsLevel.name = rankingData().ranked[0].name = 'LongUnbrokenLevelName'.repeat(10);
+                rankingData().ranked[0].name = 'LongUnbrokenLevelName'.repeat(10);
                 profile.wishlists[0].items[0].name = 'LongUnbrokenLevelName'.repeat(10);
                 setTimelineMetric('att');
                 render();
@@ -655,7 +653,6 @@ export async function checkStatisticsAndWishlistsBrowser(page, screenshotDirecto
             await page.locator('[data-act=compare-toggle]').click();
             await page.locator('[data-act=compare-pick]').first().click();
             await summary.click();
-            assert.ok(await overflowFreeText('.kpi.sm b'));
             assert.ok(await overflowFreeText('.stat-card .nm'));
             assert.ok(await overflowFreeText('.compare-selection .nm'));
             await noOverflow();
@@ -694,3 +691,81 @@ export async function checkStatisticsAndWishlistsBrowser(page, screenshotDirecto
     assert.deepEqual(pageErrors, []);
     return results;
 }
+
+test('comparison suggestions stay empty until something is typed and report no matches', () => {
+    const app = statsApp();
+    app(statsFixture);
+    app('ui.comparison.open = true');
+    for (const query of ['', '   '])
+        assert.equal(app('comparisonOptions')(query, 0), '');
+    assert.match(app('comparisonHtml()'), /<div class=compare-options><\/div>/);
+    assert.deepEqual([...app('comparisonOptions')('ALP', 1).matchAll(/data-id="([^"]+)" data-v=1/g)].map(match => match[1]), ['a']);
+    assert.match(app('comparisonOptions')('123', 0), />Beta · ID 123</);
+    assert.match(app('comparisonOptions')('nothing', 0), /<p class=compare-empty role=status>No levels match the search<\/p>/);
+});
+
+test('a focused comparison search makes its slot the destination of card clicks until the panel closes or the mode changes', () => {
+    const marks = [new Set(), new Set()];
+    const slots = marks.map(set => ({ classList: { toggle: (name, on) => on ? set.add(name) : set.delete(name) } }));
+    const app = statsApp();
+    app(statsFixture);
+    app('ui.comparison.open = true; ui.comparison.slots = ["a", "b"]');
+    app('document').querySelectorAll = selector => selector == '.compare-slot' ? slots : [];
+    app('setComparisonTarget(0)');
+    assert.deepEqual(marks.map(set => [...set]), [['is-target'], []]);
+    app('pickComparisonLevel("z")');
+    assert.deepEqual(plainStats(app('ui.comparison.slots')), ['z', 'b']);
+    assert.match(app('comparisonHtml()'), /class="compare-slot compare-1 is-target"/);
+    assert.match(app('comparisonHtml()'), /class="compare-slot compare-2">/);
+    app('pickComparisonLevel("u")');
+    assert.deepEqual(plainStats(app('ui.comparison.slots')), ['u', 'b']);
+    app('setComparisonTarget(1)');
+    assert.deepEqual(marks.map(set => [...set]), [[], ['is-target']]);
+    app('pickComparisonLevel("a")');
+    assert.deepEqual(plainStats(app('ui.comparison.slots')), ['u', 'a']);
+    app('pickComparisonLevel("u")');
+    assert.deepEqual(plainStats(app('ui.comparison.slots')), [null, 'a']);
+    app('pickComparisonLevel("b")');
+    assert.deepEqual(plainStats(app('ui.comparison.slots')), [null, 'b']);
+    app('setRankingMode("platform")');
+    assert.equal(app('ui.comparison.target'), null);
+    app('setRankingMode("classic"); setComparisonTarget(1); closeComparison()');
+    assert.equal(app('ui.comparison.target'), null);
+    app('setComparisonTarget(0); toggleComparison(); toggleComparison()');
+    assert.equal(app('ui.comparison.target'), null);
+});
+
+test('the comparison panel explains both ways to choose levels in both languages', () => {
+    const app = statsApp();
+    app(statsFixture);
+    app('ui.comparison.open = true');
+    assert.match(app('comparisonHtml()'), /<p class="by compare-help">Compare the attempts, play time and enjoyment of two levels of this mode\. Type a name or ID, or click a level in the rankings/);
+    app("ui.lang = 'es'");
+    assert.match(app('comparisonHtml()'), /<p class="by compare-help">Compara intentos, tiempo de juego y disfrutabilidad de dos niveles de este modo\. Escribe un nombre o ID, o pulsa un nivel/);
+    assert.match(app('comparisonHtml()'), /<small class=compare-target>Destino<\/small>/);
+});
+
+test('the difficulty chart tells unrated levels from unknown difficulties without changing saved data', () => {
+    const app = statsApp();
+    app(`profile.levels = [
+        { id: 'r', name: 'Rated', kind: 'classic', diff: 'Insane', rating: 'rated' },
+        { id: 'u', name: 'Unrated', kind: 'classic', diff: null, rating: 'unrated' },
+        { id: 'k', name: 'Unknown', kind: 'classic', rating: 'featured' },
+        { id: 'o', name: 'Old value', kind: 'platform', diff: 'Legacy' }
+    ]`);
+    for (const [lang, unrated, unknown] of [['es', 'Sin rate', 'Desconocida'], ['en', 'Unrated', 'Unknown']]) {
+        app(`ui.lang = '${lang}'`);
+        const chart = app('stats()').match(/<div class="well d">([\s\S]+?)<\/div><\/div>/)[1];
+        assert.deepEqual([...chart.matchAll(/<div class=hb><span>([^<]+)<\/span>.*?<b>(\d+)<\/b>/g)].map(match => [match[1], Number(match[2])]),
+            [['Insane', 1], [unrated, 1], [unknown, 2]]);
+    }
+    assert.equal(app('findLevel("o").diff'), 'Legacy');
+    assert.equal(app('findLevel("u").diff'), null);
+});
+
+test('summary play time reads in hours and minutes, or seconds under a minute', () => {
+    const app = statsApp();
+    app("ui.lang = 'en'");
+    for (const [seconds, text] of [[0, '0 s'], [59, '59 s'], [60, '1 min'], [3599, '59 min'], [3600, '1 h 0 min'], [36000000 + 120, '10,000 h 2 min']])
+        assert.equal(app('formatPlaytime')(seconds), text);
+});

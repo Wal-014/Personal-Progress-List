@@ -20,7 +20,8 @@ concurrency:
 jobs:
   deploy:
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     environment:
       name: cloudflare-relay
       url: https://ppl-level-relay.waquermaster.workers.dev

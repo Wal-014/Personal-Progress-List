@@ -4,7 +4,7 @@ import { loadScripts } from './load-scripts.js';
 
 function fixture() {
     const listeners = {}, document = { body: {}, listeners, addEventListener(type, handler) { listeners[type] = handler; } };
-    const { app } = loadScripts(['js/i18n.js', 'js/utils.js', 'js/components/duration-input.js', 'js/components/levels.js', 'js/events.js'], {
+    const { app } = loadScripts(['js/i18n.js', 'js/utils.js', 'js/components/duration-input.js', 'js/components/help-tip.js', 'js/components/levels.js', 'js/events.js'], {
         ui: { lang: 'en' }, document, window: { addEventListener() {} },
         FormData: class extends URLSearchParams {
             constructor(form) { super(Object.entries(form.elements).map(([key, input]) => [key, input.value])); }

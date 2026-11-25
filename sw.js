@@ -1,6 +1,7 @@
 /**
  * Service worker for installation and offline use. Local assets are cache-first, and other same-origin files are network-first.
  */
+const CACHE_PREFIX = 'prp-';
 const CACHE = 'prp-1.13.16';
 // vendor/supabase.js is intentionally omitted so visitors who never sign in never download it.
 const SHELL = [
@@ -49,6 +50,7 @@ const SHELL = [
   "js/sync.js",
   "js/public-view.js",
   "js/local-migration.js",
+  "js/components/help-tip.js",
   "js/components/faces.js",
   "js/components/empty-list.js",
   "js/components/deaths-input.js",
@@ -62,12 +64,14 @@ const SHELL = [
   "js/components/compare.js",
   "js/components/stats.js",
   "js/components/home.js",
+  "js/components/level-form-guard.js",
   "js/components/dialogs.js",
   "js/components/local-data.js",
   "js/components/account-ui.js",
   "js/components/shell.js",
   "js/render.js",
   "js/events.js",
+  "js/app-update.js",
   "js/main.js"
 ];
 
@@ -79,7 +83,8 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      // Other apps on the same origin keep their caches; only this app's older versions go.
+      .then(keys => Promise.all(keys.filter(k => k.startsWith(CACHE_PREFIX) && k !== CACHE).map(k => caches.delete(k))))
       .then(() => clients.claim())
   );
 });

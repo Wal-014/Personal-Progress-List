@@ -24,10 +24,14 @@ test('panes apply and clear fades after redraw, scrolling and content resize', (
     let resize, panes = [];
     const document = {
         body: {},
-        addEventListener(name, handler) { listeners.set(name, handler); },
+        addEventListener(name, handler) {
+            const previous = listeners.get(name);
+            listeners.set(name, previous ? event => { previous(event); handler(event); } : handler);
+        },
+        querySelector: () => null,
         querySelectorAll: () => panes
     };
-    const { app } = loadScripts(['js/utils.js', 'js/events.js'], {
+    const { app } = loadScripts(['js/utils.js', 'js/components/help-tip.js', 'js/events.js'], {
         document, window: { addEventListener() {} },
         ResizeObserver: class {
             constructor(handler) { resize = handler; }

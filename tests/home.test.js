@@ -8,9 +8,9 @@ function homeApp(options) {
     const document = { body: {}, documentElement: { dataset: {} }, activeElement: null,
         querySelector: selector => selector == '#app' ? root : null, querySelectorAll: () => [], addEventListener() {} };
     const loaded = loadScripts(['tests/fixtures/demo-profile.js', 'js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js',
-        'js/ranking-sync.js', 'js/components/faces.js', 'js/components/levels.js', 'js/components/timeline.js', 'js/components/rankings.js', 'js/components/compare.js',
+        'js/ranking-sync.js', 'js/components/faces.js', 'js/components/help-tip.js', 'js/components/levels.js', 'js/components/timeline.js', 'js/components/rankings.js', 'js/components/compare.js',
         'js/components/stats.js', 'js/components/wishlists.js', 'js/notifications.js', 'js/components/home.js', 'js/components/shell.js',
-        'js/components/account-ui.js', 'js/render.js', 'js/events.js'], {
+        'js/components/account-ui.js', 'js/components/level-form-guard.js', 'js/render.js', 'js/events.js'], {
         document, window: { addEventListener() {} }, localStorage: {},
         publicUsernameValid: true, account: { status: 'signed-out' }, cloudUser: null, viewing: { identity: null },
         cloudHeaderStatus: () => '', localProfileSummary: () => 'Local profile', publicIdentityCard: () => '<div class=profile-card>Public player</div>',
@@ -168,7 +168,7 @@ test('empty wishlist preview exposes creation to the owner and an empty message 
     assert.doesNotMatch(utilities, /data-act=bell|data-act=tags|guest-account|id=syncst/);
 });
 
-test('stats summary and both screens share totals, include recorded zeros and exclude missing attempts from the average', () => {
+test('stats summary and both screens share totals, include recorded zeros and exclude missing attempts and time from the averages', () => {
     const { app } = homeApp();
     app(`profile = emptyProfile(); profile.levels = [
         { id: 'a', name: 'Alpha', kind: 'classic', attN: 1000, attC: 500, tN: 3600 },
@@ -180,18 +180,20 @@ test('stats summary and both screens share totals, include recorded zeros and ex
     assert.equal(summary.attemptTotal, 1500);
     assert.equal(summary.playHours, 4);
     assert.equal(summary.average, 750);
-    assert.equal(summary.mostAttemptsLevel.id, 'a');
+    assert.equal(summary.playSeconds, 14400);
+    assert.equal(summary.averageSeconds, 7200);
     for (const draw of ['stats()', 'homeStats()']) {
         const html = app(draw);
         assert.match(html, />3</);
         assert.match(html, />1,500</);
         assert.match(html, />4</);
     }
+    assert.match(app('stats()'), /Average time per level<\/small><b class=kpi-sub-value>2 h 0 min</);
     app("ui.lang = 'es'");
     assert.match(app('homeStats()'), />1500</);
     app('profile = emptyProfile()');
     assert.deepEqual(JSON.parse(JSON.stringify(app('statsSummary()'))), {
-        levelCount: 0, attemptTotal: 0, playHours: 0, average: null, mostAttemptsLevel: null
+        levelCount: 0, attemptTotal: 0, playSeconds: 0, playHours: 0, average: null, averageSeconds: null
     });
 });
 
@@ -268,16 +270,36 @@ test('popover geometry chooses below or above and stays inside narrow and short 
     assert.equal(aboveViewport.top, '12px');
 });
 
-test('pause menu exposes independent named appearance groups and pressed options', () => {
+test('settings collapse theme, background and language into exclusive pickers that show the current value', () => {
     const { app } = homeApp();
-    app("ui.theme = 'porcelain'; ui.background = 'orbital'");
+    app("ui.theme = 'porcelain'; ui.background = 'orbital'; ui.lang = 'es'");
     const html = app('pauseUI()');
-    assert.match(html, /role=group aria-labelledby=colour-theme/);
-    assert.match(html, /role=group aria-labelledby=background-design/);
+    for (const [field, label, current] of [['theme', 'Tema', /sw-porcelain" aria-hidden=true><\/i>Porcelana/], ['background', 'Fondo', /bg-orbital" aria-hidden=true><\/i>Orbital/], ['lang', 'Idioma', /<\/svg>Español/]]) {
+        const picker = html.match(new RegExp(`<details class=settings-picker name=settings-picker data-picker=${field}>(.*?)</details>`))[1];
+        assert.match(picker, new RegExp(`<summary><span class=settings-label id=picker-${field}>${label}</span><span class=settings-current>`));
+        assert.match(picker.match(/<span class=settings-current>(.*?)<\/span><svg/)[1], current);
+        assert.match(picker, new RegExp(`role=group aria-labelledby=picker-${field}>`));
+    }
     assert.equal((html.match(/data-act=theme /g) || []).length, 6);
     assert.equal((html.match(/data-act=background /g) || []).length, 4);
+    assert.equal((html.match(/data-act=lang /g) || []).length, 2);
     assert.match(html, /data-act=theme data-v=porcelain aria-pressed=true/);
     assert.match(html, /data-act=background data-v=orbital aria-pressed=true/);
+    assert.match(html, /data-act=lang data-v=es aria-pressed=true/);
+    app("ui.lang = 'en'");
+    assert.deepEqual([...app('pauseUI()').matchAll(/class=settings-label id=picker-\w+>([^<]+)/g)].map(match => match[1]), ['Theme', 'Background', 'Language']);
+});
+
+test('picking a theme or background collapses its picker onto the new value and focuses its summary', () => {
+    const { app, context } = homeApp(), focused = [];
+    const current = { innerHTML: 'old' }, summary = { focus: () => focused.push('summary') };
+    const picker = { open: true, querySelector: selector => selector == '.settings-current' ? current : summary };
+    context.document.querySelectorAll = () => [];
+    app('ACTIONS.background')({ dataset: { v: 'aurora' }, innerHTML: '<i class="background-preview bg-aurora"></i>Aurora', closest: selector => selector == '.settings-picker' ? picker : null });
+    assert.equal(picker.open, false);
+    assert.equal(current.innerHTML, '<i class="background-preview bg-aurora"></i>Aurora');
+    assert.deepEqual(focused, ['summary']);
+    assert.equal(app('ui.background'), 'aurora');
 });
 
 test('Settings footer shows the configured application version', () => {
@@ -299,13 +321,13 @@ test('guest appearance actions persist independently and update the existing con
     context.document.querySelectorAll = selector => selector.endsWith('theme]') ? themes : backgrounds;
     context.openModal = () => assert.fail('appearance changes must leave the settings dialog intact');
     context.render = () => assert.fail('appearance changes must leave the inline app form intact');
-    app("ACTIONS.background({ dataset: { v: 'celestial' } }); ACTIONS.theme({ dataset: { v: 'porcelain' } })");
+    app("ACTIONS.background({ dataset: { v: 'celestial' }, closest: () => null }); ACTIONS.theme({ dataset: { v: 'porcelain' }, closest: () => null })");
     assert.equal(app('ui.background'), 'celestial');
     assert.equal(context.localStorage.gbg, 'celestial');
     assert.equal(context.localStorage.gt, 'porcelain');
     assert.equal(pressed.porcelain, 'true');
     assert.equal(pressed.nebula, 'false');
-    app("ACTIONS.background({ dataset: { v: 'orbital' } })");
+    app("ACTIONS.background({ dataset: { v: 'orbital' }, closest: () => null })");
     assert.equal(app('ui.theme'), 'porcelain');
     assert.equal(pressed.orbital, 'true');
     assert.equal(context.document.documentElement.dataset.theme, 'porcelain');
@@ -445,4 +467,55 @@ test('legacy screens isolate content below the themed page title', () => {
     app("ui.tab = 'home'");
     assert.doesNotMatch(app("sharedShell('Home')"), /class=legacy-surface/);
     assert.ok(app('profileSwitcher()').includes(app('ICONS.chevronDown')));
+});
+
+test('a new empty profile sees the first-visit guide above the lists, with first actions', () => {
+    const { app } = homeApp();
+    app('profile.levels = []; profile.wishlists = []');
+    const html = app('home()');
+    assert.match(html, /^<div class=hcontent><section class=hintro aria-labelledby=intro-title><div class=hintro-head><h2 id=intro-title>Welcome to Personal Progress List<\/h2><button type=button class=xs data-act=introhide aria-label="Hide the guide"/);
+    assert.equal((html.match(/<li>/g) || []).length, 4);
+    assert.match(html, /class=hadd data-act=add>.*Add my first level<\/button><button type=button data-act=wnew>.*Create a wishlist<\/button>/);
+    assert.match(html, /sign in to have it on all your devices/);
+    app("ui.lang = 'es'");
+    assert.match(app('home()'), /Te damos la bienvenida a Personal Progress List/);
+});
+
+test('the guide stays away from profiles with progress, public views and accounts still downloading', () => {
+    const { app } = homeApp();
+    assert.equal(app('showsIntro()'), false);
+    app('profile.levels = []');
+    assert.equal(app('showsIntro()'), false, 'wishlists are progress too');
+    app('profile.wishlists = []');
+    assert.equal(app('showsIntro()'), true);
+    app("viewing = { identity: {} }");
+    assert.equal(app('showsIntro()'), false);
+    app("viewing = null; cloudUser = 'u1'; cloudSession = { pulled: false }");
+    assert.equal(app('showsIntro()'), false);
+    app('cloudSession.pulled = true');
+    assert.equal(app('showsIntro()'), true);
+});
+
+test('hiding the guide is remembered per profile or account and survives broken storage', () => {
+    const { app, context } = homeApp();
+    app('profile.levels = []; profile.wishlists = []; render = () => {}');
+    app('hideIntro()');
+    assert.equal(context.localStorage.gintro, '["p:demo"]');
+    assert.equal(app('showsIntro()'), false);
+    app("store.cur = 'other'");
+    assert.equal(app('showsIntro()'), true);
+    app("cloudUser = 'u1'; cloudSession = { pulled: true }");
+    app('hideIntro()');
+    assert.deepEqual(JSON.parse(context.localStorage.gintro), ['p:demo', 'u:u1']);
+    context.localStorage.gintro = '{broken';
+    assert.equal(app('showsIntro()'), true);
+});
+
+test('Settings reopens the guide as a dialog without the first-level actions', () => {
+    const { app } = homeApp();
+    assert.match(app('pauseUI()'), /<nav class=legal><a class=lk data-act=guide role=button tabindex=0>Quick guide<\/a> · /);
+    const dialog = app('introDialog()');
+    assert.match(dialog, /<h2>Welcome to Personal Progress List<\/h2>/);
+    assert.doesNotMatch(dialog, /data-act=(?:add|wnew|introhide)/);
+    assert.match(dialog, /data-act=close/);
 });

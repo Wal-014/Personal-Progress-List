@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { emptyDurationFields, loadScripts } from './load-scripts.js';
 
 const createApp = () => {
-    const { app, context } = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/components/deaths-input.js', 'js/components/duration-input.js', 'js/components/levels.js'], {
+    const { app, context } = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/components/deaths-input.js', 'js/components/duration-input.js', 'js/components/help-tip.js', 'js/components/levels.js'], {
         localStorage: {},
         FormData: class extends URLSearchParams {
             constructor(form) {
@@ -31,7 +31,7 @@ test('activateProfile selects the stored data and normalizes only that profile',
     assert.equal(app('profile === store.profs.second.data'), true);
     assert.deepEqual(plain(app('profile.levels[0].deaths')), { 63: 2 });
     assert.equal(app('profile.wishlists[0].items[0].status'), 'done');
-    assert.deepEqual(plain(app('store.profs.first.data')), { ratingScale: 10, levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
+    assert.deepEqual(plain(app('store.profs.first.data')), { ratingScale: 10, firstStepsRetired: true, levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
     assert.equal(app('ui.wl'), 'unchanged');
 });
 
@@ -129,4 +129,34 @@ test('levelFromForm rounds rating decimals without converting the new scale', ()
     const result = app('levelFromForm')({ entries: [['name', 'Level'], ['enj', '7.34'], ['lik', '2.56']], elements: emptyDurationFields() });
     assert.equal(result.enj, 7.3);
     assert.equal(result.lik, 2.6);
+});
+
+test('a legacy profile drops the retired Pre-Extremes tag once and its levels become unplaced with their data intact', () => {
+    const { app, context, plain } = createApp();
+    app(`store = { cur: 'old', profs: { old: { data: {
+        levels: [
+            { id: 'ranked-pre', kind: 'classic', name: 'A', att: 120, notes: 'kept', deaths: { 40: 3 }, tags: ['Pre-Extremes', 'Fluked'] },
+            { id: 'pre', kind: 'platform', name: 'B', tags: ['Pre-Extremes'] },
+            { id: 'plain', kind: 'classic', name: 'C', tags: ['Fluked'] }
+        ],
+        order: { classic: ['plain', 'ranked-pre'], platform: [] },
+        tags: [{ name: 'Fluked', color: '#00e5ff' }, { name: 'Pre-Extremes', color: '#ff2bd6' }]
+    } } } }; activateProfile('old')`);
+    assert.deepEqual(plain(app('profile.order')), { classic: ['plain'], platform: [] });
+    assert.deepEqual(plain(app('profile.tags')), [{ name: 'Fluked', color: '#00e5ff' }]);
+    assert.deepEqual(plain(app('profile.levels[0]')), { id: 'ranked-pre', kind: 'classic', name: 'A', att: 120, notes: 'kept', deaths: { 40: 3 }, tags: ['Fluked'] });
+    assert.deepEqual(plain(app('profile.levels[1].tags')), []);
+    assert.equal(JSON.parse(context.localStorage.gdp).profs.old.data.firstStepsRetired, true);
+});
+
+test('a Pre-Extremes tag created after the retirement is an ordinary tag', () => {
+    const { app, context, plain } = createApp();
+    app(`store = { cur: 'new', profs: { new: { data: emptyProfile() } } }; profile = store.profs.new.data;
+        profile.levels.push({ id: 'l', kind: 'classic', name: 'L', tags: ['Pre-Extremes'] });
+        profile.tags.push({ name: 'Pre-Extremes', color: '#123456' }); profile.order.classic.push('l');
+        activateProfile('new')`);
+    assert.equal(context.localStorage.gdp, undefined);
+    assert.deepEqual(plain(app('profile.levels[0].tags')), ['Pre-Extremes']);
+    assert.deepEqual(plain(app('profile.order.classic')), ['l']);
+    assert.deepEqual(plain(app('profile.tags')), [{ name: 'Pre-Extremes', color: '#123456' }]);
 });

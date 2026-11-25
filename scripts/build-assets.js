@@ -21,8 +21,9 @@ export async function cutAtlas({ atlas, outDir, tiles, width, height, webp }) {
     const { data, info } = await image.raw().toBuffer({ resolveWithObject: true });
     rmSync(outDir, { recursive: true, force: true });
     mkdirSync(outDir, { recursive: true });
-    for (const [name, tile] of tiles)
-        await sharp(data, { raw: info }).extract(tile).webp(webp).toFile(join(outDir, `${name}.webp`));
+    await Promise.all(tiles.map(([name, tile]) =>
+        sharp(data, { raw: info }).extract(tile).webp(webp).toFile(join(outDir, `${name}.webp`))
+    ));
 }
 
 export function cubeTile(id) {
@@ -85,11 +86,11 @@ async function buildFlagCatalog(codes) {
 
     rmSync(FLAG_DIR, { recursive: true, force: true });
     mkdirSync(FLAG_DIR, { recursive: true });
-    for (const { name, source } of flags) {
-        // Flat flag colours compress smaller lossless than lossy, with no artefacts
-        await sharp(source).resize(64, 48, { fit: 'fill' })
-            .webp({ lossless: true, effort: 6 }).toFile(`${FLAG_DIR}/${name}.webp`);
-    }
+    // Flat flag colours compress smaller lossless than lossy, with no artefacts
+    await Promise.all(flags.map(({ name, source }) =>
+        sharp(source).resize(64, 48, { fit: 'fill' })
+            .webp({ lossless: true, effort: 6 }).toFile(`${FLAG_DIR}/${name}.webp`)
+    ));
     copyFileSync(join(packageDir, 'LICENSE'), `${FLAG_DIR}/LICENSE`);
 }
 

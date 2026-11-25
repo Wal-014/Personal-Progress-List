@@ -89,7 +89,7 @@ function showDialog({ title, msg, input, def, ok, cancel, danger, label, extra =
         const titleId = 'dgt-' + ++dialogTitleId;
         m.className = 'modal';
         m.setAttribute('aria-labelledby', titleId);
-        m.innerHTML = `<div class="box sm"><h2 class=prompt-title id=${titleId}>${escapeHtml(title || '')}</h2>${msg ? `<p class=dialog-message>${escapeHtml(msg)}</p>` : ''}${input ? `${label ? `<label for=dgi>${escapeHtml(label)}</label>` : ''}<input id=dgi${label ? '' : ' aria-labelledby=' + titleId} value="${escapeHtml(def || '')}"><p id=dgi-error class=field-error role=alert></p>` : ''}${extra}<p class=dgb>${cancel === false ? '' : `<button data-r=0>${t('cancel')}</button>`}<button class="${danger ? ok ? 'dg bulk-delete' : 'dg' : 'pri'}" data-r=1>${ok || t('ok2')}</button></p></div>${dialogAnnouncements}`;
+        m.innerHTML = `<div class="box sm"><h2 class=prompt-title id=${titleId}>${escapeHtml(title || '')}</h2>${msg ? `<p class=dialog-message>${escapeHtml(msg)}</p>` : ''}${input ? `${label ? `<label for=dgi>${escapeHtml(label)}</label>` : ''}<input id=dgi${label ? '' : ' aria-labelledby=' + titleId} value="${escapeHtml(def || '')}"><p id=dgi-error class=field-error role=alert></p>` : ''}${extra}<p class=dgb>${cancel === false ? '' : `<button data-r=0>${escapeHtml(cancel || t('cancel'))}</button>`}<button class="${danger ? ok ? 'dg bulk-delete' : 'dg' : 'pri'}" data-r=1>${ok || t('ok2')}</button></p></div>${dialogAnnouncements}`;
         const read = enhance?.(m);
         document.body.appendChild(m);
         m.showModal();
@@ -271,11 +271,11 @@ const openModal = h => {
         dialog.setAttribute('aria-labelledby', 'mdt');
     }
     dialogOpeners.set(dialog, opener);
-    dismissOnBackdropClick(dialog, closeModal);
+    dismissOnBackdropClick(dialog, requestCloseModal);
     dialog.addEventListener('keydown', keepModalTab);
     dialog.addEventListener('cancel', event => {
         event.preventDefault();
-        closeModal();
+        requestCloseModal();
     });
     dialog.addEventListener('close', () => {
         dialog.remove();
@@ -285,6 +285,13 @@ const openModal = h => {
     // The add-level dialog lists the tags under its tag search, like the edit panel does after render()
     renderTagSuggestions();
 };
+
+/** The user's ways of closing a modal; a level form with unsaved changes asks first. Saving closes it with closeModal. */
+async function requestCloseModal() {
+    const dialog = qs('#md dialog');
+    if (dialog && await confirmLevelFormExit(dialog) && qs('#md dialog') === dialog)
+        closeModal();
+}
 
 const closeModal = () => {
     const dialog = qs('#md dialog'), opener = dialog && dialogOpeners.get(dialog);
@@ -297,10 +304,9 @@ function tagsUI() {
     const row = (tag, index) => {
         const existing = index != null, name = escapeHtml(tag.name), color = isHexColor(tag.color) ? tag.color : '#947bd2';
         const colorLabel = t('color') + (existing ? ' &middot; ' + name : '');
-        const reserved = existing && tag.name == PRE_TAG;
         return `<div class=trow><label class="tag-swatch chip" data-tag-color="${escapeHtml(color)}" title="${colorLabel}"><span>${name || t('newTag')}</span><input type=color ${existing ? 'data-tc=' + index : 'id=nc'} value="${color}" aria-label="${colorLabel}"></label>
-<input ${existing ? 'data-tn=' + index : 'id=nn autofocus'} value="${name}" maxlength="${TAG_NAME_LIMIT}" placeholder="${t('newTag')}" aria-label="${t(existing ? 'name' : 'newTag')}" aria-describedby="tag-limit${reserved ? ' tg-pre' : ''}">
-${existing ? `<button class="xs dg" data-act=tdel data-i=${index} aria-label="${t('del')} &middot; ${name}">${ICONS.listClear}</button>` : `<button class=pri data-act=tadd>${t('add')}</button>`}</div>${reserved ? `<small id=tg-pre class=by>${t('preTagHint')}</small>` : ''}`;
+<input ${existing ? 'data-tn=' + index : 'id=nn autofocus'} value="${name}" maxlength="${TAG_NAME_LIMIT}" placeholder="${t('newTag')}" aria-label="${t(existing ? 'name' : 'newTag')}" aria-describedby="tag-limit">
+${existing ? `<button class="xs dg" data-act=tdel data-i=${index} aria-label="${t('del')} &middot; ${name}">${ICONS.listClear}</button>` : `<button class=pri data-act=tadd>${t('add')}</button>`}</div>`;
     };
     return `<div class="box tag-manager"><h2>${ICONS.navTags} ${t('tagsT')}</h2><p id=tag-limit class=by>${t('tagNameLimit').replace('{n}', TAG_NAME_LIMIT)}</p>${profile.tags.map(row).join('')}${row({ name: '' })}<p class=dgb><button data-act=close>${t('close')}</button></p></div>`;
 }

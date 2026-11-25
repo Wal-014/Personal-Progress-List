@@ -404,6 +404,12 @@ input:user-invalid, select:user-invalid, textarea:user-invalid {
   --chip-highlight: 26%;
 }
 
+/* Creating a tag is an action, not a tag: accent colour and a dashed edge set it apart from the suggestions. */
+.chip.tag-create {
+  --tag-color: var(--color-accent);
+  border-style: dashed;
+}
+
 /* ===== Edit Object panel: details, forms and dialogs ===== */
 .box {
   position: relative;
@@ -654,13 +660,68 @@ dialog.modal::backdrop {
 }
 
 
-.lang {
-  display: flex;
-  gap: 8px;
+.settings-picker {
+  margin-top: var(--space-12);
 }
 
-.lang button {
-  flex: 1;
+.settings-picker > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: var(--size-control);
+  padding: var(--space-8) var(--space-12);
+  list-style: none;
+  cursor: pointer;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: var(--size-border) solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+
+.settings-picker > summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-picker[open] > summary {
+  border-color: var(--color-accent);
+}
+
+.settings-picker > summary:focus-visible {
+  outline: var(--size-focus) solid var(--color-focus);
+  outline-offset: var(--size-focus);
+}
+
+.settings-label {
+  font: 700 16px/1.4 var(--font-ui);
+}
+
+.settings-current {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+  margin-inline-start: auto;
+  font: 600 13px/1.4 var(--font-ui);
+  color: var(--color-text-muted);
+}
+
+.settings-picker > summary > svg:last-child {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.settings-picker[open] > summary > svg:last-child {
+  transform: rotate(180deg);
+}
+
+.settings-picker > .appearance-options {
+  margin-top: var(--space-8);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .settings-picker > summary > svg:last-child { transition: transform var(--hover-motion); }
+  .settings-picker[open] > .appearance-options { animation: dropdown-enter 150ms ease-out; }
 }
 
 .ranking-status {
@@ -1127,10 +1188,12 @@ dialog.modal::backdrop {
   color: var(--color-text-muted);
 }
 
+/* The extra padding lets the top-rank glows fade out inside the scroller; the negative inline margin keeps the cards where they were. */
 #lw {
   max-height: max(calc(var(--space-48) * 3), calc(100dvh - var(--space-48) * 6));
   overflow: auto;
-  padding: 4px;
+  margin-inline: -12px;
+  padding: 16px;
 }
 
 .rcol {
@@ -1199,8 +1262,8 @@ dialog.modal::backdrop {
 .lv.sel::before {
   --metal-accent: var(--row-selection, var(--color-accent));
   background: var(--metal-accent-paint) left / 6px 100% no-repeat;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--metal-accent) 70%, transparent),
-    inset 0 0 14px color-mix(in srgb, var(--metal-accent) 16%, transparent);
+  box-shadow: inset 12px 0 10px -8px color-mix(in srgb, var(--metal-accent) 45%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--metal-accent) 30%, transparent);
 }
 
 /* The grip uses the left padding beyond the selection bar for its 44px touch target. */
@@ -1245,6 +1308,12 @@ dialog.modal::backdrop {
 
 .lv > .grip { margin-inline-start: -7px; }
 .lv.sel > .grip { margin-inline-start: -4px; }
+
+/* The bar continues through the card's left border, so no rank-coloured edge shows beside it; the rank keeps the other edges and the outer glow.
+   :root outranks the Porcelain rank borders. */
+:root .list-surface .lv.sel {
+  border-inline-start-color: var(--row-selection, var(--color-accent));
+}
 
 .list-surface .lv.sel {
   background-color: color-mix(in srgb, var(--row-selection, var(--color-accent)) 7%, var(--color-surface));
@@ -1557,6 +1626,96 @@ input.ro {
   resize: vertical;
 }
 
+#fm-notes {
+  max-height: min(18rem, 50vh);
+}
+
+/* A URL needs more room than a date, but a full-width field would be oversized on wide forms. */
+#fm .grid > div:has(> #fm-link) {
+  grid-column: 1 / -1;
+  max-width: 28rem;
+}
+
+/* Fits a seven-digit count such as 1000000 between the step buttons without stretching across the row. */
+.level-attempts .num {
+  grid-template-columns: 40px minmax(0, 12ch) 40px;
+  justify-content: start;
+}
+
+.field-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.field-head > :is(label, .lab) {
+  margin-bottom: 0;
+}
+
+legend:has(> .help-tip) {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+/* A small circled ? beside a heading or label; the 44px touch area comes from an invisible ring around it. */
+.help-tip {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  min-height: 20px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 55%, var(--color-border));
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-accent);
+  font: 700 12px/1 var(--font-ui);
+  text-transform: none;
+  cursor: help;
+}
+
+.help-tip::after {
+  content: "";
+  position: absolute;
+  inset: -12px;
+}
+
+.help-tip:focus-visible {
+  outline: var(--size-focus) solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.help-pop {
+  position: fixed;
+  inset: auto;
+  top: var(--help-top, -9999px);
+  left: var(--help-left, 0);
+  max-width: min(20rem, calc(100vw - 16px));
+  margin: 0;
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-elevated, var(--color-surface));
+  box-shadow: var(--shadow-panel);
+  color: var(--color-text);
+  font: 500 13px/1.5 var(--font-ui);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.deaths-input > #death-label {
+  display: block;
+  margin-bottom: var(--space-8);
+  font: 600 .95rem/1.4 var(--font-ui);
+  color: var(--color-text);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .warn {
   margin-bottom: 8px;
   font: bold 13px var(--font-ui);
@@ -1854,7 +2013,7 @@ input.ro {
 /* ===== Statistics ===== */
 .kpis {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
   gap: 10px;
   margin: 10px 0 14px;
 }
@@ -1886,7 +2045,16 @@ input.ro {
   color: var(--ye);
 }
 
-.kpi.sm b {
+.kpi small.kpi-sub {
+  margin-top: var(--space-8);
+  padding-top: var(--space-8);
+  border-top: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.kpi b.kpi-sub-value {
+  display: block;
   font-size: 18px;
 }
 
@@ -2208,6 +2376,42 @@ input.ro {
   width: 100%;
   min-width: 0;
   border-color: var(--slot-color);
+}
+
+/* The slot whose search was focused last receives the next ranking-card click. */
+.compare-slot {
+  padding: 6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+}
+
+.compare-slot.is-target {
+  border-color: color-mix(in srgb, var(--slot-color) 55%, transparent);
+  background: color-mix(in srgb, var(--slot-color) 6%, transparent);
+}
+
+.compare-target {
+  display: none;
+  margin-inline-start: auto;
+  padding: 0 8px;
+  border: 1px solid var(--slot-color);
+  border-radius: 999px;
+  color: var(--slot-color);
+  font: 600 .75rem/1.5 var(--font-ui);
+}
+
+.compare-slot.is-target .compare-target {
+  display: inline-block;
+}
+
+.compare-help {
+  margin: 0 0 10px;
+}
+
+.compare-empty {
+  margin: 0;
+  padding: 6px 8px;
+  color: var(--color-text-muted);
 }
 
 .compare-selection {
@@ -2947,10 +3151,6 @@ input.ro {
   flex: 1;
 }
 
-#tg-pre {
-  color: var(--plab);
-}
-
 /* ===== Cloud account screens ===== */
 .account-head {
   display: flex;
@@ -3568,6 +3768,96 @@ input.ro {
   padding: 0 var(--space-16);
 }
 
+/* Shown outside #app so redraws keep it; it never covers the centre of the screen. */
+.update-notice {
+  position: fixed;
+  inset: auto var(--space-16) var(--space-16) auto;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  max-width: min(26rem, calc(100vw - 2 * var(--space-16)));
+  padding: var(--space-12) var(--space-16);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+  color: var(--color-text);
+  font: 600 .875rem/1.4 var(--font-ui);
+}
+
+.update-notice button {
+  flex: none;
+}
+
+/* First-visit guide: one card above the lists, never a blocking dialog. */
+.hintro {
+  padding: var(--space-16) 20px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.hintro-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-12);
+}
+
+.hintro h2, .hintro-dialog h2 {
+  margin: 0;
+  font: 700 1.25rem/1.3 var(--font-display);
+}
+
+.hintro p, .hintro-dialog p:not(.dgb) {
+  margin: var(--space-8) 0 0;
+  color: var(--color-text-muted);
+}
+
+.intro-points {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: var(--space-8) var(--space-16);
+  margin: var(--space-12) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.intro-points li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-8);
+  font: 500 .875rem/1.5 var(--font-ui);
+}
+
+.intro-points .i {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  color: var(--color-accent);
+}
+
+.hintro-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  margin-top: var(--space-16);
+}
+
+.hintro-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: var(--size-control);
+}
+
+.hintro-actions .i {
+  width: 18px;
+  height: 18px;
+}
+
 .hmetric {
   display: flex;
   gap: 20px;
@@ -3840,7 +4130,7 @@ body::before {
   font-family: var(--font-display);
 }
 
-.hl .hstats-surface, .hl .hwish-rows, .hl .hcard {
+.hl .hstats-surface, .hl .hwish-rows, .hl .hcard, .hl .hintro {
   box-shadow: var(--shadow-panel);
 }
 
@@ -3954,7 +4244,7 @@ body::before {
 
   .hl, .hl button, .hl [role=button], .hl :where(button).hadd, .hl :where(button).htext,
   .hl :where(button).slot, .hl :where(button).trig, .hl .hcard-body, .hl .hcard-top,
-  .hl .hwish-rows, .hl .hstats-surface, .appearance-option {
+  .hl .hwish-rows, .hl .hstats-surface, .hl .hintro, .appearance-option {
     background: Canvas;
     color: CanvasText;
     border-color: ButtonText;
@@ -4570,7 +4860,7 @@ input[type=checkbox]:checked::after {
 /* A single hairline follows the existing radius. Layered backgrounds also work on inputs. */
 @media (forced-colors: none) {
   /* Scope the rim to the app and dialogs so it wins over component and interaction backgrounds. */
-  #app .shell-brand-frame, #app .hl .hcard, #app .hl .hstats-surface, #app .hl .hwish-rows,
+  #app .shell-brand-frame, #app .hl .hcard, #app .hl .hstats-surface, #app .hl .hwish-rows, #app .hl .hintro,
   #app .shell-sidebar .profile-pill, #app .shell-nav > button[aria-current=page],
   #app .hl .hadd, .lh #q, #app .lh .ms summary, #app .lh .list-clear, #app .lh .list-add,
   #app .list-surface .rcol .box, #app .legacy-surface .well, #app .legacy-surface .wh, #app .legacy-surface .kpi,
@@ -4580,7 +4870,7 @@ input[type=checkbox]:checked::after {
   :is(#app, dialog.modal) textarea, #app :is(.page-title, .list-selection, .wa) button,
   :is(#app, dialog.modal) :is(.dgb, .num) button,
   :is(#app, dialog.modal) [data-act=gdgo], :is(#app, dialog.modal) button.dg,
-  :is(#app, dialog.modal) [data-act=dthremove], :is(#app, dialog.modal) [data-act=localdelete],
+  :is(#app, dialog.modal) :is([data-act=dthremove], [data-act=dthadd]), :is(#app, dialog.modal) [data-act=localdelete],
   #app [data-act=compare-toggle] {
     --rim-paint: linear-gradient(var(--rim-angle, 125deg), var(--metal-edge) 3%, var(--metal-glint) 13%,
       var(--metal-edge) 27%, var(--metal-shade) 46%, var(--metal-glint) 55%,
@@ -4598,6 +4888,7 @@ input[type=checkbox]:checked::after {
      which the browser tests against every element. */
   :where([data-theme=porcelain]) #app .shell-brand-frame, :where([data-theme=porcelain]) #app .hl .hcard,
   :where([data-theme=porcelain]) #app .hl .hstats-surface, :where([data-theme=porcelain]) #app .hl .hwish-rows,
+  :where([data-theme=porcelain]) #app .hl .hintro,
   :where([data-theme=porcelain]) #app .shell-sidebar .profile-pill,
   :where([data-theme=porcelain]) #app .shell-nav > button[aria-current=page], :where([data-theme=porcelain]) #app .hl .hadd,
   :where([data-theme=porcelain]) .lh #q, :where([data-theme=porcelain]) #app .lh .ms summary,
@@ -4612,7 +4903,7 @@ input[type=checkbox]:checked::after {
   :where([data-theme=porcelain]) #app :is(.page-title, .list-selection, .wa) button,
   :where([data-theme=porcelain]) :is(#app, dialog.modal) :is(.dgb, .num) button,
   :where([data-theme=porcelain]) :is(#app, dialog.modal) [data-act=gdgo], :where([data-theme=porcelain]) :is(#app, dialog.modal) button.dg,
-  :where([data-theme=porcelain]) :is(#app, dialog.modal) [data-act=dthremove],
+  :where([data-theme=porcelain]) :is(#app, dialog.modal) :is([data-act=dthremove], [data-act=dthadd]),
   :where([data-theme=porcelain]) :is(#app, dialog.modal) [data-act=localdelete], :where([data-theme=porcelain]) #app [data-act=compare-toggle] {
     --rim-paint: linear-gradient(calc(var(--rim-angle, 125deg) + 20deg), var(--metal-glint), var(--metal-edge) 42%, var(--metal-shade) 92%);
     --rim-top: color-mix(in srgb, var(--rim-lift-ink, var(--color-text)) var(--rim-lift, 0%), var(--rim-fill, var(--satin-light)));
@@ -5009,7 +5300,7 @@ input[type=checkbox]:checked::after {
 }
 
 @media (forced-colors: none) {
-  :root .num button, :root [data-act=gdgo], :root .dgb [data-act=edit], :root [data-act=compare-toggle] {
+  :root .num button, :root [data-act=dthadd], :root [data-act=gdgo], :root .dgb [data-act=edit], :root [data-act=compare-toggle] {
     --rim-fill: var(--color-accent);
     color: var(--color-bg);
   }
@@ -5325,7 +5616,6 @@ input[type=checkbox]:checked::after {
 .tag-swatch > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tag-swatch:focus-within { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 .tag-manager .tag-swatch input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
-.tag-manager #tg-pre { display: block; margin-bottom: var(--space-12); }
 @media (forced-colors: none) {
   .tag-manager h2 > .i { stroke: url(#nav-metal) currentColor; stroke-width: 2.35; }
   .fade-top { --fade-top-color: transparent; }
@@ -5376,7 +5666,7 @@ input[type=checkbox]:checked::after {
   :hover:where(:not(:disabled, [aria-disabled=true], [aria-busy=true], [aria-current], [aria-pressed=true],
     [aria-selected=true], [aria-expanded=true], .sel, .death-chip, :focus-visible, :active, details[open] > summary,
     .ms:has(:checked) > summary, :has(> :is(:checked, :disabled, [aria-disabled=true], [aria-busy=true], :focus-visible)))) {
-    &:is(button, summary, [role=button], .share-open):not(:where(.lv, .hcard, .trig, .stat-card, .gdc, .chip, a:not(.share-open))) {
+    &:is(button, summary, [role=button], .share-open):not(:where(.lv, .hcard, .trig, .stat-card, .gdc, .chip, .htext, a:not(.share-open))) {
       background-color: var(--hover-surface);
       border-color: var(--hover-edge);
       --rim-angle: 140deg;
@@ -5410,6 +5700,14 @@ input[type=checkbox]:checked::after {
     #app :is(.hl .hcard, .trigs .trig)& {
       --rim-angle: 140deg;
       box-shadow: inset 0 0 0 1px var(--hover-card-edge);
+    }
+
+    /* Home's text links read as links: a surface behind them looked like an oversized block. */
+    &.htext {
+      --nav-ink: var(--hover-menu-ink);
+      color: var(--hover-menu-ink);
+      text-decoration: underline;
+      text-underline-offset: 4px;
     }
 
     &.chip { --chip-highlight: 26%; }

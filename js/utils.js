@@ -60,10 +60,20 @@ const orDash = v => v == null || v === '' ? '-' : v;
 /** Formats seconds as "1h 30m 0s". */
 const formatDuration = s => s == null ? '' : `${~~(s / 3600)}h ${~~(s % 3600 / 60)}m ${s % 60}s`;
 
+/** Play time for summaries: hours and minutes, or seconds under a minute, so a short average never reads as zero. */
+function formatPlaytime(s) {
+    const hours = Math.floor(s / 3600), minutes = Math.floor(s % 3600 / 60);
+    return hours ? `${hours.toLocaleString(ui.lang)} h ${minutes} min` : minutes ? `${minutes} min` : `${s} s`;
+}
+
+/** Matches the level_notes check in the database, which counts characters rather than UTF-16 units. */
+const NOTES_LIMIT = 5000;
+
 /** Error checks for form fields that the browser cannot validate on its own. */
 const FIELD_CHECKS = {
     name: v => v.trim() ? '' : t('errName'),
-    lid: v => !v.trim() || /^\d+$/.test(v.trim()) ? '' : t('errLid')
+    lid: v => !v.trim() || /^\d+$/.test(v.trim()) ? '' : t('errLid'),
+    notes: v => Array.from(v).length <= NOTES_LIMIT ? '' : t('errNotes').replace('{n}', NOTES_LIMIT.toLocaleString(ui.lang))
 };
 
 /** Error message for a form field, or '' when its value is valid. */
@@ -101,10 +111,7 @@ const tagColor = n => {
 
 const tagColorAttr = n => `data-tag-color="${escapeHtml(tagColor(n))}"`;
 
-/** Levels tagged "Pre-Extremes" appear separately under "First steps". */
 const TAG_NAME_LIMIT = 24;
-const PRE_TAG = 'Pre-Extremes';
-const isPre = l => (l.tags || []).includes(PRE_TAG);
 
 /** Preserve the closest palette when loading preferences from earlier releases. */
 const LEGACY_THEMES = { blue: 'nebula', night: 'graphite', synth: 'crimson', dark: 'graphite', light: 'porcelain' };

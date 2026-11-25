@@ -9,6 +9,16 @@ function reopenPause(selector) {
     qs('#md ' + selector)?.focus();
 }
 
+/** After a pick, the settings picker shows the new value collapsed and returns focus to its summary. */
+function closeSettingsPicker(option) {
+    const picker = option.closest('.settings-picker');
+    if (!picker)
+        return;
+    picker.querySelector('.settings-current').innerHTML = option.innerHTML;
+    picker.open = false;
+    picker.querySelector('summary').focus();
+}
+
 function setAppearance(field, value) {
     if (cloudUser) {
         applyCloudSettings({ [field]: value });
@@ -116,13 +126,22 @@ const ACTIONS = {
             qs('#q')?.focus({ preventScroll: true });
     },
     pause: () => openModal(pauseUI()),
-    theme: a => setAppearance('theme', themeOf(a.dataset.v)),
-    background: a => setAppearance('background', backgroundOf(a.dataset.v)),
+    theme(a) {
+        setAppearance('theme', themeOf(a.dataset.v));
+        closeSettingsPicker(a);
+    },
+    background(a) {
+        setAppearance('background', backgroundOf(a.dataset.v));
+        closeSettingsPicker(a);
+    },
     bell: () => openModal(bellUI()),
     notifwish: button => transferFromNotification(button),
     notiflocal: () => openNotificationMigration(),
     notifdismiss: button => hideNotification(button),
     legal: a => openModal(legalUI(a.dataset.v)),
+    appupdate: () => confirmLevelFormExit(qs('.rcol')).then(discard => discard && applyUpdate()),
+    guide: () => openModal(introDialog()),
+    introhide: () => hideIntro(),
     ct() {
         ui.tagFilter = [];
         renderListTagFilters();
@@ -143,7 +162,7 @@ const ACTIONS = {
         else
             ui.lang = localStorage.gl = a.dataset.v;
         if (a.closest('.pause'))
-            reopenPause(`[data-act=lang][data-v=${a.dataset.v}]`);
+            reopenPause('[data-picker=lang] summary');
         else
             render();
     },
@@ -173,6 +192,7 @@ const ACTIONS = {
             renderPanel();
         }
         openModal(levelForm());
+        rememberLevelForm(qs('#md'));
         qs('#gdq').focus();
     },
     edit: (a, id) => openLevelEditor(id, !!qs('#md .modal')),
@@ -187,18 +207,13 @@ const ACTIONS = {
         else if (returnId != null && innerWidth <= 900)
             (qs(`.lv[data-id="${CSS.escape(returnId)}"]`) || qs('#q'))?.focus({ preventScroll: true });
     },
-    tgadd(a) {
-        // tagChip escapes the tag name and tagColor only returns #rrggbb, so the HTML is safe
-        // nosemgrep: typescript.react.security.audit.react-unsanitized-method.react-unsanitized-method
-        qs('#tgs').insertAdjacentHTML('beforeend', tagChip(a.dataset.v));
-        qs('#tgq').value = '';
-        renderTagSuggestions();
-    },
+    tgadd: a => selectFormTag(a.dataset.v),
+    tgnew: a => createFormTag(a.dataset.v),
     tgrm(a) {
         a.remove();
         renderTagSuggestions();
     },
-    close: () => closeModal(),
+    close: () => requestCloseModal(),
     async del(a, id) {
         const deletionProfile = profile;
         if (!canEdit() || !await askConfirm(t('confirm')) || profile !== deletionProfile || !canEdit())
@@ -220,7 +235,7 @@ const ACTIONS = {
     tags: () => openModal(tagsUI()),
     tdel(a) {
         const ix = +a.dataset.i;
-        askConfirm(t(profile.tags[ix].name == PRE_TAG ? 'preTagConfirm' : 'confirmTag')).then(ok => {
+        askConfirm(t('confirmTag')).then(ok => {
             if (!ok)
                 return;
             const n = profile.tags.splice(ix, 1)[0].name;
@@ -367,13 +382,20 @@ function saveLevel(form) {
     }
     const position = form.elements.pos.value, old = findLevel(form.dataset.id), level = old || { id: newId('n') };
     const fields = levelFromForm(form), maximum = maxRankPosition(fields.kind, level.id);
+    // Older notes may exceed the limit; they are kept as they are until shortened, never cut on save.
+    const notesError = fieldError('notes', fields.notes || '');
+    if (notesError) {
+        form.elements.notes.setCustomValidity(notesError);
+        form.reportValidity();
+        return;
+    }
     Object.assign(level, fields);
     if (!old)
         profile.levels.push(level);
     matchWithAredl([level]);
     matchWithDemonlist([level]);
     removeFromOrder(level.id);
-    if (position && !isPre(level)) {
+    if (position) {
         const order = profile.order[level.kind], before = rankedIds(level.kind)[Math.max(1, Math.min(maximum, +position)) - 1];
         order.splice(before ? order.indexOf(before) : order.length, 0, level.id);
     }
@@ -387,6 +409,29 @@ function saveLevel(form) {
     render();
     scrollSel();
     focusLevelPanel();
+}
+
+function selectFormTag(name) {
+    // tagChip escapes the tag name and tagColor only returns #rrggbb, so the HTML is safe
+    // nosemgrep: typescript.react.security.audit.react-unsanitized-method.react-unsanitized-method
+    qs('#tgs').insertAdjacentHTML('beforeend', tagChip(name));
+    qs('#tgq').value = '';
+    renderTagSuggestions();
+    qs('#tgq').focus();
+}
+
+/**
+ * Adds a tag to the catalog from the level form and selects it. The catalog is saved at once; the level is not,
+ * and the form is not redrawn, so its unsaved values stay.
+ */
+function createFormTag(name) {
+    const error = tagNameError(name);
+    if (error)
+        return setFieldError(qs('#tgq'), error);
+    profile.tags.push({ name, color: nextTagColor() });
+    save();
+    setFieldError(qs('#tgq'), '');
+    selectFormTag(name);
 }
 
 function setTagColor(input) {
@@ -418,26 +463,11 @@ function renameTag(input) {
         setFieldError(input, error);
         return;
     }
-    const rename = () => {
-        const wasPre = tag.name == PRE_TAG;
-        profile.levels.forEach(level => level.tags = (level.tags || []).map(x => x == tag.name ? name : x));
-        ui.tagFilter = ui.tagFilter.map(selectedTag => selectedTag == tag.name ? name : selectedTag);
-        tag.name = name;
-        save();
-        render();
-        if (wasPre || name == PRE_TAG)
-            openModal(tagsUI());
-    };
-    if (tag.name != PRE_TAG || name == tag.name)
-        return rename();
-    askConfirm(t('preTagConfirm')).then(ok => {
-        if (ok)
-            rename();
-        else {
-            input.value = tag.name;
-            updateTagPreview(input);
-        }
-    });
+    profile.levels.forEach(level => level.tags = (level.tags || []).map(x => x == tag.name ? name : x));
+    ui.tagFilter = ui.tagFilter.map(selectedTag => selectedTag == tag.name ? name : selectedTag);
+    tag.name = name;
+    save();
+    render();
 }
 
 async function importProfile(file) {
@@ -518,18 +548,35 @@ function openClickedLevel(event, clickedCard) {
     }
 }
 
-document.body.onclick = e => {
+/** Actions that replace what the side panel shows, so they would drop a level being edited there. */
+const LEAVES_LEVEL_EDITOR = new Set(['lvclose', 'tab', 'add', 'edit', 'wopen', 'wnew', 'myprogress', 'localuse']);
+
+function leavesLevelEditor(target, action, clicked) {
+    if (!qs('.rcol #fm'))
+        return false;
+    return action ? LEAVES_LEVEL_EDITOR.has(action.dataset.act) : !!clicked?.matches('.lv, .pt') && !target.closest('form');
+}
+
+/** Runs leave() once the edited level may be dropped: it is unchanged, or the user chose to discard it. */
+function leaveLevelEditor(leave) {
+    return confirmLevelFormExit(qs('.rcol')).then(discard => discard && leave());
+}
+
+function handleBodyClick(e, confirmed = false) {
     document.querySelectorAll('.ms[open]').forEach(d => {
         if (!d.contains(e.target))
             d.open = false;
     });
     const g = e.target.closest('[data-tag]'), a = e.target.closest('[data-act]'), c = e.target.closest('[data-id]');
+    if (!confirmed && leavesLevelEditor(e.target, a, c))
+        return leaveLevelEditor(() => handleBodyClick(e, true));
     if (g && a?.dataset.act !== 'list-pick')
         return filterByTagChip(g);
     if (a)
         return runAction(a);
     openClickedLevel(e, c);
-};
+}
+document.body.onclick = e => handleBodyClick(e);
 document.body.onsubmit = e => {
     e.preventDefault();
     if (e.target.id == 'af')
@@ -690,6 +737,15 @@ document.addEventListener('toggle', e => {
         optionsPanel.querySelector('label:not([hidden]) input')?.focus({ preventScroll: true });
 }, true);
 document.addEventListener('focusout', e => durationBlur(e));
+document.addEventListener('toggle', openedHelp, true);
+document.addEventListener('pointerover', hoverHelp);
+document.addEventListener('pointerout', hoverHelp);
+document.addEventListener('click', pinHelp, true);
+document.addEventListener('scroll', closeHelpOnScroll, { capture: true, passive: true });
+document.addEventListener('focusin', e => {
+    if (e.target.dataset?.compareSlot != null)
+        setComparisonTarget(+e.target.dataset.compareSlot);
+});
 
 /** Arrow keys move through a comparison picker's options, wrapping around, and Escape returns to its search box; true when the key was handled. */
 function comparePickerKeydown(e) {
@@ -711,11 +767,12 @@ function comparePickerKeydown(e) {
     return true;
 }
 
-/** Escape closes the open dropdown, or the level panel on narrow screens; true when it did. */
+/** Escape closes the open dropdown or settings picker, or the level panel on narrow screens; true when it did. */
 function escapeKeydown(e) {
-    if (e.key != 'Escape')
+    // An open explanation closes by itself and must not take the panel with it.
+    if (e.key != 'Escape' || qs('.help-pop:popover-open'))
         return false;
-    const dropdown = e.target.closest('.ms[open]');
+    const dropdown = e.target.closest('.ms[open], .settings-picker[open]');
     if (dropdown) {
         e.preventDefault();
         e.stopPropagation();
@@ -725,7 +782,7 @@ function escapeKeydown(e) {
     }
     if (e.target.closest?.('.rcol.has') && innerWidth <= 900 && !qs('dialog[open]')) {
         e.preventDefault();
-        ACTIONS.lvclose();
+        leaveLevelEditor(() => ACTIONS.lvclose());
         return true;
     }
     return false;
@@ -759,7 +816,7 @@ document.onkeydown = e => {
     }
     if (e.key == 'Enter' && e.target.id == 'tgq') {
         e.preventDefault();
-        qs('#tgr [data-act=tgadd]')?.click();
+        qs('#tgr button')?.click();
     }
     // Enter searches instead of submitting the form around the search box
     if (e.key == 'Enter' && e.target.id == 'gdq') {

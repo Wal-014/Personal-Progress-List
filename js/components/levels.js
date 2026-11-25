@@ -72,19 +72,16 @@ function card(l, i, n, reorderable) {
     const selection = currentLevelSelection();
     const selectionAttrs = selection ? ` data-act=list-pick aria-pressed=${selection.ids.has(l.id)}` : '';
     const canMove = reorderable && canEdit();
-    const u = thumbUrl(l), rank = i == 'pre' ? ICONS.classic : i != null ? i + 1 : '—';
+    const u = thumbUrl(l), rank = i != null ? i + 1 : '—';
     const hasEmblem = Number.isInteger(i) && i >= 0 && i < 5;
     const rankContent = hasEmblem ? `<img src="assets/ranks/${l.kind === 'platform' ? 'platformer' : 'classic'}-${rank}.webp" width=68 height=80 alt="" decoding=async draggable=false>` : rank;
     const creator = l.creator ? `<span class=level-creator>${t('by')} ${escapeHtml(l.creator)}</span>` : '';
     const date = l.date ? `<time class=level-date datetime="${escapeHtml(l.date)}">${escapeHtml(formatDate(l.date))}</time>` : '';
-    return `<div class="obj lv${hasEmblem ? ' rank-' + rank : ''}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${selectionAttrs}${canMove ? ' aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"' : ''}${u ? ` data-th="${escapeHtml(u)}"` : ''}>${u ? '<i class=th aria-hidden=true></i>' : ''}${canMove ? `<span class=grip aria-hidden=true title="${t('dragHint')}"></span>` : ''}<span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + rank + ' / ' + n : t('unplaced')}">${rankContent}</span><div class=info><div class=level-title><span class=nm>${escapeHtml(l.name)}</span>${creator}</div>${date}</div>${difficultyFace(l)}${selection ? `<span class=selection-mark aria-hidden=true>${ICONS.actionCheck}</span>` : ''}</div>`;
+    return `<div class="obj lv${hasEmblem ? ' rank-' + rank : ''}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${selectionAttrs}${canMove ? ' aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"' : ''}${u ? ` data-th="${escapeHtml(u)}"` : ''}>${u ? '<i class=th aria-hidden=true></i>' : ''}${canMove ? `<span class=grip aria-hidden=true title="${t('dragHint')}"></span>` : ''}<span class=rk aria-label="${i != null ? '#' + rank + ' / ' + n : t('unplaced')}">${rankContent}</span><div class=info><div class=level-title><span class=nm>${escapeHtml(l.name)}</span>${creator}</div>${date}</div>${difficultyFace(l)}${selection ? `<span class=selection-mark aria-hidden=true>${ICONS.actionCheck}</span>` : ''}</div>`;
 }
 
-/** Ids of the ranked levels of a list, in order: Pre-Extremes levels and ids of deleted levels have no rank. */
-const rankedIds = kind => profile.order[kind].filter(id => {
-    const l = findLevel(id);
-    return l?.kind === kind && !isPre(l);
-});
+/** Ids of the ranked levels of a list, in order: ids of deleted levels or of the other mode have no rank. */
+const rankedIds = kind => profile.order[kind].filter(id => findLevel(id)?.kind === kind);
 
 function matchesListFilters(level, query, selectedTags) {
     return level.name.toLowerCase().includes(query) && (!selectedTags.length || selectedTags.some(name => (level.tags || []).includes(name)));
@@ -102,17 +99,16 @@ function canReorder() {
     return canEdit() && !currentLevelSelection() && !listFiltersActive();
 }
 
-/** List body grouped into ranked, unplaced and first-step levels. */
+/** List body grouped into ranked and unplaced levels. */
 function list() {
-    const orderedIds = profile.order[ui.tab];
+    const orderedIds = rankedIds(ui.tab);
     const isShown = level => matchesListFilters(level, ui.q, ui.tagFilter);
     const listLevels = profile.levels.filter(level => level.kind == ui.tab);
-    const rankedLevels = rankedIds(ui.tab).map(findLevel);
-    const unplacedLevels = listLevels.filter(level => !orderedIds.includes(level.id) && !isPre(level) && isShown(level));
-    const firstStepLevels = listLevels.filter(level => isPre(level) && isShown(level));
+    const rankedLevels = orderedIds.map(findLevel);
+    const unplacedLevels = listLevels.filter(level => !orderedIds.includes(level.id) && isShown(level));
     const reorderable = canReorder();
     const hasMatches = listLevels.some(isShown);
-    return `<div id=lst>${rankedLevels.map((level, index) => isShown(level) ? card(level, index, rankedLevels.length, reorderable) : '').join('')}</div>${unplacedLevels.length ? `<h2 class=grp>${t('unplaced')}</h2>` + unplacedLevels.map(level => card(level)).join('') : ''}${firstStepLevels.length ? `<h2 class=grp>${t('first')}</h2>` + firstStepLevels.map(level => card(level, 'pre')).join('') : ''}${!listLevels.length ? canEdit() ? emptyList({ icon: ICONS.actionAdd, title: t('emptyListTitle'), text: t('emptyListText'), action: 'add' }) : `<p class=by>${t('publicNoLevels')}</p>` : !hasMatches ? `<p class=by>${t('noMatch')}</p>` : ''}`;
+    return `<div id=lst>${rankedLevels.map((level, index) => isShown(level) ? card(level, index, rankedLevels.length, reorderable) : '').join('')}</div>${unplacedLevels.length ? `<h2 class=grp>${t('unplaced')}</h2>` + unplacedLevels.map(level => card(level)).join('') : ''}${!listLevels.length ? canEdit() ? emptyList({ icon: ICONS.actionAdd, title: t('emptyListTitle'), text: t('emptyListText'), action: 'add' }) : `<p class=by>${t('publicNoLevels')}</p>` : !hasMatches ? `<p class=by>${t('noMatch')}</p>` : ''}`;
 }
 
 function youtubeId(url) {
@@ -174,15 +170,28 @@ function updateTotals(f) {
     q('tT').value = s.length && s.every(Number.isFinite) ? durationClock(s.reduce((x, y) => x + y)) : '';
 }
 
+/** Existing tags matching the search, then an option to create the typed name when no tag has it yet. */
 function renderTagSuggestions() {
-    const q = (qs('#tgq')?.value || '').toLowerCase(), sel = [...document.querySelectorAll('#tgs input')].map(i => i.value);
-    if (qs('#tgr'))
-        qs('#tgr').innerHTML = profile.tags.filter(g => !sel.includes(g.name) && g.name.toLowerCase().includes(q)).map(g => `<button type=button class=chip data-act=tgadd data-v="${escapeHtml(g.name)}" ${tagColorAttr(g.name)}>+ ${escapeHtml(g.name)}</button>`).join('');
+    const typed = (qs('#tgq')?.value || '').trim(), q = typed.toLowerCase(), sel = [...document.querySelectorAll('#tgs input')].map(i => i.value);
+    if (!qs('#tgr'))
+        return;
+    const matches = profile.tags.filter(g => !sel.includes(g.name) && g.name.toLowerCase().includes(q)).map(g => `<button type=button class=chip data-act=tgadd data-v="${escapeHtml(g.name)}" ${tagColorAttr(g.name)}>+ ${escapeHtml(g.name)}</button>`).join('');
+    const create = typed && !profile.tags.some(g => g.name === typed) ? `<button type=button class="chip tag-create" data-act=tgnew data-v="${escapeHtml(typed)}">+ ${escapeHtml(t('tagCreate').replace('{name}', typed))}</button>` : '';
+    qs('#tgr').innerHTML = matches + create;
+}
+
+/** Level fields whose meaning is not obvious from their label. */
+const FIELD_HELP = new Set(['pos', 'ap', 'gdl', 'attN', 'attC', 'enj', 'lik', 'tags', 'notes']);
+
+/** A field label, followed by its ? explanation when the field has one. */
+function fieldLabel(key, label, forId = 'fm-' + key) {
+    const tag = `<label for=${forId}>${label}</label>`;
+    return FIELD_HELP.has(key) ? `<div class=field-head>${tag}${helpTip(key, label)}</div>` : tag;
 }
 
 function formField(key, value, type = 'text', attrs = '', hint = '') {
     const step = attrs.match(/\bstep=([\d.]+)/)?.[1] || '1';
-    return `<div><label for=fm-${key}>${t(key)}</label>${type == 'number' && !attrs.includes('readonly') ? `<div class=num><button type=button class=blue data-act=step data-d=-1 aria-label="−${escapeHtml(formatRating(+step))}">−</button><input id=fm-${key} name=${key} type=number ${attrs} value="${escapeHtml(value)}"><button type=button class=blue data-act=step data-d=1 aria-label="+${escapeHtml(formatRating(+step))}">+</button></div>` : `<input id=fm-${key} name=${key} type=${type} ${attrs} value="${escapeHtml(value)}"${attrs.includes('readonly') ? ' class=ro' : ''}>`}${hint ? `<small id=fm-${key}-hint class=by>${escapeHtml(hint)}</small>` : ''}</div>`;
+    return `<div>${fieldLabel(key, t(key))}${type == 'number' && !attrs.includes('readonly') ? `<div class=num><button type=button class=blue data-act=step data-d=-1 aria-label="−${escapeHtml(formatRating(+step))}">−</button><input id=fm-${key} name=${key} type=number ${attrs} value="${escapeHtml(value)}"><button type=button class=blue data-act=step data-d=1 aria-label="+${escapeHtml(formatRating(+step))}">+</button></div>` : `<input id=fm-${key} name=${key} type=${type} ${attrs} value="${escapeHtml(value)}"${attrs.includes('readonly') ? ' class=ro' : ''}>`}${hint ? `<small id=fm-${key}-hint class=by>${escapeHtml(hint)}</small>` : ''}</div>`;
 }
 
 const aredlTopValue = ar => ar?.s == 'r' && ar.p != null ? '#' + ar.p : ar?.s == 'p' ? t('pending') : '—';
@@ -205,20 +214,21 @@ function levelForm(level) {
     const kind = level?.kind || (isListTab() ? ui.tab : 'classic');
     const levelData = level || { tags: [], ar: { s: 'n' }, kind };
     const rankPosition = rankedIds(kind).indexOf(level?.id) + 1 || '', maximum = maxRankPosition(kind, level?.id);
-    const readout = (field, label, value) => `<label for=fm-${field}>${t(label)}</label><output id=fm-${field} name=${field}>${escapeHtml(value)}</output>`;
+    const readout = (field, label, value) => `${fieldLabel(field, t(label))}<output id=fm-${field} name=${field}>${escapeHtml(value)}</output>`;
     const ranks = `<div class=level-ranks><div>${readout('ap', kind == 'platform' ? 'apPlatform' : 'ap', aredlTopValue(levelData.ar))}</div><div id=fm-gdl-field${kind == 'platform' ? ' hidden' : ''}>${readout('gdl', 'gdlTop', kind == 'platform' || levelData.gdl == null ? '—' : '#' + levelData.gdl)}</div></div>`;
     const attempts = ['attN', 'attC'].map(key => formField(key, levelData[key], 'number', 'min=0 step=1')).join('');
     const times = ['tN', 'tP', 'tPC'].map(key => durationInput(key, levelData[key])).join('');
     const totals = `<div class=level-totals><div>${readout('attT', 'attT', totalAttempts(levelData))}</div><div>${readout('tT', 'tT', durationClock(totalSeconds(levelData)))}</div></div>`;
-    const section = (key, body) => `<fieldset><legend>${t(key)}</legend><div class=grid>${body}</div></fieldset>`;
+    const legend = key => `<legend>${t(key)}${helpTip(key, t(key))}</legend>`;
+    const section = (key, body) => `<fieldset>${legend(key)}<div class=grid>${body}</div></fieldset>`;
     return `<div class=box><h2${level ? ' tabindex=-1' : ''}>${level ? t('edit') : t('palAdd')}</h2><form id=fm data-id="${escapeHtml(level?.id)}">
 ${levelSearchBox()}
 ${section('s1', levelFields(levelData, true))}
 ${section('s2', formField('pos', rankPosition, 'number', `min=1 max=${maximum} step=1 aria-describedby=fm-pos-hint`, rankPositionHint(maximum)) + ranks)}
 ${section('s3', `<div class=level-attempts>${attempts}</div><div class=level-times>${times}</div>${totals}`)}
 ${section('s4', formField('date', levelData.date, 'date') + formField('link', levelData.link))}
-<fieldset><legend>${t('s5')}</legend><div class=grid>${formField('enj', levelData.enj, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}${formField('lik', levelData.lik, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}</div><label for=tgq>${t('tags')}</label><input id=tgq placeholder="${t('tgs')}" autocomplete=off><div id=tgr class=tgr></div><div id=tgs>${(levelData.tags || []).map(tagChip).join('')}</div></fieldset>
-<fieldset><legend>${t('s6')}</legend><label for=fm-notes>${t('notes')}</label><textarea id=fm-notes name=notes rows=3>${escapeHtml(levelData.notes)}</textarea>${deathsInput(levelData.deaths)}</fieldset>
+<fieldset>${legend('s5')}<div class=grid>${formField('enj', levelData.enj, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}${formField('lik', levelData.lik, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}</div>${fieldLabel('tags', t('tags'), 'tgq')}<input id=tgq placeholder="${t('tgs')}" autocomplete=off maxlength=${TAG_NAME_LIMIT}><div id=tgr class=tgr></div><div id=tgs>${(levelData.tags || []).map(tagChip).join('')}</div></fieldset>
+<fieldset>${legend('s6')}${fieldLabel('notes', t('notes'))}<textarea id=fm-notes name=notes rows=3 maxlength=${NOTES_LIMIT} aria-describedby=fm-notes-hint>${escapeHtml(levelData.notes)}</textarea><small id=fm-notes-hint class=by>${t('notesLimit').replace('{n}', NOTES_LIMIT.toLocaleString(ui.lang))}</small>${deathsInput(levelData.deaths)}</fieldset>
 <div class="dgb level-action-bar">${level ? `<button type=button class=dg data-act=del data-id="${escapeHtml(level.id)}">${t('del')}</button>` : ''} <button type=button data-act=${level ? 'lvclose' : 'close'}>${t('close')}</button> <button type=submit class=pri>${t('save')}</button></div></form></div>`;
 }
 
@@ -356,6 +366,7 @@ function renderPanel() {
     r.classList.toggle('has', !!selectedListLevel());
     r.dataset.level = ui.sel ?? '';
     renderTagSuggestions();
+    rememberLevelForm(r);
 }
 
 function focusLevelPanel() {

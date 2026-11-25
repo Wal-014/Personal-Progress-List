@@ -40,7 +40,7 @@ const canEdit = () => !viewing;
 let ui = {
     tab: 'home', listsExpanded: false, wl: null, wishFx: null, q: '', tagFilter: [], z: 28, lang: localStorage.gl || 'es', theme: themeOf(localStorage.gt), background: backgroundOf(localStorage.gbg),
     rankingMode: 'classic', rankingMetric: 'att', rankingDirection: 'desc', rankingAll: false,
-    comparison: { open: false, slots: [null, null] }, timelineMetric: 'att'
+    comparison: { open: false, slots: [null, null], target: null }, timelineMetric: 'att'
 };
 
 const isListTab = () => ['classic', 'platform'].includes(ui.tab);
@@ -52,7 +52,7 @@ function resetListFilters() {
     ui.tagFilter = [];
 }
 
-const emptyProfile = () => ({ ratingScale: 10, levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
+const emptyProfile = () => ({ ratingScale: 10, firstStepsRetired: true, levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
 
 const save = () => {
     if (!canEdit())
@@ -126,12 +126,36 @@ function migrateRatingScale(data) {
     return true;
 }
 
+const TAG_PALETTE = ['#ff2bd6', '#00e5ff', '#ffd400', '#7cff6b', '#ff7a3d', '#9d7bff'];
+
+/** Colour for the next tag added to the catalog, cycling through the palette. */
+const nextTagColor = () => TAG_PALETTE[profile.tags.length % TAG_PALETTE.length];
+
+const RETIRED_FIRST_STEPS_TAG = 'Pre-Extremes';
+
+/**
+ * Levels tagged "Pre-Extremes" used to be listed apart under "First steps". Older profiles drop that tag once and those levels
+ * become unplaced; the marker lets a tag created later with the same name stay an ordinary tag.
+ */
+function retireFirstStepsTag(data) {
+    if (data.firstStepsRetired)
+        return false;
+    const retiredLevels = data.levels.filter(level => (level.tags || []).includes(RETIRED_FIRST_STEPS_TAG));
+    const retired = new Set(retiredLevels.map(level => level.id));
+    retiredLevels.forEach(level => level.tags = level.tags.filter(name => name != RETIRED_FIRST_STEPS_TAG));
+    data.tags = (data.tags || []).filter(tag => tag.name != RETIRED_FIRST_STEPS_TAG);
+    for (const kind in data.order)
+        data.order[kind] = data.order[kind].filter(id => !retired.has(id));
+    data.firstStepsRetired = true;
+    return true;
+}
+
 /**
  * Fills missing fields in older or imported profiles.
  * Imported files are only checked for their shape, so statuses and deaths are cleaned here before any template renders them.
  */
 function ensureProfileDefaults() {
-    const ratingsChanged = migrateRatingScale(profile);
+    const ratingsChanged = migrateRatingScale(profile), firstStepsChanged = retireFirstStepsTag(profile);
     profile.wishlists = profile.wishlists || [];
     fixIds(profile.levels, 'n');
     profile.levels.forEach(l => l.deaths = cleanDeaths(l.deaths));
@@ -148,7 +172,6 @@ function ensureProfileDefaults() {
     });
     let tagsChanged = !profile.tags;
     profile.tags = profile.tags || [];
-    const pal = ['#ff2bd6', '#00e5ff', '#ffd400', '#7cff6b', '#ff7a3d', '#9d7bff'];
     const names = new Set(profile.tags.map(tag => tag.name));
     for (const level of profile.levels) {
         const tags = [...new Set(level.tags || [])];
@@ -158,13 +181,13 @@ function ensureProfileDefaults() {
         }
         for (const name of tags) {
             if (!names.has(name)) {
-                profile.tags.push({ name, color: pal[profile.tags.length % pal.length] });
+                profile.tags.push({ name, color: nextTagColor() });
                 names.add(name);
                 tagsChanged = true;
             }
         }
     }
-    if (tagsChanged || ratingsChanged)
+    if (tagsChanged || ratingsChanged || firstStepsChanged)
         save();
 }
 

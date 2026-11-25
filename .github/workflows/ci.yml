@@ -19,7 +19,10 @@ concurrency:
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    # The scheduled commit already passed this job when it was pushed.
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -34,7 +37,10 @@ jobs:
       - run: npm test
 
   db:
-    runs-on: ubuntu-latest
+    # The scheduled commit already passed this job when it was pushed.
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -47,16 +53,19 @@ jobs:
       - uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
         with:
           version: 2.122.0
-      - run: supabase start -x studio,imgproxy,storage-api,realtime,edge-runtime,logflare,vector,supavisor,postgres-meta
+      - run: supabase start -x studio,imgproxy,storage-api,realtime,edge-runtime,logflare,vector,supavisor,postgres-meta,mailpit
       - run: npm run test:db
         env:
           SUPABASE_CLI: supabase
 
-  # Database changes reach production only from main, before the site that may depend on them
+  # Database changes reach production only from main, before the site that may depend on them.
+  # The status checks let it and deploy run when the schedule skipped ci and db, and stop them when either failed.
   migrate-prod:
     needs: [ci, db]
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
+    if: ${{ !cancelled() && !failure() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: production-database
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -77,8 +86,9 @@ jobs:
 
   deploy:
     needs: [ci, db, migrate-prod]
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
+    if: ${{ !cancelled() && !failure() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
       pages: write
       id-token: write
@@ -122,7 +132,8 @@ jobs:
   deploy-dev:
     needs: [ci, db]
     if: github.ref == 'refs/heads/development' && github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     environment:
       name: development
       url: https://ppl-dev.waquermaster.workers.dev/

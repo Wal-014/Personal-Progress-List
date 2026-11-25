@@ -16,7 +16,7 @@ function device() {
         addEventListener: (name, work) => { if (name === 'close') closeListeners.push(work); },
         showModal() {}, close() { closed++; for (const work of closeListeners.splice(0)) work(); }, remove() {} };
     const document = { body: {}, querySelector: selector => nodes[selector] || null, addEventListener() {} };
-    const env = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/account.js', 'js/cloud-model.js', ...syncScripts, 'js/demonlist.js', 'js/api.js', 'js/ranking-sync.js', 'js/notifications.js', 'js/components/dialogs.js', 'js/components/local-data.js', 'js/components/home.js', 'js/components/shell.js', 'js/components/account-ui.js', 'js/events.js'], {
+    const env = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/account.js', 'js/cloud-model.js', ...syncScripts, 'js/demonlist.js', 'js/api.js', 'js/ranking-sync.js', 'js/notifications.js', 'js/components/dialogs.js', 'js/components/local-data.js', 'js/components/home.js', 'js/components/shell.js', 'js/components/account-ui.js', 'js/components/help-tip.js', 'js/events.js'], {
         document, window: { addEventListener() {} }, localStorage: storage,
         queueMicrotask: task => tasks.push(task), setTimeout: task => tasks.push(task), clearTimeout() {},
         navigator: { onLine: true }, render() {}, renderTagSuggestions() {}, URL, Blob
@@ -426,7 +426,8 @@ test('shared demo wishlists append new items from both profiles without replacin
     assert.deepEqual(plain(d.app('profile.wishlists[0].items.map(item => item.id)')), ['i1', 'i2', 'i3', 'user-a', 'user-b']);
     assert.equal(d.app('profile.wishlists[0].name'), 'Account name');
     const repeat = plain(await d.app("bringLocalProfile('b', false)"));
-    assert.equal(repeat.wishlists, 0); assert.equal(repeat.existing, b.levels.length + b.tags.length + 4);
+    assert.equal(repeat.wishlists, 0); // The legacy demo's Pre-Extremes tag is retired on the way in.
+    assert.equal(repeat.existing, b.levels.length + b.tags.filter(tag => tag.name !== 'Pre-Extremes').length + 4);
     assert.equal(d.app('profile.wishlists.length'), 1);
     assert.equal(d.app('profile.wishlists[0].items.length'), 5);
 });
@@ -541,4 +542,13 @@ test('editing the local profile preserves progress and persists its name and bot
     d.context.askProfile = async () => { throw Error('Account must not edit local identity'); };
     await d.app('ACTIONS.pedit()');
     assert.equal(d.storage.gdp, before);
+});
+
+test('a local profile brought into an account drops the retired Pre-Extremes tag and its rank', () => {
+    const d = device(), source = { levels: [level('pre', { tags: ['Pre-Extremes', 'Keep'] }), level('plain')], order: { classic: ['pre', 'plain'], platform: [] }, wishlists: [], tags: [{ name: 'Pre-Extremes', color: '#123456' }, { name: 'Keep', color: '#654321' }] };
+    d.context.source = source;
+    const cleaned = plain(d.app('cleanMigrationData(source)')).data;
+    assert.deepEqual(cleaned.levels[0].tags, ['Keep']);
+    assert.deepEqual(cleaned.order.classic, ['plain']);
+    assert.deepEqual(cleaned.tags, [{ name: 'Keep', color: '#654321' }]);
 });

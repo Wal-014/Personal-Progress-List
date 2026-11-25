@@ -10,7 +10,7 @@ const plain = value => {
         return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, plain(entry)]));
     return value;
 };
-const empty = () => ({ ratingScale: 10, levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
+const empty = () => ({ ratingScale: 10, firstStepsRetired: true, levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
 const level = (fields = {}) => ({
     id: 'n1', name: 'Étoile 星 🎮', kind: 'classic', levelId: '123456', creator: 'Creator',
     diff: 'Extreme Demon', rating: 'mythic', attN: 0, attC: 123, tN: 456, tP: 789, tPC: 10,
