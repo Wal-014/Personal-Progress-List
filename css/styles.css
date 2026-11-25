@@ -2947,10 +2947,6 @@ input.ro {
   flex: 1;
 }
 
-#tg-pre {
-  color: var(--plab);
-}
-
 /* ===== Cloud account screens ===== */
 .account-head {
   display: flex;
@@ -5325,7 +5321,6 @@ input[type=checkbox]:checked::after {
 .tag-swatch > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tag-swatch:focus-within { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 .tag-manager .tag-swatch input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
-.tag-manager #tg-pre { display: block; margin-bottom: var(--space-12); }
 @media (forced-colors: none) {
   .tag-manager h2 > .i { stroke: url(#nav-metal) currentColor; stroke-width: 2.35; }
   .fade-top { --fade-top-color: transparent; }

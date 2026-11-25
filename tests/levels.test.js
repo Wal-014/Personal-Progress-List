@@ -165,7 +165,7 @@ test('matchesListFilters matches any selected tag and includes a level with both
         { name: 'First', tags: ['Rebeated'] },
         { name: 'Second', tags: ['Fluked'] },
         { name: 'Both', tags: ['Rebeated', 'Fluked'] },
-        { name: 'Other', tags: ['Pre-Extremes'] },
+        { name: 'Other', tags: ['Hard'] },
         { name: 'Untagged' }
     ];
     assert.deepEqual(levels.filter(level => app('matchesListFilters')(level, '', ['Rebeated', 'Fluked'])).map(level => level.name), ['First', 'Second', 'Both']);
@@ -242,11 +242,11 @@ test('cards show the emblem for each of the first five ranks in either list', ()
     }
 });
 
-test('rank six, unplaced and First steps cards have no emblem', () => {
+test('rank six and unplaced cards have no emblem', () => {
     app('profile = emptyProfile(); ui.lang = "en"');
     const level = { id: 'plain', name: 'Level', kind: 'classic' };
     const unplaced = app("t('unplaced')");
-    for (const [index, label, content] of [[5, '#6 / 8', '6'], [undefined, unplaced, '—'], [null, unplaced, '—'], ['pre', app("t('first')"), app('ICONS.classic')]]) {
+    for (const [index, label, content] of [[5, '#6 / 8', '6'], [undefined, unplaced, '—'], [null, unplaced, '—']]) {
         const html = app('card')(level, index, 8);
         assert.ok(html.includes(`<span class=rk aria-label="${label}">${content}</span>`));
         assert.doesNotMatch(html, /assets\/ranks\/|class="obj lv rank-/);
@@ -279,10 +279,10 @@ function keyboardReorderFixture(kind) {
         ui.lang = 'en';
         profile = emptyProfile();
         store = { cur: 'local', profs: { local: { data: profile } } };
-        profile.levels = ['bottom', 'unplaced', 'pre', 'middle', 'top'].map(id => ({
-            id, name: id, kind, tags: id === 'pre' ? [PRE_TAG] : []
+        profile.levels = ['bottom', 'unplaced', 'other', 'middle', 'top'].map(id => ({
+            id, name: id, kind: id === 'other' ? (kind === 'classic' ? 'platform' : 'classic') : kind
         }));
-        profile.order[kind] = ['top', 'pre', 'middle', 'deleted', 'bottom'];
+        profile.order[kind] = ['top', 'other', 'middle', 'deleted', 'bottom'];
     `);
     function press(id, key, modifiers = {}) {
         let prevented = false;
@@ -300,8 +300,8 @@ for (const kind of ['classic', 'platform'])
     test(`Alt+Arrow moves a ${kind} level by ID and saves the new order`, () => {
         const fixture = keyboardReorderFixture(kind);
         for (const [key, position, expected] of [
-            ['ArrowUp', 1, ['middle', 'pre', 'top', 'deleted', 'bottom']],
-            ['ArrowDown', 2, ['top', 'pre', 'middle', 'deleted', 'bottom']]
+            ['ArrowUp', 1, ['middle', 'other', 'top', 'deleted', 'bottom']],
+            ['ArrowDown', 2, ['top', 'other', 'middle', 'deleted', 'bottom']]
         ]) {
             assert.equal(fixture.press('middle', key), true);
             assert.deepEqual([...fixture.app('profile.order[kind]')], expected);
@@ -320,7 +320,7 @@ test('keyboard reorder leaves the order and storage alone when the shortcut cann
     fixture.press('top', 'ArrowUp');
     fixture.press('bottom', 'ArrowDown');
     fixture.press('unplaced', 'ArrowUp');
-    fixture.press('pre', 'ArrowDown');
+    fixture.press('other', 'ArrowDown');
     fixture.press('middle', 'ArrowUp', { altKey: false });
     for (const setup of [
         'ui.q = "middle"',
@@ -332,7 +332,7 @@ test('keyboard reorder leaves the order and storage alone when the shortcut cann
         assert.equal(fixture.app('canReorder()'), false);
         fixture.press('middle', 'ArrowUp');
     }
-    assert.deepEqual([...fixture.app('profile.order.classic')], ['top', 'pre', 'middle', 'deleted', 'bottom']);
+    assert.deepEqual([...fixture.app('profile.order.classic')], ['top', 'other', 'middle', 'deleted', 'bottom']);
     assert.equal(fixture.localStorage.gdp, saved);
     assert.equal(fixture.renders, 0);
     assert.deepEqual(fixture.messages, []);
@@ -347,15 +347,16 @@ for (const kind of ['classic', 'platform'])
                 { id: 'ranked', name: 'Level ranked', kind, tags: ['A'] },
                 { id: 'second', name: 'Level second', kind, tags: ['A'] },
                 { id: 'unplaced', name: 'Level unplaced', kind, tags: ['A'] },
-                { id: 'first', name: 'Level first', kind, tags: [PRE_TAG, 'A'] }
+                { id: 'tagged', name: 'Level tagged', kind, tags: ['Pre-Extremes', 'A'] }
             ];
-            profile.order[kind] = ['ranked', 'second', 'first'];`);
+            profile.order[kind] = ['ranked', 'second', 'tagged'];`);
         const html = app('list()');
         const [ranked, ...groups] = html.split('</div><h2 class=grp>');
         const outside = groups.join('');
-        assert.equal((ranked.match(/class=grip/g) || []).length, 2);
+        assert.equal((ranked.match(/class=grip/g) || []).length, 3);
+        assert.match(ranked, /data-id="tagged"/);
+        assert.equal(groups.length, 1);
         assert.match(outside, /data-id="unplaced"/);
-        assert.match(outside, /data-id="first"/);
         assert.doesNotMatch(outside, /class=grip/);
         for (const filters of ['ui.q = "level"; ui.tagFilter = []', 'ui.q = ""; ui.tagFilter = ["A"]']) {
             app(filters);

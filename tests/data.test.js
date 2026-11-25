@@ -202,7 +202,7 @@ test('ensureProfileDefaults leaves consistent tags unchanged without saving', ()
     const localStorage = {};
     Object.defineProperty(localStorage, 'gdp', { set: () => { writes++; } });
     const fresh = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js'], { localStorage });
-    fresh.app(`profile = { ratingScale: 10,
+    fresh.app(`profile = { ratingScale: 10, firstStepsRetired: true,
         levels: [{ id: 'n1', tags: ['B', 'A'], deaths: {} }, { id: 'n2', tags: [], deaths: {} }],
         order: { classic: [], platform: [] }, wishlists: [],
         tags: [{ name: 'A', color: '#123456' }, { name: 'B', color: '#abcdef' }]

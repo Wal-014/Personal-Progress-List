@@ -284,7 +284,7 @@ for (const [language, name] of [[undefined, 'Mi perfil'], ['en', 'My profile']])
         assert.equal(p.app('store.cur'), 'p1');
         assert.equal(p.app('profile'), p.app('store.profs.p1.data'));
         assert.deepEqual(plain(p.app('profile')), {
-            ratingScale: 10, levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: []
+            ratingScale: 10, firstStepsRetired: true, levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: []
         });
         assert.equal(p.app('store.profs.p1.name'), name);
         assert.deepEqual(JSON.parse(p.context.localStorage.gdp), plain(p.app('store')));
@@ -299,7 +299,7 @@ for (const [language, name] of [[undefined, 'Mi perfil'], ['en', 'My profile']])
 
 test('reloading restores the saved store without adding demo records or rewriting storage', () => {
     const data = {
-        ratingScale: 10, levels: [{ id: 'n1', name: 'Saved level', kind: 'classic', deaths: {} }],
+        ratingScale: 10, firstStepsRetired: true, levels: [{ id: 'n1', name: 'Saved level', kind: 'classic', deaths: {} }],
         order: { classic: ['n1'], platform: [] }, wishlists: [], tags: []
     };
     const saved = { cur: 'existing', profs: { existing: { name: 'Saved profile', color: '#123456', secondaryColor: '#abcdef', data } } };

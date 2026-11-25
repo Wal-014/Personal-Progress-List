@@ -810,3 +810,14 @@ test('header sync problems update live and disappear when saved or viewing anoth
     page.app("viewing = null; account.status = 'signed-out'");
     assert.equal(page.app('cloudHeaderStatus()'), '');
 });
+
+test('a cache saved before the Pre-Extremes retirement is left for the server to clean, so it pushes nothing', () => {
+    const page = device();
+    page.load();
+    page.context.cachedProfile = { ratingScale: 10, levels: [{ ...level('n1'), tags: ['Pre-Extremes'] }], order: { classic: ['n1'], platform: [] }, wishlists: [], tags: [{ name: 'Pre-Extremes', color: '#ff2bd6' }] };
+    page.app(`useCloudCache({ id: 'owner' }, {}, { profile: cachedProfile, settings: currentSettings(),
+        snapshot: Object.fromEntries([...profileRows(cachedProfile, currentSettings())].map(([key, entry]) => [key, { ...entry, version: 1 }])) })`);
+    assert.deepEqual(page.data().levels[0].tags, ['Pre-Extremes']);
+    assert.deepEqual(page.data().order.classic, ['n1']);
+    assert.equal(page.app('pendingCloudChanges().length'), 0);
+});

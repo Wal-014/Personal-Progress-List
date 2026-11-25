@@ -220,7 +220,7 @@ const ACTIONS = {
     tags: () => openModal(tagsUI()),
     tdel(a) {
         const ix = +a.dataset.i;
-        askConfirm(t(profile.tags[ix].name == PRE_TAG ? 'preTagConfirm' : 'confirmTag')).then(ok => {
+        askConfirm(t('confirmTag')).then(ok => {
             if (!ok)
                 return;
             const n = profile.tags.splice(ix, 1)[0].name;
@@ -373,7 +373,7 @@ function saveLevel(form) {
     matchWithAredl([level]);
     matchWithDemonlist([level]);
     removeFromOrder(level.id);
-    if (position && !isPre(level)) {
+    if (position) {
         const order = profile.order[level.kind], before = rankedIds(level.kind)[Math.max(1, Math.min(maximum, +position)) - 1];
         order.splice(before ? order.indexOf(before) : order.length, 0, level.id);
     }
@@ -418,26 +418,11 @@ function renameTag(input) {
         setFieldError(input, error);
         return;
     }
-    const rename = () => {
-        const wasPre = tag.name == PRE_TAG;
-        profile.levels.forEach(level => level.tags = (level.tags || []).map(x => x == tag.name ? name : x));
-        ui.tagFilter = ui.tagFilter.map(selectedTag => selectedTag == tag.name ? name : selectedTag);
-        tag.name = name;
-        save();
-        render();
-        if (wasPre || name == PRE_TAG)
-            openModal(tagsUI());
-    };
-    if (tag.name != PRE_TAG || name == tag.name)
-        return rename();
-    askConfirm(t('preTagConfirm')).then(ok => {
-        if (ok)
-            rename();
-        else {
-            input.value = tag.name;
-            updateTagPreview(input);
-        }
-    });
+    profile.levels.forEach(level => level.tags = (level.tags || []).map(x => x == tag.name ? name : x));
+    ui.tagFilter = ui.tagFilter.map(selectedTag => selectedTag == tag.name ? name : selectedTag);
+    tag.name = name;
+    save();
+    render();
 }
 
 async function importProfile(file) {

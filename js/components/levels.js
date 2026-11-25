@@ -72,19 +72,16 @@ function card(l, i, n, reorderable) {
     const selection = currentLevelSelection();
     const selectionAttrs = selection ? ` data-act=list-pick aria-pressed=${selection.ids.has(l.id)}` : '';
     const canMove = reorderable && canEdit();
-    const u = thumbUrl(l), rank = i == 'pre' ? ICONS.classic : i != null ? i + 1 : '—';
+    const u = thumbUrl(l), rank = i != null ? i + 1 : '—';
     const hasEmblem = Number.isInteger(i) && i >= 0 && i < 5;
     const rankContent = hasEmblem ? `<img src="assets/ranks/${l.kind === 'platform' ? 'platformer' : 'classic'}-${rank}.webp" width=68 height=80 alt="" decoding=async draggable=false>` : rank;
     const creator = l.creator ? `<span class=level-creator>${t('by')} ${escapeHtml(l.creator)}</span>` : '';
     const date = l.date ? `<time class=level-date datetime="${escapeHtml(l.date)}">${escapeHtml(formatDate(l.date))}</time>` : '';
-    return `<div class="obj lv${hasEmblem ? ' rank-' + rank : ''}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${selectionAttrs}${canMove ? ' aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"' : ''}${u ? ` data-th="${escapeHtml(u)}"` : ''}>${u ? '<i class=th aria-hidden=true></i>' : ''}${canMove ? `<span class=grip aria-hidden=true title="${t('dragHint')}"></span>` : ''}<span class=rk aria-label="${i == 'pre' ? t('first') : i != null ? '#' + rank + ' / ' + n : t('unplaced')}">${rankContent}</span><div class=info><div class=level-title><span class=nm>${escapeHtml(l.name)}</span>${creator}</div>${date}</div>${difficultyFace(l)}${selection ? `<span class=selection-mark aria-hidden=true>${ICONS.actionCheck}</span>` : ''}</div>`;
+    return `<div class="obj lv${hasEmblem ? ' rank-' + rank : ''}${l.id == ui.sel ? ' sel' : ''}" data-id="${escapeHtml(l.id)}" role=button tabindex=0${selectionAttrs}${canMove ? ' aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"' : ''}${u ? ` data-th="${escapeHtml(u)}"` : ''}>${u ? '<i class=th aria-hidden=true></i>' : ''}${canMove ? `<span class=grip aria-hidden=true title="${t('dragHint')}"></span>` : ''}<span class=rk aria-label="${i != null ? '#' + rank + ' / ' + n : t('unplaced')}">${rankContent}</span><div class=info><div class=level-title><span class=nm>${escapeHtml(l.name)}</span>${creator}</div>${date}</div>${difficultyFace(l)}${selection ? `<span class=selection-mark aria-hidden=true>${ICONS.actionCheck}</span>` : ''}</div>`;
 }
 
-/** Ids of the ranked levels of a list, in order: Pre-Extremes levels and ids of deleted levels have no rank. */
-const rankedIds = kind => profile.order[kind].filter(id => {
-    const l = findLevel(id);
-    return l?.kind === kind && !isPre(l);
-});
+/** Ids of the ranked levels of a list, in order: ids of deleted levels or of the other mode have no rank. */
+const rankedIds = kind => profile.order[kind].filter(id => findLevel(id)?.kind === kind);
 
 function matchesListFilters(level, query, selectedTags) {
     return level.name.toLowerCase().includes(query) && (!selectedTags.length || selectedTags.some(name => (level.tags || []).includes(name)));
@@ -102,17 +99,16 @@ function canReorder() {
     return canEdit() && !currentLevelSelection() && !listFiltersActive();
 }
 
-/** List body grouped into ranked, unplaced and first-step levels. */
+/** List body grouped into ranked and unplaced levels. */
 function list() {
-    const orderedIds = profile.order[ui.tab];
+    const orderedIds = rankedIds(ui.tab);
     const isShown = level => matchesListFilters(level, ui.q, ui.tagFilter);
     const listLevels = profile.levels.filter(level => level.kind == ui.tab);
-    const rankedLevels = rankedIds(ui.tab).map(findLevel);
-    const unplacedLevels = listLevels.filter(level => !orderedIds.includes(level.id) && !isPre(level) && isShown(level));
-    const firstStepLevels = listLevels.filter(level => isPre(level) && isShown(level));
+    const rankedLevels = orderedIds.map(findLevel);
+    const unplacedLevels = listLevels.filter(level => !orderedIds.includes(level.id) && isShown(level));
     const reorderable = canReorder();
     const hasMatches = listLevels.some(isShown);
-    return `<div id=lst>${rankedLevels.map((level, index) => isShown(level) ? card(level, index, rankedLevels.length, reorderable) : '').join('')}</div>${unplacedLevels.length ? `<h2 class=grp>${t('unplaced')}</h2>` + unplacedLevels.map(level => card(level)).join('') : ''}${firstStepLevels.length ? `<h2 class=grp>${t('first')}</h2>` + firstStepLevels.map(level => card(level, 'pre')).join('') : ''}${!listLevels.length ? canEdit() ? emptyList({ icon: ICONS.actionAdd, title: t('emptyListTitle'), text: t('emptyListText'), action: 'add' }) : `<p class=by>${t('publicNoLevels')}</p>` : !hasMatches ? `<p class=by>${t('noMatch')}</p>` : ''}`;
+    return `<div id=lst>${rankedLevels.map((level, index) => isShown(level) ? card(level, index, rankedLevels.length, reorderable) : '').join('')}</div>${unplacedLevels.length ? `<h2 class=grp>${t('unplaced')}</h2>` + unplacedLevels.map(level => card(level)).join('') : ''}${!listLevels.length ? canEdit() ? emptyList({ icon: ICONS.actionAdd, title: t('emptyListTitle'), text: t('emptyListText'), action: 'add' }) : `<p class=by>${t('publicNoLevels')}</p>` : !hasMatches ? `<p class=by>${t('noMatch')}</p>` : ''}`;
 }
 
 function youtubeId(url) {

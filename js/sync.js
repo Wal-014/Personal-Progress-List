@@ -142,7 +142,8 @@ function useCloudCache(user, accountProfile, cached) {
         started: false, pulled: false, timer: null, poll: null, pushing: null, pulling: null, checking: null, rejectionError: t('cloudInvalid')
     };
     cloudSync = { status: navigator.onLine === false ? 'offline' : 'saving', pending: 0, error: '' };
-    profile = cached?.profile || emptyProfile();
+    // Account data lost the retired tag in a database migration; cleaning a cache saved before it would push deletions of rows already gone.
+    profile = { ...cached?.profile || emptyProfile(), firstStepsRetired: true };
     ensureProfileDefaults();
     applyCloudSettings(cached?.settings);
     pendingCloudChanges();
