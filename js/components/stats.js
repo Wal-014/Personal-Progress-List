@@ -25,32 +25,41 @@ const bars = o => {
     return Object.entries(o).map(([k, v]) => `<div class=hb><span>${escapeHtml(k)}</span><span class=tr><i data-pct="${escapeHtml(v / m * 100)}"></i></span><b>${v}</b></div>`).join('');
 };
 
+/** Averages count only the levels with a recorded value, so missing attempts or time never read as zero. */
 function statsSummary() {
     const levelsWithAttempts = profile.levels.filter(level => totalAttempts(level) != null);
+    const levelsWithTime = profile.levels.filter(level => totalSeconds(level) != null);
     const attemptTotal = levelsWithAttempts.reduce((sum, level) => sum + totalAttempts(level), 0);
-    const playSeconds = profile.levels.reduce((sum, level) => sum + (totalSeconds(level) || 0), 0);
-    const mostAttemptsLevel = levelsWithAttempts.length ? levelsWithAttempts.reduce((current, level) => totalAttempts(level) > totalAttempts(current) ? level : current) : null;
+    const playSeconds = levelsWithTime.reduce((sum, level) => sum + totalSeconds(level), 0);
     return {
         levelCount: profile.levels.length,
         attemptTotal,
+        playSeconds,
         playHours: Math.round(playSeconds / 3600),
         average: levelsWithAttempts.length ? Math.round(attemptTotal / levelsWithAttempts.length) : null,
-        mostAttemptsLevel
+        averageSeconds: levelsWithTime.length ? Math.round(playSeconds / levelsWithTime.length) : null
     };
 }
+
+/** Levels without a difficulty are told apart: an unrated level has none in the game, otherwise it is unknown. */
+const difficultyBucket = level => DIFFICULTIES.includes(level.diff) ? level.diff : level.rating == 'unrated' ? 'unrated' : 'unknown';
+const difficultyBucketLabel = bucket => bucket == 'unrated' ? t('diffUnrated') : bucket == 'unknown' ? t('diffUnknown') : bucket;
 
 function stats() {
     if (!profile.levels.length)
         return canEdit() ? emptyList({ icon: ICONS.metricLevels, title: t('emptyListTitle'), text: t('statsEmptyText'), action: 'add' }) : `<p class=by>${t('publicNoLevels')}</p>`;
-    const { levelCount, attemptTotal, playHours, average, mostAttemptsLevel } = statsSummary();
+    const { levelCount, attemptTotal, playSeconds, average, averageSeconds } = statsSummary();
     const difficultyCounts = {};
     const yearCounts = {};
     profile.levels.forEach(level => {
-        difficultyCounts[level.diff || '-'] = (difficultyCounts[level.diff || '-'] || 0) + 1;
+        const bucket = difficultyBucket(level);
+        difficultyCounts[bucket] = (difficultyCounts[bucket] || 0) + 1;
         if (level.date)
             yearCounts[level.date.slice(0, 4)] = (yearCounts[level.date.slice(0, 4)] || 0) + 1;
     });
     const statCell = (label, value, className = '', icon = '') => `<div class="kpi ${className}"><small>${icon}${label}</small><b>${escapeHtml(value)}</b></div>`;
-    return `<div class=kpis>${statCell(levelLabel(levelCount), levelCount, '', ICONS.metricLevels)}${statCell(t('attT'), attemptTotal.toLocaleString(ui.lang), 'y', ICONS.metricAttempts)}${statCell(t('hrs'), playHours, '', ICONS.metricHours)}${statCell(t('avg'), average == null ? '-' : average.toLocaleString(ui.lang))}${mostAttemptsLevel ? statCell(t('most'), `${mostAttemptsLevel.name} · ${totalAttempts(mostAttemptsLevel).toLocaleString(ui.lang)}`, 'sm') : ''}</div>
-<div class=stats2><div class=well id=timeline-well>${timelineHtml()}</div><div class=side><div class="well d"><h2>${t('byD')}</h2>${bars(Object.fromEntries([...DIFFICULTIES, '-'].filter(difficulty => difficultyCounts[difficulty]).map(difficulty => [difficulty, difficultyCounts[difficulty]])))}</div><div class="well y"><h2>${t('byY')}</h2>${bars(yearCounts)}</div></div></div><section class=well id=rankings-well>${rankingsHtml()}</section>`;
+    const statPair = (icon, className, [label, value], [averageLabel, averageValue]) => `<div class="kpi kpi-pair ${className}"><small>${icon}${label}</small><b>${escapeHtml(value)}</b><small class=kpi-sub>${averageLabel}</small><b class=kpi-sub-value>${escapeHtml(averageValue ?? '—')}</b></div>`;
+    const hours = (playSeconds / 3600).toLocaleString(ui.lang, { maximumFractionDigits: 1 });
+    return `<div class=kpis>${statCell(levelLabel(levelCount), levelCount, '', ICONS.metricLevels)}${statPair(ICONS.metricAttempts, 'y', [t('attT'), attemptTotal.toLocaleString(ui.lang)], [t('avg'), average?.toLocaleString(ui.lang)])}${statPair(ICONS.metricHours, '', [t('hrsT'), hours], [t('avgTime'), averageSeconds == null ? null : formatPlaytime(averageSeconds)])}</div>
+<div class=stats2><div class=well id=timeline-well>${timelineHtml()}</div><div class=side><div class="well d"><h2>${t('byD')}</h2>${bars(Object.fromEntries([...DIFFICULTIES, 'unrated', 'unknown'].filter(bucket => difficultyCounts[bucket]).map(bucket => [difficultyBucketLabel(bucket), difficultyCounts[bucket]])))}</div><div class="well y"><h2>${t('byY')}</h2>${bars(yearCounts)}</div></div></div><section class=well id=rankings-well>${rankingsHtml()}</section>`;
 }
