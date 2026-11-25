@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { emptyDurationFields, loadScripts } from './load-scripts.js';
 
 const createApp = () => {
-    const { app, context } = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/components/deaths-input.js', 'js/components/duration-input.js', 'js/components/levels.js'], {
+    const { app, context } = loadScripts(['js/config.js', 'js/utils.js', 'js/state.js', 'js/components/deaths-input.js', 'js/components/duration-input.js', 'js/components/help-tip.js', 'js/components/levels.js'], {
         localStorage: {},
         FormData: class extends URLSearchParams {
             constructor(form) {

@@ -75,6 +75,7 @@ function render() {
     initSort();
     initWishlistSort();
     renderTagSuggestions();
+    rememberLevelForm(qs('.rcol'));
     // Rebuilding #app drops keyboard focus to <body>; put it back on the same control when it still exists
     if (view.focused)
         qs(view.focused)?.focus({ preventScroll: true });
