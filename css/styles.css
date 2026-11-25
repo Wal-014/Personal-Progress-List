@@ -3768,6 +3768,28 @@ legend:has(> .help-tip) {
   padding: 0 var(--space-16);
 }
 
+/* Shown outside #app so redraws keep it; it never covers the centre of the screen. */
+.update-notice {
+  position: fixed;
+  inset: auto var(--space-16) var(--space-16) auto;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  max-width: min(26rem, calc(100vw - 2 * var(--space-16)));
+  padding: var(--space-12) var(--space-16);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+  color: var(--color-text);
+  font: 600 .875rem/1.4 var(--font-ui);
+}
+
+.update-notice button {
+  flex: none;
+}
+
 /* First-visit guide: one card above the lists, never a blocking dialog. */
 .hintro {
   padding: var(--space-16) 20px;
