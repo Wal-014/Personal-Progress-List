@@ -139,6 +139,8 @@ const ACTIONS = {
     notiflocal: () => openNotificationMigration(),
     notifdismiss: button => hideNotification(button),
     legal: a => openModal(legalUI(a.dataset.v)),
+    guide: () => openModal(introDialog()),
+    introhide: () => hideIntro(),
     ct() {
         ui.tagFilter = [];
         renderListTagFilters();

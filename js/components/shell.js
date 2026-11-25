@@ -168,7 +168,7 @@ ${settingsPicker('lang', t('lang'), languageContent(ui.lang), LANGUAGES.map(([k]
 ${canEdit() ? `<h3 id=ranking-sync>${t('rankSync')}</h3>
 <div id=ranking-status class=ranking-status data-ranking-status role=status aria-live=polite aria-busy=${rankingSync.running}>${rankingStatusRows()}</div>
 <button data-act=rankrefresh aria-describedby=ranking-status aria-disabled=${rankingSync.running}>${ICONS.actionSync}<span>${rankingRefreshLabel()}</span></button>` : ''}
-<nav class=legal>${['terms', 'privacy', 'credits'].map(k => `<a class=lk data-act=legal data-v=${k} role=button tabindex=0>${t(k)}</a>`).join(' · ')}</nav>
+<nav class=legal><a class=lk data-act=guide role=button tabindex=0>${t('introGuide')}</a> · ${['terms', 'privacy', 'credits'].map(k => `<a class=lk data-act=legal data-v=${k} role=button tabindex=0>${t(k)}</a>`).join(' · ')}</nav>
 <p class=by>© ${new Date().getFullYear()} Retlaw · ${t('rights')} · v${APP_VERSION}</p>
 <p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
 }
