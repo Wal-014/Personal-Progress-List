@@ -1,0 +1,80 @@
+/* Shared look of the README banner and the link preview card: the app's Nebula palette, metallic rims and fonts. */
+@font-face {
+  font-family: Oxanium;
+  src: url("../../fonts/oxanium-latin.woff2") format("woff2");
+  font-weight: 200 800;
+}
+
+@font-face {
+  font-family: Inter;
+  src: url("../../fonts/inter-latin.woff2") format("woff2");
+  font-weight: 100 900;
+}
+
+:root {
+  --bg: #090d20;
+  --surface: #141a32;
+  --text: #f4f5ff;
+  --muted: #b8c1d9;
+  --accent: #b996ff;
+  --cyan: #62ddf5;
+  --gold: #e8c45a;
+  --rim: linear-gradient(125deg, #caad7a 3%, #f9e8c5 13%, #caad7a 27%, #846944 46%, #f9e8c5 55%, #caad7a 74%, #f9e8c5 93%);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body { overflow: hidden; background: var(--bg); }
+
+#art {
+  position: relative;
+  overflow: hidden;
+  color: var(--text);
+  font-family: Inter, system-ui, sans-serif;
+  background:
+    radial-gradient(38rem 26rem at 78% 30%, rgb(185 150 255 / 26%), transparent 70%),
+    radial-gradient(30rem 22rem at 96% 96%, rgb(98 221 245 / 16%), transparent 70%),
+    linear-gradient(rgb(86 97 124 / 16%) 1px, transparent 1px) 0 0 / 40px 40px,
+    linear-gradient(90deg, rgb(86 97 124 / 16%) 1px, transparent 1px) 0 0 / 40px 40px,
+    var(--bg);
+}
+
+.brand { display: flex; align-items: center; gap: 16px; font: 700 28px/1 Oxanium, sans-serif; letter-spacing: .01em; }
+.brand img { filter: drop-shadow(0 0 10px rgb(185 150 255 / 35%)); }
+
+h1 { font-family: Oxanium, sans-serif; font-weight: 700; letter-spacing: -.01em; }
+h1 em { font-style: normal; color: var(--accent); text-shadow: 0 0 18px rgb(185 150 255 / 45%); }
+
+.features { display: grid; gap: 12px; list-style: none; }
+.features li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(var(--surface), var(--surface)) padding-box, var(--rim) border-box;
+  font: 600 17px/1.2 Inter, sans-serif;
+}
+.features li::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.url { font: 600 18px/1 Inter, sans-serif; color: var(--cyan); }
+
+/* App screenshots in a metallic frame, like the app's own panels. */
+.shot {
+  position: absolute;
+  overflow: hidden;
+  padding: 6px;
+  border: 1px solid transparent;
+  border-radius: 18px;
+  background: linear-gradient(var(--surface), var(--surface)) padding-box, var(--rim) border-box;
+  box-shadow: 0 24px 48px rgb(0 0 0 / 55%), 0 0 0 1px rgb(0 0 0 / 40%);
+}
+.shot img { display: block; width: 100%; border-radius: 12px; }
