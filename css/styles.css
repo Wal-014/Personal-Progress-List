@@ -1854,7 +1854,7 @@ input.ro {
 /* ===== Statistics ===== */
 .kpis {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
   gap: 10px;
   margin: 10px 0 14px;
 }
@@ -1886,7 +1886,16 @@ input.ro {
   color: var(--ye);
 }
 
-.kpi.sm b {
+.kpi small.kpi-sub {
+  margin-top: var(--space-8);
+  padding-top: var(--space-8);
+  border-top: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.kpi b.kpi-sub-value {
+  display: block;
   font-size: 18px;
 }
 
