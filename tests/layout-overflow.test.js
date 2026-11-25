@@ -70,6 +70,13 @@ test('a help button keeps clear of the field under its label', () => {
     assert.ok(-vertical < 4, 'the hit ring must stay inside the 4px gap');
 });
 
+test('dropdown panels float over the form in every context instead of pushing it down', () => {
+    const positioned = blocks.filter(({ selector, declarations }) => /\.msp\b/.test(selector) && declarations.some(value => value.startsWith('position:')));
+    assert.ok(positioned.length);
+    for (const { selector, declarations } of positioned)
+        assert.ok(declarations.includes('position: absolute'), selector);
+});
+
 test('buttons have no global brightness filter on hover', () => {
     for (const { selector, declarations } of blocks) {
         if (/(?:^|,)\s*button:hover\s*(?:,|$)/.test(selector))
