@@ -54,6 +54,13 @@ test('the responsive drawer header stays transparent and only its button catches
     assert.ok(button?.declarations.includes('pointer-events: auto'));
 });
 
+test('dropdown panels float over the form in every context instead of pushing it down', () => {
+    const positioned = blocks.filter(({ selector, declarations }) => /\.msp\b/.test(selector) && declarations.some(value => value.startsWith('position:')));
+    assert.ok(positioned.length);
+    for (const { selector, declarations } of positioned)
+        assert.ok(declarations.includes('position: absolute'), selector);
+});
+
 test('buttons have no global brightness filter on hover', () => {
     for (const { selector, declarations } of blocks) {
         if (/(?:^|,)\s*button:hover\s*(?:,|$)/.test(selector))
