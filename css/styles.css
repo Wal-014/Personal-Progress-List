@@ -5371,7 +5371,7 @@ input[type=checkbox]:checked::after {
   :hover:where(:not(:disabled, [aria-disabled=true], [aria-busy=true], [aria-current], [aria-pressed=true],
     [aria-selected=true], [aria-expanded=true], .sel, .death-chip, :focus-visible, :active, details[open] > summary,
     .ms:has(:checked) > summary, :has(> :is(:checked, :disabled, [aria-disabled=true], [aria-busy=true], :focus-visible)))) {
-    &:is(button, summary, [role=button], .share-open):not(:where(.lv, .hcard, .trig, .stat-card, .gdc, .chip, a:not(.share-open))) {
+    &:is(button, summary, [role=button], .share-open):not(:where(.lv, .hcard, .trig, .stat-card, .gdc, .chip, .htext, a:not(.share-open))) {
       background-color: var(--hover-surface);
       border-color: var(--hover-edge);
       --rim-angle: 140deg;
@@ -5405,6 +5405,14 @@ input[type=checkbox]:checked::after {
     #app :is(.hl .hcard, .trigs .trig)& {
       --rim-angle: 140deg;
       box-shadow: inset 0 0 0 1px var(--hover-card-edge);
+    }
+
+    /* Home's text links read as links: a surface behind them looked like an oversized block. */
+    &.htext {
+      --nav-ink: var(--hover-menu-ink);
+      color: var(--hover-menu-ink);
+      text-decoration: underline;
+      text-underline-offset: 4px;
     }
 
     &.chip { --chip-highlight: 26%; }
