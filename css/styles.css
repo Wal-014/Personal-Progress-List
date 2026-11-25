@@ -379,7 +379,7 @@ input:user-invalid, select:user-invalid, textarea:user-invalid {
 }
 
 @media (pointer: coarse) {
-  .deaths-input button {
+  .deaths-input button:not(.help-tip) {
     min-width: 44px;
     min-height: 44px;
   }
@@ -576,12 +576,6 @@ dialog.modal::backdrop {
   overflow: auto;
   overflow-wrap: anywhere;
   overscroll-behavior: contain;
-}
-
-.modal .ms .msp {
-  position: relative;
-  inset: auto;
-  max-height: min(280px, 35dvh);
 }
 
 .field-error {
@@ -1642,10 +1636,12 @@ input.ro {
   justify-content: start;
 }
 
+/* Carries the 4px its label gives up, so the help button never touches the field below. */
 .field-head {
   display: flex;
   align-items: center;
   gap: var(--space-4);
+  margin-bottom: var(--space-4);
 }
 
 .field-head > :is(label, .lab) {
@@ -1658,7 +1654,7 @@ legend:has(> .help-tip) {
   gap: var(--space-8);
 }
 
-/* A small circled ? beside a heading or label; the 44px touch area comes from an invisible ring around it. */
+/* A small circled ? beside a heading or label. An invisible ring widens the target to 44x24px; a taller one would reach the field below. */
 .help-tip {
   position: relative;
   display: inline-grid;
@@ -1681,7 +1677,7 @@ legend:has(> .help-tip) {
 .help-tip::after {
   content: "";
   position: absolute;
-  inset: -12px;
+  inset: -2px -12px;
 }
 
 .help-tip:focus-visible {
@@ -2054,6 +2050,26 @@ legend:has(> .help-tip) {
 }
 
 .kpi b.kpi-sub-value {
+  display: block;
+  font-size: 18px;
+}
+
+/* Classic and Platformer counts share the second row the paired cards use for their average. */
+.kpi-modes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-12);
+  margin-top: var(--space-8);
+  padding-top: var(--space-8);
+  border-top: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+}
+
+.kpi-modes small {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.kpi-modes b {
   display: block;
   font-size: 18px;
 }
@@ -4758,7 +4774,7 @@ main.home {
   outline: 2px solid var(--color-error);
 }
 
-:is(.modal, .legacy-surface, .rcol) button:where(:not(.gdc, .profile-swatch, .gbtn, .stat-card, .chip)),
+:is(.modal, .legacy-surface, .rcol) button:where(:not(.gdc, .profile-swatch, .gbtn, .stat-card, .chip, .help-tip)),
 :is(.modal, .list-surface .rcol) .ms summary {
   font: 600 .875rem/1.35 var(--font-ui);
   letter-spacing: normal;
@@ -4770,7 +4786,7 @@ main.home {
   text-shadow: none;
   -webkit-text-stroke: 0;
 }
-:is(.modal, .list-surface .rcol) .ms summary, .modal button:where(:not(.profile-swatch, .chip)) { min-height: var(--size-control); }
+:is(.modal, .list-surface .rcol) .ms summary, .modal button:where(:not(.profile-swatch, .chip, .help-tip)) { min-height: var(--size-control); }
 :is(.modal, .legacy-surface, .rcol) :where(button).pri,
 :is(.modal, .legacy-surface, .rcol) :where(button).go,
 :is(.modal, .legacy-surface, .rcol) :where(button).blue {
@@ -5251,6 +5267,8 @@ input[type=checkbox]:checked::after {
 
 /* Compact fields and a separate row for the optional search filters. */
 .gdf > .gdseg { flex-basis: 100%; }
+/* Clears the help button's 12px side ring from the filter beside it. */
+.gdf > .help-tip { margin-inline-start: var(--space-8); }
 :is(.modal, .list-surface .rcol) .gdf .gdseg button, :is(.modal, .list-surface .rcol) .gdf .ms summary {
   min-height: 34px;
   padding: 6px 10px;
