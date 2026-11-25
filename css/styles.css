@@ -654,13 +654,68 @@ dialog.modal::backdrop {
 }
 
 
-.lang {
-  display: flex;
-  gap: 8px;
+.settings-picker {
+  margin-top: var(--space-12);
 }
 
-.lang button {
-  flex: 1;
+.settings-picker > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: var(--size-control);
+  padding: var(--space-8) var(--space-12);
+  list-style: none;
+  cursor: pointer;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: var(--size-border) solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+
+.settings-picker > summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-picker[open] > summary {
+  border-color: var(--color-accent);
+}
+
+.settings-picker > summary:focus-visible {
+  outline: var(--size-focus) solid var(--color-focus);
+  outline-offset: var(--size-focus);
+}
+
+.settings-label {
+  font: 700 16px/1.4 var(--font-ui);
+}
+
+.settings-current {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+  margin-inline-start: auto;
+  font: 600 13px/1.4 var(--font-ui);
+  color: var(--color-text-muted);
+}
+
+.settings-picker > summary > svg:last-child {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.settings-picker[open] > summary > svg:last-child {
+  transform: rotate(180deg);
+}
+
+.settings-picker > .appearance-options {
+  margin-top: var(--space-8);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .settings-picker > summary > svg:last-child { transition: transform var(--hover-motion); }
+  .settings-picker[open] > .appearance-options { animation: dropdown-enter 150ms ease-out; }
 }
 
 .ranking-status {

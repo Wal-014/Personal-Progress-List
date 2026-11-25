@@ -366,7 +366,7 @@ test('storage events ignore legacy data and reload the active account cache only
 test('language and theme actions save account preferences and Retry pulls remote changes', async () => {
     const page = await ready(); page.load(['js/events.js']);
     page.context.openModal = () => {};
-    page.app(`reopenPause = () => {}; ACTIONS.lang({ dataset: { v: 'es' }, closest: () => null }); ACTIONS.theme({ dataset: { v: 'graphite' } });`);
+    page.app(`reopenPause = () => {}; ACTIONS.lang({ dataset: { v: 'es' }, closest: () => null }); ACTIONS.theme({ dataset: { v: 'graphite' }, closest: () => null });`);
     await page.app('pushCloud()');
     assert.equal(page.server.rows('user_settings')[0].lang, 'es'); assert.equal(page.server.rows('user_settings')[0].theme, 'graphite');
     page.server.profile.display_name = 'Updated'; page.server.revision++;
@@ -494,7 +494,7 @@ test('offline session restoration preserves cached edits before the first profil
 test('account preference actions tolerate blocked storage', async () => {
     const page = await ready(); page.load(['js/events.js']);
     page.context.localStorage = new Proxy({}, { get() { throw Error('Storage blocked'); }, set() { throw Error('Storage blocked'); } });
-    page.app(`reopenPause = () => {}; ACTIONS.lang({ dataset: { v: 'es' }, closest: () => null }); ACTIONS.theme({ dataset: { v: 'graphite' } });`);
+    page.app(`reopenPause = () => {}; ACTIONS.lang({ dataset: { v: 'es' }, closest: () => null }); ACTIONS.theme({ dataset: { v: 'graphite' }, closest: () => null });`);
     assert.equal(page.app('ui.lang'), 'es'); assert.equal(page.app('ui.theme'), 'graphite');
 });
 

@@ -73,7 +73,9 @@ async function checkCelestial(page, check) {
         for (const theme of ['nebula', 'porcelain']) {
             await openSidebar();
             await page.locator('[data-act=pause]').click();
+            await page.locator('[data-picker=theme] summary').click();
             await page.locator(`[data-act=theme][data-v=${theme}]`).click();
+            await page.locator('[data-picker=background] summary').click();
             await page.locator('[data-act=background][data-v=celestial]').click();
             await page.locator('.pause [data-act=close]').click();
             if (width < 1280) await page.keyboard.press('Escape');
