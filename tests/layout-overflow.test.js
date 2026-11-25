@@ -54,6 +54,11 @@ test('the responsive drawer header stays transparent and only its button catches
     assert.ok(button?.declarations.includes('pointer-events: auto'));
 });
 
+test('the first-visit guide spans its own Home row instead of sharing one with the lists', () => {
+    const intro = blocks.find(({ selector, parents }) => selector === '.hintro' && !parents.length);
+    assert.ok(intro?.declarations.includes('grid-column: 1 / -1'));
+});
+
 test('buttons have no global brightness filter on hover', () => {
     for (const { selector, declarations } of blocks) {
         if (/(?:^|,)\s*button:hover\s*(?:,|$)/.test(selector))

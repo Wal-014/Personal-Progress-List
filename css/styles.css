@@ -3790,8 +3790,9 @@ legend:has(> .help-tip) {
   flex: none;
 }
 
-/* First-visit guide: one card above the lists, never a blocking dialog. */
+/* First-visit guide: one card above the lists, never a blocking dialog. Its own row keeps it as tall as its content. */
 .hintro {
+  grid-column: 1 / -1;
   padding: var(--space-16) 20px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
