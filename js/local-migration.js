@@ -60,7 +60,7 @@ function cleanMigrationLevel(entry, set) {
     if (entry.gdl != null && (entry.kind == 'platform' || !Number.isInteger(entry.gdl) || entry.gdl < 1 || entry.gdl > 100000))
         set(entry, 'gdl', null);
     if (entry.notes != null)
-        set(entry, 'notes', migrationCut(String(entry.notes).replaceAll(String.fromCharCode(0), ''), 5000));
+        set(entry, 'notes', migrationCut(String(entry.notes).replaceAll(String.fromCharCode(0), ''), NOTES_LIMIT));
     if (entry.link != null)
         set(entry, 'link', safeUrl(entry.link) ? migrationText(entry.link, 500) : '');
     cleanMigrationStats(entry, set);

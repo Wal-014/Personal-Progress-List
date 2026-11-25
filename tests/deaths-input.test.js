@@ -65,12 +65,13 @@ test('renders existing entries in ascending order including an explicit zero, wi
     assert.match(html, /24% · 135/);
     assert.match(html, /aria-label="Remove 24%"/);
     assert.match(html, /<label for=death-percent>Percentage<\/label>/);
-    assert.match(html, /<label for=death-count>Deaths<\/label>/);
+    assert.match(html, /<label for=death-count>Death count<\/label>/);
     assert.equal((html.match(/inputmode=numeric/g) || []).length, 2);
     assert.doesNotMatch(html, /name=(?:deaths|percent|count)/);
     f.app('ui.lang = "es"');
     const spanish = f.app('deathsInput')({ 24: 135 });
-    assert.match(spanish, /Muertes por porcentaje/);
+    assert.match(spanish, /<span class=lab id=death-label>Muertes por porcentaje<\/span>/);
+    assert.match(spanish, /<label for=death-count>Cantidad de muertes<\/label>/);
     assert.match(spanish, /aria-label="Quitar 24%"/);
 });
 

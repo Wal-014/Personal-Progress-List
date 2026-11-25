@@ -66,10 +66,14 @@ function formatPlaytime(s) {
     return hours ? `${hours.toLocaleString(ui.lang)} h ${minutes} min` : minutes ? `${minutes} min` : `${s} s`;
 }
 
+/** Matches the level_notes check in the database, which counts characters rather than UTF-16 units. */
+const NOTES_LIMIT = 5000;
+
 /** Error checks for form fields that the browser cannot validate on its own. */
 const FIELD_CHECKS = {
     name: v => v.trim() ? '' : t('errName'),
-    lid: v => !v.trim() || /^\d+$/.test(v.trim()) ? '' : t('errLid')
+    lid: v => !v.trim() || /^\d+$/.test(v.trim()) ? '' : t('errLid'),
+    notes: v => Array.from(v).length <= NOTES_LIMIT ? '' : t('errNotes').replace('{n}', NOTES_LIMIT.toLocaleString(ui.lang))
 };
 
 /** Error message for a form field, or '' when its value is valid. */

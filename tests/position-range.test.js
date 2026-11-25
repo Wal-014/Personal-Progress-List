@@ -91,3 +91,35 @@ test('a level tagged Pre-Extremes takes its position like any other', () => {
     f.app('saveLevel')({ dataset: { id: 'unplaced' }, elements: { ...emptyDurationFields(), pos: { value: '2' } }, entries: [['name', 'Tagged'], ['kind', 'classic'], ['tg', 'Pre-Extremes']] });
     assert.deepEqual([...f.app("rankedIds('classic')")], ['c0', 'unplaced', 'c1', 'c2', 'c3', 'c4', 'c5']);
 });
+
+test('notes over 5000 characters block the save with a message and are never cut', () => {
+    const f = fixture();
+    const errors = [];
+    let reported = 0;
+    const save = notes => f.app('saveLevel')({
+        dataset: { id: 'c0' }, reportValidity() { reported++; },
+        elements: { ...emptyDurationFields(), pos: { value: '1' }, notes: { setCustomValidity: message => errors.push(message) } },
+        entries: [['name', 'Edited'], ['kind', 'classic'], ['notes', notes]]
+    });
+    const before = JSON.stringify(f.app('findLevel("c0")'));
+    save('x'.repeat(5001));
+    assert.equal(JSON.stringify(f.app('findLevel("c0")')), before);
+    assert.deepEqual(errors, ['Notes can have up to 5,000 characters']);
+    assert.equal(reported, 1);
+    const emoji = '🎮'.repeat(5000);
+    save(emoji);
+    assert.equal(f.app('findLevel("c0").notes'), emoji);
+    assert.equal(reported, 1);
+});
+
+test('the notes field states its limit and keeps longer legacy notes whole', () => {
+    const f = fixture();
+    const legacy = 'y'.repeat(6000);
+    for (const [lang, hint] of [['en', 'Up to 5,000 characters.'], ['es', 'Hasta 5000 caracteres.']]) {
+        f.app(`ui.lang = '${lang}'`);
+        const html = f.app('levelForm')({ id: 'c0', name: 'Classic', kind: 'classic', notes: legacy, tags: [] });
+        assert.match(html, /<textarea id=fm-notes name=notes rows=3 maxlength=5000 aria-describedby=fm-notes-hint>y{6000}<\/textarea><small id=fm-notes-hint class=by>/);
+        assert.ok(html.includes(hint));
+    }
+    assert.equal(f.app('fieldError')('notes', 'z'.repeat(5000)), '');
+});
