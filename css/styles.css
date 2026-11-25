@@ -1127,10 +1127,12 @@ dialog.modal::backdrop {
   color: var(--color-text-muted);
 }
 
+/* The extra padding lets the top-rank glows fade out inside the scroller; the negative inline margin keeps the cards where they were. */
 #lw {
   max-height: max(calc(var(--space-48) * 3), calc(100dvh - var(--space-48) * 6));
   overflow: auto;
-  padding: 4px;
+  margin-inline: -12px;
+  padding: 16px;
 }
 
 .rcol {
@@ -1199,8 +1201,8 @@ dialog.modal::backdrop {
 .lv.sel::before {
   --metal-accent: var(--row-selection, var(--color-accent));
   background: var(--metal-accent-paint) left / 6px 100% no-repeat;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--metal-accent) 70%, transparent),
-    inset 0 0 14px color-mix(in srgb, var(--metal-accent) 16%, transparent);
+  box-shadow: inset 12px 0 10px -8px color-mix(in srgb, var(--metal-accent) 45%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--metal-accent) 30%, transparent);
 }
 
 /* The grip uses the left padding beyond the selection bar for its 44px touch target. */
@@ -1245,6 +1247,12 @@ dialog.modal::backdrop {
 
 .lv > .grip { margin-inline-start: -7px; }
 .lv.sel > .grip { margin-inline-start: -4px; }
+
+/* The bar continues through the card's left border, so no rank-coloured edge shows beside it; the rank keeps the other edges and the outer glow.
+   :root outranks the Porcelain rank borders. */
+:root .list-surface .lv.sel {
+  border-inline-start-color: var(--row-selection, var(--color-accent));
+}
 
 .list-surface .lv.sel {
   background-color: color-mix(in srgb, var(--row-selection, var(--color-accent)) 7%, var(--color-surface));
