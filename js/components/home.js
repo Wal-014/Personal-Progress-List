@@ -20,8 +20,46 @@ function homeStats() {
     return `<section class=hstats><div class=hsection-head><h2>${ICONS.navStats}${t('stats')}</h2></div><div class=hstats-surface>${metric(ICONS.metricLevels, summary.levelCount, levelLabel(summary.levelCount))}${metric(ICONS.metricAttempts, summary.attemptTotal, t('attT'))}${metric(ICONS.metricHours, summary.playHours, t('hrs'))}<button class=htext data-act=tab data-v=stats>${t('viewStats')}<span aria-hidden=true>→</span></button></div></section>`;
 }
 
+const introKey = () => cloudUser ? 'u:' + cloudUser : 'p:' + store.cur;
+
+function introDismissals() {
+    try {
+        const saved = JSON.parse(localStorage.gintro || '[]');
+        return Array.isArray(saved) ? saved : [];
+    }
+    catch {
+        return [];
+    }
+}
+
+/** A new, empty profile sees the guide until it is hidden or anything is recorded; an account waits for its first download first. */
+const showsIntro = () => canEdit() && !profile.levels.length && !profile.wishlists.length
+    && !(cloudUser && !cloudSession?.pulled) && !introDismissals().includes(introKey());
+
+function hideIntro() {
+    try {
+        localStorage.gintro = JSON.stringify([...new Set([...introDismissals(), introKey()])]);
+    }
+    catch {
+    }
+    render();
+    qs('.hadd')?.focus({ preventScroll: true });
+}
+
+/** What the app is for and how its parts fit together, shared by Home and the Quick guide in Settings. */
+function introGuide() {
+    const item = (icon, key) => `<li>${icon}<span>${t(key)}</span></li>`;
+    return `<p>${t('introText')}</p><ul class=intro-points>${item(ICONS.navLists, 'introLists')}${item(ICONS.navWish, 'introWish')}${item(ICONS.navStats, 'introStats')}${item(ICONS.actionDevice, ACCOUNTS ? 'introSaveAccount' : 'introSaveLocal')}</ul>`;
+}
+
+function homeIntro() {
+    return `<section class=hintro aria-labelledby=intro-title><div class=hintro-head><h2 id=intro-title>${t('introTitle')}</h2><button type=button class=xs data-act=introhide aria-label="${t('introHide')}" title="${t('introHide')}">${ICONS.listClear}</button></div>${introGuide()}<div class=hintro-actions><button type=button class=hadd data-act=add>${ICONS.actionAdd}${t('introAdd')}</button><button type=button data-act=wnew>${ICONS.navWish}${t('introWishlist')}</button></div></section>`;
+}
+
+const introDialog = () => `<div class="box sm hintro-dialog"><h2>${t('introTitle')}</h2>${introGuide()}<p class=dgb><button class=pri data-act=close>${t('close')}</button></p></div>`;
+
 function home() {
-    return `<div class=hcontent><section class=hlists><div class=hsection-head><h2>${ICONS.navLists}${t(canEdit() ? 'lists' : 'publicLists')}</h2>${canEdit() ? `<button class=hadd data-act=add>${ICONS.actionAdd}${t('palAdd')}</button>` : ''}</div><div class=hcards>${homeListCard('classic')}${homeListCard('platform')}</div></section><div class=hpreviews>${homeWishlists()}${homeStats()}</div></div>`;
+    return `<div class=hcontent>${showsIntro() ? homeIntro() : ''}<section class=hlists><div class=hsection-head><h2>${ICONS.navLists}${t(canEdit() ? 'lists' : 'publicLists')}</h2>${canEdit() ? `<button class=hadd data-act=add>${ICONS.actionAdd}${t('palAdd')}</button>` : ''}</div><div class=hcards>${homeListCard('classic')}${homeListCard('platform')}</div></section><div class=hpreviews>${homeWishlists()}${homeStats()}</div></div>`;
 }
 
 function profileSwitcher() {

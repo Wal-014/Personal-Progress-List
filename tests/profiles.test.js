@@ -19,7 +19,7 @@ const createApp = () => {
         context.matchWithAredl = () => {};
         context.matchWithDemonlist = () => {};
         context.autoSyncRankings = () => {};
-        load(['js/events.js']);
+        load(['js/components/help-tip.js', 'js/events.js']);
     };
     return { app, context, load, loadEvents, localStorage, setProfiles, writes: () => writes };
 };

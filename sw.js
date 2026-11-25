@@ -50,6 +50,7 @@ const SHELL = [
   "js/sync.js",
   "js/public-view.js",
   "js/local-migration.js",
+  "js/components/help-tip.js",
   "js/components/faces.js",
   "js/components/empty-list.js",
   "js/components/deaths-input.js",

@@ -8,7 +8,7 @@ function homeApp(options) {
     const document = { body: {}, documentElement: { dataset: {} }, activeElement: null,
         querySelector: selector => selector == '#app' ? root : null, querySelectorAll: () => [], addEventListener() {} };
     const loaded = loadScripts(['tests/fixtures/demo-profile.js', 'js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js',
-        'js/ranking-sync.js', 'js/components/faces.js', 'js/components/levels.js', 'js/components/timeline.js', 'js/components/rankings.js', 'js/components/compare.js',
+        'js/ranking-sync.js', 'js/components/faces.js', 'js/components/help-tip.js', 'js/components/levels.js', 'js/components/timeline.js', 'js/components/rankings.js', 'js/components/compare.js',
         'js/components/stats.js', 'js/components/wishlists.js', 'js/notifications.js', 'js/components/home.js', 'js/components/shell.js',
         'js/components/account-ui.js', 'js/components/level-form-guard.js', 'js/render.js', 'js/events.js'], {
         document, window: { addEventListener() {} }, localStorage: {},
@@ -467,4 +467,55 @@ test('legacy screens isolate content below the themed page title', () => {
     app("ui.tab = 'home'");
     assert.doesNotMatch(app("sharedShell('Home')"), /class=legacy-surface/);
     assert.ok(app('profileSwitcher()').includes(app('ICONS.chevronDown')));
+});
+
+test('a new empty profile sees the first-visit guide above the lists, with first actions', () => {
+    const { app } = homeApp();
+    app('profile.levels = []; profile.wishlists = []');
+    const html = app('home()');
+    assert.match(html, /^<div class=hcontent><section class=hintro aria-labelledby=intro-title><div class=hintro-head><h2 id=intro-title>Welcome to Personal Progress List<\/h2><button type=button class=xs data-act=introhide aria-label="Hide the guide"/);
+    assert.equal((html.match(/<li>/g) || []).length, 4);
+    assert.match(html, /class=hadd data-act=add>.*Add my first level<\/button><button type=button data-act=wnew>.*Create a wishlist<\/button>/);
+    assert.match(html, /sign in to have it on all your devices/);
+    app("ui.lang = 'es'");
+    assert.match(app('home()'), /Te damos la bienvenida a Personal Progress List/);
+});
+
+test('the guide stays away from profiles with progress, public views and accounts still downloading', () => {
+    const { app } = homeApp();
+    assert.equal(app('showsIntro()'), false);
+    app('profile.levels = []');
+    assert.equal(app('showsIntro()'), false, 'wishlists are progress too');
+    app('profile.wishlists = []');
+    assert.equal(app('showsIntro()'), true);
+    app("viewing = { identity: {} }");
+    assert.equal(app('showsIntro()'), false);
+    app("viewing = null; cloudUser = 'u1'; cloudSession = { pulled: false }");
+    assert.equal(app('showsIntro()'), false);
+    app('cloudSession.pulled = true');
+    assert.equal(app('showsIntro()'), true);
+});
+
+test('hiding the guide is remembered per profile or account and survives broken storage', () => {
+    const { app, context } = homeApp();
+    app('profile.levels = []; profile.wishlists = []; render = () => {}');
+    app('hideIntro()');
+    assert.equal(context.localStorage.gintro, '["p:demo"]');
+    assert.equal(app('showsIntro()'), false);
+    app("store.cur = 'other'");
+    assert.equal(app('showsIntro()'), true);
+    app("cloudUser = 'u1'; cloudSession = { pulled: true }");
+    app('hideIntro()');
+    assert.deepEqual(JSON.parse(context.localStorage.gintro), ['p:demo', 'u:u1']);
+    context.localStorage.gintro = '{broken';
+    assert.equal(app('showsIntro()'), true);
+});
+
+test('Settings reopens the guide as a dialog without the first-level actions', () => {
+    const { app } = homeApp();
+    assert.match(app('pauseUI()'), /<nav class=legal><a class=lk data-act=guide role=button tabindex=0>Quick guide<\/a> · /);
+    const dialog = app('introDialog()');
+    assert.match(dialog, /<h2>Welcome to Personal Progress List<\/h2>/);
+    assert.doesNotMatch(dialog, /data-act=(?:add|wnew|introhide)/);
+    assert.match(dialog, /data-act=close/);
 });

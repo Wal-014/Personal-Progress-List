@@ -40,7 +40,7 @@ function editor(deaths = {}) {
             return { set innerHTML(html) { this.content = { firstElementChild: chip(html.match(/name=dth value="([^"]+)"/)[1]) }; } };
         }
     };
-    const fixture = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/components/deaths-input.js', 'js/events.js'], { ui: { lang: 'en' }, document, window: { addEventListener() {} } });
+    const fixture = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/components/help-tip.js', 'js/components/deaths-input.js', 'js/events.js'], { ui: { lang: 'en' }, document, window: { addEventListener() {} } });
     const enter = target => {
         let prevented = false;
         document.onkeydown({ key: 'Enter', target, preventDefault() { prevented = true; } });
