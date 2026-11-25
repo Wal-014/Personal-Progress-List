@@ -37,6 +37,7 @@ jobs:
             package-lock.json
             relay/package-lock.json
       - run: npm ci
+      - run: npm run assets
       - run: npm test
       # Deploying only bundles the Worker; workerd's install script is needed only by `wrangler dev`
       - run: npm ci --ignore-scripts
