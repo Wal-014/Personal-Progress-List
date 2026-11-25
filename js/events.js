@@ -203,13 +203,8 @@ const ACTIONS = {
         else if (returnId != null && innerWidth <= 900)
             (qs(`.lv[data-id="${CSS.escape(returnId)}"]`) || qs('#q'))?.focus({ preventScroll: true });
     },
-    tgadd(a) {
-        // tagChip escapes the tag name and tagColor only returns #rrggbb, so the HTML is safe
-        // nosemgrep: typescript.react.security.audit.react-unsanitized-method.react-unsanitized-method
-        qs('#tgs').insertAdjacentHTML('beforeend', tagChip(a.dataset.v));
-        qs('#tgq').value = '';
-        renderTagSuggestions();
-    },
+    tgadd: a => selectFormTag(a.dataset.v),
+    tgnew: a => createFormTag(a.dataset.v),
     tgrm(a) {
         a.remove();
         renderTagSuggestions();
@@ -410,6 +405,29 @@ function saveLevel(form) {
     render();
     scrollSel();
     focusLevelPanel();
+}
+
+function selectFormTag(name) {
+    // tagChip escapes the tag name and tagColor only returns #rrggbb, so the HTML is safe
+    // nosemgrep: typescript.react.security.audit.react-unsanitized-method.react-unsanitized-method
+    qs('#tgs').insertAdjacentHTML('beforeend', tagChip(name));
+    qs('#tgq').value = '';
+    renderTagSuggestions();
+    qs('#tgq').focus();
+}
+
+/**
+ * Adds a tag to the catalog from the level form and selects it. The catalog is saved at once; the level is not,
+ * and the form is not redrawn, so its unsaved values stay.
+ */
+function createFormTag(name) {
+    const error = tagNameError(name);
+    if (error)
+        return setFieldError(qs('#tgq'), error);
+    profile.tags.push({ name, color: nextTagColor() });
+    save();
+    setFieldError(qs('#tgq'), '');
+    selectFormTag(name);
 }
 
 function setTagColor(input) {
@@ -771,7 +789,7 @@ document.onkeydown = e => {
     }
     if (e.key == 'Enter' && e.target.id == 'tgq') {
         e.preventDefault();
-        qs('#tgr [data-act=tgadd]')?.click();
+        qs('#tgr button')?.click();
     }
     // Enter searches instead of submitting the form around the search box
     if (e.key == 'Enter' && e.target.id == 'gdq') {

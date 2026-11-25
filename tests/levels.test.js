@@ -430,13 +430,35 @@ test('editable tag chips expose native form actions with an escaped name', () =>
 test('tag suggestions offer a keyboard button for an unused matching tag', () => {
     const suggestions = { innerHTML: '' };
     const nodes = { '#tgq': { value: 'Tag' }, '#tgr': suggestions };
-    const fixture = loadScripts(['js/config.js', 'js/utils.js', 'js/components/levels.js'], {
+    const fixture = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/components/levels.js'], {
         document: { querySelector: selector => nodes[selector], querySelectorAll: () => [{ value: 'Used Tag' }] },
-        profile: { tags: [{ name: 'Used Tag' }, { name: 'New Tag' }, { name: 'Other' }] }
+        profile: { tags: [{ name: 'Used Tag' }, { name: 'New Tag' }, { name: 'Other' }] }, ui: { lang: 'en' }
     });
     fixture.app('renderTagSuggestions()');
     assert.match(suggestions.innerHTML, /<button type=button class=chip data-act=tgadd data-v="New Tag"/);
     assert.doesNotMatch(suggestions.innerHTML, /Used Tag|Other/);
+});
+
+test('tag suggestions offer to create the typed name only when no tag has it', () => {
+    const suggestions = { innerHTML: '' }, search = { value: '' };
+    const fixture = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/components/levels.js'], {
+        document: { querySelector: selector => ({ '#tgq': search, '#tgr': suggestions })[selector], querySelectorAll: () => [{ value: 'Used' }] },
+        profile: { tags: [{ name: 'Used' }, { name: 'Hardest' }] }, ui: { lang: 'en' }
+    });
+    const offers = value => {
+        search.value = value;
+        fixture.app('renderTagSuggestions()');
+        return [...suggestions.innerHTML.matchAll(/data-act=(\w+) data-v="([^"]*)"/g)].map(match => match[1] + ':' + match[2]);
+    };
+    assert.deepEqual(offers('  Hard '), ['tgadd:Hardest', 'tgnew:Hard']);
+    assert.match(suggestions.innerHTML, /<button type=button class="chip tag-create" data-act=tgnew data-v="Hard">\+ Create &quot;Hard&quot;<\/button>/);
+    assert.deepEqual(offers('Hardest'), ['tgadd:Hardest']);
+    assert.deepEqual(offers('Used'), []);
+    assert.deepEqual(offers('   '), ['tgadd:Hardest']);
+    assert.deepEqual(offers('<b>'), ['tgnew:&lt;b&gt;']);
+    fixture.app("ui.lang = 'es'");
+    offers('Nuevo');
+    assert.match(suggestions.innerHTML, /Crear «Nuevo»/);
 });
 
 test('initSort registers the grip filter and saves only updates on an unfiltered list', () => {
