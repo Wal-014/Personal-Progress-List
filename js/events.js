@@ -367,6 +367,13 @@ function saveLevel(form) {
     }
     const position = form.elements.pos.value, old = findLevel(form.dataset.id), level = old || { id: newId('n') };
     const fields = levelFromForm(form), maximum = maxRankPosition(fields.kind, level.id);
+    // Older notes may exceed the limit; they are kept as they are until shortened, never cut on save.
+    const notesError = fieldError('notes', fields.notes || '');
+    if (notesError) {
+        form.elements.notes.setCustomValidity(notesError);
+        form.reportValidity();
+        return;
+    }
     Object.assign(level, fields);
     if (!old)
         profile.levels.push(level);

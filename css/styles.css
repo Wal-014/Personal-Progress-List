@@ -1557,6 +1557,31 @@ input.ro {
   resize: vertical;
 }
 
+#fm-notes {
+  max-height: min(18rem, 50vh);
+}
+
+/* A URL needs more room than a date, but a full-width field would be oversized on wide forms. */
+#fm .grid > div:has(> #fm-link) {
+  grid-column: 1 / -1;
+  max-width: 28rem;
+}
+
+/* Fits a seven-digit count such as 1000000 between the step buttons without stretching across the row. */
+.level-attempts .num {
+  grid-template-columns: 40px minmax(0, 12ch) 40px;
+  justify-content: start;
+}
+
+.deaths-input > #death-label {
+  display: block;
+  margin-bottom: var(--space-8);
+  font: 600 .95rem/1.4 var(--font-ui);
+  color: var(--color-text);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .warn {
   margin-bottom: 8px;
   font: bold 13px var(--font-ui);
@@ -4585,7 +4610,7 @@ input[type=checkbox]:checked::after {
   :is(#app, dialog.modal) textarea, #app :is(.page-title, .list-selection, .wa) button,
   :is(#app, dialog.modal) :is(.dgb, .num) button,
   :is(#app, dialog.modal) [data-act=gdgo], :is(#app, dialog.modal) button.dg,
-  :is(#app, dialog.modal) [data-act=dthremove], :is(#app, dialog.modal) [data-act=localdelete],
+  :is(#app, dialog.modal) :is([data-act=dthremove], [data-act=dthadd]), :is(#app, dialog.modal) [data-act=localdelete],
   #app [data-act=compare-toggle] {
     --rim-paint: linear-gradient(var(--rim-angle, 125deg), var(--metal-edge) 3%, var(--metal-glint) 13%,
       var(--metal-edge) 27%, var(--metal-shade) 46%, var(--metal-glint) 55%,
@@ -4617,7 +4642,7 @@ input[type=checkbox]:checked::after {
   :where([data-theme=porcelain]) #app :is(.page-title, .list-selection, .wa) button,
   :where([data-theme=porcelain]) :is(#app, dialog.modal) :is(.dgb, .num) button,
   :where([data-theme=porcelain]) :is(#app, dialog.modal) [data-act=gdgo], :where([data-theme=porcelain]) :is(#app, dialog.modal) button.dg,
-  :where([data-theme=porcelain]) :is(#app, dialog.modal) [data-act=dthremove],
+  :where([data-theme=porcelain]) :is(#app, dialog.modal) :is([data-act=dthremove], [data-act=dthadd]),
   :where([data-theme=porcelain]) :is(#app, dialog.modal) [data-act=localdelete], :where([data-theme=porcelain]) #app [data-act=compare-toggle] {
     --rim-paint: linear-gradient(calc(var(--rim-angle, 125deg) + 20deg), var(--metal-glint), var(--metal-edge) 42%, var(--metal-shade) 92%);
     --rim-top: color-mix(in srgb, var(--rim-lift-ink, var(--color-text)) var(--rim-lift, 0%), var(--rim-fill, var(--satin-light)));
@@ -5014,7 +5039,7 @@ input[type=checkbox]:checked::after {
 }
 
 @media (forced-colors: none) {
-  :root .num button, :root [data-act=gdgo], :root .dgb [data-act=edit], :root [data-act=compare-toggle] {
+  :root .num button, :root [data-act=dthadd], :root [data-act=gdgo], :root .dgb [data-act=edit], :root [data-act=compare-toggle] {
     --rim-fill: var(--color-accent);
     color: var(--color-bg);
   }

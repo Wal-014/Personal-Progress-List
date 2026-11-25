@@ -48,7 +48,7 @@ for (const publicView of [false, true]) {
         assert.equal((html.match(/<details class=level-section open>/g) || []).length, 1);
         assert.match(html, /<summary>Rating<\/summary>/);
         assert.match(html, /<small>Enjoyment<\/small><div class=mh><b[^>]*>0<\/b>/);
-        assert.match(html, /<small>Level appeal<\/small><div class=mh><b[^>]*>3\.5<\/b>/);
+        assert.match(html, /<small>Level rating<\/small><div class=mh><b[^>]*>3\.5<\/b>/);
         assert.doesNotMatch(html, /No additional details/);
     });
 
@@ -79,8 +79,8 @@ for (const publicView of [false, true]) {
             [{ tPC: 5 }, ['Total time', 'Copy or StartPos playtime', '0h 0m 5s'], ['Normal time', 'Practice time']],
             [{ date: '2026-01-02' }, ['Completion date', '02/01/2026'], ['class=yt', 'Video link']],
             [{ link: 'https://example.com/video' }, ['href="https://example.com/video"'], ['Completion date', 'class=grid']],
-            [{ enj: 0 }, ['Enjoyment'], ['Level appeal']],
-            [{ lik: 3.5 }, ['Level appeal'], ['Enjoyment']],
+            [{ enj: 0 }, ['Enjoyment'], ['Level rating']],
+            [{ lik: 3.5 }, ['Level rating'], ['Enjoyment']],
             [{ notes: '<Recorded>' }, ['&lt;Recorded&gt;'], ['<Recorded>']],
             [{ deaths: { 63: 2 } }, ['Best %', '63% ×2', 'class=hist'], ['Total attempts', 'Normal attempts', 'Copy attempts']]
         ];

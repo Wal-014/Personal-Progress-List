@@ -214,7 +214,7 @@ ${section('s2', formField('pos', rankPosition, 'number', `min=1 max=${maximum} s
 ${section('s3', `<div class=level-attempts>${attempts}</div><div class=level-times>${times}</div>${totals}`)}
 ${section('s4', formField('date', levelData.date, 'date') + formField('link', levelData.link))}
 <fieldset><legend>${t('s5')}</legend><div class=grid>${formField('enj', levelData.enj, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}${formField('lik', levelData.lik, 'number', 'min=0 max=10 step=0.1 inputmode=decimal')}</div><label for=tgq>${t('tags')}</label><input id=tgq placeholder="${t('tgs')}" autocomplete=off><div id=tgr class=tgr></div><div id=tgs>${(levelData.tags || []).map(tagChip).join('')}</div></fieldset>
-<fieldset><legend>${t('s6')}</legend><label for=fm-notes>${t('notes')}</label><textarea id=fm-notes name=notes rows=3>${escapeHtml(levelData.notes)}</textarea>${deathsInput(levelData.deaths)}</fieldset>
+<fieldset><legend>${t('s6')}</legend><label for=fm-notes>${t('notes')}</label><textarea id=fm-notes name=notes rows=3 maxlength=${NOTES_LIMIT} aria-describedby=fm-notes-hint>${escapeHtml(levelData.notes)}</textarea><small id=fm-notes-hint class=by>${t('notesLimit').replace('{n}', NOTES_LIMIT.toLocaleString(ui.lang))}</small>${deathsInput(levelData.deaths)}</fieldset>
 <div class="dgb level-action-bar">${level ? `<button type=button class=dg data-act=del data-id="${escapeHtml(level.id)}">${t('del')}</button>` : ''} <button type=button data-act=${level ? 'lvclose' : 'close'}>${t('close')}</button> <button type=submit class=pri>${t('save')}</button></div></form></div>`;
 }
 
