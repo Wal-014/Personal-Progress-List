@@ -115,6 +115,7 @@ function cleanMigrationItem(item, set) {
 function cleanMigrationData(source, localId) {
     const data = JSON.parse(JSON.stringify(source));
     migrateRatingScale(data);
+    retireFirstStepsTag(data);
     let adjusted = 0;
     const set = (entry, key, value) => {
         if (JSON.stringify(entry[key]) !== JSON.stringify(value)) {

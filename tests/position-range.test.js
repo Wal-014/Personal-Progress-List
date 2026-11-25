@@ -14,13 +14,13 @@ function fixture() {
     f.app(`profile = emptyProfile(); ui.lang = 'en'; ui.tab = 'classic';
         profile.levels = Array.from({ length: 6 }, (_, i) => ({ id: 'c' + i, name: 'Classic', kind: 'classic' }));
         profile.order.classic = profile.levels.map(level => level.id);
-        profile.levels.push({ id: 'pre', kind: 'classic', tags: [PRE_TAG] }, { id: 'unplaced', kind: 'classic' }, { id: 'p', kind: 'platform' });
-        profile.order.classic.push('pre'); profile.order.platform = ['p'];
+        profile.levels.push({ id: 'unplaced', kind: 'classic' }, { id: 'p', kind: 'platform' });
+        profile.order.platform = ['p'];
         fillAredlPosition = () => {};`);
     return { ...f, nodes };
 }
 
-for (const [id, kind, maximum] of [[null, 'classic', 7], ['c0', 'classic', 6], ['unplaced', 'classic', 7], ['pre', 'classic', 7], [null, 'platform', 2], ['p', 'platform', 1]])
+for (const [id, kind, maximum] of [[null, 'classic', 7], ['c0', 'classic', 6], ['unplaced', 'classic', 7], [null, 'platform', 2], ['p', 'platform', 1]])
     test(`position range for ${id || 'new'} in ${kind} is 1 to ${maximum}`, () => {
         const f = fixture();
         f.app(`ui.tab = '${kind}'`);
@@ -86,8 +86,8 @@ for (const id of ['', 'unplaced', 'c0'])
         assert.equal(f.app('profile.order.classic').includes(savedId), false);
     });
 
-test('saving a Pre-Extremes level leaves it outside the ranking', () => {
+test('a level tagged Pre-Extremes takes its position like any other', () => {
     const f = fixture();
-    f.app('saveLevel')({ dataset: { id: 'pre' }, elements: { ...emptyDurationFields(), pos: { value: '99' } }, entries: [['name', 'First step'], ['kind', 'classic'], ['tg', 'Pre-Extremes']] });
-    assert.deepEqual([...f.app("rankedIds('classic')")], ['c0', 'c1', 'c2', 'c3', 'c4', 'c5']);
+    f.app('saveLevel')({ dataset: { id: 'unplaced' }, elements: { ...emptyDurationFields(), pos: { value: '2' } }, entries: [['name', 'Tagged'], ['kind', 'classic'], ['tg', 'Pre-Extremes']] });
+    assert.deepEqual([...f.app("rankedIds('classic')")], ['c0', 'unplaced', 'c1', 'c2', 'c3', 'c4', 'c5']);
 });

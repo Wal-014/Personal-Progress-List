@@ -101,10 +101,7 @@ const tagColor = n => {
 
 const tagColorAttr = n => `data-tag-color="${escapeHtml(tagColor(n))}"`;
 
-/** Levels tagged "Pre-Extremes" appear separately under "First steps". */
 const TAG_NAME_LIMIT = 24;
-const PRE_TAG = 'Pre-Extremes';
-const isPre = l => (l.tags || []).includes(PRE_TAG);
 
 /** Preserve the closest palette when loading preferences from earlier releases. */
 const LEGACY_THEMES = { blue: 'nebula', night: 'graphite', synth: 'crimson', dark: 'graphite', light: 'porcelain' };

@@ -52,7 +52,7 @@ function resetListFilters() {
     ui.tagFilter = [];
 }
 
-const emptyProfile = () => ({ ratingScale: 10, levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
+const emptyProfile = () => ({ ratingScale: 10, firstStepsRetired: true, levels: [], order: { classic: [], platform: [] }, wishlists: [], tags: [] });
 
 const save = () => {
     if (!canEdit())
@@ -126,12 +126,31 @@ function migrateRatingScale(data) {
     return true;
 }
 
+const RETIRED_FIRST_STEPS_TAG = 'Pre-Extremes';
+
+/**
+ * Levels tagged "Pre-Extremes" used to be listed apart under "First steps". Older profiles drop that tag once and those levels
+ * become unplaced; the marker lets a tag created later with the same name stay an ordinary tag.
+ */
+function retireFirstStepsTag(data) {
+    if (data.firstStepsRetired)
+        return false;
+    const retiredLevels = data.levels.filter(level => (level.tags || []).includes(RETIRED_FIRST_STEPS_TAG));
+    const retired = new Set(retiredLevels.map(level => level.id));
+    retiredLevels.forEach(level => level.tags = level.tags.filter(name => name != RETIRED_FIRST_STEPS_TAG));
+    data.tags = (data.tags || []).filter(tag => tag.name != RETIRED_FIRST_STEPS_TAG);
+    for (const kind in data.order)
+        data.order[kind] = data.order[kind].filter(id => !retired.has(id));
+    data.firstStepsRetired = true;
+    return true;
+}
+
 /**
  * Fills missing fields in older or imported profiles.
  * Imported files are only checked for their shape, so statuses and deaths are cleaned here before any template renders them.
  */
 function ensureProfileDefaults() {
-    const ratingsChanged = migrateRatingScale(profile);
+    const ratingsChanged = migrateRatingScale(profile), firstStepsChanged = retireFirstStepsTag(profile);
     profile.wishlists = profile.wishlists || [];
     fixIds(profile.levels, 'n');
     profile.levels.forEach(l => l.deaths = cleanDeaths(l.deaths));
@@ -164,7 +183,7 @@ function ensureProfileDefaults() {
             }
         }
     }
-    if (tagsChanged || ratingsChanged)
+    if (tagsChanged || ratingsChanged || firstStepsChanged)
         save();
 }
 
