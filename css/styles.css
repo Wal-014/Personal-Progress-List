@@ -3760,7 +3760,7 @@ legend:has(> .help-tip) {
   flex: none;
 }
 
-.htext > span {
+.htext > [aria-hidden] {
   font-size: 24px;
 }
 
@@ -5706,8 +5706,12 @@ input[type=checkbox]:checked::after {
     &.htext {
       --nav-ink: var(--hover-menu-ink);
       color: var(--hover-menu-ink);
-      text-decoration: underline;
-      text-underline-offset: 4px;
+
+      /* On the button the line would run under the arrow too: underlines reach every in-flow child. */
+      & > .htext-label {
+        text-decoration: underline;
+        text-underline-offset: 4px;
+      }
     }
 
     &.chip { --chip-highlight: 26%; }

@@ -126,7 +126,7 @@ test('wishlist preview caps at three, keeps stable status order, escapes names a
     const html = app('homeWishlists()');
     assert.deepEqual([...html.matchAll(/data-act=wopen data-id="([^"]+)"/g)].map(match => match[1]), ['prog', 'prog2', 'todo']);
     assert.match(html, /&lt;In progress&gt;/);
-    assert.match(html, /data-act=tab data-v=wish[^>]*>View all \(4\)/);
+    assert.match(html, /<button class=htext data-act=tab data-v=wish><span class=htext-label>View all \(4\)<\/span><span aria-hidden=true>›<\/span><\/button>/);
     assert.doesNotMatch(html, /data-act=wnew/);
     app('profile.wishlists.pop()');
     assert.doesNotMatch(app('homeWishlists()'), /data-act=wnew/);
@@ -139,8 +139,13 @@ test('View all omits a count when the preview shows every wishlist', () => {
     for (const count of [3, 2, 1, 0]) {
         app(wishlistFixture);
         app(`profile.wishlists = profile.wishlists.slice(0, ${count})`);
-        assert.match(app('homeWishlists()'), /data-act=tab data-v=wish>View all<span/, `${count} wishlists`);
+        assert.match(app('homeWishlists()'), /data-act=tab data-v=wish><span class=htext-label>View all<\/span>/, `${count} wishlists`);
     }
+});
+
+test('the Statistics preview links to the screen with its arrow outside the label', () => {
+    const { app } = homeApp();
+    assert.match(app('homeStats()'), /<button class=htext data-act=tab data-v=stats><span class=htext-label>View full statistics<\/span><span aria-hidden=true>→<\/span><\/button>/);
 });
 
 test('Home navigation distinguishes own lists from public lists', () => {
