@@ -76,8 +76,8 @@ test('jobs that read deploy secrets declare an environment', () => {
                 assert.match(body, /^ {4}environment:/m, `${workflowName}/${name}`);
         }
     }
-    assert.match(job(ci(), 'migrate-prod'), /^ {4}environment: production-database$/m);
-    assert.match(job(workflow('backup'), 'backup'), /^ {4}environment: production-database$/m);
+    assert.match(job(ci(), 'migrate-prod'), /^ {4}environment: github-pages$/m);
+    assert.match(job(workflow('backup'), 'backup'), /^ {4}environment: github-pages$/m);
 });
 
 test('jobs that read secrets never run for pull requests', () => {
