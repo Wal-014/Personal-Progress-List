@@ -8,7 +8,7 @@ function homeApp(options) {
     const document = { body: {}, documentElement: { dataset: {} }, activeElement: null,
         querySelector: selector => selector == '#app' ? root : null, querySelectorAll: () => [], addEventListener() {} };
     const loaded = loadScripts(['tests/fixtures/demo-profile.js', 'js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js',
-        'js/ranking-sync.js', 'js/components/faces.js', 'js/components/levels.js', 'js/components/timeline.js', 'js/components/rankings.js', 'js/components/compare.js',
+        'js/ranking-sync.js', 'js/components/faces.js', 'js/components/help-tip.js', 'js/components/levels.js', 'js/components/timeline.js', 'js/components/rankings.js', 'js/components/compare.js',
         'js/components/stats.js', 'js/components/wishlists.js', 'js/notifications.js', 'js/components/home.js', 'js/components/shell.js',
         'js/components/account-ui.js', 'js/components/level-form-guard.js', 'js/render.js', 'js/events.js'], {
         document, window: { addEventListener() {} }, localStorage: {},

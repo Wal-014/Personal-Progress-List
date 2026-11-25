@@ -17,7 +17,7 @@ function fixture(width = 1366) {
     const { app, context } = loadScripts([
         'js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js',
         'js/components/duration-input.js', 'js/components/deaths-input.js', 'js/components/search.js',
-        'js/components/levels.js', 'js/components/level-form-guard.js', 'js/render.js', 'js/events.js'
+        'js/components/levels.js', 'js/components/level-form-guard.js', 'js/render.js', 'js/components/help-tip.js', 'js/events.js'
     ], {
         document, innerWidth: width, CSS: { escape: String }, window: { addEventListener() {} },
         localStorage: {}, FormData: class extends URLSearchParams { constructor(form) { super(form.entries); } },

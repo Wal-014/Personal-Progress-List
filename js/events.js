@@ -734,6 +734,11 @@ document.addEventListener('toggle', e => {
         optionsPanel.querySelector('label:not([hidden]) input')?.focus({ preventScroll: true });
 }, true);
 document.addEventListener('focusout', e => durationBlur(e));
+document.addEventListener('toggle', openedHelp, true);
+document.addEventListener('pointerover', hoverHelp);
+document.addEventListener('pointerout', hoverHelp);
+document.addEventListener('click', pinHelp, true);
+document.addEventListener('scroll', closeHelpOnScroll, { capture: true, passive: true });
 document.addEventListener('focusin', e => {
     if (e.target.dataset?.compareSlot != null)
         setComparisonTarget(+e.target.dataset.compareSlot);
@@ -761,7 +766,8 @@ function comparePickerKeydown(e) {
 
 /** Escape closes the open dropdown or settings picker, or the level panel on narrow screens; true when it did. */
 function escapeKeydown(e) {
-    if (e.key != 'Escape')
+    // An open explanation closes by itself and must not take the panel with it.
+    if (e.key != 'Escape' || qs('.help-pop:popover-open'))
         return false;
     const dropdown = e.target.closest('.ms[open], .settings-picker[open]');
     if (dropdown) {
