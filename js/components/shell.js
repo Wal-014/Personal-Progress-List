@@ -149,14 +149,22 @@ function renderRankingStatus() {
     button.querySelector('span').textContent = rankingRefreshLabel();
 }
 
+const LANGUAGES = [['es', 'Español'], ['en', 'English']];
+
+/** A collapsed settings choice that shows its current value; sharing a name keeps only one open at a time. */
+function settingsPicker(field, label, current, options) {
+    return `<details class=settings-picker name=settings-picker data-picker=${field}><summary><span class=settings-label id=picker-${field}>${label}</span><span class=settings-current>${current}</span>${ICONS.chevronDown}</summary><div class="appearance-options picker-${field}" role=group aria-labelledby=picker-${field}>${options}</div></details>`;
+}
+
 function pauseUI() {
-    const sw = k => `<button class=appearance-option data-act=theme data-v=${k} aria-pressed=${ui.theme == k}><i class="theme-preview sw-${k}" aria-hidden=true></i>${t(k)}</button>`;
-    const bg = k => `<button class=appearance-option data-act=background data-v=${k} aria-pressed=${ui.background == k}><i class="background-preview bg-${k}" aria-hidden=true></i>${t(k)}</button>`;
-    const lang = ([k, n]) => `<button class="${ui.lang == k ? 'pri' : ''}" data-act=lang data-v=${k} aria-pressed=${ui.lang == k}>${FLAGS[k]}${n}</button>`;
+    const themeContent = k => `<i class="theme-preview sw-${k}" aria-hidden=true></i>${t(k)}`;
+    const backgroundContent = k => `<i class="background-preview bg-${k}" aria-hidden=true></i>${t(k)}`;
+    const languageContent = k => FLAGS[k] + LANGUAGES.find(([code]) => code == k)[1];
+    const option = (field, k, selected, content) => `<button class=appearance-option data-act=${field} data-v=${k} aria-pressed=${selected}>${content(k)}</button>`;
     return `<div class="box sm pause"><h2>${t('pause')}</h2>
-<h3 id=colour-theme>${t('theme')}</h3><div class=appearance-options role=group aria-labelledby=colour-theme>${THEMES.map(sw).join('')}</div>
-<h3 id=background-design>${t('background')}</h3><div class=appearance-options role=group aria-labelledby=background-design>${BACKGROUNDS.map(bg).join('')}</div>
-<h3>${t('lang')}</h3><div class=lang>${[['es', 'Español'], ['en', 'English']].map(lang).join('')}</div>
+${settingsPicker('theme', t('theme'), themeContent(ui.theme), THEMES.map(k => option('theme', k, ui.theme == k, themeContent)).join(''))}
+${settingsPicker('background', t('background'), backgroundContent(ui.background), BACKGROUNDS.map(k => option('background', k, ui.background == k, backgroundContent)).join(''))}
+${settingsPicker('lang', t('lang'), languageContent(ui.lang), LANGUAGES.map(([k]) => option('lang', k, ui.lang == k, languageContent)).join(''))}
 ${canEdit() ? `<h3 id=ranking-sync>${t('rankSync')}</h3>
 <div id=ranking-status class=ranking-status data-ranking-status role=status aria-live=polite aria-busy=${rankingSync.running}>${rankingStatusRows()}</div>
 <button data-act=rankrefresh aria-describedby=ranking-status aria-disabled=${rankingSync.running}>${ICONS.actionSync}<span>${rankingRefreshLabel()}</span></button>` : ''}

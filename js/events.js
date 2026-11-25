@@ -9,6 +9,16 @@ function reopenPause(selector) {
     qs('#md ' + selector)?.focus();
 }
 
+/** After a pick, the settings picker shows the new value collapsed and returns focus to its summary. */
+function closeSettingsPicker(option) {
+    const picker = option.closest('.settings-picker');
+    if (!picker)
+        return;
+    picker.querySelector('.settings-current').innerHTML = option.innerHTML;
+    picker.open = false;
+    picker.querySelector('summary').focus();
+}
+
 function setAppearance(field, value) {
     if (cloudUser) {
         applyCloudSettings({ [field]: value });
@@ -116,8 +126,14 @@ const ACTIONS = {
             qs('#q')?.focus({ preventScroll: true });
     },
     pause: () => openModal(pauseUI()),
-    theme: a => setAppearance('theme', themeOf(a.dataset.v)),
-    background: a => setAppearance('background', backgroundOf(a.dataset.v)),
+    theme(a) {
+        setAppearance('theme', themeOf(a.dataset.v));
+        closeSettingsPicker(a);
+    },
+    background(a) {
+        setAppearance('background', backgroundOf(a.dataset.v));
+        closeSettingsPicker(a);
+    },
     bell: () => openModal(bellUI()),
     notifwish: button => transferFromNotification(button),
     notiflocal: () => openNotificationMigration(),
@@ -143,7 +159,7 @@ const ACTIONS = {
         else
             ui.lang = localStorage.gl = a.dataset.v;
         if (a.closest('.pause'))
-            reopenPause(`[data-act=lang][data-v=${a.dataset.v}]`);
+            reopenPause('[data-picker=lang] summary');
         else
             render();
     },
@@ -743,11 +759,11 @@ function comparePickerKeydown(e) {
     return true;
 }
 
-/** Escape closes the open dropdown, or the level panel on narrow screens; true when it did. */
+/** Escape closes the open dropdown or settings picker, or the level panel on narrow screens; true when it did. */
 function escapeKeydown(e) {
     if (e.key != 'Escape')
         return false;
-    const dropdown = e.target.closest('.ms[open]');
+    const dropdown = e.target.closest('.ms[open], .settings-picker[open]');
     if (dropdown) {
         e.preventDefault();
         e.stopPropagation();

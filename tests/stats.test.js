@@ -454,6 +454,7 @@ export async function checkStatisticsBrowser(page) {
             await page.setViewportSize({ width, height: 900 });
             await page.goto(origin);
             await page.locator('[data-act=pause]').first().click();
+            await page.locator('[data-picker=lang] summary').click();
             await page.locator('[data-act=lang][data-v=' + language + ']').click();
             await page.locator('#md [data-act=close]').click();
             await page.locator('[data-act=tab][data-v=stats]').click();
