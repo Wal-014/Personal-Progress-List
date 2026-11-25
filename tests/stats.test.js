@@ -107,8 +107,8 @@ test('comparison search requires the exact option in the selected mode; stale id
     app('setComparisonSearch({ dataset: { compareSlot: "0" }, value: "Platform" })');
     app('setComparisonSearch({ dataset: { compareSlot: "0" }, value: "Beta" })');
     assert.deepEqual(plainStats(app('ui.comparison.slots')), ['z', 'b']);
-    assert.match(app('comparisonHtml()'), />Beta · ID 123<\/button>/);
-    assert.doesNotMatch(app('comparisonHtml()'), />Platform<\/button>/);
+    assert.match(app('comparisonOptions("a", 0)'), />Beta · ID 123<\/button>/);
+    assert.doesNotMatch(app('comparisonOptions("a", 0)'), />Platform<\/button>/);
     app('clearComparisonSlot(0)');
     assert.deepEqual(plainStats(app('ui.comparison.slots')), [null, 'b']);
 });
@@ -694,3 +694,56 @@ export async function checkStatisticsAndWishlistsBrowser(page, screenshotDirecto
     assert.deepEqual(pageErrors, []);
     return results;
 }
+
+test('comparison suggestions stay empty until something is typed and report no matches', () => {
+    const app = statsApp();
+    app(statsFixture);
+    app('ui.comparison.open = true');
+    for (const query of ['', '   '])
+        assert.equal(app('comparisonOptions')(query, 0), '');
+    assert.match(app('comparisonHtml()'), /<div class=compare-options><\/div>/);
+    assert.deepEqual([...app('comparisonOptions')('ALP', 1).matchAll(/data-id="([^"]+)" data-v=1/g)].map(match => match[1]), ['a']);
+    assert.match(app('comparisonOptions')('123', 0), />Beta · ID 123</);
+    assert.match(app('comparisonOptions')('nothing', 0), /<p class=compare-empty role=status>No levels match the search<\/p>/);
+});
+
+test('a focused comparison search makes its slot the destination of card clicks until the panel closes or the mode changes', () => {
+    const marks = [new Set(), new Set()];
+    const slots = marks.map(set => ({ classList: { toggle: (name, on) => on ? set.add(name) : set.delete(name) } }));
+    const app = statsApp();
+    app(statsFixture);
+    app('ui.comparison.open = true; ui.comparison.slots = ["a", "b"]');
+    app('document').querySelectorAll = selector => selector == '.compare-slot' ? slots : [];
+    app('setComparisonTarget(0)');
+    assert.deepEqual(marks.map(set => [...set]), [['is-target'], []]);
+    app('pickComparisonLevel("z")');
+    assert.deepEqual(plainStats(app('ui.comparison.slots')), ['z', 'b']);
+    assert.match(app('comparisonHtml()'), /class="compare-slot compare-1 is-target"/);
+    assert.match(app('comparisonHtml()'), /class="compare-slot compare-2">/);
+    app('pickComparisonLevel("u")');
+    assert.deepEqual(plainStats(app('ui.comparison.slots')), ['u', 'b']);
+    app('setComparisonTarget(1)');
+    assert.deepEqual(marks.map(set => [...set]), [[], ['is-target']]);
+    app('pickComparisonLevel("a")');
+    assert.deepEqual(plainStats(app('ui.comparison.slots')), ['u', 'a']);
+    app('pickComparisonLevel("u")');
+    assert.deepEqual(plainStats(app('ui.comparison.slots')), [null, 'a']);
+    app('pickComparisonLevel("b")');
+    assert.deepEqual(plainStats(app('ui.comparison.slots')), [null, 'b']);
+    app('setRankingMode("platform")');
+    assert.equal(app('ui.comparison.target'), null);
+    app('setRankingMode("classic"); setComparisonTarget(1); closeComparison()');
+    assert.equal(app('ui.comparison.target'), null);
+    app('setComparisonTarget(0); toggleComparison(); toggleComparison()');
+    assert.equal(app('ui.comparison.target'), null);
+});
+
+test('the comparison panel explains both ways to choose levels in both languages', () => {
+    const app = statsApp();
+    app(statsFixture);
+    app('ui.comparison.open = true');
+    assert.match(app('comparisonHtml()'), /<p class="by compare-help">Compare the attempts, play time and enjoyment of two levels of this mode\. Type a name or ID, or click a level in the rankings/);
+    app("ui.lang = 'es'");
+    assert.match(app('comparisonHtml()'), /<p class="by compare-help">Compara intentos, tiempo de juego y disfrutabilidad de dos niveles de este modo\. Escribe un nombre o ID, o pulsa un nivel/);
+    assert.match(app('comparisonHtml()'), /<small class=compare-target>Destino<\/small>/);
+});

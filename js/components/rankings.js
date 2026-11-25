@@ -63,6 +63,7 @@ function setRankingMode(kind) {
     if (kind != ui.rankingMode) {
         ui.rankingMode = kind;
         ui.comparison.slots = [null, null];
+        ui.comparison.target = null;
     }
     renderRankings();
 }
