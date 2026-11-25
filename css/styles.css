@@ -2058,6 +2058,26 @@ legend:has(> .help-tip) {
   font-size: 18px;
 }
 
+/* Classic and Platformer counts share the second row the paired cards use for their average. */
+.kpi-modes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-12);
+  margin-top: var(--space-8);
+  padding-top: var(--space-8);
+  border-top: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+}
+
+.kpi-modes small {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.kpi-modes b {
+  display: block;
+  font-size: 18px;
+}
+
 .stats2 {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);

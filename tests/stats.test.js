@@ -410,7 +410,7 @@ test('existing totals and distributions remain before rankings and count all mod
     app(statsFixture);
     assert.deepEqual(plainStats(app('statsSummary()')), { levelCount: 7, attemptTotal: 70, playSeconds: 131400, playHours: 37, average: 14, averageSeconds: 32850 });
     const markup = app('stats()').replace(/<svg\b[^>]*aria-hidden=true[^>]*>[\s\S]*?<\/svg>/g, '');
-    assert.match(markup, /<small>Levels<\/small><b>7<\/b>/);
+    assert.match(markup, /<div class=kpi><small>Levels<\/small><b>7<\/b><div class=kpi-modes><div><small>Classic<\/small><b>6<\/b><\/div><div><small>Platformer<\/small><b>1<\/b><\/div><\/div><\/div>/);
     assert.match(markup, /<small>Total attempts<\/small><b>70<\/b><small class=kpi-sub>Average attempts per level<\/small><b class=kpi-sub-value>14<\/b>/);
     assert.match(markup, /<small>Total hours<\/small><b>36.5<\/b><small class=kpi-sub>Average time per level<\/small><b class=kpi-sub-value>9 h 7 min<\/b>/);
     assert.doesNotMatch(markup, /Most attempts/);
@@ -422,6 +422,15 @@ test('existing totals and distributions remain before rankings and count all mod
     assert.ok(markup.indexOf('class=kpis') < markup.indexOf('id=timeline-well'));
     assert.ok(markup.indexOf('By difficulty') < markup.indexOf('id=rankings-well'));
     assert.ok(markup.indexOf('By year') < markup.indexOf('id=rankings-well'));
+});
+
+test('the Levels card localizes its total and its Classic and Platformer counts', () => {
+    const app = statsApp();
+    app(statsFixture);
+    app("profile.levels = Array.from({ length: 1500 }, (_, i) => ({ kind: i < 1499 ? 'classic' : 'platform' })); ui.lang = 'en'");
+    assert.match(app('levelsKpi(1500)'), /<b>1,500<\/b><div class=kpi-modes><div><small>Classic<\/small><b>1,499<\/b><\/div><div><small>Platformer<\/small><b>1<\/b>/);
+    app("profile.levels = [{ kind: 'platform' }]; ui.lang = 'es'");
+    assert.match(app('levelsKpi(1)'), /<\/svg>Nivel<\/small><b>1<\/b><div class=kpi-modes><div><small>Clásicos<\/small><b>0<\/b><\/div><div><small>Plataforma<\/small><b>1<\/b>/);
 });
 
 // Run through the browser tool's Playwright page, so the project needs no browser dependency.
