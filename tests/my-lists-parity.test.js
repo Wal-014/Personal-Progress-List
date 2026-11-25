@@ -17,7 +17,7 @@ function fixture(width = 1366) {
     const { app, context } = loadScripts([
         'js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/components/faces.js',
         'js/components/duration-input.js', 'js/components/deaths-input.js', 'js/components/search.js',
-        'js/components/levels.js', 'js/render.js', 'js/events.js'
+        'js/components/levels.js', 'js/components/level-form-guard.js', 'js/render.js', 'js/events.js'
     ], {
         document, innerWidth: width, CSS: { escape: String }, window: { addEventListener() {} },
         localStorage: {}, FormData: class extends URLSearchParams { constructor(form) { super(form.entries); } },
@@ -136,11 +136,12 @@ test('filter hint responds to search and tags and stays hidden in bulk-only and 
     assert.equal(hint.hidden, true);
 });
 
-test('mobile Escape returns to the same card and remembered list scroll', () => {
+test('mobile Escape returns to the same card and remembered list scroll', async () => {
     const f = fixture(390);
     f.nodes['#lw'] = { scrollTop: 0, getClientRects: () => [], innerHTML: '' };
     f.app('ui.listReturnY = 4100');
     f.keydown('Escape', selector => selector === '.rcol.has' ? {} : null);
+    await new Promise(setImmediate);
     assert.equal(f.app('ui.sel'), null);
     assert.equal(f.nodes['#lw'].scrollTop, 4100);
     assert.equal(f.focused.at(-1), 'c1');
@@ -155,4 +156,39 @@ test('activating a tag in mobile detail returns to the filtered list and focuses
     assert.equal(f.app('ui.sel'), null);
     assert.equal(f.app('canReorder()'), false);
     assert.equal(f.focused.at(-1), 'filters');
+});
+
+test('leaving an edited level through navigation, another card or mobile Escape asks first and goes on only after discarding', async () => {
+    const f = fixture(390);
+    f.nodes['.rcol #fm'] = {};
+    const element = (props = {}) => ({ dataset: {}, classList: { contains: () => false }, matches: () => false, closest: () => null, ...props });
+    const nav = element({ dataset: { act: 'tab', v: 'platform' } });
+    const navTarget = element({ closest: selector => selector == '[data-act]' ? nav : null });
+    const card = element({ dataset: { id: 'c2' }, classList: { contains: name => name == 'lv' }, matches: selector => selector == '.lv, .pt' });
+    const cardTarget = element({ closest: selector => selector == '[data-id]' ? card : null });
+    const tagRemove = element({ dataset: { act: 'tgrm' } });
+    const asked = [];
+    f.context.answers = [false, true, false, true];
+    f.app('confirmLevelFormExit = root => { asked.push(root); return Promise.resolve(answers.shift()); }');
+    f.context.asked = asked;
+    f.app("ui.sel = 'c1'; ui.edit = 1");
+    f.document.body.onclick({ target: navTarget });
+    await new Promise(setImmediate);
+    assert.equal(f.app('ui.tab'), 'classic');
+    f.document.body.onclick({ target: navTarget });
+    await new Promise(setImmediate);
+    assert.equal(f.app('ui.tab'), 'platform');
+    f.app("ui.tab = 'classic'; ui.sel = 'c1'; ui.edit = 1");
+    assert.equal(f.app('leavesLevelEditor')(cardTarget, null, card), true);
+    assert.equal(f.app('leavesLevelEditor')(element({ closest: selector => selector == 'form' ? {} : null }), null, card), false);
+    assert.equal(f.app('leavesLevelEditor')(tagRemove, tagRemove, null), false);
+    f.keydown('Escape', selector => selector === '.rcol.has' ? {} : null);
+    await new Promise(setImmediate);
+    assert.equal(f.app('ui.edit'), 1);
+    f.keydown('Escape', selector => selector === '.rcol.has' ? {} : null);
+    await new Promise(setImmediate);
+    assert.equal(f.app('ui.edit'), 0);
+    assert.equal(asked.length, 4);
+    delete f.nodes['.rcol #fm'];
+    assert.equal(f.app('leavesLevelEditor')(navTarget, nav, null), false);
 });

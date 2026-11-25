@@ -89,7 +89,7 @@ function showDialog({ title, msg, input, def, ok, cancel, danger, label, extra =
         const titleId = 'dgt-' + ++dialogTitleId;
         m.className = 'modal';
         m.setAttribute('aria-labelledby', titleId);
-        m.innerHTML = `<div class="box sm"><h2 class=prompt-title id=${titleId}>${escapeHtml(title || '')}</h2>${msg ? `<p class=dialog-message>${escapeHtml(msg)}</p>` : ''}${input ? `${label ? `<label for=dgi>${escapeHtml(label)}</label>` : ''}<input id=dgi${label ? '' : ' aria-labelledby=' + titleId} value="${escapeHtml(def || '')}"><p id=dgi-error class=field-error role=alert></p>` : ''}${extra}<p class=dgb>${cancel === false ? '' : `<button data-r=0>${t('cancel')}</button>`}<button class="${danger ? ok ? 'dg bulk-delete' : 'dg' : 'pri'}" data-r=1>${ok || t('ok2')}</button></p></div>${dialogAnnouncements}`;
+        m.innerHTML = `<div class="box sm"><h2 class=prompt-title id=${titleId}>${escapeHtml(title || '')}</h2>${msg ? `<p class=dialog-message>${escapeHtml(msg)}</p>` : ''}${input ? `${label ? `<label for=dgi>${escapeHtml(label)}</label>` : ''}<input id=dgi${label ? '' : ' aria-labelledby=' + titleId} value="${escapeHtml(def || '')}"><p id=dgi-error class=field-error role=alert></p>` : ''}${extra}<p class=dgb>${cancel === false ? '' : `<button data-r=0>${escapeHtml(cancel || t('cancel'))}</button>`}<button class="${danger ? ok ? 'dg bulk-delete' : 'dg' : 'pri'}" data-r=1>${ok || t('ok2')}</button></p></div>${dialogAnnouncements}`;
         const read = enhance?.(m);
         document.body.appendChild(m);
         m.showModal();
@@ -271,11 +271,11 @@ const openModal = h => {
         dialog.setAttribute('aria-labelledby', 'mdt');
     }
     dialogOpeners.set(dialog, opener);
-    dismissOnBackdropClick(dialog, closeModal);
+    dismissOnBackdropClick(dialog, requestCloseModal);
     dialog.addEventListener('keydown', keepModalTab);
     dialog.addEventListener('cancel', event => {
         event.preventDefault();
-        closeModal();
+        requestCloseModal();
     });
     dialog.addEventListener('close', () => {
         dialog.remove();
@@ -285,6 +285,13 @@ const openModal = h => {
     // The add-level dialog lists the tags under its tag search, like the edit panel does after render()
     renderTagSuggestions();
 };
+
+/** The user's ways of closing a modal; a level form with unsaved changes asks first. Saving closes it with closeModal. */
+async function requestCloseModal() {
+    const dialog = qs('#md dialog');
+    if (dialog && await confirmLevelFormExit(dialog) && qs('#md dialog') === dialog)
+        closeModal();
+}
 
 const closeModal = () => {
     const dialog = qs('#md dialog'), opener = dialog && dialogOpeners.get(dialog);
