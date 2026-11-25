@@ -4,14 +4,14 @@ import { loadScripts } from './load-scripts.js';
 
 /** Loads the list scripts and the event handlers with a stub DOM; `calls` records the redraws they ask for. */
 const createApp = () => {
-    const calls = [], dom = {};
-    const document = { body: {}, addEventListener() {}, querySelector: selector => dom[selector] ?? null, querySelectorAll: selector => dom[selector] ?? [] };
+    const calls = [], dom = {}, listeners = [];
+    const document = { body: {}, addEventListener: (type, listener) => listeners.push([type, listener]), querySelector: selector => dom[selector] ?? null, querySelectorAll: selector => dom[selector] ?? [] };
     const { context, app, load } = loadScripts(['js/config.js', 'js/i18n.js', 'js/utils.js', 'js/state.js', 'js/demonlist.js', 'js/api.js', 'js/components/faces.js', 'js/components/help-tip.js', 'js/components/levels.js', 'js/events.js'], { localStorage: {}, document, window: { addEventListener() {} } });
     for (const name of ['render', 'closeModal', 'openModal', 'tagsUI'])
         context[name] = () => calls.push(name);
     context.askConfirm = async () => true;
     app('store = { cur: "p", profs: { p: { name: "P", color: "#ffe94d", data: emptyProfile() } } }; profile = store.profs.p.data; ui.tab = "classic"');
-    return { app, calls, context, dom, load };
+    return { app, calls, context, dom, load, listeners };
 };
 const tagFilter = app => [...app('ui.tagFilter')];
 const flush = () => new Promise(resolve => setImmediate(resolve));
@@ -112,6 +112,33 @@ test('invalid tag changes keep the draft and expose the error beside its field',
     assert.equal(renamed.getAttribute('aria-invalid'), 'true');
     assert.equal(dom['#tag-name-0-error'].textContent, app("t('tagExists')"));
     assert.equal(app('profile.tags.map(tag => tag.name).join(",")'), 'A,B');
+});
+
+test('an open dropdown fits above the viewport edge, or above the edge of the dialog it scrolls in', () => {
+    const { app, context } = createApp();
+    context.innerHeight = 800;
+    const disclosure = dialogBottom => ({
+        querySelector: () => ({ getBoundingClientRect: () => ({ top: 300 }) }),
+        closest: selector => selector == 'dialog .box' && dialogBottom != null ? { getBoundingClientRect: () => ({ bottom: dialogBottom }) } : null
+    });
+    const room = app('dropdownRoom');
+    assert.equal(room(disclosure()), 488);
+    assert.equal(room(disclosure(600)), 288);
+    assert.equal(room(disclosure(900)), 488, 'a dialog taller than the viewport still stops at the viewport');
+    assert.equal(room(disclosure(250)), 0);
+});
+
+test('opening a dropdown inside a dialog caps its panel at the dialog edge', () => {
+    const { context, listeners } = createApp();
+    context.innerHeight = 800;
+    const props = {};
+    const panel = { getBoundingClientRect: () => ({ top: 300 }), querySelector: () => null, style: { setProperty: (name, value) => props[name] = value } };
+    const disclosure = { open: true, matches: selector => selector == '.ms', contains: () => false,
+        querySelector: selector => selector == 'summary' ? {} : panel,
+        closest: selector => selector == 'dialog .box' ? { getBoundingClientRect: () => ({ bottom: 600 }) } : null };
+    for (const [type, listener] of listeners.filter(([type]) => type == 'toggle'))
+        listener({ type, target: disclosure });
+    assert.equal(props['--ms-height'], '288px');
 });
 
 test('the dropdown summary names one selected tag and counts several', () => {

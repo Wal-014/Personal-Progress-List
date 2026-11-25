@@ -578,12 +578,6 @@ dialog.modal::backdrop {
   overscroll-behavior: contain;
 }
 
-.modal .ms .msp {
-  position: relative;
-  inset: auto;
-  max-height: min(280px, 35dvh);
-}
-
 .field-error {
   margin: var(--space-4) 0 var(--space-8);
   color: var(--color-error);
