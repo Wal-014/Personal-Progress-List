@@ -122,7 +122,7 @@ const TRANSLATIONS = {
         defaultProfile: 'Mi perfil',
         dataUnreadable: 'No se pudieron leer los datos guardados, así que se inició un perfil vacío. Se guardó una copia de los datos anteriores para poder recuperarlos.',
         selectLevels: 'Seleccionar niveles', levelSelectionCount: 'Selección: {n}', confirmDeleteSelected: '¿Seguro que quieres eliminar los niveles seleccionados ({n})?',
-        tagNameLimit: 'Hasta {n} caracteres por tag.', tagExists: 'Ya existe un tag con ese nombre', tagEmpty: 'Escribe un nombre para el tag', clearTags: 'Quitar filtros de tags', noMatch: 'Ningún nivel coincide con la búsqueda',
+        tagNameLimit: 'Hasta {n} caracteres por tag.', tagExists: 'Ya existe un tag con ese nombre', tagCreate: 'Crear «{name}»', tagEmpty: 'Escribe un nombre para el tag', clearTags: 'Quitar filtros de tags', noMatch: 'Ningún nivel coincide con la búsqueda',
         nebula: 'Nebulosa', graphite: 'Grafito', ocean: 'Océano', amber: 'Ámbar', crimson: 'Carmesí', porcelain: 'Porcelana', background: 'Diseño de fondo', grid: 'Cuadrícula', aurora: 'Aurora', celestial: 'Celestial', orbital: 'Orbital', pause: 'Ajustes', lang: 'Idioma', palAdd: 'Añadir nivel', palWish: 'Añadir wishlist', nav: 'Navegación', closeMenu: 'Cerrar menú',
         
         gdMode_classic: 'Clásico', gdMode_platform: 'Plataforma',
@@ -254,7 +254,7 @@ const TRANSLATIONS = {
         defaultProfile: 'My profile',
         dataUnreadable: 'Your saved data could not be read, so an empty profile was started. A copy of the previous data was kept so it can be recovered.',
         selectLevels: 'Select levels', levelSelectionCount: '{n} selected', confirmDeleteSelected: 'Are you sure you want to delete the selected levels ({n})?',
-        tagNameLimit: 'Up to {n} characters per tag.', tagExists: 'A tag with that name already exists', tagEmpty: 'Enter a name for the tag', clearTags: 'Clear tag filters', noMatch: 'No levels match the search',
+        tagNameLimit: 'Up to {n} characters per tag.', tagExists: 'A tag with that name already exists', tagCreate: 'Create "{name}"', tagEmpty: 'Enter a name for the tag', clearTags: 'Clear tag filters', noMatch: 'No levels match the search',
         nebula: 'Nebula', graphite: 'Graphite', ocean: 'Ocean', amber: 'Amber', crimson: 'Crimson', porcelain: 'Porcelain', background: 'Background design', grid: 'Grid', aurora: 'Aurora', celestial: 'Celestial', orbital: 'Orbital', pause: 'Settings', lang: 'Language', palAdd: 'Add level', palWish: 'Add Wishlist', nav: 'Navigation', closeMenu: 'Close menu',
         
         gdMode_classic: 'Classic', gdMode_platform: 'Platformer',

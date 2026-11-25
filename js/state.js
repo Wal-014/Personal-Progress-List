@@ -126,6 +126,11 @@ function migrateRatingScale(data) {
     return true;
 }
 
+const TAG_PALETTE = ['#ff2bd6', '#00e5ff', '#ffd400', '#7cff6b', '#ff7a3d', '#9d7bff'];
+
+/** Colour for the next tag added to the catalog, cycling through the palette. */
+const nextTagColor = () => TAG_PALETTE[profile.tags.length % TAG_PALETTE.length];
+
 const RETIRED_FIRST_STEPS_TAG = 'Pre-Extremes';
 
 /**
@@ -167,7 +172,6 @@ function ensureProfileDefaults() {
     });
     let tagsChanged = !profile.tags;
     profile.tags = profile.tags || [];
-    const pal = ['#ff2bd6', '#00e5ff', '#ffd400', '#7cff6b', '#ff7a3d', '#9d7bff'];
     const names = new Set(profile.tags.map(tag => tag.name));
     for (const level of profile.levels) {
         const tags = [...new Set(level.tags || [])];
@@ -177,7 +181,7 @@ function ensureProfileDefaults() {
         }
         for (const name of tags) {
             if (!names.has(name)) {
-                profile.tags.push({ name, color: pal[profile.tags.length % pal.length] });
+                profile.tags.push({ name, color: nextTagColor() });
                 names.add(name);
                 tagsChanged = true;
             }

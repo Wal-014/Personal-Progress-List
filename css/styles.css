@@ -404,6 +404,12 @@ input:user-invalid, select:user-invalid, textarea:user-invalid {
   --chip-highlight: 26%;
 }
 
+/* Creating a tag is an action, not a tag: accent colour and a dashed edge set it apart from the suggestions. */
+.chip.tag-create {
+  --tag-color: var(--color-accent);
+  border-style: dashed;
+}
+
 /* ===== Edit Object panel: details, forms and dialogs ===== */
 .box {
   position: relative;
