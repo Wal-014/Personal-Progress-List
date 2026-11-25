@@ -100,7 +100,7 @@ test('release count errors explain the full-history requirement', t => {
 test('a flagged production build stamps the release into config', () => {
     const config = readFileSync('js/config.js', 'utf8');
     const production = siteConfig(config, 'production', 'true', () => assert.fail('stable releases do not count commits'));
-    assert.equal(vm.runInNewContext(production + ';APP_VERSION'), '1.0.0');
+    assert.equal(vm.runInNewContext(production + ';APP_VERSION'), '1.1.0');
 });
 
 test('local and development builds keep the dev version without counting releases', () => {
