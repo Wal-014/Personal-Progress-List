@@ -675,6 +675,10 @@ document.addEventListener('toggle', e => {
         optionsPanel.querySelector('label:not([hidden]) input')?.focus({ preventScroll: true });
 }, true);
 document.addEventListener('focusout', e => durationBlur(e));
+document.addEventListener('focusin', e => {
+    if (e.target.dataset?.compareSlot != null)
+        setComparisonTarget(+e.target.dataset.compareSlot);
+});
 
 /** Arrow keys move through a comparison picker's options, wrapping around, and Escape returns to its search box; true when the key was handled. */
 function comparePickerKeydown(e) {

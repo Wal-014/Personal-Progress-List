@@ -40,7 +40,7 @@ const canEdit = () => !viewing;
 let ui = {
     tab: 'home', listsExpanded: false, wl: null, wishFx: null, q: '', tagFilter: [], z: 28, lang: localStorage.gl || 'es', theme: themeOf(localStorage.gt), background: backgroundOf(localStorage.gbg),
     rankingMode: 'classic', rankingMetric: 'att', rankingDirection: 'desc', rankingAll: false,
-    comparison: { open: false, slots: [null, null] }, timelineMetric: 'att'
+    comparison: { open: false, slots: [null, null], target: null }, timelineMetric: 'att'
 };
 
 const isListTab = () => ['classic', 'platform'].includes(ui.tab);

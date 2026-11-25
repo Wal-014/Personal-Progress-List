@@ -2219,6 +2219,42 @@ input.ro {
   border-color: var(--slot-color);
 }
 
+/* The slot whose search was focused last receives the next ranking-card click. */
+.compare-slot {
+  padding: 6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+}
+
+.compare-slot.is-target {
+  border-color: color-mix(in srgb, var(--slot-color) 55%, transparent);
+  background: color-mix(in srgb, var(--slot-color) 6%, transparent);
+}
+
+.compare-target {
+  display: none;
+  margin-inline-start: auto;
+  padding: 0 8px;
+  border: 1px solid var(--slot-color);
+  border-radius: 999px;
+  color: var(--slot-color);
+  font: 600 .75rem/1.5 var(--font-ui);
+}
+
+.compare-slot.is-target .compare-target {
+  display: inline-block;
+}
+
+.compare-help {
+  margin: 0 0 10px;
+}
+
+.compare-empty {
+  margin: 0;
+  padding: 6px 8px;
+  color: var(--color-text-muted);
+}
+
 .compare-selection {
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr) auto;
