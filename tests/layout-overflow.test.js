@@ -59,6 +59,37 @@ test('the first-visit guide spans its own Home row instead of sharing one with t
     assert.ok(intro?.declarations.includes('grid-column: 1 / -1'));
 });
 
+test('Home text links underline only their label on hover, so the arrow stays clean', () => {
+    const hovered = blocks.filter(({ selector, parents }) => selector === '&.htext' && parents.some(parent => parent.selector.includes(':hover')));
+    assert.equal(hovered.length, 1);
+    assert.ok(!hovered[0].declarations.some(value => value.startsWith('text-decoration')));
+    const label = blocks.find(({ selector, parents }) => selector === '& > .htext-label' && parents.includes(hovered[0]));
+    assert.ok(label?.declarations.includes('text-decoration: underline'));
+});
+
+test('generic dialog and panel button styles leave the small help buttons alone', () => {
+    const exclusions = blocks.flatMap(({ selector }) => [...selector.matchAll(/(?:\.modal|\.rcol\)) button:where\(:not\(([^)]*)\)\)/g)].map(match => match[1]));
+    assert.ok(exclusions.length >= 2);
+    for (const list of exclusions)
+        assert.match(list, /\.help-tip/);
+    assert.ok(blocks.some(({ selector }) => selector === '.deaths-input button:not(.help-tip)'));
+});
+
+test('a help button keeps clear of the field under its label', () => {
+    const head = blocks.find(({ selector }) => selector === '.field-head');
+    const ring = blocks.find(({ selector }) => selector === '.help-tip::after');
+    const [vertical] = ring.declarations.find(value => value.startsWith('inset:')).match(/-?\d+px/g).map(parseFloat);
+    assert.ok(head.declarations.includes('margin-bottom: var(--space-4)'));
+    assert.ok(-vertical < 4, 'the hit ring must stay inside the 4px gap');
+});
+
+test('dropdown panels float over the form in every context instead of pushing it down', () => {
+    const positioned = blocks.filter(({ selector, declarations }) => /\.msp\b/.test(selector) && declarations.some(value => value.startsWith('position:')));
+    assert.ok(positioned.length);
+    for (const { selector, declarations } of positioned)
+        assert.ok(declarations.includes('position: absolute'), selector);
+});
+
 test('buttons have no global brightness filter on hover', () => {
     for (const { selector, declarations } of blocks) {
         if (/(?:^|,)\s*button:hover\s*(?:,|$)/.test(selector))

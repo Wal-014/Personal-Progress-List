@@ -717,6 +717,14 @@ function accountRendered() {
 }
 
 document.addEventListener('close', () => queueMicrotask(accountRendered), true);
+
+/** Room for an open dropdown panel down to the viewport edge, or to the edge of the dialog it scrolls in. */
+function dropdownRoom(disclosure) {
+    const panelTop = disclosure.querySelector('.msp').getBoundingClientRect().top;
+    const dialogBottom = disclosure.closest('dialog .box')?.getBoundingClientRect().bottom ?? innerHeight;
+    return Math.max(0, Math.min(innerHeight, dialogBottom) - panelTop - 12);
+}
+
 /** Fits an open dropdown panel inside the viewport. */
 document.addEventListener('toggle', e => {
     const disclosure = e.target;
@@ -729,10 +737,7 @@ document.addEventListener('toggle', e => {
         return;
     }
     const optionsPanel = disclosure.querySelector('.msp');
-    if (!disclosure.closest('dialog')) {
-        const panelTop = optionsPanel.getBoundingClientRect().top;
-        optionsPanel.style.setProperty('--ms-height', Math.max(0, innerHeight - panelTop - 12) + 'px');
-    }
+    optionsPanel.style.setProperty('--ms-height', dropdownRoom(disclosure) + 'px');
     if (document.activeElement == summary)
         optionsPanel.querySelector('label:not([hidden]) input')?.focus({ preventScroll: true });
 }, true);

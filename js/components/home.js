@@ -8,16 +8,19 @@ function homeListCard(kind) {
 <div class=hcard-body><span class=hghost aria-hidden=true>${ICONS[kind]}</span>${url ? '<i class=hcover aria-hidden=true></i>' : ''}<div class=hcard-copy><h3>${t(kind)}</h3><div class=hcard-rule></div><p>${ICONS.metricLevels}<span>${levels.length.toLocaleString(ui.lang)} ${levelLabel(levels.length)}</span></p></div></div></div>`;
 }
 
+/** A text link to another screen; only its label is underlined on hover, never the arrow. */
+const homeLink = (tab, label, arrow) => `<button class=htext data-act=tab data-v=${tab}><span class=htext-label>${label}</span><span aria-hidden=true>${arrow}</span></button>`;
+
 function homeWishlists() {
     const wishes = orderedWishlists(), shown = wishes.slice(0, 3);
-    return `<section class=hwishes><div class=hsection-head><h2>${ICONS.navWish}${t('wish')}</h2><button class=htext data-act=tab data-v=wish>${t('viewWishlists')}${wishes.length > shown.length ? ` (${wishes.length.toLocaleString(ui.lang)})` : ''}<span aria-hidden=true>›</span></button></div>
+    return `<section class=hwishes><div class=hsection-head><h2>${ICONS.navWish}${t('wish')}</h2>${homeLink('wish', t('viewWishlists') + (wishes.length > shown.length ? ` (${wishes.length.toLocaleString(ui.lang)})` : ''), '›')}</div>
 <div class=hwish-rows>${shown.map(wishlistTrigger).join('')}${wishes.length ? '' : `<p class=by>${t('noWL')}</p>`}${canEdit() && wishes.length < 3 ? wishlistSlot() : ''}</div></section>`;
 }
 
 function homeStats() {
     const summary = statsSummary();
     const metric = (icon, value, label) => `<div class=hmetric>${icon}<div><b>${value.toLocaleString(ui.lang)}</b><span>${label}</span></div></div>`;
-    return `<section class=hstats><div class=hsection-head><h2>${ICONS.navStats}${t('stats')}</h2></div><div class=hstats-surface>${metric(ICONS.metricLevels, summary.levelCount, levelLabel(summary.levelCount))}${metric(ICONS.metricAttempts, summary.attemptTotal, t('attT'))}${metric(ICONS.metricHours, summary.playHours, t('hrs'))}<button class=htext data-act=tab data-v=stats>${t('viewStats')}<span aria-hidden=true>→</span></button></div></section>`;
+    return `<section class=hstats><div class=hsection-head><h2>${ICONS.navStats}${t('stats')}</h2></div><div class=hstats-surface>${metric(ICONS.metricLevels, summary.levelCount, levelLabel(summary.levelCount))}${metric(ICONS.metricAttempts, summary.attemptTotal, t('attT'))}${metric(ICONS.metricHours, summary.playHours, t('hrs'))}${homeLink('stats', t('viewStats'), '→')}</div></section>`;
 }
 
 const introKey = () => cloudUser ? 'u:' + cloudUser : 'p:' + store.cur;
